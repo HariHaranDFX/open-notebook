@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 from collections import OrderedDict
 from datetime import date
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from wbs_tasks import TASKS  # noqa: E402
