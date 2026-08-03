@@ -7,6 +7,7 @@ from starlette.types import ASGIApp
 
 from api.auth.factory import build_auth_provider
 from api.auth.protocol import AuthProvider
+from open_notebook.exceptions import AuthenticationError
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -32,7 +33,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.excluded_paths or request.method == "OPTIONS":
             return await call_next(request)
 
-        user = await self.provider.authenticate_request(request)
+        try:
+            user = await self.provider.authenticate_request(request)
+        except AuthenticationError as exc:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": str(exc)},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         if self.provider.auth_enabled() and user is None:
             return JSONResponse(
                 status_code=401,

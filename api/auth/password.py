@@ -6,6 +6,7 @@ from fastapi import Request
 from starlette.responses import JSONResponse, Response
 
 from api.auth.types import AuthenticatedUser
+from open_notebook.exceptions import AuthenticationError
 from open_notebook.utils.encryption import get_secret_from_env
 
 
@@ -21,21 +22,24 @@ class PasswordAuthProvider:
     async def authenticate_request(
         self, request: Request
     ) -> Optional[AuthenticatedUser]:
+        if not self.password:
+            return None
+
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            return None
+            raise AuthenticationError("Missing authorization header")
 
         try:
             scheme, credentials = auth_header.split(" ", 1)
             if scheme.lower() != "bearer":
-                return None
+                raise ValueError
         except ValueError:
-            return None
+            raise AuthenticationError("Invalid authorization header format")
 
-        if not self.password or not secrets.compare_digest(
+        if not secrets.compare_digest(
             credentials.encode("utf-8"), self.password.encode("utf-8")
         ):
-            return None
+            raise AuthenticationError("Invalid password")
 
         return AuthenticatedUser(
             id="user:password-local",
