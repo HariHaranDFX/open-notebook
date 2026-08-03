@@ -209,6 +209,8 @@ export const bnIN = {
     signingIn: "সাইন ইন করা হচ্ছে...",
     signIn: "সাইন ইন",
     connectErrorHint: "সার্ভারে সংযোগ করতে অক্ষম। API চালু আছে কিনা চেক করুন।",
+    entraLoginDesc: "আপনার প্রাতিষ্ঠানিক Microsoft অ্যাকাউন্ট দিয়ে সাইন ইন করুন",
+    signInWithMicrosoft: "Microsoft দিয়ে সাইন ইন করুন",
   },
   navigation: {
     collect: "সংগ্রহ",

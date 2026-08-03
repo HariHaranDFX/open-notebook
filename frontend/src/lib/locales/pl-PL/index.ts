@@ -209,6 +209,8 @@ export const plPL = {
     signingIn: "Logowanie...",
     signIn: "Zaloguj się",
     connectErrorHint: "Nie można połączyć się z serwerem. Sprawdź, czy API jest uruchomione.",
+    entraLoginDesc: "Zaloguj się przy użyciu firmowego konta Microsoft",
+    signInWithMicrosoft: "Zaloguj się przez Microsoft",
   },
   navigation: {
     collect: "Zbieraj",

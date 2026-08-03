@@ -53,8 +53,11 @@ export function useAuth() {
     return success
   }
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    // Entra logout navigates via window.location itself (see auth-store);
+    // router.push after would race a full page unload, so only push here
+    // for the password flow where logout() is synchronous local state.
+    await logout()
     router.push('/login')
   }
 

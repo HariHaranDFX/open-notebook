@@ -209,6 +209,8 @@ export const zhTW = {
     signingIn: "正在登入...",
     signIn: "登入",
     connectErrorHint: "無法連線至伺服器。請檢查 API 是否正在運行。",
+    entraLoginDesc: "使用您的組織 Microsoft 帳戶登入",
+    signInWithMicrosoft: "使用 Microsoft 帳戶登入",
   },
   navigation: {
     collect: "採集",

@@ -209,6 +209,8 @@ export const itIT = {
     signingIn: "Accesso in corso...",
     signIn: "Accedi",
     connectErrorHint: "Impossibile connettersi al server. Verifica che l'API sia in esecuzione.",
+    entraLoginDesc: "Accedi con il tuo account Microsoft aziendale",
+    signInWithMicrosoft: "Accedi con Microsoft",
   },
   navigation: {
     collect: "Raccogli",

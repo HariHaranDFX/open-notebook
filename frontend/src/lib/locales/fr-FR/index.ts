@@ -209,6 +209,8 @@ export const frFR = {
     signingIn: "Connexion...",
     signIn: "Se connecter",
     connectErrorHint: "Impossible de se connecter au serveur. Veuillez vérifier si l'API est lancée.",
+    entraLoginDesc: "Connectez-vous avec votre compte Microsoft professionnel",
+    signInWithMicrosoft: "Se connecter avec Microsoft",
   },
   navigation: {
     collect: "Collecter",

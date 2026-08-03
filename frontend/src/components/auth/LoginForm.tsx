@@ -16,7 +16,7 @@ export function LoginForm() {
   const { t, language } = useTranslation()
   const [password, setPassword] = useState('')
   const { login, isLoading, error } = useAuth()
-  const { authRequired, checkAuthRequired, hasHydrated, isAuthenticated } = useAuthStore()
+  const { authRequired, checkAuthRequired, hasHydrated, isAuthenticated, provider } = useAuthStore()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
   const router = useRouter()
@@ -135,6 +135,31 @@ export function LoginForm() {
         // The auth store should handle most errors, but this catches any unhandled ones
       }
     }
+  }
+
+  if (provider === 'entra') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>{t('auth.loginTitle')}</CardTitle>
+            <CardDescription>{t('auth.entraLoginDesc')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              className="w-full"
+              // Relative URL: must resolve through the page origin (Next
+              // rewrite → FastAPI), not a cross-origin API host, so the
+              // provider's Set-Cookie on callback lands as first-party.
+              onClick={() => { window.location.href = '/api/auth/login' }}
+            >
+              {t('auth.signInWithMicrosoft')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

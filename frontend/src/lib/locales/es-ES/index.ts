@@ -209,6 +209,8 @@ export const esES = {
     signingIn: "Iniciando sesión...",
     signIn: "Iniciar sesión",
     connectErrorHint: "No se puede conectar al servidor. Por favor, verifica si la API está funcionando.",
+    entraLoginDesc: "Inicia sesión con tu cuenta Microsoft de la organización",
+    signInWithMicrosoft: "Iniciar sesión con Microsoft",
   },
   navigation: {
     collect: "Recopilar",

@@ -209,6 +209,8 @@ export const jaJP = {
     signingIn: "サインイン中...",
     signIn: "サインイン",
     connectErrorHint: "サーバーに接続できません。APIが起動しているか確認してください。",
+    entraLoginDesc: "組織のMicrosoftアカウントでサインインしてください",
+    signInWithMicrosoft: "Microsoftでサインイン",
   },
   navigation: {
     collect: "収集",

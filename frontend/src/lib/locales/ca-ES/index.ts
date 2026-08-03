@@ -209,6 +209,8 @@ export const caES = {
     signingIn: "S'està iniciant la sessió...",
     signIn: "Inicia la sessió",
     connectErrorHint: "No es pot connectar al servidor. Comprova si l'API s'està executant.",
+    entraLoginDesc: "Inicia la sessió amb el teu compte Microsoft de l'organització",
+    signInWithMicrosoft: "Inicia la sessió amb Microsoft",
   },
   navigation: {
     collect: "Recull",

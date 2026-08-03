@@ -209,6 +209,8 @@ export const trTR = {
     signingIn: "Giriş yapılıyor...",
     signIn: "Giriş Yap",
     connectErrorHint: "Sunucuya bağlanılamıyor. API'nin çalışıp çalışmadığını kontrol edin.",
+    entraLoginDesc: "Kurumsal Microsoft hesabınızla giriş yapın",
+    signInWithMicrosoft: "Microsoft ile Giriş Yap",
   },
   navigation: {
     collect: "Topla",

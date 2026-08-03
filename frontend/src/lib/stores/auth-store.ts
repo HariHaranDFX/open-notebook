@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import apiClient from '@/lib/api/client'
+import apiClient, { setEntraAuthMode } from '@/lib/api/client'
 import { getApiUrl } from '@/lib/config'
+import type { AuthProvider } from '@/lib/types/auth'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -13,10 +14,11 @@ interface AuthState {
   isCheckingAuth: boolean
   hasHydrated: boolean
   authRequired: boolean | null
+  provider: AuthProvider
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
 }
 
@@ -31,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
       isCheckingAuth: false,
       hasHydrated: false,
       authRequired: null,
+      provider: 'password',
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
@@ -38,12 +41,14 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuthRequired: async () => {
         try {
-          const response = await apiClient.get<{ auth_enabled?: boolean }>('/auth/status', {
+          const response = await apiClient.get<{ auth_enabled?: boolean; provider?: AuthProvider }>('/auth/status', {
             headers: { 'Cache-Control': 'no-store' },
           })
 
           const required = response.data.auth_enabled || false
-          set({ authRequired: required })
+          const provider: AuthProvider = response.data.provider === 'entra' ? 'entra' : 'password'
+          setEntraAuthMode(provider === 'entra')
+          set({ authRequired: required, provider })
 
           // If auth is not required, mark as authenticated
           if (!required) {
@@ -137,21 +142,59 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       
-      logout: () => {
-        set({ 
-          isAuthenticated: false, 
-          token: null, 
-          error: null 
+      logout: async () => {
+        const { provider } = get()
+
+        if (provider === 'entra') {
+          try {
+            // apiClient carries withCredentials for Entra mode and resolves
+            // baseURL through the same-origin Next rewrite (see client.ts),
+            // so the session cookie's Origin matches — safe to POST here.
+            await apiClient.post('/auth/logout')
+          } catch (error) {
+            console.error('Entra logout request failed:', error)
+          }
+          set({ isAuthenticated: false, token: null, error: null })
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
+          return
+        }
+
+        set({
+          isAuthenticated: false,
+          token: null,
+          error: null
         })
       },
       
       checkAuth: async () => {
         const state = get()
-        const { token, lastAuthCheck, isCheckingAuth, isAuthenticated } = state
+        const { token, lastAuthCheck, isCheckingAuth, isAuthenticated, provider } = state
 
         // If already checking, return current auth state
         if (isCheckingAuth) {
           return isAuthenticated
+        }
+
+        if (provider === 'entra') {
+          const now = Date.now()
+          if (isAuthenticated && lastAuthCheck && (now - lastAuthCheck) < 30000) {
+            return true
+          }
+
+          set({ isCheckingAuth: true })
+          try {
+            // Cookie-session check: apiClient sends the session cookie via
+            // withCredentials, no bearer token involved.
+            await apiClient.get('/auth/me')
+            set({ isAuthenticated: true, lastAuthCheck: now, isCheckingAuth: false })
+            return true
+          } catch (error) {
+            console.error('Entra checkAuth error:', error)
+            set({ isAuthenticated: false, lastAuthCheck: null, isCheckingAuth: false })
+            return false
+          }
         }
 
         // If no token, not authenticated

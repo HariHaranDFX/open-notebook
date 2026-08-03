@@ -207,6 +207,8 @@ export const enUS = {
     signingIn: "Signing in...",
     signIn: "Sign In",
     connectErrorHint: "Unable to connect to server. Please check if the API is running.",
+    entraLoginDesc: "Sign in with your organizational Microsoft account",
+    signInWithMicrosoft: "Sign in with Microsoft",
   },
   navigation: {
     collect: "Collect",

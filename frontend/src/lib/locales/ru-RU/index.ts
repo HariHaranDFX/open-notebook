@@ -209,6 +209,8 @@ export const ruRU = {
     signingIn: "Вход...",
     signIn: "Войти",
     connectErrorHint: "Не удаётся подключиться к серверу. Проверьте, запущен ли API.",
+    entraLoginDesc: "Войдите с помощью корпоративной учётной записи Microsoft",
+    signInWithMicrosoft: "Войти через Microsoft",
   },
   navigation: {
     collect: "Собрать",

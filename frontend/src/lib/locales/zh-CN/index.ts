@@ -209,6 +209,8 @@ export const zhCN = {
     signingIn: "正在登录...",
     signIn: "登录",
     connectErrorHint: "无法连接到服务器。请检查 API 是否正在运行。",
+    entraLoginDesc: "使用您的组织 Microsoft 账户登录",
+    signInWithMicrosoft: "使用 Microsoft 账户登录",
   },
   navigation: {
     collect: "采集",

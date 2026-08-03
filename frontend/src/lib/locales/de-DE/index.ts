@@ -212,6 +212,8 @@ export const deDE = {
     signingIn: "Anmelden...",
     signIn: "Anmelden",
     connectErrorHint: "Keine Verbindung zum Server möglich. Bitte prüfe, ob die API läuft.",
+    entraLoginDesc: "Melde dich mit deinem Microsoft-Organisationskonto an",
+    signInWithMicrosoft: "Mit Microsoft anmelden",
   },
   navigation: {
     collect: "Sammeln",

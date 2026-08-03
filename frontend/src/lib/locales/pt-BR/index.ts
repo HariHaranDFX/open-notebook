@@ -209,6 +209,8 @@ export const ptBR = {
     signingIn: "Entrando...",
     signIn: "Entrar",
     connectErrorHint: "Não foi possível conectar ao servidor. Verifique se a API está rodando.",
+    entraLoginDesc: "Entre com sua conta Microsoft corporativa",
+    signInWithMicrosoft: "Entrar com a Microsoft",
   },
   navigation: {
     collect: "Coletar",
