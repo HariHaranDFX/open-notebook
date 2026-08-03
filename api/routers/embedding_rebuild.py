@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from surreal_commands import get_command_status
 
+from api.auth.deps import require_admin_if_auth
 from api.command_service import CommandService
 from api.models import (
     RebuildProgress,
@@ -13,7 +14,7 @@ from api.models import (
 from open_notebook.database.repository import repo_query
 from open_notebook.exceptions import OpenNotebookError
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin_if_auth)])
 
 
 @router.post("/rebuild", response_model=RebuildResponse)
