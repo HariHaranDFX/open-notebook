@@ -21,6 +21,24 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Authentication
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `AUTH_PROVIDER` | No | `password` | Authentication provider. Set to `entra` to use Microsoft Entra ID. |
+| `ENTRA_TENANT_ID` | When `AUTH_PROVIDER=entra` | None | Microsoft Entra tenant (directory) ID. |
+| `ENTRA_CLIENT_ID` | When `AUTH_PROVIDER=entra` | None | Application (client) ID from the Entra app registration. |
+| `ENTRA_CLIENT_SECRET` | When `AUTH_PROVIDER=entra` | None | Client secret value used for the authorization-code exchange. |
+| `ENTRA_REDIRECT_URI` | When `AUTH_PROVIDER=entra` | None | Public callback URL, e.g. `https://notebook.example.com/api/auth/callback`; must match the app registration. |
+| `AUTH_ADMIN_EMAILS` | When `AUTH_PROVIDER=entra` | None | Comma-separated admin email allowlist. Must contain at least one email; all other Entra users receive the `user` role. |
+| `AUTH_COOKIE_SECURE` | No | Auto-detected | Force cookie `Secure` flag: `true`/`false`, `1`/`0`, or `yes`/`no`. |
+| `AUTH_SESSION_HOURS` | No | `8` | Entra session lifetime in hours. |
+| `CLIENT_ID` | No | `default` (Entra), `local` (password) | Deployment identifier stamped on records; distinct from `ENTRA_CLIENT_ID`. |
+
+See [Authentication](../AUTH.md) for Entra app registration, same-origin proxy requirements, and password fallback.
+
+---
+
 ## Database: SurrealDB
 
 | Variable | Required? | Default | Description |
