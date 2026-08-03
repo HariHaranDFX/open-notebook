@@ -27,6 +27,10 @@ def test_migration_25_rollback_removes_oauth_state_table():
 def test_migration_25_is_registered_for_up_and_down():
     manager = AsyncMigrationManager()
 
-    assert len(manager.up_migrations) == len(manager.down_migrations) == 25
-    assert "DEFINE TABLE IF NOT EXISTS oauth_state SCHEMAFULL;" in manager.up_migrations[-1].sql
-    assert "REMOVE TABLE IF EXISTS oauth_state;" in manager.down_migrations[-1].sql
+    assert len(manager.up_migrations) == len(manager.down_migrations) >= 25
+    # Index 24 (0-based) is migration 25 - later migrations may follow it.
+    assert (
+        "DEFINE TABLE IF NOT EXISTS oauth_state SCHEMAFULL;"
+        in manager.up_migrations[24].sql
+    )
+    assert "REMOVE TABLE IF EXISTS oauth_state;" in manager.down_migrations[24].sql

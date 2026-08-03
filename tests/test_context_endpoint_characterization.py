@@ -25,7 +25,7 @@ def client():
 
 
 def _notebook(**overrides):
-    defaults = dict(id="notebook:1", name="My Notebook")
+    defaults = dict(id="notebook:1", name="My Notebook", user_id=None)
     defaults.update(overrides)
     nb = SimpleNamespace(**defaults)
     nb.get_sources = AsyncMock(return_value=[])

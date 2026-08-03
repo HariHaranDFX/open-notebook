@@ -41,6 +41,8 @@ class PodcastService:
         notebook_id: Optional[str] = None,
         content: Optional[str] = None,
         briefing_suffix: Optional[str] = None,
+        user_id: Optional[str] = None,
+        client_id: Optional[str] = None,
     ) -> str:
         """Submit a podcast generation job for background processing"""
         try:
@@ -83,6 +85,8 @@ class PodcastService:
                 "episode_name": episode_name,
                 "content": str(content),
                 "briefing_suffix": briefing_suffix,
+                "user_id": user_id,
+                "client_id": client_id,
             }
 
             # Ensure command modules are imported before submitting

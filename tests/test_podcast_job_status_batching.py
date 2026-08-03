@@ -8,12 +8,16 @@ table. PodcastEpisode.get_job_details_for_commands() batches that into one
 query; the router now calls it once up front instead of looping.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from api.routers.podcasts import list_podcast_episodes
 from open_notebook.podcasts.models import PodcastEpisode
+
+# Ownership filtering is a no-op with auth disabled (tests/conftest.py sets
+# OPEN_NOTEBOOK_PASSWORD=""), so a bare mock stands in for the real Request.
+_REQUEST = MagicMock()
 
 
 def make_episode(command=None, audio_file=None, **overrides):
@@ -112,7 +116,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 PodcastEpisode, "get_job_detail", new=AsyncMock()
             ) as mock_per_episode,
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         mock_batch.assert_awaited_once()
         mock_per_episode.assert_not_called()
@@ -136,7 +140,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 new=AsyncMock(return_value={}),
             ),
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert response[0].job_status == "unknown"
 
@@ -157,7 +161,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 new=AsyncMock(side_effect=RuntimeError("db down")),
             ),
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert len(response) == 3
         assert all(item.job_status == "unknown" for item in response)
@@ -179,7 +183,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 new=AsyncMock(return_value={}),
             ) as mock_batch,
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         # No command anywhere -> batch call still happens (with an empty
         # list) but must not error, and the episode is reported completed.
@@ -201,7 +205,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 new=AsyncMock(return_value={}),
             ),
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert response == []
 
@@ -223,7 +227,7 @@ class TestListPodcastEpisodesUsesBatchedLookup:
                 new=AsyncMock(return_value=batch_result),
             ),
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert response[0].job_status == "failed"
         assert response[0].error_message == "kaboom"

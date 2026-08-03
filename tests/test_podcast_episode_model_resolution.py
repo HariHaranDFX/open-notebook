@@ -9,13 +9,17 @@ batched into one query per request (Model.get_display_info_for_ids) so a
 page of episodes never triggers a per-row model lookup.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from api.routers.podcasts import get_podcast_episode, list_podcast_episodes
 from open_notebook.ai.models import Model
 from open_notebook.podcasts.models import PodcastEpisode
+
+# Ownership filtering is a no-op with auth disabled (tests/conftest.py sets
+# OPEN_NOTEBOOK_PASSWORD=""), so a bare mock stands in for the real Request.
+_REQUEST = MagicMock()
 
 MODEL_INFO = {
     "model:outline": {"provider": "openai", "name": "gpt-4o"},
@@ -174,7 +178,7 @@ class TestListEpisodesModelResolution:
     async def test_referenced_episode_gets_resolved_display_fields(self):
         patches = _list_patches([referenced_episode()])
         with patches[0], patches[1], patches[2]:
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         ep = response[0].episode_profile
         sp = response[0].speaker_profile
@@ -189,7 +193,7 @@ class TestListEpisodesModelResolution:
     async def test_legacy_episode_keeps_historical_strings_untouched(self):
         patches = _list_patches([legacy_episode()])
         with patches[0], patches[1], patches[2]:
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         ep = response[0].episode_profile
         sp = response[0].speaker_profile
@@ -205,7 +209,7 @@ class TestListEpisodesModelResolution:
     async def test_unresolvable_reference_leaves_display_fields_absent(self):
         patches = _list_patches([unresolvable_episode()])
         with patches[0], patches[1], patches[2]:
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         ep = response[0].episode_profile
         sp = response[0].speaker_profile
@@ -223,7 +227,7 @@ class TestListEpisodesModelResolution:
         ]
         patches = _list_patches(episodes)
         with patches[0], patches[1], patches[2]:
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert len(response) == 3
         assert response[0].episode_profile["outline_model_name"] == "gpt-4o"
@@ -253,7 +257,7 @@ class TestListEpisodesModelResolution:
             ) as mock_batch,
             patch.object(Model, "get", new=AsyncMock()) as mock_get,
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         mock_batch.assert_awaited_once()
         mock_get.assert_not_called()
@@ -280,7 +284,7 @@ class TestListEpisodesModelResolution:
                 new=AsyncMock(side_effect=RuntimeError("db down")),
             ),
         ):
-            response = await list_podcast_episodes()
+            response = await list_podcast_episodes(_REQUEST)
 
         assert len(response) == 1
         assert "outline_model_provider" not in response[0].episode_profile
@@ -309,7 +313,7 @@ class TestGetEpisodeModelResolution:
                 new=AsyncMock(return_value=MODEL_INFO),
             ) as mock_batch,
         ):
-            response = await get_podcast_episode("episode:ref")
+            response = await get_podcast_episode("episode:ref", _REQUEST)
 
         mock_batch.assert_awaited_once()
         assert response.episode_profile["outline_model_name"] == "gpt-4o"

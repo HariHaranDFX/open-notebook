@@ -45,6 +45,74 @@ def assert_owner_or_404(
         raise HTTPException(status_code=404, detail=detail)
 
 
+async def assert_note_owner_or_404(
+    note_id: str, request: Request, detail: str
+) -> None:
+    """Raise 404 unless a note is reachable through a notebook the current
+    user owns.
+
+    A note has no `user_id` of its own - ownership is derived through the
+    notebook(s) it's attached to via the `artifact` relation (same relation
+    `filter_search_results_by_owner` already joins through for note search
+    results). Fails closed: a note with no notebook link looks the same as
+    one owned by someone else.
+    """
+    if not auth_enforces_ownership():
+        return
+    user = current_user_optional(request)
+    if user is None:
+        return
+    owned = await repo_query(
+        "SELECT in FROM artifact WHERE in = $note_id AND out.user_id = $owner_id",
+        {
+            "note_id": ensure_record_id(note_id),
+            "owner_id": ensure_record_id(user.id),
+        },
+    )
+    if not owned:
+        raise HTTPException(status_code=404, detail=detail)
+
+
+async def filter_notes_by_owner(notes: list, request: Request) -> list:
+    """Keep only notes reachable through a notebook the current user owns.
+
+    List-endpoint counterpart to assert_note_owner_or_404, batched like
+    filter_search_results_by_owner instead of one query per note.
+    """
+    if not auth_enforces_ownership():
+        return notes
+    user = current_user_optional(request)
+    if user is None:
+        return notes
+    note_ids = [ensure_record_id(note.id) for note in notes if note.id]
+    if not note_ids:
+        return []
+    owned_ids = {
+        str(row["id"])
+        for row in await repo_query(
+            "SELECT in AS id FROM artifact WHERE in IN $ids AND out.user_id = $owner_id",
+            {"ids": note_ids, "owner_id": ensure_record_id(user.id)},
+        )
+    }
+    return [note for note in notes if str(note.id) in owned_ids]
+
+
+def filter_owned_or_hidden(items: list, request: Request, owner_id_of) -> list:
+    """Keep only items whose owner (per `owner_id_of`) is the current user.
+
+    In-memory counterpart to `ownership_where` for records already fetched
+    without a `user_id` column to filter in SQL. No-op when ownership isn't
+    enforced; fails closed (hides items with no owner or a different owner)
+    otherwise.
+    """
+    if not auth_enforces_ownership():
+        return items
+    user = current_user_optional(request)
+    if user is None:
+        return items
+    return [item for item in items if owner_id_of(item) == user.id]
+
+
 async def filter_search_results_by_owner(results: list[dict], request: Request) -> list[dict]:
     """Keep only search results owned through a source or notebook."""
     if not auth_enforces_ownership():

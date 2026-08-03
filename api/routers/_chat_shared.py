@@ -14,11 +14,14 @@ Behavior notes:
 
 from typing import Any, Iterable, List, Optional, Tuple
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
+from api.auth.deps import auth_enforces_ownership, current_user_optional
+from api.ownership import assert_owner_or_404
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import ChatSession, Source
+from open_notebook.domain.notebook import ChatSession, Notebook, Source
+from open_notebook.exceptions import NotFoundError
 
 
 # Shared response models
@@ -77,6 +80,40 @@ async def get_verified_source_session(
         raise HTTPException(status_code=404, detail="Session not found for this source")
 
     return full_source_id, source, full_session_id, session
+
+
+async def get_session_notebook_id(full_session_id: str) -> Optional[str]:
+    """The notebook id a chat_session `refers_to`, if any."""
+    notebook_query = await repo_query(
+        "SELECT out FROM refers_to WHERE in = $session_id",
+        {"session_id": ensure_record_id(full_session_id)},
+    )
+    return notebook_query[0]["out"] if notebook_query else None
+
+
+async def assert_session_owner_or_404(
+    full_session_id: str, request: Request, detail: str
+) -> None:
+    """Raise 404 unless the current user owns the notebook this chat session
+    refers to.
+
+    Chat sessions carry no `user_id` of their own; ownership is derived
+    through the notebook they're related to via `refers_to`. Fails closed:
+    a session with no (or a since-deleted) notebook link is treated as
+    unowned, same as `assert_owner_or_404`'s null-owner handling.
+    """
+    if not auth_enforces_ownership():
+        return
+    if current_user_optional(request) is None:
+        return
+    notebook_id = await get_session_notebook_id(full_session_id)
+    owner_user_id = None
+    if notebook_id:
+        try:
+            owner_user_id = (await Notebook.get(notebook_id)).user_id
+        except NotFoundError:
+            owner_user_id = None
+    assert_owner_or_404(owner_user_id, request, detail)
 
 
 def extract_chat_messages(raw_messages: Iterable[Any]) -> List[ChatMessage]:

@@ -2,18 +2,20 @@ import asyncio
 import traceback
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.ownership import assert_owner_or_404
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
+    assert_session_owner_or_404,
     extract_chat_messages,
+    get_session_notebook_id,
     get_session_or_404,
 )
-from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.exceptions import (
     NotFoundError,
@@ -91,13 +93,16 @@ class BuildContextResponse(BaseModel):
 
 
 @router.get("/chat/sessions", response_model=List[ChatSessionResponse])
-async def get_sessions(notebook_id: str = Query(..., description="Notebook ID")):
+async def get_sessions(
+    request: Request, notebook_id: str = Query(..., description="Notebook ID")
+):
     """Get all chat sessions for a notebook."""
     try:
-        # Get notebook to verify it exists
+        # Get notebook to verify it exists and is owned by the current user
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        assert_owner_or_404(notebook.user_id, request, "Notebook not found")
 
         # Get sessions for this notebook
         sessions_list = await notebook.get_chat_sessions()
@@ -136,13 +141,14 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 
 
 @router.post("/chat/sessions", response_model=ChatSessionResponse)
-async def create_session(request: CreateSessionRequest):
+async def create_session(request: CreateSessionRequest, http_request: Request):
     """Create a new chat session."""
     try:
-        # Verify notebook exists
+        # Verify notebook exists and is owned by the current user
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
 
         # Create new session
         session = ChatSession(
@@ -180,11 +186,13 @@ async def create_session(request: CreateSessionRequest):
 @router.get(
     "/chat/sessions/{session_id}", response_model=ChatSessionWithMessagesResponse
 )
-async def get_session(session_id: str):
+async def get_session(session_id: str, request: Request):
     """Get a specific session with its messages."""
     try:
-        # Get session (normalizes the ID and 404s if missing)
+        # Get session (normalizes the ID and 404s if missing), then verify
+        # the current user owns the notebook it belongs to.
         full_session_id, session = await get_session_or_404(session_id)
+        await assert_session_owner_or_404(full_session_id, request, "Session not found")
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -199,12 +207,7 @@ async def get_session(session_id: str):
             messages = extract_chat_messages(thread_state.values["messages"])
 
         # Find notebook_id (we need to query the relationship)
-        notebook_query = await repo_query(
-            "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)},
-        )
-
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
+        notebook_id = await get_session_notebook_id(full_session_id)
 
         if not notebook_id:
             # This might be an old session created before API migration
@@ -234,11 +237,17 @@ async def get_session(session_id: str):
 
 
 @router.put("/chat/sessions/{session_id}", response_model=ChatSessionResponse)
-async def update_session(session_id: str, request: UpdateSessionRequest):
+async def update_session(
+    session_id: str, request: UpdateSessionRequest, http_request: Request
+):
     """Update session title."""
     try:
-        # Get session (normalizes the ID and 404s if missing)
+        # Get session (normalizes the ID and 404s if missing), then verify
+        # the current user owns the notebook it belongs to.
         full_session_id, session = await get_session_or_404(session_id)
+        await assert_session_owner_or_404(
+            full_session_id, http_request, "Session not found"
+        )
 
         update_data = request.model_dump(exclude_unset=True)
 
@@ -251,11 +260,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         await session.save()
 
         # Find notebook_id
-        notebook_query = await repo_query(
-            "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)},
-        )
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
+        notebook_id = await get_session_notebook_id(full_session_id)
 
         # Get message count from LangGraph state
         msg_count = await get_session_message_count(chat_graph, full_session_id)
@@ -281,11 +286,13 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
 
 
 @router.delete("/chat/sessions/{session_id}", response_model=SuccessResponse)
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, request: Request):
     """Delete a chat session."""
     try:
-        # Get session (normalizes the ID and 404s if missing)
-        _full_session_id, session = await get_session_or_404(session_id)
+        # Get session (normalizes the ID and 404s if missing), then verify
+        # the current user owns the notebook it belongs to.
+        full_session_id, session = await get_session_or_404(session_id)
+        await assert_session_owner_or_404(full_session_id, request, "Session not found")
 
         await session.delete()
 
@@ -302,20 +309,21 @@ async def delete_session(session_id: str):
 
 
 @router.post("/chat/execute", response_model=ExecuteChatResponse)
-async def execute_chat(request: ExecuteChatRequest):
+async def execute_chat(request: ExecuteChatRequest, http_request: Request):
     """Execute a chat request and get AI response."""
     try:
-        # Verify session exists (normalizes the ID and 404s if missing)
+        # Verify session exists (normalizes the ID and 404s if missing), then
+        # verify the current user owns the notebook it belongs to.
         full_session_id, session = await get_session_or_404(request.session_id)
+        await assert_session_owner_or_404(
+            full_session_id, http_request, "Session not found"
+        )
 
         # Fetch notebook linked to this session
-        notebook_query = await repo_query(
-            "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)},
-        )
+        notebook_id = await get_session_notebook_id(full_session_id)
         notebook = None
-        if notebook_query:
-            notebook = await Notebook.get(notebook_query[0]["out"])
+        if notebook_id:
+            notebook = await Notebook.get(notebook_id)
 
         # Determine model override (per-request override takes precedence over session-level)
         model_override = (
@@ -389,13 +397,14 @@ async def execute_chat(request: ExecuteChatRequest):
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)
-async def build_context(request: BuildContextRequest):
+async def build_context(request: BuildContextRequest, http_request: Request):
     """Build context for a notebook based on context configuration."""
     try:
-        # Verify notebook exists
+        # Verify notebook exists and is owned by the current user
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
 
         context_data, total_content = await build_notebook_context(
             notebook, request.context_config

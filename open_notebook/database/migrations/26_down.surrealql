@@ -1,0 +1,4 @@
+-- Migration 26 rollback: remove ownership columns from episode.
+
+REMOVE FIELD IF EXISTS user_id ON TABLE episode;
+REMOVE FIELD IF EXISTS client_id ON TABLE episode;
