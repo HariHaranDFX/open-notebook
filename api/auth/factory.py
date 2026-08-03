@@ -6,6 +6,6 @@ from api.auth.protocol import AuthProvider
 
 
 def build_auth_provider() -> AuthProvider:
-    if os.getenv("AUTH_PROVIDER", "password").lower() == "entra":
+    if (os.getenv("AUTH_PROVIDER") or "password").lower() == "entra":
         return EntraOIDCProvider()
     return PasswordAuthProvider()

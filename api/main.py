@@ -193,7 +193,7 @@ async def lifespan(app: FastAPI):
     # Fail fast if AUTH_PROVIDER=entra but the required config is incomplete -
     # a running app with an unusable auth provider is worse than one that
     # never started.
-    if os.getenv("AUTH_PROVIDER", "password").lower() == "entra":
+    if (os.getenv("AUTH_PROVIDER") or "password").lower() == "entra":
         require_entra_config()
 
     # Security check: Encryption key

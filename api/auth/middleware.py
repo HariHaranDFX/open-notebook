@@ -40,7 +40,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         needs_csrf_check = (
             SESSION_COOKIE_NAME in request.cookies
-            or os.getenv("AUTH_PROVIDER", "password").lower() == "entra"
+            or (os.getenv("AUTH_PROVIDER") or "password").lower() == "entra"
         )
         if needs_csrf_check and not has_valid_origin(request):
             return JSONResponse(
