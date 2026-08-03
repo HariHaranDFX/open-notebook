@@ -63,7 +63,6 @@ Open items carried forward (not WP2 blockers unless noted):
   LICENSE_COMPLIANCE.md §8.
 - Product gaps found while testing (not licensing): uploaded `.html` files are
   rejected — only *inline* HTML content is processed — as are `.json` and
-  `.png` without Docling enabled; Azure credential form still needs an
-  `api_version` field in the UI.
+  `.png` without Docling enabled.
 
 @AGENTS.md

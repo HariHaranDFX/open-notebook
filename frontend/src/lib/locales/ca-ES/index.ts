@@ -957,6 +957,8 @@ export const caES = {
     configNameHint: "Un nom descriptiu per a aquesta configuració (p. ex., «Producció», «Desenvolupament»)",
     baseUrl: "URL base",
     baseUrlOverrideHint: "Canvia-ho només si has de substituir el punt d'accés de l'API per defecte del proveïdor.",
+    apiVersion: "Versió de l'API",
+    apiVersionHint: "Obligatòria per a Azure OpenAI (p. ex. 2024-10-21). Usa la versió que admeti el teu recurs d'Azure.",
     numCtx: "Finestra de Context (num_ctx)",
     numCtxHint: "Finestra de context màxima per als models Ollama. Deixa-ho buit per usar el valor per defecte (8192). Augmenta'l només si el teu maquinari pot gestionar una finestra més gran.",
     deleteConfigConfirm: "Segur que vols suprimir «{{name}}»? Aquesta acció no es pot desfer.",

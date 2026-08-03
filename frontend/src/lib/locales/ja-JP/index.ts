@@ -957,6 +957,8 @@ export const jaJP = {
     configNameHint: "この設定の説明的な名前（例：本番環境、開発環境）",
     baseUrl: "ベースURL",
     baseUrlOverrideHint: "プロバイダーのデフォルト API エンドポイントを上書きする場合のみ変更してください。",
+    apiVersion: "API バージョン",
+    apiVersionHint: "Azure OpenAI では必須です（例: 2024-10-21）。Azure リソースがサポートするバージョンを指定してください。",
     numCtx: "コンテキストウィンドウ (num_ctx)",
     numCtxHint: "Ollama モデルの最大コンテキストウィンドウ。空のままにするとデフォルト（8192）を使用します。ハードウェアがより大きなウィンドウを処理できる場合のみ増やしてください。",
     deleteConfigConfirm: "「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",

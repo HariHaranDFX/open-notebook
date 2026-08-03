@@ -958,6 +958,8 @@ export const esES = {
     configNameHint: "Un nombre descriptivo para esta configuración (ej., 'Producción', 'Desarrollo')",
     baseUrl: "URL base",
     baseUrlOverrideHint: "Solo cambia esto si necesitas anular el endpoint API predeterminado del proveedor.",
+    apiVersion: "Versión de API",
+    apiVersionHint: "Obligatoria para Azure OpenAI (p. ej. 2024-10-21). Usa la versión que admita tu recurso de Azure.",
     numCtx: "Ventana de Contexto (num_ctx)",
     numCtxHint: "Ventana de contexto máxima para modelos Ollama. Déjalo vacío para usar el valor predeterminado (8192). Auméntalo solo si tu hardware admite una ventana mayor.",
     deleteConfigConfirm: "¿Estás seguro de que quieres eliminar '{{name}}'? Esto no se puede deshacer.",
