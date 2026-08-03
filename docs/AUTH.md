@@ -35,6 +35,7 @@ Set these values in the API process environment, then restart the API:
 | `AUTH_COOKIE_SECURE` | No | Auto-detected | Forces the session-cookie `Secure` flag: `true`/`false`, `1`/`0`, or `yes`/`no`. Leave unset when proxy headers are correct. |
 | `AUTH_SESSION_HOURS` | No | `8` | Lifetime of an Entra session. |
 | `CLIENT_ID` | No | `default` (Entra) | Stable deployment identifier stamped on records. This is not `ENTRA_CLIENT_ID`. |
+| `CORS_ORIGINS` | **For Entra production** | `*` | Public HTTPS origin(s) of the deployment, comma-separated, e.g. `https://notebook.example.com`. Required for Entra production: it is also the allowlist the CSRF Origin check (`api/auth/csrf.py`) uses to accept mutating requests, since the API has no proxy-headers middleware and cannot otherwise derive its own public origin from `X-Forwarded-Host`/`X-Forwarded-Proto`. Leaving it at the `*` default makes every state-changing Entra request fail the Origin check. |
 
 Example:
 
@@ -46,6 +47,7 @@ ENTRA_CLIENT_SECRET=replace-with-a-secret-value
 ENTRA_REDIRECT_URI=https://notebook.example.com/api/auth/callback
 AUTH_ADMIN_EMAILS=admin@example.com,security@example.com
 CLIENT_ID=customer-a-production
+CORS_ORIGINS=https://notebook.example.com
 ```
 
 ## Deployment topology
@@ -60,6 +62,15 @@ intended.
 For TLS-terminating reverse proxies, forward `X-Forwarded-Proto: https`.
 Alternatively set `AUTH_COOKIE_SECURE=true`. Set it to `false` only for local
 HTTP debugging.
+
+Every state-changing request (`POST`/`PUT`/`PATCH`/`DELETE`) must also pass a
+same-origin check: the request's `Origin` (or `Referer`) header must match
+either the API's own base URL or an entry in `CORS_ORIGINS`. Behind a reverse
+proxy, the API sees the proxy's internal scheme/host, not the public one, so
+`CORS_ORIGINS=<public https origin>` must be set explicitly — without it the
+check silently rejects every browser write with a 403 once Entra is enabled.
+This is unrelated to whether `X-Forwarded-Host` is forwarded; the API does not
+read that header for this check.
 
 ## Roles and local fallback
 
