@@ -14,6 +14,7 @@ these lock in the fix and guard against regressions.
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from api.routers.sources import _is_source_file_available, _resolve_source_file
@@ -29,6 +30,13 @@ def make_source(file_path=None, **overrides):
     )
     defaults.update(overrides)
     return Source(**defaults)
+
+
+def make_request() -> Request:
+    """No user_id on the test sources + auth disabled in tests/conftest.py
+    (OPEN_NOTEBOOK_PASSWORD=""), so ownership enforcement is a no-op here -
+    this is just a placeholder Request to satisfy the parameter."""
+    return Request({"type": "http", "method": "GET", "path": "/x"})
 
 
 @pytest.fixture
@@ -114,7 +122,7 @@ class TestResolveSourceFileRejectsSiblingDirectoryBypass:
             from fastapi import HTTPException
 
             with pytest.raises(HTTPException) as exc_info:
-                await _resolve_source_file("source:test123")
+                await _resolve_source_file("source:test123", make_request())
             assert exc_info.value.status_code == 403
 
     @pytest.mark.asyncio
@@ -132,7 +140,9 @@ class TestResolveSourceFileRejectsSiblingDirectoryBypass:
         with patch(
             "api.routers.sources.Source.get", new=AsyncMock(return_value=source)
         ):
-            resolved_path, filename = await _resolve_source_file("source:test123")
+            resolved_path, filename = await _resolve_source_file(
+                "source:test123", make_request()
+            )
 
         assert filename == "document.pdf"
         assert resolved_path == str(legit_file.resolve())

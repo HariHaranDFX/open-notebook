@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
+from api.ownership import assert_owner_or_404
 from open_notebook.domain.notebook import SourceInsight
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -13,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/insights/{insight_id}", response_model=SourceInsightResponse)
-async def get_insight(insight_id: str):
+async def get_insight(insight_id: str, request: Request):
     """Get a specific insight by ID."""
     try:
         insight = await SourceInsight.get(insight_id)
@@ -22,6 +23,7 @@ async def get_insight(insight_id: str):
 
         # Get source ID from the insight relationship
         source = await insight.get_source()
+        assert_owner_or_404(source.user_id, request, "Insight not found")
 
         return SourceInsightResponse(
             id=insight.id or "",
@@ -41,12 +43,15 @@ async def get_insight(insight_id: str):
 
 
 @router.delete("/insights/{insight_id}")
-async def delete_insight(insight_id: str):
+async def delete_insight(insight_id: str, request: Request):
     """Delete a specific insight."""
     try:
         insight = await SourceInsight.get(insight_id)
         if not insight:
             raise HTTPException(status_code=404, detail="Insight not found")
+
+        source = await insight.get_source()
+        assert_owner_or_404(source.user_id, request, "Insight not found")
 
         await insight.delete()
 
@@ -61,12 +66,17 @@ async def delete_insight(insight_id: str):
 
 
 @router.post("/insights/{insight_id}/save-as-note", response_model=NoteResponse)
-async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
+async def save_insight_as_note(
+    insight_id: str, request: SaveAsNoteRequest, http_request: Request
+):
     """Convert an insight to a note."""
     try:
         insight = await SourceInsight.get(insight_id)
         if not insight:
             raise HTTPException(status_code=404, detail="Insight not found")
+
+        source = await insight.get_source()
+        assert_owner_or_404(source.user_id, http_request, "Insight not found")
 
         # Use the existing save_as_note method from the domain model
         note = await insight.save_as_note(request.notebook_id)

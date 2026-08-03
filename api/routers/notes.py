@@ -1,9 +1,10 @@
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
+from api.ownership import assert_owner_or_404
 from open_notebook.domain.notebook import Note
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -16,6 +17,7 @@ router = APIRouter()
 
 @router.get("/notes", response_model=List[NoteResponse])
 async def get_notes(
+    request: Request,
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
 ):
     """Get all notes with optional notebook filtering."""
@@ -25,6 +27,7 @@ async def get_notes(
             from open_notebook.domain.notebook import Notebook
 
             notebook = await Notebook.get(notebook_id)
+            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
             notes = await notebook.get_notes()
         else:
             # Get all notes
@@ -53,7 +56,7 @@ async def get_notes(
 
 
 @router.post("/notes", response_model=NoteResponse)
-async def create_note(note_data: NoteCreate):
+async def create_note(note_data: NoteCreate, request: Request):
     """Create a new note."""
     try:
         # Auto-generate title if not provided and it's an AI note
@@ -92,8 +95,10 @@ async def create_note(note_data: NoteCreate):
         if note_data.notebook_id:
             from open_notebook.domain.notebook import Notebook
 
-            # Verify the notebook exists (raises NotFoundError -> 404)
-            await Notebook.get(note_data.notebook_id)
+            # Verify the notebook exists (raises NotFoundError -> 404) and is
+            # owned by the current user.
+            notebook = await Notebook.get(note_data.notebook_id)
+            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
             await new_note.add_to_notebook(note_data.notebook_id)
 
         return NoteResponse(
