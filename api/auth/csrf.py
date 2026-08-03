@@ -30,7 +30,7 @@ def has_valid_origin(request: Request) -> bool:
     if origin is None:
         referer = request.headers.get("referer")
         if referer is None:
-            return True
+            return False
         origin = _origin_from_referer(referer)
         if origin is None:
             return False

@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from fastapi import Request
@@ -8,6 +9,7 @@ from starlette.types import ASGIApp
 from api.auth.csrf import has_valid_origin
 from api.auth.factory import build_auth_provider
 from api.auth.protocol import AuthProvider
+from api.auth.session import SESSION_COOKIE_NAME
 from open_notebook.exceptions import AuthenticationError
 
 
@@ -36,7 +38,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.excluded_paths or request.method == "OPTIONS":
             return await call_next(request)
 
-        if not has_valid_origin(request):
+        needs_csrf_check = (
+            SESSION_COOKIE_NAME in request.cookies
+            or os.getenv("AUTH_PROVIDER", "password").lower() == "entra"
+        )
+        if needs_csrf_check and not has_valid_origin(request):
             return JSONResponse(
                 status_code=403, content={"detail": "CSRF origin check failed"}
             )

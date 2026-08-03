@@ -3,15 +3,12 @@ Authentication router for Open Notebook API.
 Provides authentication status and session endpoints.
 """
 
-import os
-
 from fastapi import APIRouter, Depends, Request
 from starlette.responses import Response
 
 from api.auth.deps import require_user
 from api.auth.factory import build_auth_provider
 from api.auth.types import AuthenticatedUser
-from open_notebook.utils.encryption import get_secret_from_env
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,14 +17,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def get_auth_status():
     """
     Check if authentication is enabled.
-    Returns whether a password is required to access the API.
-    Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
+    Returns the configured provider and whether it requires authentication.
     """
-    auth_enabled = bool(get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"))
+    provider = build_auth_provider()
 
     return {
-        "auth_enabled": auth_enabled,
-        "provider": os.getenv("AUTH_PROVIDER", "password").lower(),
+        "auth_enabled": provider.auth_enabled(),
+        "provider": provider.name if provider.name in {"password", "entra"} else "password",
     }
 
 

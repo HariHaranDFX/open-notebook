@@ -29,6 +29,10 @@ def make_password_protected_client() -> TestClient:
     async def protected() -> dict[str, bool]:
         return {"ok": True}
 
+    @app.post("/protected")
+    async def write_protected() -> dict[str, bool]:
+        return {"ok": True}
+
     return TestClient(app)
 
 
@@ -53,6 +57,17 @@ def test_password_middleware_preserves_auth_failure_details(
     assert response.status_code == 401
     assert response.json() == {"detail": detail}
     assert response.headers["WWW-Authenticate"] == "Bearer"
+
+
+def test_password_bearer_write_skips_csrf_without_session_cookie(monkeypatch):
+    monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "secret")
+
+    response = make_password_protected_client().post(
+        "/protected", headers={"Authorization": "Bearer secret"}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"ok": True}
 
 
 @pytest.mark.asyncio

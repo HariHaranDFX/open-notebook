@@ -49,8 +49,8 @@ def make_client(monkeypatch) -> TestClient:
 
 
 def test_auth_status_returns_enabled_provider(monkeypatch):
-    monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "secret")
-    monkeypatch.setenv("AUTH_PROVIDER", "password")
+    monkeypatch.delenv("OPEN_NOTEBOOK_PASSWORD", raising=False)
+    monkeypatch.setenv("AUTH_PROVIDER", "unknown")
 
     response = make_client(monkeypatch).get("/api/auth/status")
 
@@ -97,6 +97,15 @@ def test_logout_delegates_to_provider_and_clears_cookie(monkeypatch):
     assert "on_session=" in response.headers["set-cookie"]
 
 
+def test_cookie_logout_requires_origin(monkeypatch):
+    response = make_client(monkeypatch).post(
+        "/api/auth/logout", cookies={"on_session": "session-token"}
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "CSRF origin check failed"}
+
+
 def test_login_and_callback_are_not_authenticated(monkeypatch):
     client = make_client(monkeypatch)
 
@@ -108,7 +117,9 @@ def test_mutating_request_rejects_disallowed_origin(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://notebook.example.com")
 
     response = make_client(monkeypatch).post(
-        "/api/auth/logout", headers={"Origin": "https://evil.example.com"}
+        "/api/auth/logout",
+        headers={"Origin": "https://evil.example.com"},
+        cookies={"on_session": "session-token"},
     )
 
     assert response.status_code == 403
@@ -119,10 +130,21 @@ def test_mutating_request_allows_configured_origin(monkeypatch):
     monkeypatch.setenv("CORS_ORIGINS", "https://notebook.example.com")
 
     response = make_client(monkeypatch).post(
-        "/api/auth/logout", headers={"Origin": "https://notebook.example.com"}
+        "/api/auth/logout",
+        headers={"Origin": "https://notebook.example.com"},
+        cookies={"on_session": "session-token"},
     )
 
     assert response.status_code == 204
+
+
+def test_entra_write_requires_origin_without_cookie(monkeypatch):
+    monkeypatch.setenv("AUTH_PROVIDER", "entra")
+
+    response = make_client(monkeypatch).post("/api/auth/logout")
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "CSRF origin check failed"}
 
 
 def test_mutating_request_allows_same_host_referer(monkeypatch):
