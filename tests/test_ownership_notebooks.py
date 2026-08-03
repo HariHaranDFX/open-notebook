@@ -12,8 +12,8 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from api.auth.types import AuthenticatedUser
-from api.routers import notebooks, sources
-from open_notebook.domain.notebook import Notebook, Source
+from api.routers import insights, notebooks, search, sources
+from open_notebook.domain.notebook import Note, Notebook, Source, SourceInsight
 
 USER_A = AuthenticatedUser(
     id="user:a",
@@ -57,6 +57,8 @@ def _client(monkeypatch, *, auth_enabled: bool, user: Optional[AuthenticatedUser
 
     app.include_router(notebooks.router, prefix="/api")
     app.include_router(sources.router, prefix="/api")
+    app.include_router(search.router, prefix="/api")
+    app.include_router(insights.router, prefix="/api")
     return TestClient(app)
 
 
@@ -326,3 +328,66 @@ class TestSourceList:
 
         query_str, _params = mock_query.call_args.args
         assert "user_id" not in query_str
+
+
+class TestSearchOwnership:
+    @patch("api.ownership.repo_query", new_callable=AsyncMock)
+    @patch("api.routers.search.text_search", new_callable=AsyncMock)
+    def test_hides_results_not_owned_by_current_user(
+        self, mock_search, mock_query, monkeypatch
+    ):
+        """Search must fail closed for source and notebook-owned note results."""
+        mock_search.return_value = [
+            {"id": "source:a", "parent_id": "source:a", "title": "Mine"},
+            {"id": "source:b", "parent_id": "source:b", "title": "Theirs"},
+            {"id": "note:a", "parent_id": "note:a", "title": "My note"},
+            {"id": "note:b", "parent_id": "note:b", "title": "Their note"},
+        ]
+        mock_query.side_effect = [
+            [{"id": "source:a"}],
+            [{"id": "note:a"}],
+        ]
+        client = _client(monkeypatch, auth_enabled=True, user=USER_A)
+
+        response = client.post("/api/search", json={"query": "x", "type": "text"})
+
+        assert response.status_code == 200
+        assert [result["id"] for result in response.json()["results"]] == [
+            "source:a",
+            "note:a",
+        ]
+
+
+class TestSaveInsightAsNoteOwnership:
+    @patch("api.routers.insights.SourceInsight.save_as_note", new_callable=AsyncMock)
+    @patch("open_notebook.domain.notebook.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.insights.SourceInsight.get", new_callable=AsyncMock)
+    def test_other_users_notebook_returns_404_before_writing(
+        self, mock_get_insight, mock_get_notebook, mock_save, monkeypatch
+    ):
+        insight = SourceInsight(
+            id="source_insight:1", insight_type="summary", content="Insight"
+        )
+        mock_get_insight.return_value = insight
+        mock_get_notebook.return_value = Notebook(
+            id="notebook:a", name="Theirs", description="", user_id="user:a"
+        )
+        mock_save.return_value = Note(
+            id="note:new",
+            title="Saved",
+            content="Insight",
+            note_type="ai",
+        )
+        source = Source(id="source:b", title="Mine", user_id="user:b")
+        client = _client(monkeypatch, auth_enabled=True, user=USER_B)
+
+        with patch.object(SourceInsight, "get_source", new_callable=AsyncMock) as get_source:
+            get_source.return_value = source
+            response = client.post(
+                "/api/insights/source_insight:1/save-as-note",
+                json={"notebook_id": "notebook:a"},
+            )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Notebook not found"
+        mock_save.assert_not_awaited()

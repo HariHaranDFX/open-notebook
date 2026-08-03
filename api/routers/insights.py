@@ -3,7 +3,7 @@ from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
 from api.ownership import assert_owner_or_404
-from open_notebook.domain.notebook import SourceInsight
+from open_notebook.domain.notebook import Notebook, SourceInsight
 from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
@@ -77,6 +77,9 @@ async def save_insight_as_note(
 
         source = await insight.get_source()
         assert_owner_or_404(source.user_id, http_request, "Insight not found")
+        if request.notebook_id:
+            notebook = await Notebook.get(request.notebook_id)
+            assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
 
         # Use the existing save_as_note method from the domain model
         note = await insight.save_as_note(request.notebook_id)

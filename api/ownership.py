@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 from fastapi import HTTPException, Request
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
-from open_notebook.database.repository import ensure_record_id
+from open_notebook.database.repository import ensure_record_id, repo_query
 
 
 def ownership_where(request: Request) -> Tuple[str, dict]:
@@ -43,3 +43,41 @@ def assert_owner_or_404(
         return
     if owner_user_id != user.id:
         raise HTTPException(status_code=404, detail=detail)
+
+
+async def filter_search_results_by_owner(results: list[dict], request: Request) -> list[dict]:
+    """Keep only search results owned through a source or notebook."""
+    if not auth_enforces_ownership():
+        return results
+    user = current_user_optional(request)
+    if user is None:
+        return results
+
+    source_ids = [
+        ensure_record_id(str(result["parent_id"]))
+        for result in results
+        if str(result.get("parent_id", "")).startswith("source:")
+    ]
+    note_ids = [
+        ensure_record_id(str(result["parent_id"]))
+        for result in results
+        if str(result.get("parent_id", "")).startswith("note:")
+    ]
+    owned_ids: set[str] = set()
+    if source_ids:
+        owned_ids.update(
+            str(row["id"])
+            for row in await repo_query(
+                "SELECT id FROM source WHERE id IN $ids AND user_id = $owner_id",
+                {"ids": source_ids, "owner_id": ensure_record_id(user.id)},
+            )
+        )
+    if note_ids:
+        owned_ids.update(
+            str(row["id"])
+            for row in await repo_query(
+                "SELECT in AS id FROM artifact WHERE in IN $ids AND out.user_id = $owner_id",
+                {"ids": note_ids, "owner_id": ensure_record_id(user.id)},
+            )
+        )
+    return [result for result in results if str(result.get("parent_id")) in owned_ids]

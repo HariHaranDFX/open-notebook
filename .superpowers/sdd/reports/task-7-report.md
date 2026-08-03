@@ -50,3 +50,9 @@ before this task — mock `side_effect` arity, unrelated to auth/ownership).
 ## Verification
 `uv run pytest tests/test_ownership_notebooks.py tests/test_source_path_containment.py tests/characterization/ tests/test_crud_404.py tests/test_migration_24_auth_schema.py -q`
 → 117 passed.
+
+## Follow-up: ownership gaps fixed
+- Global search now retains only sources owned by the authenticated user and
+  notes attached to that user's notebooks; unknown result types fail closed.
+- Saving an insight as a note now checks ownership of the optional target
+  notebook before creating the note/relation, returning 404 for non-owners.
