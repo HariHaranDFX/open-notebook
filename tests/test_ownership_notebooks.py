@@ -267,9 +267,17 @@ class TestSourceGetOwnership:
         assert response.status_code == 404
         assert response.json()["detail"] == "Source not found"
 
+    @patch("api.routers.sources._stamp_source_view", new_callable=AsyncMock)
+    @patch(
+        "api.routers.sources.Source.get_embedded_chunks",
+        new_callable=AsyncMock,
+        return_value=0,
+    )
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
-    def test_owner_can_get(self, mock_get, mock_query, monkeypatch):
+    def test_owner_can_get(
+        self, mock_get, mock_query, mock_chunks, mock_stamp, monkeypatch
+    ):
         source = Source(user_id="user:a")
         source.id = "source:1"
         mock_get.return_value = source

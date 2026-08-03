@@ -78,7 +78,7 @@ def test_me_rejects_anonymous_user(monkeypatch):
     async def authenticate_anonymous(request):
         return None
 
-    provider.authenticate_request = authenticate_anonymous
+    monkeypatch.setattr(provider, "authenticate_request", authenticate_anonymous)
     monkeypatch.setattr(auth, "build_auth_provider", lambda: provider)
     app = FastAPI()
     app.add_middleware(AuthMiddleware, provider=provider)

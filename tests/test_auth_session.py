@@ -30,6 +30,7 @@ async def test_create_session_stores_only_cookie_hash(monkeypatch):
     raw_cookie = await session.create_session("user:1", "encrypted-refresh-token")
 
     assert raw_cookie != sha256(raw_cookie.encode()).hexdigest()
+    assert create.await_args is not None
     table, data = create.await_args.args
     assert table == "auth_session"
     assert data["session_token_hash"] == sha256(raw_cookie.encode()).hexdigest()
@@ -60,7 +61,15 @@ async def test_resolve_session_returns_linked_user(monkeypatch):
 
     resolved = await session.resolve_session("raw-cookie")
 
-    assert resolved == AuthenticatedUser(**user)
+    assert resolved == AuthenticatedUser(
+        id="user:1",
+        email="user@example.com",
+        display_name="Test User",
+        role="user",
+        entra_oid="entra-1",
+        client_id="client-1",
+    )
+    assert query.await_args is not None
     assert query.await_args.args[1]["session_token_hash"] == sha256(
         b"raw-cookie"
     ).hexdigest()
@@ -97,7 +106,9 @@ async def test_delete_session_removes_matching_record(monkeypatch):
 
     await session.delete_session("raw-cookie")
 
+    assert delete.await_args is not None
     assert delete.await_args.args == ("auth_session:1",)
+    assert query.await_args is not None
     assert query.await_args.args[1]["session_token_hash"] == sha256(
         b"raw-cookie"
     ).hexdigest()

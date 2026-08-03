@@ -71,6 +71,7 @@ async def test_begin_login_redirects_to_authorize_endpoint_with_pkce(monkeypatch
 
     # code_verifier is persisted server-side, keyed by state - never in the cookie.
     store_oauth_state.assert_awaited_once()
+    assert store_oauth_state.await_args is not None
     assert store_oauth_state.await_args.args[0] == state
     cookie_value = set_cookie.split("on_oauth=", 1)[1].split(";", 1)[0]
     assert cookie_value == state
@@ -204,6 +205,7 @@ async def test_handle_callback_jit_creates_admin_user_and_sets_session_cookie(
     assert 'on_oauth=""' in oauth_clear_cookie or "on_oauth=;" in oauth_clear_cookie
 
     # role came from the allowlist, not from a client-controlled claim
+    assert repo_create.await_args is not None
     created_data = repo_create.await_args.args[1]
     assert created_data["role"] == "admin"
     assert created_data["entra_oid"] == "entra-oid-1"
@@ -255,7 +257,8 @@ async def test_handle_callback_updates_existing_user_by_entra_oid(monkeypatch):
 
     await provider.handle_callback(request)
 
-    table, record_id, _data = repo_update.await_args.args
+    assert repo_update.await_args is not None
+    _table, record_id, _data = repo_update.await_args.args
     assert record_id == "user:existing-1"
 
 

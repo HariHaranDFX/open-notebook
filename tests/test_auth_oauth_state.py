@@ -13,6 +13,7 @@ async def test_store_oauth_state_persists_verifier_with_short_expiry(monkeypatch
 
     await oauth_state.store_oauth_state("state-1", "verifier-1")
 
+    assert create.await_args is not None
     table, data = create.await_args.args
     assert table == "oauth_state"
     assert data["state"] == "state-1"
@@ -40,6 +41,7 @@ async def test_consume_oauth_state_returns_verifier_and_deletes_row(monkeypatch)
 
     assert verifier == "verifier-1"
     delete.assert_awaited_once_with("oauth_state:1")
+    assert query.await_args is not None
     assert query.await_args.args[1] == {"state": "state-1"}
 
 
