@@ -1,3 +1,4 @@
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
@@ -6,7 +7,8 @@ from typing import Any, Optional
 from api.auth.types import AuthenticatedUser
 from open_notebook.database.repository import repo_create, repo_delete, repo_query
 
-SESSION_LIFETIME = timedelta(days=7)
+SESSION_COOKIE_NAME = "on_session"
+SESSION_LIFETIME = timedelta(hours=int(os.getenv("AUTH_SESSION_HOURS", "8")))
 
 
 def _hash_session(raw_cookie: str) -> str:

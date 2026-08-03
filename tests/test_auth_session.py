@@ -8,7 +8,12 @@ from starlette.requests import Request
 
 from api.auth import session
 from api.auth.deps import require_admin, require_user
+from api.auth.session import SESSION_COOKIE_NAME
 from api.auth.types import AuthenticatedUser
+
+
+def test_session_cookie_name():
+    assert SESSION_COOKIE_NAME == "on_session"
 
 
 def make_request(user: AuthenticatedUser | None = None) -> Request:
@@ -30,7 +35,7 @@ async def test_create_session_stores_only_cookie_hash(monkeypatch):
     assert data["session_token_hash"] == sha256(raw_cookie.encode()).hexdigest()
     assert data["user"] == "user:1"
     assert data["entra_refresh_token_enc"] == "encrypted-refresh-token"
-    assert data["expires_at"] > datetime.now(timezone.utc) + timedelta(days=6)
+    assert data["expires_at"] > datetime.now(timezone.utc) + timedelta(hours=7)
 
 
 @pytest.mark.asyncio
