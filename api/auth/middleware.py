@@ -5,6 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
+from api.auth.csrf import has_valid_origin
 from api.auth.factory import build_auth_provider
 from api.auth.protocol import AuthProvider
 from open_notebook.exceptions import AuthenticationError
@@ -25,6 +26,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/openapi.json",
             "/redoc",
+            "/api/auth/login",
+            "/api/auth/callback",
         ]
 
     async def dispatch(
@@ -32,6 +35,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         if request.url.path in self.excluded_paths or request.method == "OPTIONS":
             return await call_next(request)
+
+        if not has_valid_origin(request):
+            return JSONResponse(
+                status_code=403, content={"detail": "CSRF origin check failed"}
+            )
 
         try:
             user = await self.provider.authenticate_request(request)

@@ -57,4 +57,6 @@ class PasswordAuthProvider:
         return JSONResponse(status_code=400, content={"detail": "Not supported"})
 
     async def logout(self, request: Request) -> Response:
-        return JSONResponse(status_code=400, content={"detail": "Not supported"})
+        response = Response(status_code=204)
+        response.delete_cookie("on_session")
+        return response

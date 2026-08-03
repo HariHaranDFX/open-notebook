@@ -1,10 +1,16 @@
 """
 Authentication router for Open Notebook API.
-Provides endpoints to check authentication status.
+Provides authentication status and session endpoints.
 """
 
-from fastapi import APIRouter
+import os
 
+from fastapi import APIRouter, Depends, Request
+from starlette.responses import Response
+
+from api.auth.deps import require_user
+from api.auth.factory import build_auth_provider
+from api.auth.types import AuthenticatedUser
 from open_notebook.utils.encryption import get_secret_from_env
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -21,7 +27,29 @@ async def get_auth_status():
 
     return {
         "auth_enabled": auth_enabled,
-        "message": "Authentication is required"
-        if auth_enabled
-        else "Authentication is disabled",
+        "provider": os.getenv("AUTH_PROVIDER", "password").lower(),
     }
+
+
+@router.get("/me")
+async def get_current_user(
+    user: AuthenticatedUser = Depends(require_user),
+) -> AuthenticatedUser:
+    return user
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    request: Request, _: AuthenticatedUser = Depends(require_user)
+) -> Response:
+    return await build_auth_provider().logout(request)
+
+
+@router.get("/login")
+async def login(request: Request) -> Response:
+    return await build_auth_provider().begin_login(request)
+
+
+@router.get("/callback")
+async def callback(request: Request) -> Response:
+    return await build_auth_provider().handle_callback(request)
