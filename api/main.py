@@ -21,6 +21,7 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import AuthMiddleware
+from api.auth.entra import require_entra_config
 from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
@@ -188,6 +189,12 @@ async def lifespan(app: FastAPI):
     """
     # Startup: Security checks
     logger.info("Starting API initialization...")
+
+    # Fail fast if AUTH_PROVIDER=entra but the required config is incomplete -
+    # a running app with an unusable auth provider is worse than one that
+    # never started.
+    if os.getenv("AUTH_PROVIDER", "password").lower() == "entra":
+        require_entra_config()
 
     # Security check: Encryption key
     if not get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY"):
