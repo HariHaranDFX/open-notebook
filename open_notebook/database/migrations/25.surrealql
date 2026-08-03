@@ -1,0 +1,12 @@
+-- Migration 25: Add oauth_state table for server-side PKCE code_verifier storage.
+--
+-- The on_oauth cookie only carries the opaque `state`; the PKCE
+-- `code_verifier` is looked up here so a tampered/forged cookie cannot
+-- smuggle in an attacker-chosen verifier (WP2 P1 hardening).
+
+DEFINE TABLE IF NOT EXISTS oauth_state SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS state ON TABLE oauth_state TYPE string;
+DEFINE FIELD IF NOT EXISTS code_verifier ON TABLE oauth_state TYPE string;
+DEFINE FIELD IF NOT EXISTS expires_at ON TABLE oauth_state TYPE datetime;
+DEFINE FIELD IF NOT EXISTS created_at ON TABLE oauth_state DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_oauth_state_state ON TABLE oauth_state COLUMNS state UNIQUE;

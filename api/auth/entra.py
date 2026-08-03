@@ -15,7 +15,9 @@ import httpx
 from fastapi import Request
 from starlette.responses import RedirectResponse, Response
 
+from api.auth.cookies import cookie_secure
 from api.auth.jwt_validate import validate_id_token
+from api.auth.oauth_state import consume_oauth_state, store_oauth_state
 from api.auth.pkce import generate_challenge, generate_state, generate_verifier
 from api.auth.session import (
     SESSION_COOKIE_NAME,
@@ -91,6 +93,10 @@ class EntraOIDCProvider:
         verifier = generate_verifier()
         challenge = generate_challenge(verifier)
         state = generate_state()
+        # code_verifier is kept server-side, keyed by state - the cookie
+        # below carries only the opaque state, so a tampered/forged cookie
+        # can never supply an attacker-chosen verifier.
+        await store_oauth_state(state, verifier)
 
         query = urlencode(
             {
@@ -112,12 +118,11 @@ class EntraOIDCProvider:
         response = RedirectResponse(url=authorize_url, status_code=302)
         response.set_cookie(
             self.OAUTH_COOKIE_NAME,
-            # '.' is not in the token_urlsafe alphabet, safe as a delimiter.
-            f"{state}.{verifier}",
+            state,
             max_age=self.OAUTH_COOKIE_MAX_AGE_SECONDS,
             httponly=True,
             samesite="lax",
-            secure=request.url.scheme == "https",
+            secure=cookie_secure(request),
             path="/",
         )
         return response
@@ -135,11 +140,14 @@ class EntraOIDCProvider:
             raise AuthenticationError("Callback missing code or state")
 
         oauth_cookie = request.cookies.get(self.OAUTH_COOKIE_NAME)
-        if not oauth_cookie or "." not in oauth_cookie:
+        if not oauth_cookie:
             raise AuthenticationError("Missing or expired login session")
-        expected_state, verifier = oauth_cookie.split(".", 1)
-        if not secrets.compare_digest(expected_state, returned_state):
+        if not secrets.compare_digest(oauth_cookie, returned_state):
             raise AuthenticationError("Login state mismatch")
+
+        verifier = await consume_oauth_state(returned_state)
+        if not verifier:
+            raise AuthenticationError("Missing or expired login session")
 
         tokens = await self._exchange_code(code, verifier)
         id_token = tokens.get("id_token")
@@ -174,7 +182,7 @@ class EntraOIDCProvider:
             max_age=int(SESSION_LIFETIME.total_seconds()),
             httponly=True,
             samesite="lax",
-            secure=request.url.scheme == "https",
+            secure=cookie_secure(request),
             path="/",
         )
         return response

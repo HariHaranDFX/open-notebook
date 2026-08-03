@@ -44,8 +44,10 @@ def make_request(
 
 
 @pytest.mark.asyncio
-async def test_begin_login_redirects_to_authorize_endpoint_with_pkce():
+async def test_begin_login_redirects_to_authorize_endpoint_with_pkce(monkeypatch):
     provider = EntraOIDCProvider()
+    store_oauth_state = AsyncMock()
+    monkeypatch.setattr(entra_module, "store_oauth_state", store_oauth_state)
 
     response = await provider.begin_login(make_request())
 
@@ -59,6 +61,7 @@ async def test_begin_login_redirects_to_authorize_endpoint_with_pkce():
     assert params["code_challenge_method"] == ["S256"]
     assert "code_challenge" in params
     assert "state" in params
+    state = params["state"][0]
 
     set_cookie = response.headers["set-cookie"]
     assert "on_oauth=" in set_cookie
@@ -66,16 +69,57 @@ async def test_begin_login_redirects_to_authorize_endpoint_with_pkce():
     assert "samesite=lax" in set_cookie.lower()
     assert "secure" in set_cookie.lower()
 
+    # code_verifier is persisted server-side, keyed by state - never in the cookie.
+    store_oauth_state.assert_awaited_once()
+    assert store_oauth_state.await_args.args[0] == state
+    cookie_value = set_cookie.split("on_oauth=", 1)[1].split(";", 1)[0]
+    assert cookie_value == state
+
 
 @pytest.mark.asyncio
 async def test_handle_callback_rejects_state_mismatch():
     provider = EntraOIDCProvider()
     request = make_request(
         query_string=b"code=abc&state=wrong-state",
-        cookies={"on_oauth": "expected-state.verifier-value"},
+        cookies={"on_oauth": "expected-state"},
     )
 
     with pytest.raises(AuthenticationError, match="state mismatch"):
+        await provider.handle_callback(request)
+
+
+@pytest.mark.asyncio
+async def test_handle_callback_rejects_tampered_oauth_cookie(monkeypatch):
+    """A single flipped character in the (now-unsigned-but-opaque) cookie must
+    never resolve to a valid login - it can only ever fail the state compare,
+    since the real code_verifier lives server-side and is never derivable
+    from the cookie value."""
+    provider = EntraOIDCProvider()
+    request = make_request(
+        query_string=b"code=abc&state=expected-state",
+        cookies={"on_oauth": "expected-statex"},
+    )
+    consume = AsyncMock()
+    monkeypatch.setattr(entra_module, "consume_oauth_state", consume)
+
+    with pytest.raises(AuthenticationError, match="state mismatch"):
+        await provider.handle_callback(request)
+
+    consume.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_handle_callback_rejects_unknown_or_replayed_state(monkeypatch):
+    provider = EntraOIDCProvider()
+    request = make_request(
+        query_string=b"code=abc&state=expected-state",
+        cookies={"on_oauth": "expected-state"},
+    )
+    monkeypatch.setattr(
+        entra_module, "consume_oauth_state", AsyncMock(return_value=None)
+    )
+
+    with pytest.raises(AuthenticationError, match="Missing or expired"):
         await provider.handle_callback(request)
 
 
@@ -104,7 +148,10 @@ async def test_handle_callback_jit_creates_admin_user_and_sets_session_cookie(
     provider = EntraOIDCProvider()
     request = make_request(
         query_string=b"code=abc&state=expected-state",
-        cookies={"on_oauth": "expected-state.verifier-value"},
+        cookies={"on_oauth": "expected-state"},
+    )
+    monkeypatch.setattr(
+        entra_module, "consume_oauth_state", AsyncMock(return_value="verifier-value")
     )
 
     exchange = AsyncMock(
@@ -167,7 +214,10 @@ async def test_handle_callback_updates_existing_user_by_entra_oid(monkeypatch):
     provider = EntraOIDCProvider()
     request = make_request(
         query_string=b"code=abc&state=expected-state",
-        cookies={"on_oauth": "expected-state.verifier-value"},
+        cookies={"on_oauth": "expected-state"},
+    )
+    monkeypatch.setattr(
+        entra_module, "consume_oauth_state", AsyncMock(return_value="verifier-value")
     )
     monkeypatch.setattr(
         provider,

@@ -70,3 +70,81 @@ allowlist-based role resolution, JIT user upsert, and fail-fast startup config c
   needed before rollout per the design spec's acceptance criteria.
 - Manual E2E against a real Entra tenant is unverified (by design — no live Entra required for
   this task); recommend a manual smoke test pass before WP2 sign-off.
+
+---
+
+## Addendum: P1 security hardening (post-review fixes)
+
+Two P1 findings from the security review of the above implementation are fixed here.
+
+### P1-1: OAuth state/PKCE integrity
+
+**Before:** `on_oauth` cookie stored an unsigned `"{state}.{verifier}"` payload. A tampered
+cookie could inject a different `code_verifier` without detection at the cookie layer.
+
+**Fix (server-side pending state — the preferred option from the brief):** the PKCE
+`code_verifier` now lives in a new `oauth_state` table (migration 25, `SCHEMAFULL`: `state`
+string unique index, `code_verifier` string, `expires_at` datetime, 10-minute lifetime matching
+the existing cookie `max_age`), added via `api/auth/oauth_state.py`
+(`store_oauth_state`/`consume_oauth_state`) and registered in `AsyncMigrationManager`. The
+`on_oauth` cookie now carries **only** the opaque `state`.
+
+`begin_login` calls `store_oauth_state(state, verifier)` before redirecting.
+`handle_callback` still does the `secrets.compare_digest(cookie_state, query_state)` check
+first (unchanged anti-CSRF behavior), then calls `consume_oauth_state(returned_state)` — a
+one-time lookup-and-delete — to fetch the real `code_verifier`. Any cookie tampering changes
+the state value and fails the `compare_digest` check before the DB is ever touched; an
+unknown/expired/replayed state fails the DB lookup instead. Either way the verifier used in the
+token exchange is always the one this server generated for that state — a cookie can no longer
+supply an attacker-chosen verifier.
+
+### P1-2: Secure cookie flag behind a TLS-terminating proxy
+
+**Before:** `secure=request.url.scheme == "https"` — silently drops `Secure` in the standard
+production topology where TLS terminates at a proxy/load balancer and the app sees plain HTTP.
+
+**Fix:** new `api/auth/cookies.cookie_secure(request)` helper, applied to both the `on_oauth`
+and `on_session` `Set-Cookie` calls in `api/auth/entra.py`. Priority order: explicit
+**`AUTH_COOKIE_SECURE`** env override (`1`/`true`/`yes` → force True, `0`/`false`/`no` → force
+False) → `X-Forwarded-Proto` (first value if comma-separated) or `request.url.scheme` → default
+Secure=True unless the host is `localhost`/`127.0.0.1` (plain local dev only).
+
+**New env var — `AUTH_COOKIE_SECURE`** (optional, unset by default): forces the cookie `Secure`
+flag on or off regardless of scheme/proxy-header detection. Use `1`/`true`/`yes` to force Secure
+in setups where `X-Forwarded-Proto` isn't forwarded correctly; `0`/`false`/`no` only for local
+HTTP debugging against a non-localhost hostname. Belongs in the same env reference as
+`ENTRA_*`/`AUTH_ADMIN_EMAILS` once `docs/AUTH.md` is written.
+
+### Tests (TDD)
+- `tests/test_auth_oauth_state.py` (5): store persists `code_verifier` + ~10 min expiry;
+  consume returns verifier and deletes the row (one-time use); consume returns `None` for an
+  unknown state (no delete) and for an expired one (still deletes — no replay); string
+  (SurrealDB-serialized) `expires_at` is parsed correctly.
+- `tests/test_auth_cookies.py` (8): secure for `https` scheme; secure via
+  `X-Forwarded-Proto: https` even when `request.url.scheme` is `http`; first value used from a
+  comma-separated forwarded-proto list; **not** secure for `localhost`/`127.0.0.1` over plain
+  `http`; secure by default for any other plain-`http` host; `AUTH_COOKIE_SECURE` override forces
+  both directions.
+- `tests/test_auth_entra_provider.py`: rewrote all cookie/state assertions for the new
+  state-only cookie; added `test_handle_callback_rejects_tampered_oauth_cookie` (single flipped
+  cookie char → `state mismatch`, DB lookup never reached) and
+  `test_handle_callback_rejects_unknown_or_replayed_state` (valid state format but no matching
+  DB row → `Missing or expired`).
+- `tests/test_migration_25_oauth_state.py`: mirrors the existing `test_migration_24_*` pattern
+  (schema statements present, rollback statement present, migration registered in both
+  `up_migrations`/`down_migrations`).
+- `tests/test_migration_24_auth_schema.py`: `test_migration_24_is_registered_for_up_and_down`
+  updated to index `[23]` instead of `[-1]` now that migration 25 is the newest.
+
+### Verification
+- `uv run pytest tests/test_auth_entra_provider.py tests/test_auth_oauth_state.py
+  tests/test_auth_cookies.py tests/test_migration_24_auth_schema.py
+  tests/test_migration_25_oauth_state.py tests/test_auth_pkce.py tests/test_auth_entra_jwt.py
+  tests/test_auth_admin_allowlist.py tests/test_auth_session.py -q` — 66 passed.
+- `uv run pytest tests/ -q` — 822 passed, 4 skipped, the same 9 pre-existing
+  `test_models_api.py::TestModelsProviderAvailability` failures (confirmed unrelated in the
+  original task-5 report; still unrelated here — untouched by this change).
+- `ruff check` on all new/changed files — clean.
+- `uv run python -m mypy api/auth/entra.py api/auth/oauth_state.py api/auth/cookies.py` — no
+  issues.
+- No new dependencies added — no licensing impact.

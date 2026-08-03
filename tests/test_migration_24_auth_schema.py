@@ -55,9 +55,10 @@ def test_migration_24_defines_auth_and_ownership_schema():
 def test_migration_24_is_registered_for_up_and_down():
     manager = AsyncMigrationManager()
 
-    assert len(manager.up_migrations) == len(manager.down_migrations) == 24
-    assert "DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;" in manager.up_migrations[-1].sql
-    assert "REMOVE TABLE IF EXISTS user;" in manager.down_migrations[-1].sql
+    assert len(manager.up_migrations) == len(manager.down_migrations)
+    assert len(manager.up_migrations) >= 24
+    assert "DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;" in manager.up_migrations[23].sql
+    assert "REMOVE TABLE IF EXISTS user;" in manager.down_migrations[23].sql
 
 
 def test_migration_24_rollback_removes_auth_and_ownership_schema():
