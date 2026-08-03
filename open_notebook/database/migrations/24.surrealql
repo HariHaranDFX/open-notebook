@@ -1,0 +1,25 @@
+-- Migration 24: Add user identity, auth session, and ownership schema.
+
+DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS email ON TABLE user TYPE string;
+DEFINE FIELD IF NOT EXISTS display_name ON TABLE user TYPE string;
+DEFINE FIELD IF NOT EXISTS entra_oid ON TABLE user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS role ON TABLE user TYPE string ASSERT $value IN ["admin", "user"];
+DEFINE FIELD IF NOT EXISTS client_id ON TABLE user TYPE string;
+DEFINE FIELD IF NOT EXISTS created ON user DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON user DEFAULT time::now() VALUE time::now();
+DEFINE INDEX IF NOT EXISTS idx_user_email ON TABLE user COLUMNS email UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_user_entra_oid ON TABLE user COLUMNS entra_oid UNIQUE;
+
+DEFINE TABLE IF NOT EXISTS auth_session SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS session_token_hash ON TABLE auth_session TYPE string;
+DEFINE FIELD IF NOT EXISTS user ON TABLE auth_session TYPE record<user>;
+DEFINE FIELD IF NOT EXISTS expires_at ON TABLE auth_session TYPE datetime;
+DEFINE FIELD IF NOT EXISTS created_at ON TABLE auth_session DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS entra_refresh_token_enc ON TABLE auth_session TYPE option<string>;
+DEFINE INDEX IF NOT EXISTS idx_session_hash ON TABLE auth_session COLUMNS session_token_hash UNIQUE;
+
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE notebook TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS client_id ON TABLE notebook TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE source TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS client_id ON TABLE source TYPE option<string>;

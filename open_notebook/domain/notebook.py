@@ -19,6 +19,8 @@ class Notebook(ObjectModel):
     description: str
     archived: Optional[bool] = False
     last_viewed_at: Optional[datetime] = None
+    user_id: Optional[str] = None
+    client_id: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -408,6 +410,8 @@ class Source(ObjectModel):
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
     last_viewed_at: Optional[datetime] = None
+    user_id: Optional[str] = None
+    client_id: Optional[str] = None
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
