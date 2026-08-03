@@ -957,6 +957,8 @@ export const frFR = {
     configNameHint: "Un nom descriptif pour cette configuration (ex : « Production », « Développement »)",
     baseUrl: "URL de base",
     baseUrlOverrideHint: "Ne modifiez ceci que si vous devez remplacer le point d'accès API par défaut du fournisseur.",
+    apiVersion: "Version de l'API",
+    apiVersionHint: "Obligatoire pour Azure OpenAI (ex. 2024-10-21). Utilisez la version prise en charge par votre ressource Azure.",
     numCtx: "Fenêtre de Contexte (num_ctx)",
     numCtxHint: "Fenêtre de contexte maximale pour les modèles Ollama. Laissez vide pour utiliser la valeur par défaut (8192). N'augmentez que si votre matériel peut gérer une fenêtre plus grande.",
     deleteConfigConfirm: "Êtes-vous sûr de vouloir supprimer « {{name}} » ? Cette action est irréversible.",

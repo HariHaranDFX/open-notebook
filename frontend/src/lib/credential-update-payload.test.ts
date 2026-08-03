@@ -27,8 +27,10 @@ const values = (overrides: Partial<CredentialFormValues>): CredentialFormValues 
   location: credential.location || '',
   credentialsPath: credential.credentials_path || '',
   numCtx: '',
+  apiVersion: '',
   isVertex: false,
   isOllama: true,
+  isAzure: false,
   ...overrides,
 })
 
@@ -69,5 +71,41 @@ describe('buildCredentialUpdatePayload', () => {
     const withCtx = { ...credential, num_ctx: 4096 }
     const payload = buildCredentialUpdatePayload(withCtx, values({ numCtx: '' }))
     expect(payload.num_ctx).toBe(0)
+  })
+
+  it('sends api_version when Azure value changes', () => {
+    const azure = { ...credential, provider: 'azure', api_version: null as string | null }
+    const payload = buildCredentialUpdatePayload(
+      azure,
+      values({ isAzure: true, isOllama: false, apiVersion: '2024-10-21' }),
+    )
+    expect(payload.api_version).toBe('2024-10-21')
+  })
+
+  it('sends explicit null when Azure api_version is emptied', () => {
+    const azure = { ...credential, provider: 'azure', api_version: '2024-10-21' }
+    const payload = buildCredentialUpdatePayload(
+      azure,
+      values({ isAzure: true, isOllama: false, apiVersion: '' }),
+    )
+    expect(payload.api_version).toBeNull()
+    expect(JSON.parse(JSON.stringify(payload))).toHaveProperty('api_version')
+  })
+
+  it('omits api_version when Azure value is unchanged', () => {
+    const azure = { ...credential, provider: 'azure', api_version: '2024-10-21' }
+    const payload = buildCredentialUpdatePayload(
+      azure,
+      values({ isAzure: true, isOllama: false, apiVersion: '2024-10-21' }),
+    )
+    expect(payload).not.toHaveProperty('api_version')
+  })
+
+  it('does not touch api_version for non-Azure providers', () => {
+    const payload = buildCredentialUpdatePayload(
+      credential,
+      values({ apiVersion: '2024-10-21' }),
+    )
+    expect(payload).not.toHaveProperty('api_version')
   })
 })

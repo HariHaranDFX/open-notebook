@@ -1,0 +1,12 @@
+---
+description: Never open PRs against lfnovo/open-notebook (upstream) unless the user explicitly asks.
+alwaysApply: true
+---
+
+# Never PR to upstream unless asked
+
+- Default remotes: `origin` = HariHaranDFX fork; `upstream` = lfnovo/open-notebook.
+- When creating PRs with `gh pr create`, **always** pass `--repo HariHaranDFX/open-notebook` (or the current fork).
+- Never open, push for, or merge a pull request against `lfnovo/open-notebook` unless the user **explicitly** asks to PR upstream in that message.
+- If `gh` defaults to the upstream repo (common when `gh repo set-default` points there), override with `--repo` — do not rely on the default.
+- If a PR is accidentally opened on upstream, close it immediately with a short explanation and open the correct PR on the fork.

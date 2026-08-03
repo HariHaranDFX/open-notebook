@@ -957,6 +957,8 @@ export const trTR = {
     configNameHint: "Bu yapılandırma için açıklayıcı bir ad (örn. 'Üretim', 'Geliştirme')",
     baseUrl: "Temel URL",
     baseUrlOverrideHint: "Yalnızca sağlayıcının varsayılan API uç noktasını geçersiz kılmanız gerekiyorsa değiştirin.",
+    apiVersion: "API Sürümü",
+    apiVersionHint: "Azure OpenAI için zorunludur (örn. 2024-10-21). Azure kaynağınızın desteklediği sürümü kullanın.",
     numCtx: "Bağlam Penceresi (num_ctx)",
     numCtxHint: "Ollama modelleri için maksimum bağlam penceresi. Varsayılanı kullanmak için boş bırakın (8192). Yalnızca donanımınız daha büyük pencereyi kaldırabiliyorsa artırın.",
     deleteConfigConfirm: "'{{name}}' yapılandırmasını silmek istediğinizden emin misiniz? Bu geri alınamaz.",

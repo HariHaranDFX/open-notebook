@@ -957,6 +957,8 @@ export const plPL = {
     configNameHint: "Opisowa nazwa tej konfiguracji (np. „Produkcja”, „Rozwój”)",
     baseUrl: "Bazowy adres URL",
     baseUrlOverrideHint: "Zmień to tylko wtedy, gdy musisz nadpisać domyślny punkt końcowy API dostawcy.",
+    apiVersion: "Wersja API",
+    apiVersionHint: "Wymagana dla Azure OpenAI (np. 2024-10-21). Użyj wersji obsługiwanej przez zasób Azure.",
     numCtx: "Okno kontekstu (num_ctx)",
     numCtxHint: "Maksymalne okno kontekstu dla modeli Ollama. Pozostaw puste, aby użyć wartości domyślnej (8192). Zwiększ tylko jeśli Twój sprzęt obsłuży większe okno.",
     deleteConfigConfirm: "Czy na pewno chcesz usunąć „{{name}}”? Tej operacji nie można cofnąć.",
