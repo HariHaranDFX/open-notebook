@@ -31,8 +31,20 @@ Identity and login remain in [AUTH.md](AUTH.md). Tenancy remains Model A
   groups and add members from users who have **signed in at least once**
   (rows in the `user` table). The picker does not list the full Entra
   directory.
-- **Later:** Entra ID group sync. Schema already has `source` and
-  `entra_group_oid` for that path. Sync is out of scope for WP2b.
+- **Schema ready for Entra:** `user_group.source` and `user_group.entra_group_oid`
+  (migration 28). Sync itself is a tracked follow-on (WBS **4.20**).
+
+## Deferred follow-ons (not WP2b)
+
+Tracked in the commercialization WBS workbook and `scripts/wbs_tasks.py`:
+
+| WBS | Item | Status | Notes |
+|---|---|---|---|
+| **4.20** | **Entra ID group sync** | Pending (High) | Main post-WP2b group goal. Graph permissions + membership sync into `user_group` / `user_group_member`. |
+| **4.21** | **Full org directory user picker** | Pending (High) | Today: only users who signed in ≥ once (`GET /api/users`). Later: Graph directory search + pending grant / JIT stub. |
+| **4.22** | **Public links, editor reshare, ownership transfer** | Pending (Medium) | Explicitly out of WP2b. Public/link share off by default forever unless product re-opens; editor reshare and ownership transfer need separate design. |
+
+Do **not** mix these into WP3 white-label work.
 
 ## API
 

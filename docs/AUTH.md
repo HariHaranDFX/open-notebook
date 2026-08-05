@@ -90,3 +90,6 @@ Notebooks and sources are private by default. Owners can share; admins can
 allocate to users and app-local groups. Roles are `viewer` and `editor`.
 See [SHARING.md](SHARING.md) and
 [PDR-003](7-DEVELOPMENT/decisions/PDR-003-per-user-ownership-and-sharing.md).
+
+**Deferred (WBS 4.20–4.22, not in WP2b):** Entra ID group sync; full org
+directory user picker; public links / editor reshare / ownership transfer.

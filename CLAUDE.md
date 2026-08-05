@@ -72,5 +72,8 @@ Open items carried forward (not WP2 blockers unless noted):
 - Product gaps found while testing (not licensing): uploaded `.html` files are
   rejected — only *inline* HTML content is processed — as are `.json` and
   `.png` without Docling enabled.
+- **Sharing follow-ons after WP2b** (WBS 4.20–4.22, see [SHARING.md](docs/SHARING.md)):
+  Entra ID group sync; full org directory user picker (Graph); public links /
+  editor reshare / ownership transfer. Schema reserved; not in WP2b scope.
 
 @AGENTS.md

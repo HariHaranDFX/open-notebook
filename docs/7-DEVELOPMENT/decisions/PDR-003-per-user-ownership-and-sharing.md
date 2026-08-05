@@ -47,4 +47,8 @@ WP2 schema must not preclude WP2b: keep `user_id` / `client_id` on notebooks and
   - [x] List/get filters: owner **OR** explicit grant **OR** group grant
   - [x] Share / allocate UI (owner + admin)
   - [x] Docs: `docs/SHARING.md` + AUTH.md pointer
+- **Post-WP2b follow-ons (WBS — Pending, not WP2b blockers):**
+  - [ ] **4.20** Entra ID group sync (`source=entra`, `entra_group_oid`)
+  - [ ] **4.21** Full org directory user picker (Graph; not only signed-in users)
+  - [ ] **4.22** Public links / editor reshare / ownership transfer (product decide)
 - PDR-001 remains the upstream OSS posture; this record is the **commercial fork** multi-user rule under Model A.

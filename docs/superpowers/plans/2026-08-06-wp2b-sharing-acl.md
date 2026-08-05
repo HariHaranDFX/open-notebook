@@ -92,8 +92,17 @@
 
 **Files:**
 - Create: `docs/SHARING.md`
-- Modify: `docs/AUTH.md`, `CLAUDE.md`, optionally `scripts/wbs_tasks.py`
+- Modify: `docs/AUTH.md`, `CLAUDE.md`, `scripts/wbs_tasks.py`, regenerate WBS Excel
 
-- [ ] Document model, roles, Entra sync future
-- [ ] Acceptance checklist against spec
-- [ ] CI green; stop for human review (do not start WP3 on this branch)
+- [x] Document model, roles, Entra sync future
+- [x] WBS: WP2b Done **4.15–4.18**, review **4.19**; deferred Pending **4.20–4.22**
+- [ ] Acceptance checklist against spec + CI green
+- [ ] Stop for human review (do not start WP3 on this branch)
+
+### Explicitly deferred (WBS Pending — do not implement in WP2b)
+
+| WBS | Item |
+|---|---|
+| **4.20** | Entra ID group sync (main post-WP2b group goal; schema ready) |
+| **4.21** | Full org directory user picker via Microsoft Graph |
+| **4.22** | Public links, editor reshare, ownership transfer |
