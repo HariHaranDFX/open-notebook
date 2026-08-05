@@ -37,7 +37,7 @@ def require_user(request: Request) -> AuthenticatedUser:
 def require_admin(request: Request) -> AuthenticatedUser:
     user = require_user(request)
     if user.role != "admin":
-        raise HTTPException(403, detail="Admin required")
+        raise HTTPException(403, detail="Administrator access is required for this action")
     return user
 
 

@@ -78,7 +78,7 @@ async def test_password_provider_accepts_matching_bearer(monkeypatch):
     user = await provider.authenticate_request(make_request_with_auth("Bearer secret"))
 
     assert user == AuthenticatedUser(
-        id="user:password-local",
+        id="user:password_local",
         email="local@dev",
         display_name="Local Admin",
         role="admin",

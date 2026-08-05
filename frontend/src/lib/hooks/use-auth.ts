@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { canAccessAdminUi } from '@/lib/auth/admin-access'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -9,13 +10,16 @@ export function useAuth() {
   const {
     isAuthenticated,
     isLoading,
+    isCheckingAuth,
     login,
     logout,
     checkAuth,
     checkAuthRequired,
     error,
     hasHydrated,
-    authRequired
+    authRequired,
+    provider,
+    role,
   } = useAuthStore()
 
   useEffect(() => {
@@ -26,12 +30,14 @@ export function useAuth() {
         checkAuthRequired().then((required) => {
           // If auth is required, check if we have valid credentials
           if (required) {
-            checkAuth()
+            void checkAuth()
           }
+        }).catch(() => {
+          // checkAuthRequired already updated store error/flags
         })
       } else if (authRequired) {
         // Auth is required, check credentials
-        checkAuth()
+        void checkAuth()
       }
       // If authRequired === false, we're already authenticated (set in checkAuthRequired)
     }
@@ -58,12 +64,24 @@ export function useAuth() {
     // router.push after would race a full page unload, so only push here
     // for the password flow where logout() is synchronous local state.
     await logout()
-    router.push('/login')
+    if (provider !== 'entra') {
+      router.push('/login')
+    }
   }
+
+  // Wait for hydrate, /auth/status, and /auth/me (isCheckingAuth) before
+  // treating the user as logged-out — otherwise Entra callback lands on
+  // /notebooks, hydrates isAuthenticated=false, and bounces to /login.
+  const bootstrapping =
+    !hasHydrated || authRequired === null || isCheckingAuth
+
+  const isAdmin = canAccessAdminUi(authRequired, role)
 
   return {
     isAuthenticated,
-    isLoading: isLoading || !hasHydrated, // Treat lack of hydration as loading
+    isLoading: isLoading || bootstrapping,
+    isAdmin,
+    role,
     error,
     login: handleLogin,
     logout: handleLogout

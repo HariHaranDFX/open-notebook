@@ -149,6 +149,12 @@ class TransformationResponse(BaseModel):
     prompt: str
     apply_default: bool
     model_id: Optional[str] = None
+    user_id: Optional[str] = None
+    is_builtin: bool = False
+    deleted_at: Optional[str] = None
+    can_edit: bool = True
+    can_delete: bool = True
+    can_restore: bool = False
     created: str
     updated: str
 

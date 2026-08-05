@@ -6,10 +6,11 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { SettingsResponse } from '@/lib/types/api'
 
-export function useSettings() {
+export function useSettings(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEYS.settings,
     queryFn: () => settingsApi.get(),
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -30,7 +31,7 @@ export function useUpdateSettings() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorMessage(error, (key) => t(key), 'common.error'),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },

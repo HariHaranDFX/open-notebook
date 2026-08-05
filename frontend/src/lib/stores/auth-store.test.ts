@@ -24,6 +24,7 @@ const resetStore = () => {
     isCheckingAuth: false,
     provider: 'password',
     authRequired: null,
+    role: null,
   })
 }
 
@@ -81,13 +82,22 @@ describe('auth-store provider branching', () => {
     })
 
     it('marks authenticated when GET /auth/me succeeds via cookie session', async () => {
-      mockedGet.mockResolvedValueOnce({ data: { id: 'u1' } })
+      mockedGet.mockResolvedValueOnce({ data: { id: 'u1', role: 'user' } })
 
       const result = await useAuthStore.getState().checkAuth()
 
       expect(result).toBe(true)
       expect(mockedGet).toHaveBeenCalledWith('/auth/me')
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
+      expect(useAuthStore.getState().role).toBe('user')
+    })
+
+    it('stores admin role from /auth/me', async () => {
+      mockedGet.mockResolvedValueOnce({ data: { id: 'u1', role: 'admin' } })
+
+      await useAuthStore.getState().checkAuth()
+
+      expect(useAuthStore.getState().role).toBe('admin')
     })
 
     it('marks unauthenticated when GET /auth/me rejects (no valid session cookie)', async () => {
@@ -106,6 +116,49 @@ describe('auth-store provider branching', () => {
 
       expect(mockedGet).toHaveBeenCalledTimes(1)
       expect(mockedGet).toHaveBeenCalledWith('/auth/me')
+    })
+
+    it('marks isCheckingAuth while /auth/me is in flight', async () => {
+      let resolveMe!: (value: unknown) => void
+      mockedGet.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveMe = resolve
+        }) as ReturnType<typeof apiClient.get>
+      )
+
+      const pending = useAuthStore.getState().checkAuth()
+      expect(useAuthStore.getState().isCheckingAuth).toBe(true)
+
+      resolveMe({ data: { id: 'u1' } })
+      await pending
+      expect(useAuthStore.getState().isCheckingAuth).toBe(false)
+    })
+
+    it('sets isCheckingAuth when auth is required so UI can wait before redirect', async () => {
+      mockedGet.mockResolvedValueOnce({ data: { auth_enabled: true, provider: 'entra' } })
+
+      await useAuthStore.getState().checkAuthRequired()
+
+      expect(useAuthStore.getState().provider).toBe('entra')
+      expect(useAuthStore.getState().isCheckingAuth).toBe(true)
+    })
+  })
+
+  describe('persist partialization', () => {
+    it('does not persist isAuthenticated (cookie/token re-check is source of truth)', () => {
+      const persistOptions = (
+        useAuthStore as unknown as {
+          persist: { getOptions: () => { partialize: (s: unknown) => unknown } }
+        }
+      ).persist.getOptions()
+      const partial = persistOptions.partialize({
+        token: 'secret',
+        isAuthenticated: true,
+        provider: 'entra',
+        isLoading: false,
+      })
+      expect(partial).toEqual({ token: 'secret' })
+      expect(partial).not.toHaveProperty('isAuthenticated')
     })
   })
 

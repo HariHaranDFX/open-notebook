@@ -146,7 +146,7 @@ function SourceDetailContentInner({
   const fetchTransformations = useCallback(async () => {
     try {
       const data = await transformationsApi.list()
-      setTransformations(data)
+      setTransformations(data.filter((t) => !t.deleted_at))
     } catch (err) {
       console.error('Failed to fetch transformations:', err)
     }

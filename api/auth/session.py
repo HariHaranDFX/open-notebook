@@ -1,18 +1,32 @@
 import os
 import secrets
+from dataclasses import fields
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from typing import Any, Optional
 
 from api.auth.types import AuthenticatedUser
-from open_notebook.database.repository import repo_create, repo_delete, repo_query
+from open_notebook.database.repository import (
+    ensure_record_id,
+    repo_create,
+    repo_delete,
+    repo_query,
+)
 
 SESSION_COOKIE_NAME = "on_session"
 SESSION_LIFETIME = timedelta(hours=int(os.getenv("AUTH_SESSION_HOURS", "8")))
+_AUTH_USER_FIELDS = {f.name for f in fields(AuthenticatedUser)}
 
 
 def _hash_session(raw_cookie: str) -> str:
     return sha256(raw_cookie.encode()).hexdigest()
+
+
+def _authenticated_user_from_record(user: dict[str, Any]) -> AuthenticatedUser:
+    """Map a Surreal user row to AuthenticatedUser, dropping DB-only columns."""
+    return AuthenticatedUser(
+        **{name: user[name] for name in _AUTH_USER_FIELDS if name in user}
+    )
 
 
 async def create_session(
@@ -23,7 +37,7 @@ async def create_session(
         "auth_session",
         {
             "session_token_hash": _hash_session(raw_cookie),
-            "user": user_id,
+            "user": ensure_record_id(user_id),
             "expires_at": datetime.now(timezone.utc) + SESSION_LIFETIME,
             "entra_refresh_token_enc": refresh_token_enc,
         },
@@ -54,7 +68,7 @@ async def resolve_session(raw_cookie: str) -> Optional[AuthenticatedUser]:
         return None
 
     user: dict[str, Any] = session["user"]
-    return AuthenticatedUser(**user)
+    return _authenticated_user_from_record(user)
 
 
 async def delete_session(raw_cookie: str) -> None:

@@ -34,6 +34,7 @@ Set these values in the API process environment, then restart the API:
 | `AUTH_ADMIN_EMAILS` | For Entra | — | Comma-separated administrator email allowlist. At least one nonblank address is required. |
 | `AUTH_COOKIE_SECURE` | No | Auto-detected | Forces the session-cookie `Secure` flag: `true`/`false`, `1`/`0`, or `yes`/`no`. Leave unset when proxy headers are correct. |
 | `AUTH_SESSION_HOURS` | No | `8` | Lifetime of an Entra session. |
+| `ENTRA_PROMPT` | No | (omit) | Optional OIDC `prompt` on the authorize request: `select_account`, `login`, `consent`, or `none`. Use `select_account` to show the Microsoft account picker. Invalid values are ignored. |
 | `CLIENT_ID` | No | `default` (Entra) | Stable deployment identifier stamped on records. This is not `ENTRA_CLIENT_ID`. |
 | `CORS_ORIGINS` | **For Entra production** | `*` | Public HTTPS origin(s) of the deployment, comma-separated, e.g. `https://notebook.example.com`. Required for Entra production: it is also the allowlist the CSRF Origin check (`api/auth/csrf.py`) uses to accept mutating requests, since the API has no proxy-headers middleware and cannot otherwise derive its own public origin from `X-Forwarded-Host`/`X-Forwarded-Proto`. Leaving it at the `*` default makes every state-changing Entra request fail the Origin check. |
 

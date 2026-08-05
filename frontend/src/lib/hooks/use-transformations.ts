@@ -106,6 +106,30 @@ export function useDeleteTransformation() {
   })
 }
 
+export function useRestoreTransformation() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (id: string) => transformationsApi.restore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TRANSFORMATION_QUERY_KEYS.transformations })
+      toast({
+        title: t('common.success'),
+        description: t('transformations.restoreSuccess'),
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
 export function useExecuteTransformation() {
   const { toast } = useToast()
   const { t } = useTranslation()

@@ -3,7 +3,7 @@ import { notebooksApi } from '@/lib/api/notebooks'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
 
 export function useNotebooks(archived?: boolean) {
@@ -38,7 +38,7 @@ export function useCreateNotebook() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: t(getApiErrorKey(error, t('common.error'))),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -64,7 +64,7 @@ export function useUpdateNotebook() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: t(getApiErrorKey(error, t('common.error'))),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -104,7 +104,7 @@ export function useDeleteNotebook() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: t(getApiErrorKey(error, t('common.error'))),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },

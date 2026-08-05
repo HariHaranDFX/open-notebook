@@ -6,6 +6,12 @@ export interface Transformation {
   prompt: string
   apply_default: boolean
   model_id: string | null
+  user_id?: string | null
+  is_builtin?: boolean
+  deleted_at?: string | null
+  can_edit?: boolean
+  can_delete?: boolean
+  can_restore?: boolean
   created: string
   updated: string
 }

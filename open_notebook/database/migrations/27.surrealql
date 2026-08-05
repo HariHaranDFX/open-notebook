@@ -1,0 +1,17 @@
+-- Transformation ownership + soft-delete for builtins (WP2 follow-on).
+-- Shared rows: user_id NONE (builtins + admin-created).
+-- Personal rows: user_id set to the creating user.
+-- Builtins only: soft-delete via deleted_at (restorable). Admin-created shared: hard delete.
+
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE transformation TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS is_builtin ON TABLE transformation TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS deleted_at ON TABLE transformation TYPE option<datetime>;
+
+UPDATE transformation SET is_builtin = true WHERE name IN [
+    "Analyze Paper",
+    "Key Insights",
+    "Dense Summary",
+    "Reflections",
+    "Table of Contents",
+    "Simple Summary"
+];

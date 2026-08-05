@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, ClassVar, Dict, Optional
 
 from pydantic import Field
@@ -8,18 +9,23 @@ from open_notebook.domain.base import ObjectModel, RecordModel
 
 class Transformation(ObjectModel):
     table_name: ClassVar[str] = "transformation"
-    nullable_fields: ClassVar[set[str]] = {"model_id"}
+    nullable_fields: ClassVar[set[str]] = {"model_id", "user_id", "deleted_at"}
     name: str
     title: str
     description: str
     prompt: str
     apply_default: bool
     model_id: Optional[str] = None
+    user_id: Optional[str] = None
+    is_builtin: bool = False
+    deleted_at: Optional[datetime] = None
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = super()._prepare_save_data()
         if data.get("model_id"):
             data["model_id"] = ensure_record_id(data["model_id"])
+        if data.get("user_id"):
+            data["user_id"] = ensure_record_id(data["user_id"])
         return data
 
 

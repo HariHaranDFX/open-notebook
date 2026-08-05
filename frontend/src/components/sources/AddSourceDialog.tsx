@@ -143,7 +143,7 @@ export function AddSourceDialog({
   useEffect(() => {
     if (settings && transformations.length > 0) {
       const defaultTransformations = transformations
-        .filter(t => t.apply_default)
+        .filter(t => t.apply_default && !t.deleted_at)
         .map(t => t.id)
 
       setSelectedTransformations(defaultTransformations)
@@ -440,7 +440,7 @@ export function AddSourceDialog({
     // Reset to default transformations
     if (transformations.length > 0) {
       const defaultTransformations = transformations
-        .filter(t => t.apply_default)
+        .filter(t => t.apply_default && !t.deleted_at)
         .map(t => t.id)
       setSelectedTransformations(defaultTransformations)
     } else {
@@ -575,7 +575,7 @@ export function AddSourceDialog({
               <ProcessingStep
                 // @ts-expect-error - Type inference issue with zod schema
                 control={control}
-                transformations={transformations}
+                transformations={transformations.filter(t => !t.deleted_at)}
                 selectedTransformations={selectedTransformations}
                 onToggleTransformation={handleTransformationToggle}
                 loading={transformationsLoading}

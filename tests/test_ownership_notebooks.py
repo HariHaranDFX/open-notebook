@@ -149,6 +149,31 @@ class TestNotebookGetOwnership:
         assert response.status_code == 200
 
     @patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
+    def test_owner_matches_when_db_returns_surreal_escaped_user_id(
+        self, mock_query, monkeypatch
+    ):
+        """parse_record_ids stringifies hyphenated ids as user:⟨…⟩; ownership
+        compare must still treat that as the same owner as user:….
+        """
+        password_user = AuthenticatedUser(
+            id="user:password-local",
+            email="local@dev",
+            display_name="Local Admin",
+            role="admin",
+            entra_oid=None,
+            client_id="local",
+        )
+        mock_query.side_effect = [
+            [_notebook_row(user_id="user:⟨password-local⟩")],
+            [],
+        ]
+        client = _client(monkeypatch, auth_enabled=True, user=password_user)
+
+        response = client.get("/api/notebooks/notebook:1")
+
+        assert response.status_code == 200
+
+    @patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
     def test_other_user_gets_404_not_403(self, mock_query, monkeypatch):
         """User B cannot see user A's notebook - and gets 404, not 403 (no
         existence leak, per WP2 §4)."""

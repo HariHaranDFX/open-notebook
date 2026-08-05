@@ -1,9 +1,22 @@
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
+from api.auth.middleware import AuthMiddleware
 from open_notebook.domain.transformation import Transformation
+
+
+@pytest.fixture(autouse=True)
+def _bypass_auth_middleware(monkeypatch):
+    """These tests cover transformation model_id wiring, not auth."""
+
+    async def passthrough(self, request, call_next):
+        request.state.user = None
+        return await call_next(request)
+
+    monkeypatch.setattr(AuthMiddleware, "dispatch", passthrough)
 
 
 def _client() -> TestClient:

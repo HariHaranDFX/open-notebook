@@ -61,3 +61,94 @@ describe('apiClient auth mode branching', () => {
     expect(configWithoutBase.baseURL).toBe('/api')
   })
 })
+
+describe('apiClient 401 response interceptor', () => {
+  const originalLocation = window.location
+  let rejected: (error: unknown) => unknown
+
+  beforeEach(() => {
+    const handler = apiClient.interceptors.response.handlers[0]
+    rejected = handler.rejected!
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, pathname: '/notebooks', href: 'http://localhost:3000/notebooks' },
+    })
+    localStorage.clear()
+    localStorage.setItem('auth-storage', '{"state":{"isAuthenticated":true}}')
+  })
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    })
+    localStorage.clear()
+  })
+
+  it('does not hard-redirect on 401 from /auth/me (session probe)', async () => {
+    const hrefSetter = vi.fn()
+    Object.defineProperty(window.location, 'href', {
+      configurable: true,
+      get: () => 'http://localhost:3000/notebooks',
+      set: hrefSetter,
+    })
+
+    await expect(
+      rejected({
+        response: { status: 401 },
+        config: { url: '/auth/me' },
+      })
+    ).rejects.toBeTruthy()
+
+    expect(hrefSetter).not.toHaveBeenCalled()
+    expect(localStorage.getItem('auth-storage')).toBeTruthy()
+  })
+
+  it('does not hard-redirect when already on /login', async () => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { pathname: '/login', href: 'http://localhost:3000/login' },
+    })
+    const hrefSetter = vi.fn()
+    Object.defineProperty(window.location, 'href', {
+      configurable: true,
+      get: () => 'http://localhost:3000/login',
+      set: hrefSetter,
+    })
+
+    await expect(
+      rejected({
+        response: { status: 401 },
+        config: { url: '/notebooks' },
+      })
+    ).rejects.toBeTruthy()
+
+    expect(hrefSetter).not.toHaveBeenCalled()
+  })
+
+  it('clears storage and redirects to /login on 401 from a normal API call', async () => {
+    let href = 'http://localhost:3000/notebooks'
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        pathname: '/notebooks',
+        get href() {
+          return href
+        },
+        set href(v: string) {
+          href = v
+        },
+      },
+    })
+
+    await expect(
+      rejected({
+        response: { status: 401 },
+        config: { url: '/notebooks' },
+      })
+    ).rejects.toBeTruthy()
+
+    expect(localStorage.getItem('auth-storage')).toBeNull()
+    expect(href).toBe('/login')
+  })
+})

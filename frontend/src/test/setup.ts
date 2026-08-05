@@ -44,6 +44,7 @@ vi.mock('@/lib/hooks/use-auth', () => ({
     user: { id: '1', email: 'test@example.com' },
     logout: vi.fn(),
     isLoading: false,
+    isAdmin: true,
   })),
 }))
 

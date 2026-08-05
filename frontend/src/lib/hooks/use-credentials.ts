@@ -9,7 +9,7 @@ import {
 } from '@/lib/api/credentials'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { MODEL_QUERY_KEYS } from '@/lib/hooks/use-models'
 
 export const CREDENTIAL_QUERY_KEYS = {
@@ -23,20 +23,22 @@ export const CREDENTIAL_QUERY_KEYS = {
 /**
  * Hook to get the configuration status of all providers
  */
-export function useCredentialStatus() {
+export function useCredentialStatus(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: CREDENTIAL_QUERY_KEYS.status,
     queryFn: () => credentialsApi.getStatus(),
+    enabled: options?.enabled ?? true,
   })
 }
 
 /**
  * Hook to get the environment variable status
  */
-export function useEnvStatus() {
+export function useEnvStatus(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: CREDENTIAL_QUERY_KEYS.envStatus,
     queryFn: () => credentialsApi.getEnvStatus(),
+    enabled: options?.enabled ?? true,
   })
 }
 
@@ -94,7 +96,7 @@ export function useCreateCredential() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -128,7 +130,7 @@ export function useUpdateCredential() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -163,7 +165,7 @@ export function useDeleteCredential() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -198,7 +200,7 @@ export function useTestCredential() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('apiKeys.testFailed')),
+        description: getApiErrorMessage(error, (key) => t(key), 'apiKeys.testFailed'),
         variant: 'destructive',
       })
     },
@@ -230,7 +232,7 @@ export function useDiscoverModels() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('apiKeys.syncFailed')),
+        description: getApiErrorMessage(error, (key) => t(key), 'apiKeys.syncFailed'),
         variant: 'destructive',
       })
     },
@@ -272,7 +274,7 @@ export function useRegisterModels() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('apiKeys.syncFailed')),
+        description: getApiErrorMessage(error, (key) => t(key), 'apiKeys.syncFailed'),
         variant: 'destructive',
       })
     },
@@ -325,7 +327,7 @@ export function useMigrateFromEnv() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -378,7 +380,7 @@ export function useMigrateFromProviderConfig() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },

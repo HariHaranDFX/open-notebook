@@ -4,27 +4,19 @@ Branch: wp-2-entra-auth
 Plan: docs/superpowers/plans/2026-08-03-wp2-entra-auth.md
 Spec: docs/superpowers/specs/2026-08-03-wp2-entra-auth-design.md
 Started: 2026-08-03
+Closed: 2026-08-05 — merged to HariHaranDFX/open-notebook `main` (not upstream)
 
+## Planned SDD tasks
 
-Task 1: complete (commits 96f5928..cbbd3f0, review clean)
+- Task 1–11: complete (AuthProvider → Entra BFF → ownership → frontend → AUTH.md → PR)
 
+## Additional work completed on this branch (WBS 4.11–4.14)
 
-Task 1: complete (commits 96f5928..cbbd3f0, review clean)
+- **4.11** Transformation ownership: migration 27, shared vs personal, soft-delete builtins + restore, Analyze Paper restored
+- **4.12** Meaningful 403 messages (API details + ERROR_MAP + i18n + default-prompt admin gate)
+- **4.13** Admin-only UI gating (sidebar, command palette, AdminOnly routes, SetupBanner, default prompt editor)
+- **4.14** Sidebar longest-prefix active state (Models vs Settings)
 
-Task 2: complete (commits cbbd3f0..06fa979, review clean; minors: ==24 assert, user_id RecordID coercion)
+## Status
 
-Task 3: complete (06fa979..cc67824, cookie name+8h fixed, review approved by controller after fix)
-
-Task 4: complete (cc67824..3b3c737, CSRF cookie/entra fix approved)
-
-Task 5: complete (3b3c737..d920ff0, EntraOIDCProvider BFF); P1 security fixes applied
-post-review: server-side oauth_state (migration 25) replaces unsigned cookie verifier,
-cookie_secure() helper (AUTH_COOKIE_SECURE + X-Forwarded-Proto) replaces
-request.url.scheme-only Secure check.
-
-Task 5: complete (3b3c737..4333bb2, oauth_state+Secure cookies fixed, 822 passed)
-
-Task 6: complete (9258178)
-
-Task 7: complete (owner-only notebook/source access + user_id RecordID coercion fix)
-
+WP2 acceptance criteria met for this fork. Human review stop before WP3.

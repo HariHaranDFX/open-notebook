@@ -1,4 +1,5 @@
 export type AuthProvider = 'password' | 'entra'
+export type UserRole = 'admin' | 'user'
 
 export interface AuthState {
   isAuthenticated: boolean

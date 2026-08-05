@@ -5,11 +5,13 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
+from surrealdb import RecordID
 
 from api.auth import session
 from api.auth.deps import require_admin, require_user
 from api.auth.session import SESSION_COOKIE_NAME
 from api.auth.types import AuthenticatedUser
+from open_notebook.database.repository import ensure_record_id
 
 
 def test_session_cookie_name():
@@ -34,13 +36,16 @@ async def test_create_session_stores_only_cookie_hash(monkeypatch):
     table, data = create.await_args.args
     assert table == "auth_session"
     assert data["session_token_hash"] == sha256(raw_cookie.encode()).hexdigest()
-    assert data["user"] == "user:1"
+    # SCHEMAFULL auth_session.user is record<user> — must be RecordID, not str
+    assert isinstance(data["user"], RecordID)
+    assert data["user"] == ensure_record_id("user:1")
     assert data["entra_refresh_token_enc"] == "encrypted-refresh-token"
     assert data["expires_at"] > datetime.now(timezone.utc) + timedelta(hours=7)
 
 
 @pytest.mark.asyncio
 async def test_resolve_session_returns_linked_user(monkeypatch):
+    # FETCH user returns the full Surreal row (created/updated), not just auth fields
     user = {
         "id": "user:1",
         "email": "user@example.com",
@@ -48,6 +53,8 @@ async def test_resolve_session_returns_linked_user(monkeypatch):
         "role": "user",
         "entra_oid": "entra-1",
         "client_id": "client-1",
+        "created": "2026-08-05T08:00:00Z",
+        "updated": "2026-08-05T08:00:00Z",
     }
     query = AsyncMock(
         return_value=[
@@ -131,7 +138,9 @@ def test_require_admin_rejects_regular_user():
         client_id="client-1",
     )
 
-    with pytest.raises(HTTPException, match="Admin required") as exc_info:
+    with pytest.raises(
+        HTTPException, match="Administrator access is required for this action"
+    ) as exc_info:
         require_admin(make_request(user))
 
     assert exc_info.value.status_code == 403

@@ -66,11 +66,16 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth and redirect to login
-      if (typeof window !== 'undefined') {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const url = String(error.config?.url ?? '')
+      // Session probes expect 401 when logged out. Hard-redirecting here
+      // reloads /login forever (checkAuth → 401 → location=/login → …).
+      const isAuthProbe = /\/auth\/(me|status)(?:\?|$)/.test(url)
+      if (!isAuthProbe) {
         localStorage.removeItem('auth-storage')
-        window.location.href = '/login'
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(error)

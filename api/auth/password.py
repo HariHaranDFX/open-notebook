@@ -42,7 +42,10 @@ class PasswordAuthProvider:
             raise AuthenticationError("Invalid password")
 
         return AuthenticatedUser(
-            id="user:password-local",
+            # Underscore (not hyphen): SurrealDB stringifies hyphenated
+            # record ids as user:⟨…⟩, which used to break ownership compares
+            # and corrupt user_id on Source.save() round-trips.
+            id="user:password_local",
             email="local@dev",
             display_name="Local Admin",
             role="admin",

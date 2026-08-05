@@ -12,6 +12,20 @@ from api.auth.deps import auth_enforces_ownership, current_user_optional
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 
+def _same_owner(owner_user_id: Optional[str], user_id: str) -> bool:
+    """True when both ids name the same Surreal record.
+
+    Compares via RecordID after canonicalizing Surreal's ⟨⟩ string form so
+    `user:password-local` and `user:⟨password-local⟩` match.
+    """
+    if owner_user_id is None:
+        return False
+    try:
+        return ensure_record_id(owner_user_id) == ensure_record_id(user_id)
+    except Exception:
+        return owner_user_id == user_id
+
+
 def ownership_where(request: Request) -> Tuple[str, dict]:
     """SurrealQL WHERE fragment (no leading "WHERE") plus its bind vars,
     restricting a notebook/source query to rows owned by the current user.
@@ -41,7 +55,7 @@ def assert_owner_or_404(
     user = current_user_optional(request)
     if user is None:
         return
-    if owner_user_id != user.id:
+    if not _same_owner(owner_user_id, user.id):
         raise HTTPException(status_code=404, detail=detail)
 
 
@@ -110,7 +124,7 @@ def filter_owned_or_hidden(items: list, request: Request, owner_id_of) -> list:
     user = current_user_optional(request)
     if user is None:
         return items
-    return [item for item in items if owner_id_of(item) == user.id]
+    return [item for item in items if _same_owner(owner_id_of(item), user.id)]
 
 
 async def filter_search_results_by_owner(results: list[dict], request: Request) -> list[dict]:

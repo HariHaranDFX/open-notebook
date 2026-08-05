@@ -33,6 +33,11 @@ export const transformationsApi = {
     await apiClient.delete(`/transformations/${id}`)
   },
 
+  restore: async (id: string) => {
+    const response = await apiClient.post<Transformation>(`/transformations/${id}/restore`)
+    return response.data
+  },
+
   execute: async (data: ExecuteTransformationRequest) => {
     const response = await apiClient.post<ExecuteTransformationResponse>('/transformations/execute', data)
     return response.data

@@ -98,18 +98,21 @@ class EntraOIDCProvider:
         # can never supply an attacker-chosen verifier.
         await store_oauth_state(state, verifier)
 
-        query = urlencode(
-            {
-                "client_id": self.client_id,
-                "response_type": "code",
-                "redirect_uri": self.redirect_uri,
-                "response_mode": "query",
-                "scope": self.SCOPES,
-                "state": state,
-                "code_challenge": challenge,
-                "code_challenge_method": "S256",
-            }
-        )
+        params: Dict[str, str] = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "response_mode": "query",
+            "scope": self.SCOPES,
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+        }
+        # Optional Entra prompt (e.g. select_account). See Microsoft auth code docs.
+        prompt = os.getenv("ENTRA_PROMPT", "").strip().lower()
+        if prompt in {"login", "none", "consent", "select_account"}:
+            params["prompt"] = prompt
+        query = urlencode(params)
         authorize_url = (
             f"https://login.microsoftonline.com/{self.tenant_id}"
             f"/oauth2/v2.0/authorize?{query}"

@@ -22,6 +22,8 @@ ENTRA_ENV = {
 def entra_env(monkeypatch):
     for key, value in ENTRA_ENV.items():
         monkeypatch.setenv(key, value)
+    # Don't inherit a local AUTH_COOKIE_SECURE=false from the developer shell.
+    monkeypatch.delenv("AUTH_COOKIE_SECURE", raising=False)
 
 
 def make_request(
@@ -61,6 +63,7 @@ async def test_begin_login_redirects_to_authorize_endpoint_with_pkce(monkeypatch
     assert params["code_challenge_method"] == ["S256"]
     assert "code_challenge" in params
     assert "state" in params
+    assert "prompt" not in params  # omit unless ENTRA_PROMPT is set
     state = params["state"][0]
 
     set_cookie = response.headers["set-cookie"]
@@ -75,6 +78,30 @@ async def test_begin_login_redirects_to_authorize_endpoint_with_pkce(monkeypatch
     assert store_oauth_state.await_args.args[0] == state
     cookie_value = set_cookie.split("on_oauth=", 1)[1].split(";", 1)[0]
     assert cookie_value == state
+
+
+@pytest.mark.asyncio
+async def test_begin_login_includes_entra_prompt_when_configured(monkeypatch):
+    monkeypatch.setenv("ENTRA_PROMPT", "select_account")
+    provider = EntraOIDCProvider()
+    monkeypatch.setattr(entra_module, "store_oauth_state", AsyncMock())
+
+    response = await provider.begin_login(make_request())
+
+    params = parse_qs(urlparse(response.headers["location"]).query)
+    assert params["prompt"] == ["select_account"]
+
+
+@pytest.mark.asyncio
+async def test_begin_login_ignores_invalid_entra_prompt(monkeypatch):
+    monkeypatch.setenv("ENTRA_PROMPT", "not-a-real-prompt")
+    provider = EntraOIDCProvider()
+    monkeypatch.setattr(entra_module, "store_oauth_state", AsyncMock())
+
+    response = await provider.begin_login(make_request())
+
+    params = parse_qs(urlparse(response.headers["location"]).query)
+    assert "prompt" not in params
 
 
 @pytest.mark.asyncio

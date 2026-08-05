@@ -50,7 +50,9 @@ def test_regular_user_cannot_create_credential(monkeypatch):
     )
 
     assert response.status_code == 403
-    assert response.json() == {"detail": "Admin required"}
+    assert response.json() == {
+        "detail": "Administrator access is required for this action"
+    }
 
 
 def test_regular_user_cannot_access_sensitive_routers(monkeypatch):

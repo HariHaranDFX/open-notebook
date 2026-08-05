@@ -30,6 +30,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
   const [output, setOutput] = useState('')
   
   const executeTransformation = useExecuteTransformation()
+  const activeTransformations = transformations?.filter((t) => !t.deleted_at)
 
   const handleExecute = async () => {
     if (!selectedId || !modelId || !inputText.trim()) {
@@ -65,7 +66,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
                   <SelectValue placeholder={t('transformations.selectToStart')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {transformations?.map((transformation) => (
+                  {activeTransformations?.map((transformation) => (
                     <SelectItem key={transformation.id} value={transformation.id}>
                       {transformation.name}
                     </SelectItem>

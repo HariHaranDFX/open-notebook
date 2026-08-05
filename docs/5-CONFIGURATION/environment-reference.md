@@ -33,6 +33,7 @@ Comprehensive list of all environment variables available in Open Notebook.
 | `AUTH_ADMIN_EMAILS` | When `AUTH_PROVIDER=entra` | None | Comma-separated admin email allowlist. Must contain at least one email; all other Entra users receive the `user` role. |
 | `AUTH_COOKIE_SECURE` | No | Auto-detected | Force cookie `Secure` flag: `true`/`false`, `1`/`0`, or `yes`/`no`. |
 | `AUTH_SESSION_HOURS` | No | `8` | Entra session lifetime in hours. |
+| `ENTRA_PROMPT` | No | (omit) | Optional authorize `prompt`: `select_account`, `login`, `consent`, or `none`. |
 | `CLIENT_ID` | No | `default` (Entra), `local` (password) | Deployment identifier stamped on records; distinct from `ENTRA_CLIENT_ID`. |
 
 See [Authentication](../AUTH.md) for Entra app registration, same-origin proxy requirements, and password fallback.
