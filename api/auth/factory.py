@@ -1,0 +1,11 @@
+import os
+
+from api.auth.entra import EntraOIDCProvider
+from api.auth.password import PasswordAuthProvider
+from api.auth.protocol import AuthProvider
+
+
+def build_auth_provider() -> AuthProvider:
+    if (os.getenv("AUTH_PROVIDER") or "password").lower() == "entra":
+        return EntraOIDCProvider()
+    return PasswordAuthProvider()

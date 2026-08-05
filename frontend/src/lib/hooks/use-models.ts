@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { modelsApi } from '@/lib/api/models'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { CreateModelRequest, ModelDefaults, ModelTestResult } from '@/lib/types/models'
 
 export const MODEL_QUERY_KEYS = {
@@ -45,7 +45,7 @@ export function useCreateModel() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -71,7 +71,7 @@ export function useDeleteModel() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -102,7 +102,7 @@ export function useUpdateModelDefaults() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },
@@ -153,7 +153,7 @@ export function useAutoAssignDefaults() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('common.error')),
+        description: getApiErrorMessage(error, (key) => t(key)),
         variant: 'destructive',
       })
     },

@@ -1,11 +1,12 @@
 import json
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
+from api.ownership import filter_search_results_by_owner
 from open_notebook.ai.models import Model, model_manager
 from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.exceptions import (
@@ -19,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/search", response_model=SearchResponse)
-async def search_knowledge_base(search_request: SearchRequest):
+async def search_knowledge_base(search_request: SearchRequest, request: Request):
     """Search the knowledge base using text or vector search."""
     try:
         if search_request.type == "vector":
@@ -46,6 +47,7 @@ async def search_knowledge_base(search_request: SearchRequest):
                 note=search_request.search_notes,
             )
 
+        results = await filter_search_results_by_owner(results or [], request)
         return SearchResponse(
             results=results or [],
             total_count=len(results) if results else 0,

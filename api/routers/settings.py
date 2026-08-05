@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
+from api.auth.deps import require_admin_if_auth
 from api.models import SettingsResponse, SettingsUpdate
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.exceptions import (
@@ -8,7 +9,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_admin_if_auth)])
 
 
 @router.get("/settings", response_model=SettingsResponse)

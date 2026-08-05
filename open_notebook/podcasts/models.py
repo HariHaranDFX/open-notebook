@@ -247,6 +247,10 @@ class PodcastEpisode(ObjectModel):
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands job"
     )
+    user_id: Optional[str] = Field(
+        default=None, description="Owner of the episode (WP2 ownership)"
+    )
+    client_id: Optional[str] = Field(default=None, description="Owner's client id")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -329,11 +333,16 @@ class PodcastEpisode(ObjectModel):
         return value
 
     def _prepare_save_data(self) -> dict:
-        """Override to ensure command field is always RecordID format for database"""
+        """Ensure command/user_id are RecordID format for the database.
+
+        Both fields stay plain str on the model (see Notebook._prepare_save_data
+        for why) and are only coerced here, at the save boundary.
+        """
         data = super()._prepare_save_data()
 
-        # Ensure command field is RecordID format if not None
         if data.get("command") is not None:
             data["command"] = ensure_record_id(data["command"])
+        if data.get("user_id") is not None:
+            data["user_id"] = ensure_record_id(data["user_id"])
 
         return data

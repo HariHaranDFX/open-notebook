@@ -3,7 +3,7 @@ import { notesApi } from '@/lib/api/notes'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { CreateNoteRequest, UpdateNoteRequest } from '@/lib/types/api'
 
 export function useNotes(notebookId?: string) {
@@ -42,7 +42,7 @@ export function useCreateNote() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('notebooks.failedToCreateNote')),
+        description: getApiErrorMessage(error, (key) => t(key), 'notebooks.failedToCreateNote'),
         variant: 'destructive',
       })
     },
@@ -68,7 +68,7 @@ export function useUpdateNote() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('notebooks.failedToUpdateNote')),
+        description: getApiErrorMessage(error, (key) => t(key), 'notebooks.failedToUpdateNote'),
         variant: 'destructive',
       })
     },
@@ -93,7 +93,7 @@ export function useDeleteNote() {
     onError: (error: unknown) => {
       toast({
         title: t('common.error'),
-        description: getApiErrorKey(error, t('notebooks.failedToDeleteNote')),
+        description: getApiErrorMessage(error, (key) => t(key), 'notebooks.failedToDeleteNote'),
         variant: 'destructive',
       })
     },

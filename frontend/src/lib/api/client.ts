@@ -27,6 +27,12 @@ export const apiClient = axios.create({
   withCredentials: false,
 })
 
+// Entra (cookie-session) mode authenticates via a first-party session cookie,
+// not a bearer token — see setEntraAuthMode(). Password mode is the default.
+export function setEntraAuthMode(enabled: boolean): void {
+  apiClient.defaults.withCredentials = enabled
+}
+
 // Request interceptor to add base URL and auth header
 apiClient.interceptors.request.use(async (config) => {
   // Set the base URL dynamically from runtime config
@@ -35,9 +41,14 @@ apiClient.interceptors.request.use(async (config) => {
     config.baseURL = `${apiUrl}/api`
   }
 
-  const token = getAuthToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  // withCredentials is true only in Entra mode (set via setEntraAuthMode).
+  // Axios merges defaults into config before interceptors run, so this
+  // reflects the current mode even though it isn't set on this request.
+  if (!config.withCredentials) {
+    const token = getAuthToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
   }
 
   // Handle FormData vs JSON content types
@@ -55,11 +66,16 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth and redirect to login
-      if (typeof window !== 'undefined') {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const url = String(error.config?.url ?? '')
+      // Session probes expect 401 when logged out. Hard-redirecting here
+      // reloads /login forever (checkAuth → 401 → location=/login → …).
+      const isAuthProbe = /\/auth\/(me|status)(?:\?|$)/.test(url)
+      if (!isAuthProbe) {
         localStorage.removeItem('auth-storage')
-        window.location.href = '/login'
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
       }
     }
     return Promise.reject(error)

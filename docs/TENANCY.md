@@ -58,7 +58,9 @@ decision.
 
 - **WP2 (auth):** users belong to one instance. Add `user_id` and `client_id` to
   notebooks/sources — `client_id` is effectively constant per deployment, kept
-  for future optionality.
+  for future optionality. **Owner-only visibility in WP2;** sharing to users,
+  groups, and admin allocation are **WP2b** — see
+  [PDR-003](7-DEVELOPMENT/decisions/PDR-003-per-user-ownership-and-sharing.md).
 - **WP3 (theming):** brand config is resolved **once at app startup** from a
   per-deployment source (`BRAND_CONFIG_PATH` or `/config/brand`), not per request.
 - **WP5 (connectors):** OAuth tokens are stored per user within the instance.

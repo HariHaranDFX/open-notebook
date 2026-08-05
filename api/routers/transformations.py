@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from api.models import (
@@ -12,6 +12,19 @@ from api.models import (
     TransformationResponse,
     TransformationUpdate,
 )
+from api.transformation_access import (
+    access_flags,
+    assert_can_delete,
+    assert_can_edit,
+    assert_can_edit_default_prompt,
+    assert_can_restore,
+    assert_can_view,
+    current_user_for_transformations,
+    list_visible_transformations,
+    restore_builtin,
+    soft_delete_builtin,
+    stamp_on_create,
+)
 from open_notebook.ai.models import Model
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.exceptions import InvalidInputError, OpenNotebookError
@@ -20,7 +33,14 @@ from open_notebook.graphs.transformation import graph as transformation_graph
 router = APIRouter()
 
 
-def _transformation_response(transformation: Transformation) -> TransformationResponse:
+def _transformation_response(
+    transformation: Transformation, request: Request
+) -> TransformationResponse:
+    user = current_user_for_transformations(request)
+    can_edit, can_delete, can_restore = access_flags(transformation, user)
+    deleted_at = (
+        str(transformation.deleted_at) if transformation.deleted_at is not None else None
+    )
     return TransformationResponse(
         id=transformation.id or "",
         name=transformation.name,
@@ -29,19 +49,24 @@ def _transformation_response(transformation: Transformation) -> TransformationRe
         prompt=transformation.prompt,
         apply_default=transformation.apply_default,
         model_id=transformation.model_id,
+        user_id=transformation.user_id,
+        is_builtin=transformation.is_builtin,
+        deleted_at=deleted_at,
+        can_edit=can_edit,
+        can_delete=can_delete,
+        can_restore=can_restore,
         created=str(transformation.created),
         updated=str(transformation.updated),
     )
 
 
 @router.get("/transformations", response_model=List[TransformationResponse])
-async def get_transformations():
-    """Get all transformations."""
+async def get_transformations(request: Request):
+    """List shared + own personal transformations (admins see soft-deleted builtins)."""
     try:
-        transformations = await Transformation.get_all(order_by="name asc")
-
+        transformations = await list_visible_transformations(request)
         return [
-            _transformation_response(transformation)
+            _transformation_response(transformation, request)
             for transformation in transformations
         ]
     except HTTPException:
@@ -56,11 +81,11 @@ async def get_transformations():
 
 
 @router.post("/transformations", response_model=TransformationResponse)
-async def create_transformation(transformation_data: TransformationCreate):
-    """Create a new transformation."""
+async def create_transformation(
+    request: Request, transformation_data: TransformationCreate
+):
+    """Create a transformation (admin → shared; user → personal)."""
     try:
-        # Reject unknown model references up front (same check as execute);
-        # otherwise an invalid model_id is stored and only fails at run time.
         if transformation_data.model_id:
             model = await Model.get(transformation_data.model_id)
             if not model:
@@ -74,9 +99,10 @@ async def create_transformation(transformation_data: TransformationCreate):
             apply_default=transformation_data.apply_default,
             model_id=transformation_data.model_id,
         )
+        stamp_on_create(new_transformation, current_user_for_transformations(request))
         await new_transformation.save()
 
-        return _transformation_response(new_transformation)
+        return _transformation_response(new_transformation, request)
     except HTTPException:
         raise
     except InvalidInputError as e:
@@ -91,26 +117,23 @@ async def create_transformation(transformation_data: TransformationCreate):
 
 
 @router.post("/transformations/execute", response_model=TransformationExecuteResponse)
-async def execute_transformation(execute_request: TransformationExecuteRequest):
+async def execute_transformation(
+    request: Request, execute_request: TransformationExecuteRequest
+):
     """Execute a transformation on input text."""
     try:
-        # Validate transformation exists
         transformation = await Transformation.get(execute_request.transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
+        assert_can_view(transformation, request)
 
         model_id = execute_request.model_id or transformation.model_id
 
-        # Validate explicit or transformation-specific model exists.
-        # None is allowed so the graph can use the configured transformation default.
         if model_id:
             model = await Model.get(model_id)
             if not model:
                 raise HTTPException(status_code=404, detail="Model not found")
 
-        # Execute the transformation.
-        # LangGraph accepts a partial state dict at runtime, but its typed
-        # overloads require the full state type (langgraph typing limitation).
         result = await transformation_graph.ainvoke(  # type: ignore[call-overload]
             dict(
                 input_text=execute_request.input_text,
@@ -128,7 +151,7 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
     except HTTPException:
         raise
     except OpenNotebookError:
-        raise  # Let global exception handlers return proper status codes
+        raise
     except Exception as e:
         logger.error(f"Error executing transformation: {str(e)}")
         raise HTTPException(
@@ -158,9 +181,11 @@ async def get_default_prompt():
 
 
 @router.put("/transformations/default-prompt", response_model=DefaultPromptResponse)
-async def update_default_prompt(prompt_update: DefaultPromptUpdate):
-    """Update the default transformation prompt."""
+async def update_default_prompt(request: Request, prompt_update: DefaultPromptUpdate):
+    """Update the default transformation prompt (admin only when auth is on)."""
     try:
+        assert_can_edit_default_prompt(request)
+
         default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
 
         default_prompts.transformation_instructions = (
@@ -182,17 +207,42 @@ async def update_default_prompt(prompt_update: DefaultPromptUpdate):
         )
 
 
+@router.post(
+    "/transformations/{transformation_id}/restore",
+    response_model=TransformationResponse,
+)
+async def restore_transformation(transformation_id: str, request: Request):
+    """Restore a soft-deleted builtin transformation (admin only)."""
+    try:
+        transformation = await Transformation.get(transformation_id)
+        if not transformation:
+            raise HTTPException(status_code=404, detail="Transformation not found")
+        assert_can_restore(transformation, request)
+        await restore_builtin(transformation)
+        return _transformation_response(transformation, request)
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        logger.error(f"Error restoring transformation {transformation_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error restoring transformation: {str(e)}"
+        )
+
+
 @router.get(
     "/transformations/{transformation_id}", response_model=TransformationResponse
 )
-async def get_transformation(transformation_id: str):
+async def get_transformation(transformation_id: str, request: Request):
     """Get a specific transformation by ID."""
     try:
         transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
+        assert_can_view(transformation, request)
 
-        return _transformation_response(transformation)
+        return _transformation_response(transformation, request)
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -208,15 +258,17 @@ async def get_transformation(transformation_id: str):
     "/transformations/{transformation_id}", response_model=TransformationResponse
 )
 async def update_transformation(
-    transformation_id: str, transformation_update: TransformationUpdate
+    transformation_id: str,
+    transformation_update: TransformationUpdate,
+    request: Request,
 ):
     """Update a transformation."""
     try:
         transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
+        assert_can_edit(transformation, request)
 
-        # Update only provided fields
         if transformation_update.name is not None:
             transformation.name = transformation_update.name
         if transformation_update.title is not None:
@@ -228,7 +280,6 @@ async def update_transformation(
         if transformation_update.apply_default is not None:
             transformation.apply_default = transformation_update.apply_default
         if "model_id" in transformation_update.model_fields_set:
-            # Validate a newly supplied model reference (allow clearing to None).
             if transformation_update.model_id:
                 model = await Model.get(transformation_update.model_id)
                 if not model:
@@ -237,7 +288,7 @@ async def update_transformation(
 
         await transformation.save()
 
-        return _transformation_response(transformation)
+        return _transformation_response(transformation, request)
     except HTTPException:
         raise
     except InvalidInputError as e:
@@ -252,15 +303,19 @@ async def update_transformation(
 
 
 @router.delete("/transformations/{transformation_id}")
-async def delete_transformation(transformation_id: str):
-    """Delete a transformation."""
+async def delete_transformation(transformation_id: str, request: Request):
+    """Delete a transformation (builtins soft-delete; others hard-delete)."""
     try:
         transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
+        assert_can_delete(transformation, request)
+
+        if transformation.is_builtin:
+            await soft_delete_builtin(transformation)
+            return {"message": "Transformation archived successfully"}
 
         await transformation.delete()
-
         return {"message": "Transformation deleted successfully"}
     except HTTPException:
         raise

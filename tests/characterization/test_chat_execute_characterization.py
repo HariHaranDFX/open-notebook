@@ -47,7 +47,9 @@ def chat_env():
         patch(
             "api.routers.chat.get_session_or_404", new_callable=AsyncMock
         ) as mock_session,
-        patch("api.routers.chat.repo_query", new_callable=AsyncMock) as mock_query,
+        patch(
+            "api.routers._chat_shared.repo_query", new_callable=AsyncMock
+        ) as mock_query,
         patch("api.routers.chat.Notebook.get", new_callable=AsyncMock) as mock_nb,
         patch("api.routers.chat.chat_graph") as mock_graph,
     ):

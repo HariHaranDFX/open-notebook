@@ -56,7 +56,7 @@ CASES = [
     ("search", "api.routers.search.text_search", "POST", "/api/search", {"query": "hello", "type": "text"}),
     ("settings", "api.routers.settings.ContentSettings.get_instance", "GET", "/api/settings", None),
     ("speaker_profiles", "api.routers.speaker_profiles.SpeakerProfile.get_all", "GET", "/api/speaker-profiles", None),
-    ("transformations", "api.routers.transformations.Transformation.get_all", "GET", "/api/transformations", None),
+    ("transformations", "api.routers.transformations.list_visible_transformations", "GET", "/api/transformations", None),
 ]
 
 

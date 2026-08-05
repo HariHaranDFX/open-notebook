@@ -1,11 +1,14 @@
 """
 Authentication router for Open Notebook API.
-Provides endpoints to check authentication status.
+Provides authentication status and session endpoints.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
+from starlette.responses import Response
 
-from open_notebook.utils.encryption import get_secret_from_env
+from api.auth.deps import require_user
+from api.auth.factory import build_auth_provider
+from api.auth.types import AuthenticatedUser
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -14,14 +17,35 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def get_auth_status():
     """
     Check if authentication is enabled.
-    Returns whether a password is required to access the API.
-    Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
+    Returns the configured provider and whether it requires authentication.
     """
-    auth_enabled = bool(get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"))
+    provider = build_auth_provider()
 
     return {
-        "auth_enabled": auth_enabled,
-        "message": "Authentication is required"
-        if auth_enabled
-        else "Authentication is disabled",
+        "auth_enabled": provider.auth_enabled(),
+        "provider": provider.name if provider.name in {"password", "entra"} else "password",
     }
+
+
+@router.get("/me")
+async def get_current_user(
+    user: AuthenticatedUser = Depends(require_user),
+) -> AuthenticatedUser:
+    return user
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    request: Request, _: AuthenticatedUser = Depends(require_user)
+) -> Response:
+    return await build_auth_provider().logout(request)
+
+
+@router.get("/login")
+async def login(request: Request) -> Response:
+    return await build_auth_provider().begin_login(request)
+
+
+@router.get("/callback")
+async def callback(request: Request) -> Response:
+    return await build_auth_provider().handle_callback(request)

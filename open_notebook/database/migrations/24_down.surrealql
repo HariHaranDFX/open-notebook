@@ -1,0 +1,8 @@
+-- Migration 24 rollback: remove user identity, auth session, and ownership schema.
+
+REMOVE FIELD IF EXISTS user_id ON TABLE notebook;
+REMOVE FIELD IF EXISTS client_id ON TABLE notebook;
+REMOVE FIELD IF EXISTS user_id ON TABLE source;
+REMOVE FIELD IF EXISTS client_id ON TABLE source;
+REMOVE TABLE IF EXISTS auth_session;
+REMOVE TABLE IF EXISTS user;

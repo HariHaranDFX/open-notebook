@@ -6,12 +6,14 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ShieldAlert, AlertTriangle, ArrowRight, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { useCredentialStatus, useEnvStatus } from '@/lib/hooks/use-credentials'
 
 export function SetupBanner() {
   const { t } = useTranslation()
-  const { data: credentialStatus } = useCredentialStatus()
-  const { data: envStatus } = useEnvStatus()
+  const { isAdmin } = useAuth()
+  const { data: credentialStatus } = useCredentialStatus({ enabled: isAdmin })
+  const { data: envStatus } = useEnvStatus({ enabled: isAdmin })
 
   const encryptionReady = credentialStatus?.encryption_configured ?? true
 
@@ -25,6 +27,10 @@ export function SetupBanner() {
     }
     return providers
   }, [envStatus, credentialStatus])
+
+  if (!isAdmin) {
+    return null
+  }
 
   if (encryptionReady && providersToMigrate.length === 0) {
     return null

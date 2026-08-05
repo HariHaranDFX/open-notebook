@@ -1,3 +1,6 @@
+/**
+ * Utility to map backend English error messages to i18n keys.
+ */
 import { isAxiosError } from 'axios'
 
 /**
@@ -6,6 +9,10 @@ import { isAxiosError } from 'axios'
  */
 export function isNotFoundError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 404
+}
+
+function responseStatus(error: unknown): number | undefined {
+  return isAxiosError(error) ? error.response?.status : undefined
 }
 
 /**
@@ -35,30 +42,45 @@ export const ERROR_MAP: Record<string, string> = {
   "Answer model": "apiErrors.answerModelNotFound",
   "Final answer model": "apiErrors.finalAnswerModelNotFound",
   "No answer generated": "apiErrors.noAnswerGenerated",
+  "Administrator access is required for this action": "apiErrors.adminRequired",
+  "Only an administrator can edit shared transformations": "apiErrors.transformationEditShared",
+  "You can only edit your own transformations": "apiErrors.transformationEditOwn",
+  "Only an administrator can delete shared transformations": "apiErrors.transformationDeleteShared",
+  "You can only delete your own transformations": "apiErrors.transformationDeleteOwn",
+  "Only an administrator can restore built-in transformations": "apiErrors.transformationRestoreAdmin",
+  "Only an administrator can edit the default transformation prompt": "apiErrors.transformationDefaultPromptAdmin",
+  "CSRF origin check failed": "apiErrors.csrfFailed",
+  "Not authenticated": "apiErrors.unauthorized",
 };
+
+function mappedKey(message: string): string | undefined {
+  if (ERROR_MAP[message]) return ERROR_MAP[message]
+  for (const [key, value] of Object.entries(ERROR_MAP)) {
+    if (message.startsWith(key)) return value
+  }
+  return undefined
+}
 
 /**
  * Translates a backend error message using the ERROR_MAP.
  * If no mapping exists, returns the fallback key or generic error key.
  */
 export function getApiErrorKey(errorOrMessage: unknown, fallbackKey?: string): string {
-  const message = formatApiError(errorOrMessage);
-  
-  if (!message) return fallbackKey || "apiErrors.genericError";
+  const message = formatApiError(errorOrMessage)
 
-  // Try exact match first
-  if (ERROR_MAP[message]) {
-    return ERROR_MAP[message];
+  if (!message) {
+    if (responseStatus(errorOrMessage) === 403) return fallbackKey || "apiErrors.forbidden"
+    return fallbackKey || "apiErrors.genericError"
   }
 
-  // Try partial match for dynamic messages (e.g., "File upload failed: ...")
-  for (const [key, value] of Object.entries(ERROR_MAP)) {
-    if (message.startsWith(key)) {
-      return value;
-    }
+  const key = mappedKey(message)
+  if (key) return key
+
+  if (responseStatus(errorOrMessage) === 403) {
+    return fallbackKey || "apiErrors.forbidden"
   }
 
-  return fallbackKey || "apiErrors.genericError";
+  return fallbackKey || "apiErrors.genericError"
 }
 
 /**
@@ -71,33 +93,43 @@ export function getApiErrorMessage(
   t: (key: string) => string,
   fallbackKey?: string
 ): string {
-  const message = formatApiError(errorOrMessage);
-  if (!message) return fallbackKey ? t(fallbackKey) : t("apiErrors.genericError");
+  const message = formatApiError(errorOrMessage)
+  if (!message) {
+    if (responseStatus(errorOrMessage) === 403) {
+      return t(fallbackKey || "apiErrors.forbidden")
+    }
+    return fallbackKey ? t(fallbackKey) : t("apiErrors.genericError")
+  }
 
-  // Try exact match
-  if (ERROR_MAP[message]) return t(ERROR_MAP[message]);
+  const key = mappedKey(message)
+  if (key) return t(key)
 
-  // Try partial match for dynamic messages (e.g., "Strategy model ...")
-  for (const [key, value] of Object.entries(ERROR_MAP)) {
-    if (message.startsWith(key)) return t(value);
+  if (responseStatus(errorOrMessage) === 403) {
+    return t(fallbackKey || "apiErrors.forbidden")
   }
 
   // No mapping: return backend message directly (backend is responsible for making it user-friendly)
-  return message;
+  return message
 }
 
 /**
  * Formats a raw error from the API into a user-friendly (potentially translated) string.
  */
 export function formatApiError(error: unknown): string {
-  if (typeof error === 'string') return error;
-  
-  const err = error as { response?: { data?: { detail?: string } }, detail?: string, message?: string };
-  const detail = err?.response?.data?.detail || err?.detail || err?.message;
-  
-  if (typeof detail === 'string') {
-    return detail; // We'll handle the actual translation using the key in the hook/component
+  if (typeof error === 'string') return error
+
+  if (isAxiosError(error)) {
+    const detail = error.response?.data?.detail
+    if (typeof detail === 'string') return detail
+    if (typeof error.message === 'string' && error.message) return error.message
   }
-  
-  return "An unexpected error occurred";
+
+  const err = error as { response?: { data?: { detail?: string } }, detail?: string, message?: string }
+  const detail = err?.response?.data?.detail || err?.detail || err?.message
+
+  if (typeof detail === 'string') {
+    return detail
+  }
+
+  return ""
 }

@@ -1,0 +1,8 @@
+-- Migration 26: Add ownership columns to episode (WP2 ownership gap fix).
+--
+-- Podcast episodes had no owner link, so the API could neither require an
+-- owned notebook_id at generation time nor filter the episode list by
+-- ownership. Mirrors the notebook/source columns from migration 24.
+
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE episode TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS client_id ON TABLE episode TYPE option<string>;

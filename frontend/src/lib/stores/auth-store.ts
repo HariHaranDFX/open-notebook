@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import apiClient from '@/lib/api/client'
+import apiClient, { setEntraAuthMode } from '@/lib/api/client'
 import { getApiUrl } from '@/lib/config'
+import type { AuthProvider, UserRole } from '@/lib/types/auth'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -13,11 +14,25 @@ interface AuthState {
   isCheckingAuth: boolean
   hasHydrated: boolean
   authRequired: boolean | null
+  provider: AuthProvider
+  role: UserRole | null
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
+}
+
+function roleFromMe(data: unknown): UserRole {
+  if (
+    data &&
+    typeof data === 'object' &&
+    'role' in data &&
+    (data as { role: unknown }).role === 'admin'
+  ) {
+    return 'admin'
+  }
+  return 'user'
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +46,8 @@ export const useAuthStore = create<AuthState>()(
       isCheckingAuth: false,
       hasHydrated: false,
       authRequired: null,
+      provider: 'password',
+      role: null,
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
@@ -38,16 +55,29 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuthRequired: async () => {
         try {
-          const response = await apiClient.get<{ auth_enabled?: boolean }>('/auth/status', {
+          const response = await apiClient.get<{ auth_enabled?: boolean; provider?: AuthProvider }>('/auth/status', {
             headers: { 'Cache-Control': 'no-store' },
           })
 
           const required = response.data.auth_enabled || false
-          set({ authRequired: required })
+          const provider: AuthProvider = response.data.provider === 'entra' ? 'entra' : 'password'
+          setEntraAuthMode(provider === 'entra')
+          // When auth is required, mark checking immediately so the dashboard
+          // does not redirect to /login before checkAuth() finishes (/auth/me).
+          set({
+            authRequired: required,
+            provider,
+            isCheckingAuth: required,
+          })
 
           // If auth is not required, mark as authenticated
           if (!required) {
-            set({ isAuthenticated: true, token: 'not-required' })
+            set({
+              isAuthenticated: true,
+              token: 'not-required',
+              isCheckingAuth: false,
+              role: 'admin',
+            })
           }
 
           return required
@@ -58,11 +88,12 @@ export const useAuthStore = create<AuthState>()(
           if (axios.isAxiosError(error) && !error.response) {
             set({
               error: 'Unable to connect to server. Please check if the API is running.',
-              authRequired: null  // Don't assume auth is required if we can't connect
+              authRequired: null,  // Don't assume auth is required if we can't connect
+              isCheckingAuth: false,
             })
           } else {
             // For other errors, default to requiring auth to be safe
-            set({ authRequired: true })
+            set({ authRequired: true, isCheckingAuth: true })
           }
 
           // Re-throw the error so the UI can handle it
@@ -92,7 +123,9 @@ export const useAuthStore = create<AuthState>()(
               token: password, 
               isLoading: false,
               lastAuthCheck: Date.now(),
-              error: null
+              error: null,
+              // Password provider always elevates to admin (see api/auth/password.py).
+              role: 'admin',
             })
             return true
           } else {
@@ -111,7 +144,8 @@ export const useAuthStore = create<AuthState>()(
               error: errorMessage,
               isLoading: false,
               isAuthenticated: false,
-              token: null
+              token: null,
+              role: null,
             })
             return false
           }
@@ -131,37 +165,93 @@ export const useAuthStore = create<AuthState>()(
             error: errorMessage,
             isLoading: false,
             isAuthenticated: false,
-            token: null
+            token: null,
+            role: null,
           })
           return false
         }
       },
       
-      logout: () => {
-        set({ 
-          isAuthenticated: false, 
-          token: null, 
-          error: null 
+      logout: async () => {
+        const { provider } = get()
+
+        if (provider === 'entra') {
+          try {
+            // apiClient carries withCredentials for Entra mode and resolves
+            // baseURL through the same-origin Next rewrite (see client.ts),
+            // so the session cookie's Origin matches — safe to POST here.
+            await apiClient.post('/auth/logout')
+          } catch (error) {
+            console.error('Entra logout request failed:', error)
+          }
+          set({
+            isAuthenticated: false,
+            token: null,
+            error: null,
+            lastAuthCheck: null,
+            isCheckingAuth: false,
+            role: null,
+          })
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
+          return
+        }
+
+        set({
+          isAuthenticated: false,
+          token: null,
+          error: null,
+          lastAuthCheck: null,
+          role: null,
         })
       },
       
       checkAuth: async () => {
         const state = get()
-        const { token, lastAuthCheck, isCheckingAuth, isAuthenticated } = state
+        const { token, lastAuthCheck, isAuthenticated, provider } = state
 
-        // If already checking, return current auth state
-        if (isCheckingAuth) {
-          return isAuthenticated
+        if (provider === 'entra') {
+          const now = Date.now()
+          if (isAuthenticated && lastAuthCheck && (now - lastAuthCheck) < 30000) {
+            set({ isCheckingAuth: false })
+            return true
+          }
+
+          set({ isCheckingAuth: true })
+          try {
+            // Cookie-session check: apiClient sends the session cookie via
+            // withCredentials, no bearer token involved.
+            const response = await apiClient.get('/auth/me')
+            set({
+              isAuthenticated: true,
+              lastAuthCheck: now,
+              isCheckingAuth: false,
+              role: roleFromMe(response.data),
+            })
+            return true
+          } catch (error) {
+            console.error('Entra checkAuth error:', error)
+            set({
+              isAuthenticated: false,
+              lastAuthCheck: null,
+              isCheckingAuth: false,
+              role: null,
+            })
+            return false
+          }
         }
 
         // If no token, not authenticated
         if (!token) {
+          set({ isCheckingAuth: false })
           return false
         }
 
         // If we checked recently (within 30 seconds) and are authenticated, skip
         const now = Date.now()
         if (isAuthenticated && lastAuthCheck && (now - lastAuthCheck) < 30000) {
+          set({ isCheckingAuth: false })
           return true
         }
 
@@ -184,7 +274,8 @@ export const useAuthStore = create<AuthState>()(
             set({ 
               isAuthenticated: true, 
               lastAuthCheck: now,
-              isCheckingAuth: false 
+              isCheckingAuth: false,
+              role: 'admin',
             })
             return true
           } else {
@@ -192,7 +283,8 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               lastAuthCheck: null,
-              isCheckingAuth: false
+              isCheckingAuth: false,
+              role: null,
             })
             return false
           }
@@ -202,7 +294,8 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false, 
             token: null,
             lastAuthCheck: null,
-            isCheckingAuth: false 
+            isCheckingAuth: false,
+            role: null,
           })
           return false
         }
@@ -210,9 +303,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Persist only the password token. isAuthenticated must not be restored
+      // from localStorage — for Entra the httpOnly cookie is the source of
+      // truth, and a stale false/true flag races the dashboard into /login.
       partialize: (state) => ({
         token: state.token,
-        isAuthenticated: state.isAuthenticated
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

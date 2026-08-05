@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { isNavItemActive } from '@/components/layout/nav-active'
 import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
@@ -66,10 +67,10 @@ const getNavigation = (t: TFunction) => [
   {
     title: t('navigation.manage'),
     items: [
-      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot },
+      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, adminOnly: true },
       { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle },
-      { name: t('navigation.settings'), href: '/settings', icon: Settings },
-      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench },
+      { name: t('navigation.settings'), href: '/settings', icon: Settings, adminOnly: true },
+      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, adminOnly: true },
     ],
   },
 ] as const
@@ -78,9 +79,17 @@ type CreateTarget = 'source' | 'notebook' | 'podcast'
 
 export function AppSidebar() {
   const { t } = useTranslation()
+  const { logout, isAdmin } = useAuth()
   const navigation = getNavigation(t)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => isAdmin || !('adminOnly' in item && item.adminOnly)
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
   const pathname = usePathname()
-  const { logout } = useAuth()
+  const navHrefs = navigation.flatMap((section) => section.items.map((item) => item.href))
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
 
@@ -253,7 +262,7 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname?.startsWith(item.href) || false
+                  const isActive = isNavItemActive(pathname, item.href, navHrefs)
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}

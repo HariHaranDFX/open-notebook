@@ -75,11 +75,31 @@ def parse_record_ids(obj: Any) -> Any:
     return obj
 
 
+# SurrealDB wraps special characters in record-id strings with these brackets
+# when stringifying a RecordID (e.g. user:password-local -> user:⟨password-local⟩).
+# Feeding that string back into RecordID.parse() without peeling double-escapes
+# and corrupts ownership links on every subsequent save.
+_SURREAL_ID_OPEN = "\u27e8"  # ⟨
+_SURREAL_ID_CLOSE = "\u27e9"  # ⟩
+
+
+def canonicalize_record_id_string(value: str) -> str:
+    """Undo str(RecordID) ⟨⟩ wrapping so RecordID.parse can round-trip."""
+    table, sep, rest = value.partition(":")
+    if not sep:
+        return value
+    while rest.startswith(_SURREAL_ID_OPEN) and rest.endswith(_SURREAL_ID_CLOSE):
+        rest = rest[1:-1]
+        if rest.endswith("\\"):
+            rest = rest[:-1]
+    return f"{table}:{rest.rstrip(chr(92))}"
+
+
 def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
     """Ensure a value is a RecordID."""
     if isinstance(value, RecordID):
         return value
-    return RecordID.parse(value)
+    return RecordID.parse(canonicalize_record_id_string(value))
 
 
 @asynccontextmanager

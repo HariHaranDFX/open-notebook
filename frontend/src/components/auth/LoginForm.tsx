@@ -16,7 +16,14 @@ export function LoginForm() {
   const { t, language } = useTranslation()
   const [password, setPassword] = useState('')
   const { login, isLoading, error } = useAuth()
-  const { authRequired, checkAuthRequired, hasHydrated, isAuthenticated } = useAuthStore()
+  const {
+    authRequired,
+    checkAuthRequired,
+    checkAuth,
+    hasHydrated,
+    isAuthenticated,
+    provider,
+  } = useAuthStore()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
   const router = useRouter()
@@ -34,19 +41,35 @@ export function LoginForm() {
     })
   }, [])
 
-  // Check if authentication is required on mount
+  // Check if authentication is required on mount; for Entra also probe the
+  // session cookie so a successful OAuth callback that soft-landed on /login
+  // still continues into the app.
   useEffect(() => {
     if (!hasHydrated) {
       return
     }
 
-    const checkAuth = async () => {
+    const checkAuthRequirement = async () => {
       try {
         const required = await checkAuthRequired()
 
-        // If auth is not required, redirect to notebooks
         if (!required) {
           router.push('/notebooks')
+          return
+        }
+
+        if (useAuthStore.getState().provider === 'entra') {
+          const ok = await checkAuth()
+          if (ok) {
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin')
+            if (redirectPath) {
+              sessionStorage.removeItem('redirectAfterLogin')
+              router.push(redirectPath)
+            } else {
+              router.push('/notebooks')
+            }
+            return
+          }
         }
       } catch (error) {
         console.error('Error checking auth requirement:', error)
@@ -60,13 +83,26 @@ export function LoginForm() {
     if (authRequired !== null) {
       if (!authRequired && isAuthenticated) {
         router.push('/notebooks')
+        setIsCheckingAuth(false)
+      } else if (authRequired && provider === 'entra') {
+        void (async () => {
+          try {
+            const ok = await checkAuth()
+            if (ok) {
+              router.push('/notebooks')
+              return
+            }
+          } finally {
+            setIsCheckingAuth(false)
+          }
+        })()
       } else {
         setIsCheckingAuth(false)
       }
     } else {
-      void checkAuth()
+      void checkAuthRequirement()
     }
-  }, [hasHydrated, authRequired, checkAuthRequired, router, isAuthenticated])
+  }, [hasHydrated, authRequired, checkAuthRequired, checkAuth, router, isAuthenticated, provider])
 
   // Show loading while checking if auth is required
   if (!hasHydrated || isCheckingAuth) {
@@ -135,6 +171,31 @@ export function LoginForm() {
         // The auth store should handle most errors, but this catches any unhandled ones
       }
     }
+  }
+
+  if (provider === 'entra') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>{t('auth.loginTitle')}</CardTitle>
+            <CardDescription>{t('auth.entraLoginDesc')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              className="w-full"
+              // Relative URL: must resolve through the page origin (Next
+              // rewrite → FastAPI), not a cross-origin API host, so the
+              // provider's Set-Cookie on callback lands as first-party.
+              onClick={() => { window.location.href = '/api/auth/login' }}
+            >
+              {t('auth.signInWithMicrosoft')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

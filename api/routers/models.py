@@ -3,10 +3,11 @@ import traceback
 from typing import Dict, List, Optional
 
 from esperanto import AIFactory
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 from pydantic import BaseModel
 
+from api.auth.deps import require_admin_if_auth
 from api.models import (
     DefaultModelsResponse,
     ModelCreate,
@@ -202,7 +203,11 @@ async def get_models(
         raise HTTPException(status_code=500, detail=f"Error fetching models: {str(e)}")
 
 
-@router.post("/models", response_model=ModelResponse)
+@router.post(
+    "/models",
+    response_model=ModelResponse,
+    dependencies=[Depends(require_admin_if_auth)],
+)
 async def create_model(model_data: ModelCreate):
     """Create a new model configuration."""
     try:
@@ -259,7 +264,9 @@ async def create_model(model_data: ModelCreate):
         raise HTTPException(status_code=500, detail=f"Error creating model: {str(e)}")
 
 
-@router.delete("/models/{model_id}")
+@router.delete(
+    "/models/{model_id}", dependencies=[Depends(require_admin_if_auth)]
+)
 async def delete_model(model_id: str):
     """Delete a model configuration."""
     try:
@@ -336,7 +343,11 @@ async def get_default_models():
 REQUIRED_DEFAULTS = {"default_chat_model", "default_embedding_model"}
 
 
-@router.put("/models/defaults", response_model=DefaultModelsResponse)
+@router.put(
+    "/models/defaults",
+    response_model=DefaultModelsResponse,
+    dependencies=[Depends(require_admin_if_auth)],
+)
 async def update_default_models(defaults_data: DefaultModelsResponse):
     """Update default model assignments.
 
@@ -566,7 +577,11 @@ async def discover_models(provider: str):
         )
 
 
-@router.post("/models/sync/{provider}", response_model=ProviderSyncResponse)
+@router.post(
+    "/models/sync/{provider}",
+    response_model=ProviderSyncResponse,
+    dependencies=[Depends(require_admin_if_auth)],
+)
 async def sync_models(provider: str):
     """
     Sync models for a specific provider.
@@ -597,7 +612,11 @@ async def sync_models(provider: str):
         raise HTTPException(status_code=500, detail="Error syncing models. Check server logs for details.")
 
 
-@router.post("/models/sync", response_model=AllProvidersSyncResponse)
+@router.post(
+    "/models/sync",
+    response_model=AllProvidersSyncResponse,
+    dependencies=[Depends(require_admin_if_auth)],
+)
 async def sync_all_models():
     """
     Sync models for all configured providers.
@@ -748,7 +767,11 @@ def _get_preferred_model(
     return models[0] if models else None
 
 
-@router.post("/models/auto-assign", response_model=AutoAssignResult)
+@router.post(
+    "/models/auto-assign",
+    response_model=AutoAssignResult,
+    dependencies=[Depends(require_admin_if_auth)],
+)
 async def auto_assign_defaults():
     """
     Auto-assign default models based on available models.

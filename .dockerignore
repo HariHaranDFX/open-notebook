@@ -27,6 +27,8 @@ frontend/*.log
 .claude
 .antigravity
 .gemini
+.superpowers
+.review-diffstat.txt
 tmp
 data
 mydata

@@ -1,16 +1,19 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
 
+from api.auth.deps import current_user_optional
+from api.ownership import assert_owner_or_404, filter_owned_or_hidden
 from api.podcast_service import (
     PodcastGenerationRequest,
     PodcastGenerationResponse,
     PodcastService,
 )
 from open_notebook.ai.models import Model
+from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
 from open_notebook.podcasts.models import PodcastEpisode
@@ -122,12 +125,17 @@ class PodcastEpisodeResponse(BaseModel):
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
-async def generate_podcast(request: PodcastGenerationRequest):
+async def generate_podcast(request: PodcastGenerationRequest, http_request: Request):
     """
     Generate a podcast episode using Episode Profiles.
     Returns immediately with job ID for status tracking.
     """
     try:
+        if request.notebook_id:
+            notebook = await Notebook.get(request.notebook_id)
+            assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
+
+        user = current_user_optional(http_request)
         job_id = await PodcastService.submit_generation_job(
             episode_profile_name=request.episode_profile,
             speaker_profile_name=request.speaker_profile,
@@ -135,6 +143,8 @@ async def generate_podcast(request: PodcastGenerationRequest):
             notebook_id=request.notebook_id,
             content=request.content,
             briefing_suffix=request.briefing_suffix,
+            user_id=user.id if user else None,
+            client_id=user.client_id if user else None,
         )
 
         return PodcastGenerationResponse(
@@ -175,10 +185,13 @@ async def get_podcast_job_status(job_id: str):
 
 
 @router.get("/podcasts/episodes", response_model=List[PodcastEpisodeResponse])
-async def list_podcast_episodes():
+async def list_podcast_episodes(request: Request):
     """List all podcast episodes"""
     try:
         episodes = await PodcastService.list_episodes()
+        episodes = filter_owned_or_hidden(
+            episodes, request, lambda episode: episode.user_id
+        )
 
         # Batch-fetch job status for every episode with a command in one
         # query instead of one round trip per episode (see
@@ -260,10 +273,11 @@ async def list_podcast_episodes():
 
 
 @router.get("/podcasts/episodes/{episode_id}", response_model=PodcastEpisodeResponse)
-async def get_podcast_episode(episode_id: str):
+async def get_podcast_episode(episode_id: str, request: Request):
     """Get a specific podcast episode"""
     try:
         episode = await PodcastService.get_episode(episode_id)
+        assert_owner_or_404(episode.user_id, request, "Episode not found")
 
         # Get job status and error message if available
         job_status = None
@@ -319,10 +333,11 @@ async def get_podcast_episode(episode_id: str):
 
 
 @router.get("/podcasts/episodes/{episode_id}/audio")
-async def stream_podcast_episode_audio(episode_id: str):
+async def stream_podcast_episode_audio(episode_id: str, request: Request):
     """Stream the audio file associated with a podcast episode"""
     try:
         episode = await PodcastService.get_episode(episode_id)
+        assert_owner_or_404(episode.user_id, request, "Episode not found")
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -353,10 +368,11 @@ async def stream_podcast_episode_audio(episode_id: str):
 
 
 @router.post("/podcasts/episodes/{episode_id}/retry")
-async def retry_podcast_episode(episode_id: str):
+async def retry_podcast_episode(episode_id: str, request: Request):
     """Retry a failed podcast episode by deleting it and submitting a new job"""
     try:
         episode = await PodcastService.get_episode(episode_id)
+        assert_owner_or_404(episode.user_id, request, "Episode not found")
 
         # Validate episode is in a failed state
         detail = await episode.get_job_detail()
@@ -384,12 +400,14 @@ async def retry_podcast_episode(episode_id: str):
         # Delete the failed episode
         await episode.delete()
 
-        # Submit a new job
+        # Submit a new job, preserving the original episode's owner
         job_id = await PodcastService.submit_generation_job(
             episode_profile_name=ep_profile_name,
             speaker_profile_name=sp_profile_name,
             episode_name=episode_name,
             content=content,
+            user_id=episode.user_id,
+            client_id=episode.client_id,
         )
 
         return {"job_id": job_id, "message": "Retry submitted successfully"}
@@ -406,11 +424,12 @@ async def retry_podcast_episode(episode_id: str):
 
 
 @router.delete("/podcasts/episodes/{episode_id}")
-async def delete_podcast_episode(episode_id: str):
+async def delete_podcast_episode(episode_id: str, request: Request):
     """Delete a podcast episode and its associated audio file"""
     try:
         # Get the episode first to check if it exists and get the audio file path
         episode = await PodcastService.get_episode(episode_id)
+        assert_owner_or_404(episode.user_id, request, "Episode not found")
 
         # Delete the physical audio file if it exists
         _delete_episode_audio(episode, episode_id)

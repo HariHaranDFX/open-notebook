@@ -19,6 +19,8 @@ class Notebook(ObjectModel):
     description: str
     archived: Optional[bool] = False
     last_viewed_at: Optional[datetime] = None
+    user_id: Optional[str] = None
+    client_id: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -26,6 +28,19 @@ class Notebook(ObjectModel):
         if not v.strip():
             raise InvalidInputError("Notebook name cannot be empty")
         return v
+
+    def _prepare_save_data(self) -> dict:
+        """Write user_id as a real record<user> link, not a bare string.
+
+        The model keeps user_id as a plain str (so equality checks like
+        `notebook.user_id == user.id` work without unwrapping a RecordID),
+        but the DB column is `option<record<user>>` - coerce only at the
+        save boundary, mirroring Source.command below.
+        """
+        data = super()._prepare_save_data()
+        if data.get("user_id") is not None:
+            data["user_id"] = ensure_record_id(data["user_id"])
+        return data
 
     async def get_sources(self, include_full_text: bool = False) -> List["Source"]:
         try:
@@ -408,6 +423,8 @@ class Source(ObjectModel):
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
     last_viewed_at: Optional[datetime] = None
+    user_id: Optional[str] = None
+    client_id: Optional[str] = None
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
@@ -630,12 +647,17 @@ class Source(ObjectModel):
             raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> dict:
-        """Override to ensure command field is always RecordID format for database"""
+        """Ensure command/user_id are RecordID format for the database.
+
+        Both fields stay plain str on the model (see Notebook._prepare_save_data
+        for why) and are only coerced here, at the save boundary.
+        """
         data = super()._prepare_save_data()
 
-        # Ensure command field is RecordID format if not None
         if data.get("command") is not None:
             data["command"] = ensure_record_id(data["command"])
+        if data.get("user_id") is not None:
+            data["user_id"] = ensure_record_id(data["user_id"])
 
         return data
 

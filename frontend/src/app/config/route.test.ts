@@ -36,22 +36,22 @@ describe('GET /config', () => {
     expect(body.apiUrl).toBe('https://configured.example.com')
   })
 
-  it('auto-detects from a well-formed Host header', async () => {
+  it('auto-detects same-origin API URL from Host (Next rewrite / Entra cookies)', async () => {
     const request = makeRequest({ host: 'notebook.example.com', 'x-forwarded-proto': 'https' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('https://notebook.example.com:5055')
+    expect(body.apiUrl).toBe('https://notebook.example.com')
   })
 
-  it('strips the port from the Host header before rebuilding the URL', async () => {
-    const request = makeRequest({ host: 'notebook.example.com:3000' })
+  it('keeps the browser port from the Host header (local Next on :3000)', async () => {
+    const request = makeRequest({ host: 'localhost:3000' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://notebook.example.com:5055')
+    expect(body.apiUrl).toBe('http://localhost:3000')
   })
 
   it('accepts a bare IPv4 Host header', async () => {
@@ -60,7 +60,7 @@ describe('GET /config', () => {
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://192.168.1.50:5055')
+    expect(body.apiUrl).toBe('http://192.168.1.50')
   })
 
   it('accepts a bracketed IPv6 literal Host header', async () => {
@@ -69,70 +69,70 @@ describe('GET /config', () => {
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://[2001:db8::1]:5055')
+    expect(body.apiUrl).toBe('http://[2001:db8::1]')
   })
 
-  it('strips the port from a bracketed IPv6 Host header and keeps the brackets', async () => {
+  it('keeps the port on a bracketed IPv6 Host header', async () => {
     const request = makeRequest({ host: '[::1]:3000' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://[::1]:5055')
+    expect(body.apiUrl).toBe('http://[::1]:3000')
   })
 
-  it('falls back to localhost for a bracketed IPv6 literal with trailing junk', async () => {
+  it('falls back to same-origin relative default for a bracketed IPv6 literal with trailing junk', async () => {
     const request = makeRequest({ host: '[::1]@evil.example.com' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
-  it('falls back to localhost for an unclosed IPv6 bracket', async () => {
+  it('falls back to same-origin relative default for an unclosed IPv6 bracket', async () => {
     const request = makeRequest({ host: '[::1' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
-  it('falls back to localhost for a path-like payload inside IPv6 brackets', async () => {
+  it('falls back to same-origin relative default for a path-like payload inside IPv6 brackets', async () => {
     const request = makeRequest({ host: '[::1]/../../attacker' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
-  it('falls back to localhost for a Host header containing a path-like payload', async () => {
+  it('falls back to same-origin relative default for a Host header containing a path-like payload', async () => {
     const request = makeRequest({ host: 'evil.example.com/../../attacker' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
-  it('falls back to localhost for a Host header containing an @ (userinfo confusion)', async () => {
+  it('falls back to same-origin relative default for a Host header containing an @ (userinfo confusion)', async () => {
     const request = makeRequest({ host: 'legit.example.com@evil.example.com' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
-  it('falls back to localhost for a Host header with embedded whitespace', async () => {
+  it('falls back to same-origin relative default for a Host header with embedded whitespace', async () => {
     const request = makeRequest({ host: 'evil.example.com foo' })
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 
   it('never trusts an X-Forwarded-Proto value other than http/https', async () => {
@@ -144,15 +144,15 @@ describe('GET /config', () => {
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://notebook.example.com:5055')
+    expect(body.apiUrl).toBe('http://notebook.example.com')
   })
 
-  it('falls back to localhost when no Host header is present', async () => {
+  it('falls back to same-origin relative default when no Host header is present', async () => {
     const request = makeRequest({})
 
     const response = await GET(request)
     const body = await response.json()
 
-    expect(body.apiUrl).toBe('http://localhost:5055')
+    expect(body.apiUrl).toBe('')
   })
 })

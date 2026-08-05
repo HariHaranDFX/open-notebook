@@ -9,8 +9,10 @@ Rules:
 - One branch per work package (wp-<n>-<slug>). Never mix packages.
 - A package is done only when its acceptance criteria pass AND tests are green.
 - Stop and report at the end of each package for human review. Do not roll on.
-- Current work package: **WP2 (Identity & Microsoft Entra ID auth)** — in
-  progress (kickoff). WP0, WP1, and WP-DEC are complete on `main`.
+- Current work package: **WP2 complete on `main`** (Identity & Microsoft Entra ID
+  auth). Next: **WP3 (Frontend map + white-label)** — not started. WP0, WP1,
+  WP-DEC, and WP2 are complete on `main`. Stop for human review before opening
+  `wp-3-white-label`.
 
 WP0 landed: `upstream-base` tag at the fork point (upstream `30c7e2a`, v1.14.0
 — not v1.10.0 as the plan states), verified build steps + baselines in
@@ -28,6 +30,12 @@ single-container image, and a pycountry integrity guard. Merged in PRs #3–#5.
 
 WP-DEC landed: **Model A (single-tenant per client)** — documented in
 [docs/TENANCY.md](docs/TENANCY.md). WP2, WP3, WP5, and WP7 are built against this.
+
+WP2 landed: Entra OIDC (BFF + cookie session) with password fallback;
+`AuthProvider` abstraction; admin/user roles on credentials/settings/models/
+embedding rebuild; owner-scoped notebooks/sources/notes/chat/podcasts/search;
+transformation catalog ownership (shared vs personal, soft-delete builtins);
+admin-only UI gating; [docs/AUTH.md](docs/AUTH.md). WBS tasks **4.0–4.14** Done.
 
 Program task schedule (WBS):  
 [docs/commercialization/Open-Notebook-Commercialization-WBS-Task-Schedule.xlsx](docs/commercialization/Open-Notebook-Commercialization-WBS-Task-Schedule.xlsx)

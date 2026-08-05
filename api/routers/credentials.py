@@ -20,10 +20,11 @@ NEVER returns actual API key values - only metadata.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from loguru import logger
 from pydantic import SecretStr
 
+from api.auth.deps import require_admin_if_auth
 from api.credentials_service import (
     credential_to_response,
     discover_with_config,
@@ -62,7 +63,11 @@ from open_notebook.exceptions import (
     OpenNotebookError,
 )
 
-router = APIRouter(prefix="/credentials", tags=["credentials"])
+router = APIRouter(
+    prefix="/credentials",
+    tags=["credentials"],
+    dependencies=[Depends(require_admin_if_auth)],
+)
 
 
 def _handle_value_error(e: ValueError, status_code: int = 400) -> HTTPException:

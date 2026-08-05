@@ -1,9 +1,14 @@
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
+from api.ownership import (
+    assert_note_owner_or_404,
+    assert_owner_or_404,
+    filter_notes_by_owner,
+)
 from open_notebook.domain.notebook import Note
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -16,6 +21,7 @@ router = APIRouter()
 
 @router.get("/notes", response_model=List[NoteResponse])
 async def get_notes(
+    request: Request,
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
 ):
     """Get all notes with optional notebook filtering."""
@@ -25,10 +31,14 @@ async def get_notes(
             from open_notebook.domain.notebook import Notebook
 
             notebook = await Notebook.get(notebook_id)
+            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
             notes = await notebook.get_notes()
         else:
-            # Get all notes
+            # Get all notes, then hide ones reached through a notebook the
+            # current user doesn't own (no single notebook to check up front
+            # here, unlike the notebook_id branch above).
             notes = await Note.get_all(order_by="updated desc")
+            notes = await filter_notes_by_owner(notes, request)
 
         return [
             NoteResponse(
@@ -53,7 +63,7 @@ async def get_notes(
 
 
 @router.post("/notes", response_model=NoteResponse)
-async def create_note(note_data: NoteCreate):
+async def create_note(note_data: NoteCreate, request: Request):
     """Create a new note."""
     try:
         # Auto-generate title if not provided and it's an AI note
@@ -92,8 +102,10 @@ async def create_note(note_data: NoteCreate):
         if note_data.notebook_id:
             from open_notebook.domain.notebook import Notebook
 
-            # Verify the notebook exists (raises NotFoundError -> 404)
-            await Notebook.get(note_data.notebook_id)
+            # Verify the notebook exists (raises NotFoundError -> 404) and is
+            # owned by the current user.
+            notebook = await Notebook.get(note_data.notebook_id)
+            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
             await new_note.add_to_notebook(note_data.notebook_id)
 
         return NoteResponse(
@@ -119,10 +131,11 @@ async def create_note(note_data: NoteCreate):
 
 
 @router.get("/notes/{note_id}", response_model=NoteResponse)
-async def get_note(note_id: str):
+async def get_note(note_id: str, request: Request):
     """Get a specific note by ID."""
     try:
         note = await Note.get(note_id)
+        await assert_note_owner_or_404(note_id, request, "Note not found")
 
         return NoteResponse(
             id=note.id or "",
@@ -144,10 +157,11 @@ async def get_note(note_id: str):
 
 
 @router.put("/notes/{note_id}", response_model=NoteResponse)
-async def update_note(note_id: str, note_update: NoteUpdate):
+async def update_note(note_id: str, note_update: NoteUpdate, request: Request):
     """Update a note."""
     try:
         note = await Note.get(note_id)
+        await assert_note_owner_or_404(note_id, request, "Note not found")
 
         # Update only provided fields
         if note_update.title is not None:
@@ -187,10 +201,11 @@ async def update_note(note_id: str, note_update: NoteUpdate):
 
 
 @router.delete("/notes/{note_id}")
-async def delete_note(note_id: str):
+async def delete_note(note_id: str, request: Request):
     """Delete a note."""
     try:
         note = await Note.get(note_id)
+        await assert_note_owner_or_404(note_id, request, "Note not found")
 
         await note.delete()
 

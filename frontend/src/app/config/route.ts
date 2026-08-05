@@ -25,7 +25,7 @@ function isValidHostname(hostname: string): boolean {
 // below. A bracketed IPv6 literal (`[::1]` / `[::1]:5055`) can't be split
 // on the first colon, so it's handled explicitly; everything else is a
 // hostname/IPv4 where the first colon begins the port. Anything malformed
-// returns null and falls back to localhost.
+// returns null and falls back to same-origin relative ("").
 function extractHostname(hostHeader: string): string | null {
   if (hostHeader.startsWith('[')) {
     const end = hostHeader.indexOf(']')
@@ -55,10 +55,14 @@ function extractHostname(hostHeader: string): string | null {
  *
  * Auto-detection logic for API_URL:
  * 1. If API_URL env var is set, use it (explicit override)
- * 2. Otherwise, detect from incoming HTTP request headers (zero-config)
- * 3. Fallback to localhost:5055 if detection fails
+ * 2. Otherwise, use the browser's public origin (same Host the page was
+ *    served from) so /api/* stays first-party and Next.js rewrites proxy
+ *    to INTERNAL_API_URL. Required for Entra httpOnly session cookies.
+ * 3. Fallback to "" (relative / same-origin rewrites) if detection fails
  *
- * This allows the same Docker image to work in different deployment scenarios.
+ * Do NOT invent :5055 here. Pointing the browser at a different origin/port
+ * breaks cookie auth and forces CORS. Password Bearer mode also works through
+ * the same-origin rewrite.
  */
 export async function GET(request: NextRequest) {
   // Priority 1: Check if API_URL is explicitly set
@@ -85,14 +89,14 @@ export async function GET(request: NextRequest) {
     const hostHeader = request.headers.get('host')
 
     if (hostHeader) {
-      // Extract just the hostname (remove port if present), bracket-aware
-      // for IPv6 literals.
+      // Extract just the hostname for validation (remove port if present),
+      // bracket-aware for IPv6 literals. Rebuild with the original Host so
+      // local Next (:3000) and reverse-proxied HTTPS share one origin with
+      // /api/* rewrites — never force :5055 (that breaks Entra cookies).
       const hostname = extractHostname(hostHeader)
 
       if (hostname && isValidHostname(hostname)) {
-        // hostname already carries brackets for IPv6 literals, so this
-        // yields e.g. http://[::1]:5055, not a mangled http://::1:5055
-        const apiUrl = `${proto}://${hostname}:5055`
+        const apiUrl = `${proto}://${hostHeader}`
 
         console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
 
@@ -101,15 +105,15 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      console.warn(`[runtime-config] Rejected malformed Host header, falling back to localhost: ${hostHeader}`)
+      console.warn(`[runtime-config] Rejected malformed Host header, falling back to same-origin: ${hostHeader}`)
     }
   } catch (error) {
     console.error('[runtime-config] Auto-detection failed:', error)
   }
 
-  // Priority 3: Fallback to localhost
-  console.log('[runtime-config] Using fallback: http://localhost:5055')
+  // Priority 3: Same-origin relative (Next.js /api rewrite)
+  console.log('[runtime-config] Using same-origin relative API URL')
   return NextResponse.json({
-    apiUrl: 'http://localhost:5055',
+    apiUrl: '',
   })
 }

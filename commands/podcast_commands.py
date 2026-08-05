@@ -50,6 +50,11 @@ class PodcastGenerationInput(CommandInput):
     episode_name: str
     content: str
     briefing_suffix: Optional[str] = None
+    # Owner to stamp on the created episode (WP2 ownership) - resolved at the
+    # API boundary from the requesting user, None in open/password-disabled
+    # mode.
+    user_id: Optional[str] = None
+    client_id: Optional[str] = None
 
 
 class PodcastGenerationOutput(CommandOutput):
@@ -267,6 +272,8 @@ async def generate_podcast_command(
             audio_file=None,
             transcript=None,
             outline=None,
+            user_id=input_data.user_id,
+            client_id=input_data.client_id,
         )
         await episode.save()
 

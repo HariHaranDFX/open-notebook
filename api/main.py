@@ -20,7 +20,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from api.auth import PasswordAuthMiddleware
+from api.auth import AuthMiddleware
+from api.auth.entra import require_entra_config
 from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
@@ -189,6 +190,12 @@ async def lifespan(app: FastAPI):
     # Startup: Security checks
     logger.info("Starting API initialization...")
 
+    # Fail fast if AUTH_PROVIDER=entra but the required config is incomplete -
+    # a running app with an unusable auth provider is worse than one that
+    # never started.
+    if (os.getenv("AUTH_PROVIDER") or "password").lower() == "entra":
+        require_entra_config()
+
     # Security check: Encryption key
     if not get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY"):
         logger.warning(
@@ -232,10 +239,10 @@ if CORS_IS_DEFAULT_WILDCARD:
 else:
     logger.info(f"CORS allowed origins: {CORS_ALLOWED_ORIGINS}")
 
-# Add password authentication middleware first
-# Exclude /api/auth/status and /api/config from authentication
+# Add authentication middleware first
+# Exclude auth entry points and config from authentication
 app.add_middleware(
-    PasswordAuthMiddleware,
+    AuthMiddleware,
     excluded_paths=[
         "/",
         "/health",
@@ -243,12 +250,14 @@ app.add_middleware(
         "/openapi.json",
         "/redoc",
         "/api/auth/status",
+        "/api/auth/login",
+        "/api/auth/callback",
         "/api/config",
     ],
 )
 
 # Reject oversized request bodies before they reach auth or routing - added
-# after PasswordAuthMiddleware (so it wraps around it) so a too-large request
+# after AuthMiddleware (so it wraps around it) so a too-large request
 # is rejected before spending any work checking credentials.
 logger.info(
     f"Max request body size: {MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):g}MB "

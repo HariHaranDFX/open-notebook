@@ -30,6 +30,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useAuth } from '@/lib/hooks/use-auth'
 import type { TFunction } from 'i18next'
 
 const getNavigationItems = (t: TFunction) => [
@@ -37,10 +38,10 @@ const getNavigationItems = (t: TFunction) => [
   { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t('navigation.askAndSearch'), href: '/search', icon: Search, keywords: ['find', 'query'] },
   { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, keywords: ['audio', 'episodes', 'generate'] },
-  { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
+  { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'], adminOnly: true },
   { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
-  { name: t('navigation.settings'), href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },
-  { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
+  { name: t('navigation.settings'), href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'], adminOnly: true },
+  { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'], adminOnly: true },
 ]
 
 const getCreateItems = (t: TFunction) => [
@@ -57,8 +58,12 @@ const getThemeItems = (t: TFunction) => [
 
 export function CommandPalette() {
   const { t } = useTranslation()
+  const { isAdmin } = useAuth()
   const commandInputId = useId()
-  const navigationItems = useMemo(() => getNavigationItems(t), [t])
+  const navigationItems = useMemo(
+    () => getNavigationItems(t).filter((item) => isAdmin || !item.adminOnly),
+    [t, isAdmin]
+  )
   const createItems = useMemo(() => getCreateItems(t), [t])
   const themeItems = useMemo(() => getThemeItems(t), [t])
   

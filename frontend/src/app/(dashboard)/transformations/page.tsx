@@ -8,12 +8,14 @@ import { DefaultPromptEditor } from './components/DefaultPromptEditor'
 import { TransformationsList } from './components/TransformationsList'
 import { TransformationPlayground } from './components/TransformationPlayground'
 import { useTransformations } from '@/lib/hooks/use-transformations'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { Transformation } from '@/lib/types/transformations'
 import { Wand2, Play, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 export default function TransformationsPage() {
   const { t } = useTranslation()
+  const { isAdmin } = useAuth()
   const [activeTab, setActiveTab] = useState('transformations')
   const [selectedTransformation, setSelectedTransformation] = useState<Transformation | undefined>()
   const { data: transformations, isLoading, refetch } = useTransformations()
@@ -58,7 +60,7 @@ export default function TransformationsPage() {
           </div>
           
           <TabsContent value="transformations" className="space-y-6">
-            <DefaultPromptEditor />
+            {isAdmin && <DefaultPromptEditor />}
             <TransformationsList 
               transformations={transformations} 
               isLoading={isLoading}

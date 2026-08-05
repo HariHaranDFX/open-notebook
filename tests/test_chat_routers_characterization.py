@@ -48,7 +48,7 @@ def _session(**overrides):
 
 
 def _source(**overrides):
-    defaults = dict(id="source:xyz", title="My Source")
+    defaults = dict(id="source:xyz", title="My Source", user_id=None)
     defaults.update(overrides)
     return SimpleNamespace(**defaults)
 
@@ -79,7 +79,7 @@ class _Bare:
 
 
 @pytest.mark.asyncio
-@patch("api.routers.chat.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
 @patch("api.routers.chat.chat_graph")
 @patch("api.routers.chat.ChatSession.get", new_callable=AsyncMock)
 async def test_get_chat_session_bare_id_gets_prefixed(
@@ -96,7 +96,7 @@ async def test_get_chat_session_bare_id_gets_prefixed(
 
 
 @pytest.mark.asyncio
-@patch("api.routers.chat.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
 @patch("api.routers.chat.chat_graph")
 @patch("api.routers.chat.ChatSession.get", new_callable=AsyncMock)
 async def test_get_chat_session_prefixed_id_kept_as_is(
@@ -126,7 +126,7 @@ async def test_delete_chat_session_missing_returns_404(mock_get, client):
 
 
 @pytest.mark.asyncio
-@patch("api.routers.chat.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
 @patch("api.routers.chat.chat_graph")
 @patch("api.routers.chat.ChatSession.get", new_callable=AsyncMock)
 async def test_get_chat_session_message_shapes(mock_get, mock_graph, mock_repo, client):
@@ -159,7 +159,7 @@ async def test_get_chat_session_message_shapes(mock_get, mock_graph, mock_repo, 
 
 
 @pytest.mark.asyncio
-@patch("api.routers.chat.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
 @patch("api.routers.chat.chat_graph")
 @patch("api.routers.chat.ChatSession.get", new_callable=AsyncMock)
 async def test_get_chat_session_no_state_yields_empty_messages(

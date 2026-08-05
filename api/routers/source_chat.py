@@ -2,13 +2,14 @@ import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.ownership import assert_owner_or_404
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
@@ -85,12 +86,15 @@ class SendMessageRequest(BaseModel):
 )
 async def create_source_chat_session(
     request: CreateSourceChatSessionRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
 ):
     """Create a new chat session for a source."""
     try:
-        # Verify source exists (normalizes the ID and 404s if missing)
-        full_source_id, _source = await get_source_or_404(source_id)
+        # Verify source exists (normalizes the ID and 404s if missing) and is
+        # owned by the current user.
+        full_source_id, source = await get_source_or_404(source_id)
+        assert_owner_or_404(source.user_id, http_request, "Source not found")
 
         # Create new session with model_override support
         session = ChatSession(
@@ -127,11 +131,15 @@ async def create_source_chat_session(
 @router.get(
     "/sources/{source_id}/chat/sessions", response_model=List[SourceChatSessionResponse]
 )
-async def get_source_chat_sessions(source_id: str = Path(..., description="Source ID")):
+async def get_source_chat_sessions(
+    request: Request, source_id: str = Path(..., description="Source ID")
+):
     """Get all chat sessions for a source."""
     try:
-        # Verify source exists (normalizes the ID and 404s if missing)
-        full_source_id, _source = await get_source_or_404(source_id)
+        # Verify source exists (normalizes the ID and 404s if missing) and is
+        # owned by the current user.
+        full_source_id, source = await get_source_or_404(source_id)
+        assert_owner_or_404(source.user_id, request, "Source not found")
 
         # Get sessions that refer to this source - first get relations, then sessions
         relations = await repo_query(
@@ -189,15 +197,18 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
     response_model=SourceChatSessionWithMessagesResponse,
 )
 async def get_source_chat_session(
+    request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Get a specific source chat session with its messages."""
     try:
-        # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
+        # Verify source + session exist and are related (404s otherwise), and
+        # that the current user owns the source.
+        _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
+        assert_owner_or_404(source.user_id, request, "Source or session not found")
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -254,14 +265,19 @@ async def get_source_chat_session(
 )
 async def update_source_chat_session(
     request: UpdateSourceChatSessionRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Update source chat session title and/or model override."""
     try:
-        # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
+        # Verify source + session exist and are related (404s otherwise), and
+        # that the current user owns the source.
+        _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
+        )
+        assert_owner_or_404(
+            source.user_id, http_request, "Source or session not found"
         )
 
         # Update session fields
@@ -301,15 +317,18 @@ async def update_source_chat_session(
     "/sources/{source_id}/chat/sessions/{session_id}", response_model=SuccessResponse
 )
 async def delete_source_chat_session(
+    request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Delete a source chat session."""
     try:
-        # Verify source + session exist and are related (404s otherwise)
-        _full_source_id, _source, full_session_id, session = (
+        # Verify source + session exist and are related (404s otherwise), and
+        # that the current user owns the source.
+        _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
+        assert_owner_or_404(source.user_id, request, "Source or session not found")
 
         await session.delete()
 
@@ -407,14 +426,19 @@ async def stream_source_chat_response(
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
 async def send_message_to_source_chat(
     request: SendMessageRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Send a message to source chat session with SSE streaming response."""
     try:
-        # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
+        # Verify source + session exist and are related (404s otherwise), and
+        # that the current user owns the source.
+        full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
+        )
+        assert_owner_or_404(
+            source.user_id, http_request, "Source or session not found"
         )
 
         if not request.message:
