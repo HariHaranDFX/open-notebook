@@ -196,6 +196,7 @@ export default function NotebookPage() {
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
+                    accessRole={notebook.access_role}
                   />
                 )}
                 {mobileActiveTab === 'notes' && (
@@ -206,6 +207,7 @@ export default function NotebookPage() {
                     contextSelections={contextSelections.notes}
                     onContextModeChange={handleNoteContextModeChange}
                     onBulkContextModeChange={handleBulkNoteContext}
+                    accessRole={notebook.access_role}
                   />
                 )}
                 {mobileActiveTab === 'chat' && (
@@ -242,6 +244,7 @@ export default function NotebookPage() {
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}
+                accessRole={notebook.access_role}
               />
             </div>
 
@@ -257,6 +260,7 @@ export default function NotebookPage() {
                 contextSelections={contextSelections.notes}
                 onContextModeChange={handleNoteContextModeChange}
                 onBulkContextModeChange={handleBulkNoteContext}
+                accessRole={notebook.access_role}
               />
             </div>
 

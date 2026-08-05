@@ -26,6 +26,7 @@ class NotebookResponse(BaseModel):
     updated: str
     source_count: int
     note_count: int
+    access_role: Optional[Literal["owner", "editor", "viewer"]] = None
 
 
 class RecentlyViewedResponse(BaseModel):
@@ -379,6 +380,7 @@ class SourceResponse(BaseModel):
     processing_info: Optional[Dict] = None
     # Notebook associations
     notebooks: Optional[List[str]] = None
+    access_role: Optional[Literal["owner", "editor", "viewer"]] = None
 
 
 class SourceListResponse(BaseModel):
@@ -396,6 +398,7 @@ class SourceListResponse(BaseModel):
     command_id: Optional[str] = None
     status: Optional[str] = None
     processing_info: Optional[Dict[str, Any]] = None
+    access_role: Optional[Literal["owner", "editor", "viewer"]] = None
 
 
 # Insights API models

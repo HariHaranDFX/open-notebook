@@ -28,6 +28,7 @@ import {
   Moon,
   Monitor,
   Loader2,
+  Users,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -39,6 +40,7 @@ const getNavigationItems = (t: TFunction) => [
   { name: t('navigation.askAndSearch'), href: '/search', icon: Search, keywords: ['find', 'query'] },
   { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, keywords: ['audio', 'episodes', 'generate'] },
   { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'], adminOnly: true },
+  { name: t('navigation.groups'), href: '/settings/groups', icon: Users, keywords: ['teams', 'sharing', 'acl'], adminOnly: true },
   { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
   { name: t('navigation.settings'), href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'], adminOnly: true },
   { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'], adminOnly: true },

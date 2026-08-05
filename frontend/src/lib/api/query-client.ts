@@ -35,4 +35,9 @@ export const QUERY_KEYS = {
   episodeProfiles: ['podcasts', 'episode-profiles'] as const,
   speakerProfiles: ['podcasts', 'speaker-profiles'] as const,
   languages: ['languages'] as const,
+  users: ['users'] as const,
+  groups: ['groups'] as const,
+  groupMembers: (groupId: string) => ['groups', groupId, 'members'] as const,
+  grants: (resourceType: string, resourceId: string) =>
+    ['grants', resourceType, resourceId] as const,
 }

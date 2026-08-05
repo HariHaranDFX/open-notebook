@@ -62,6 +62,7 @@ import {
   Database,
   AlertCircle,
   MessageSquare,
+  Share2,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
@@ -69,6 +70,13 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/sources/NotebookAssociations'
+import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { useAuth } from '@/lib/hooks/use-auth'
+import {
+  canDeleteSource,
+  canEditContent,
+  canManageAcl,
+} from '@/lib/utils/access-role'
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -103,6 +111,7 @@ function SourceDetailContentInner({
   onClose
 }: SourceDetailContentProps) {
   const { t, language } = useTranslation()
+  const { isAdmin } = useAuth()
   const queryClient = useQueryClient()
   const [insights, setInsights] = useState<SourceInsightResponse[]>([])
   const [transformations, setTransformations] = useState<Transformation[]>([])
@@ -116,6 +125,7 @@ function SourceDetailContentInner({
   const [selectedInsight, setSelectedInsight] = useState<SourceInsightResponse | null>(null)
   const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
   const [deletingInsight, setDeletingInsight] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(false)
 
   // A 404 means the source was deleted (e.g. a dangling chat/ask reference) —
   // handled by the shared "content no longer exists" state. The global query
@@ -415,14 +425,20 @@ function SourceDetailContentInner({
       <div className="pb-4 px-2">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <InlineEdit
-              value={source.title || ''}
-              onSave={handleUpdateTitle}
-              className="text-2xl font-bold"
-              inputClassName="text-2xl font-bold"
-              placeholder={t('sources.titlePlaceholder')}
-              emptyText={t('sources.untitledSource')}
-            />
+            {canEditContent(source.access_role) ? (
+              <InlineEdit
+                value={source.title || ''}
+                onSave={handleUpdateTitle}
+                className="text-2xl font-bold"
+                inputClassName="text-2xl font-bold"
+                placeholder={t('sources.titlePlaceholder')}
+                emptyText={t('sources.untitledSource')}
+              />
+            ) : (
+              <h1 className="text-2xl font-bold">
+                {source.title || t('sources.untitledSource')}
+              </h1>
+            )}
             <p className="mt-1 text-sm text-muted-foreground">
               {t('sources.id')}: {source.id}
             </p>
@@ -438,6 +454,17 @@ function SourceDetailContentInner({
               <Button variant="outline" size="sm" onClick={onChatClick}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 {t('chat.chatWith', { name: t('navigation.sources') })}
+              </Button>
+            )}
+
+            {canManageAcl(source.access_role, isAdmin) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowShareDialog(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                {t('sharing.share')}
               </Button>
             )}
 
@@ -464,21 +491,27 @@ function SourceDetailContentInner({
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuItem
-                  onClick={handleEmbedContent}
-                  disabled={isEmbedding || source.embedded}
-                >
-                  <Database className="mr-2 h-4 w-4" />
-                  {isEmbedding ? t('sources.embedding') : source.embedded ? t('sources.alreadyEmbedded') : t('sources.embedContent')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t('sources.deleteSource')}
-                </DropdownMenuItem>
+                {canEditContent(source.access_role) && (
+                  <DropdownMenuItem
+                    onClick={handleEmbedContent}
+                    disabled={isEmbedding || source.embedded}
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    {isEmbedding ? t('sources.embedding') : source.embedded ? t('sources.alreadyEmbedded') : t('sources.embedContent')}
+                  </DropdownMenuItem>
+                )}
+                {canDeleteSource(source.access_role) && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('sources.deleteSource')}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -857,6 +890,14 @@ function SourceDetailContentInner({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ShareDialog
+        resourceType="source"
+        resourceId={source.id}
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        canManage={canManageAcl(source.access_role, isAdmin)}
+      />
     </div>
   )
 }

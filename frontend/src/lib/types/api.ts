@@ -1,3 +1,5 @@
+export type AccessRole = 'owner' | 'editor' | 'viewer'
+
 export interface NotebookResponse {
   id: string
   name: string
@@ -7,6 +9,7 @@ export interface NotebookResponse {
   updated: string
   source_count: number
   note_count: number
+  access_role?: AccessRole | null
 }
 
 export interface NoteResponse {
@@ -36,6 +39,7 @@ export interface SourceListResponse {
   command_id?: string
   status?: string
   processing_info?: Record<string, unknown>
+  access_role?: AccessRole | null
 }
 
 export interface SourceDetailResponse extends SourceListResponse {

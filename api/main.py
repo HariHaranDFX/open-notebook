@@ -32,6 +32,8 @@ from api.routers import (
     embedding,
     embedding_rebuild,
     episode_profiles,
+    grants,
+    groups,
     insights,
     languages,
     models,
@@ -391,6 +393,8 @@ async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(config.router, prefix="/api", tags=["config"])
+app.include_router(groups.router, prefix="/api", tags=["groups"])
+app.include_router(grants.router, prefix="/api", tags=["grants"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(models.router, prefix="/api", tags=["models"])

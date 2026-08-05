@@ -1,23 +1,26 @@
-"""Owner-only access helpers for notebooks/sources (WP2 §4).
+"""Owner + grant access helpers for notebooks/sources (WP2 + WP2b).
 
 No-op whenever auth is disabled or no user is present, so open/password-mode
 deployments keep today's global-visibility behaviour unchanged.
 """
 
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import Literal, Optional, Tuple
 
 from fastapi import HTTPException, Request
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
 from open_notebook.database.repository import ensure_record_id, repo_query
 
+AccessRole = Literal["owner", "editor", "viewer"]
+ResourceType = Literal["notebook", "source"]
+
+_ROLE_RANK = {"viewer": 1, "editor": 2, "owner": 3}
+
 
 def _same_owner(owner_user_id: Optional[str], user_id: str) -> bool:
-    """True when both ids name the same Surreal record.
-
-    Compares via RecordID after canonicalizing Surreal's ⟨⟩ string form so
-    `user:password-local` and `user:⟨password-local⟩` match.
-    """
+    """True when both ids name the same Surreal record."""
     if owner_user_id is None:
         return False
     try:
@@ -26,30 +29,217 @@ def _same_owner(owner_user_id: Optional[str], user_id: str) -> bool:
         return owner_user_id == user_id
 
 
-def ownership_where(request: Request) -> Tuple[str, dict]:
-    """SurrealQL WHERE fragment (no leading "WHERE") plus its bind vars,
-    restricting a notebook/source query to rows owned by the current user.
+def canonical_id(record_id: str) -> str:
+    return str(ensure_record_id(record_id))
 
-    Returns ("", {}) when ownership isn't enforced. The equality comparison
-    against a bound record id already excludes NULL user_id rows (pre-auth
-    orphans) under normal SurrealQL semantics, so "hide unowned rows" falls
-    out for free.
-    """
+
+def _canonical_id(record_id: str) -> str:
+    return canonical_id(record_id)
+
+
+def _max_role(
+    left: Optional[AccessRole], right: Optional[AccessRole]
+) -> Optional[AccessRole]:
+    if left is None:
+        return right
+    if right is None:
+        return left
+    return left if _ROLE_RANK[left] >= _ROLE_RANK[right] else right
+
+
+def role_at_least(role: Optional[AccessRole], minimum: AccessRole) -> bool:
+    if role is None:
+        return False
+    return _ROLE_RANK[role] >= _ROLE_RANK[minimum]
+
+
+async def list_user_group_ids(user_id: str) -> list[str]:
+    rows = await repo_query(
+        "SELECT group_id FROM user_group_member WHERE user_id = $uid",
+        {"uid": ensure_record_id(user_id)},
+    )
+    return [_canonical_id(str(row["group_id"])) for row in rows if row.get("group_id")]
+
+
+async def _granted_resource_ids(
+    user_id: str, resource_type: ResourceType, group_ids: list[str]
+) -> list[str]:
+    uid = _canonical_id(user_id)
+    rows = await repo_query(
+        """
+        SELECT resource_id, role FROM resource_grant
+        WHERE resource_type = $rtype
+          AND (
+            (principal_type = 'user' AND principal_id = $uid)
+            OR (principal_type = 'group' AND principal_id IN $gids)
+          )
+        """,
+        {"rtype": resource_type, "uid": uid, "gids": group_ids or ["__none__"]},
+    )
+    return [_canonical_id(str(row["resource_id"])) for row in rows if row.get("resource_id")]
+
+
+async def _grant_roles_for_resource(
+    user_id: str,
+    resource_type: ResourceType,
+    resource_id: str,
+    group_ids: list[str],
+) -> list[AccessRole]:
+    uid = _canonical_id(user_id)
+    rid = _canonical_id(resource_id)
+    rows = await repo_query(
+        """
+        SELECT role FROM resource_grant
+        WHERE resource_type = $rtype AND resource_id = $rid
+          AND (
+            (principal_type = 'user' AND principal_id = $uid)
+            OR (principal_type = 'group' AND principal_id IN $gids)
+          )
+        """,
+        {
+            "rtype": resource_type,
+            "rid": rid,
+            "uid": uid,
+            "gids": group_ids or ["__none__"],
+        },
+    )
+    roles: list[AccessRole] = []
+    for row in rows:
+        role = row.get("role")
+        if role in ("viewer", "editor"):
+            roles.append(role)
+    return roles
+
+
+async def access_where(
+    request: Request, resource_type: ResourceType = "notebook"
+) -> Tuple[str, dict]:
+    """SurrealQL WHERE fragment + binds for owner OR grant access."""
     if not auth_enforces_ownership():
         return "", {}
     user = current_user_optional(request)
     if user is None:
         return "", {}
-    return "user_id = $owner_id", {"owner_id": ensure_record_id(user.id)}
+    group_ids = await list_user_group_ids(user.id)
+    granted = await _granted_resource_ids(user.id, resource_type, group_ids)
+    binds: dict = {"access_uid": ensure_record_id(user.id)}
+    if not granted:
+        return "user_id = $access_uid", binds
+    binds["access_granted_ids"] = [ensure_record_id(gid) for gid in granted]
+    return "(user_id = $access_uid OR id IN $access_granted_ids)", binds
+
+
+async def ownership_where(request: Request) -> Tuple[str, dict]:
+    """Backward-compatible notebook/source list filter (now grant-aware)."""
+    return await access_where(request, "notebook")
+
+
+async def source_access_where(request: Request) -> Tuple[str, dict]:
+    """Sources: owner, direct grant, or linked to an accessible notebook."""
+    if not auth_enforces_ownership():
+        return "", {}
+    user = current_user_optional(request)
+    if user is None:
+        return "", {}
+    group_ids = await list_user_group_ids(user.id)
+    source_grants = await _granted_resource_ids(user.id, "source", group_ids)
+    nb_clause, nb_binds = await access_where(request, "notebook")
+    nb_ids: list = []
+    if nb_clause:
+        accessible_nbs = await repo_query(
+            f"SELECT id FROM notebook WHERE {nb_clause}",
+            nb_binds,
+        )
+        nb_ids = [
+            ensure_record_id(str(r["id"])) for r in accessible_nbs if r.get("id")
+        ]
+    binds: dict = {"access_uid": ensure_record_id(user.id)}
+    parts = ["user_id = $access_uid"]
+    if source_grants:
+        binds["access_source_grant_ids"] = [
+            ensure_record_id(sid) for sid in source_grants
+        ]
+        parts.append("id IN $access_source_grant_ids")
+    if nb_ids:
+        # reference: in=source, out=notebook
+        binds["access_notebook_ids"] = nb_ids
+        parts.append(
+            "id IN (SELECT VALUE in FROM reference WHERE out IN $access_notebook_ids)"
+        )
+    return "(" + " OR ".join(parts) + ")", binds
+
+
+async def effective_role_for_notebook(
+    owner_user_id: Optional[str], notebook_id: str, request: Request
+) -> Optional[AccessRole]:
+    if not auth_enforces_ownership():
+        return "owner"
+    user = current_user_optional(request)
+    if user is None:
+        return "owner"
+    if _same_owner(owner_user_id, user.id):
+        return "owner"
+    group_ids = await list_user_group_ids(user.id)
+    role: Optional[AccessRole] = None
+    for grant_role in await _grant_roles_for_resource(
+        user.id, "notebook", notebook_id, group_ids
+    ):
+        role = _max_role(role, grant_role)
+    return role
+
+
+async def effective_role_for_source(
+    owner_user_id: Optional[str], source_id: str, request: Request
+) -> Optional[AccessRole]:
+    if not auth_enforces_ownership():
+        return "owner"
+    user = current_user_optional(request)
+    if user is None:
+        return "owner"
+    if _same_owner(owner_user_id, user.id):
+        return "owner"
+    group_ids = await list_user_group_ids(user.id)
+    role: Optional[AccessRole] = None
+    for grant_role in await _grant_roles_for_resource(
+        user.id, "source", source_id, group_ids
+    ):
+        role = _max_role(role, grant_role)
+    # Inherit from notebooks this source is linked to
+    links = await repo_query(
+        "SELECT out AS notebook_id FROM reference WHERE in = $sid",
+        {"sid": ensure_record_id(source_id)},
+    )
+    for link in links:
+        nb_id = link.get("notebook_id")
+        if not nb_id:
+            continue
+        nb_rows = await repo_query(
+            "SELECT user_id FROM notebook WHERE id = $id",
+            {"id": ensure_record_id(str(nb_id))},
+        )
+        if not nb_rows:
+            continue
+        nb_role = await effective_role_for_notebook(
+            nb_rows[0].get("user_id"), str(nb_id), request
+        )
+        # Notebook viewer/editor counts as at least that role on the source
+        if nb_role == "owner":
+            # Linked notebook owned by someone else shouldn't elevate via this path
+            # unless current user is that owner — already handled above for source.
+            # If user owns the notebook, they already have access; treat as editor
+            # for content ops on linked source content they don't own? Spec: cascade
+            # same effective role. Owner of notebook → treat as editor on linked
+            # source they don't own (cannot delete source unless source owner).
+            role = _max_role(role, "editor")
+        else:
+            role = _max_role(role, nb_role)
+    return role
 
 
 def assert_owner_or_404(
     owner_user_id: Optional[str], request: Request, detail: str
 ) -> None:
-    """Raise 404 if an already-fetched notebook/source isn't owned by the
-    current user. Never 403 - an id that exists but belongs to someone else
-    must look identical to one that doesn't exist (WP2 §4).
-    """
+    """Raise 404 if not owned by current user (legacy owner-only check)."""
     if not auth_enforces_ownership():
         return
     user = current_user_optional(request)
@@ -59,66 +249,171 @@ def assert_owner_or_404(
         raise HTTPException(status_code=404, detail=detail)
 
 
+async def assert_can_view_notebook_or_404(
+    owner_user_id: Optional[str], notebook_id: str, request: Request, detail: str
+) -> AccessRole:
+    role = await effective_role_for_notebook(owner_user_id, notebook_id, request)
+    if role is None:
+        raise HTTPException(status_code=404, detail=detail)
+    return role
+
+
+async def assert_can_view_source_or_404(
+    owner_user_id: Optional[str], source_id: str, request: Request, detail: str
+) -> AccessRole:
+    role = await effective_role_for_source(owner_user_id, source_id, request)
+    if role is None:
+        raise HTTPException(status_code=404, detail=detail)
+    return role
+
+
+async def assert_can_edit_notebook_or_403(
+    owner_user_id: Optional[str], notebook_id: str, request: Request, detail: str
+) -> AccessRole:
+    role = await assert_can_view_notebook_or_404(
+        owner_user_id, notebook_id, request, detail
+    )
+    if not role_at_least(role, "editor"):
+        raise HTTPException(
+            status_code=403,
+            detail="Editor access is required for this action",
+        )
+    return role
+
+
+async def assert_can_edit_source_or_403(
+    owner_user_id: Optional[str], source_id: str, request: Request, detail: str
+) -> AccessRole:
+    role = await assert_can_view_source_or_404(
+        owner_user_id, source_id, request, detail
+    )
+    if not role_at_least(role, "editor"):
+        raise HTTPException(
+            status_code=403,
+            detail="Editor access is required for this action",
+        )
+    return role
+
+
+def assert_can_delete_source_or_403(
+    owner_user_id: Optional[str], request: Request, detail: str = "Source not found"
+) -> None:
+    """Only the source owner may delete (editors cannot)."""
+    if not auth_enforces_ownership():
+        return
+    user = current_user_optional(request)
+    if user is None:
+        return
+    if not _same_owner(owner_user_id, user.id):
+        # Visible via grant → 403; invisible → 404 would need role lookup.
+        # Callers should view-check first; if not owner, forbid delete.
+        raise HTTPException(
+            status_code=403,
+            detail="Only the source owner can delete this source",
+        )
+
+
+def assert_can_manage_acl(
+    owner_user_id: Optional[str], request: Request, detail: str = "Not found"
+) -> None:
+    """Owner or admin may manage grants. Non-owners get 404 (no existence leak)."""
+    if not auth_enforces_ownership():
+        return
+    user = current_user_optional(request)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user.role == "admin":
+        return
+    if _same_owner(owner_user_id, user.id):
+        return
+    raise HTTPException(status_code=404, detail=detail)
+
+
 async def assert_note_owner_or_404(
     note_id: str, request: Request, detail: str
 ) -> None:
-    """Raise 404 unless a note is reachable through a notebook the current
-    user owns.
-
-    A note has no `user_id` of its own - ownership is derived through the
-    notebook(s) it's attached to via the `artifact` relation (same relation
-    `filter_search_results_by_owner` already joins through for note search
-    results). Fails closed: a note with no notebook link looks the same as
-    one owned by someone else.
-    """
+    """Raise 404 unless note is on a notebook the user can view."""
     if not auth_enforces_ownership():
         return
     user = current_user_optional(request)
     if user is None:
         return
-    owned = await repo_query(
-        "SELECT in FROM artifact WHERE in = $note_id AND out.user_id = $owner_id",
-        {
-            "note_id": ensure_record_id(note_id),
-            "owner_id": ensure_record_id(user.id),
-        },
+    links = await repo_query(
+        "SELECT out AS notebook_id FROM artifact WHERE in = $note_id",
+        {"note_id": ensure_record_id(note_id)},
     )
-    if not owned:
-        raise HTTPException(status_code=404, detail=detail)
+    for link in links:
+        nb_id = link.get("notebook_id")
+        if not nb_id:
+            continue
+        rows = await repo_query(
+            "SELECT user_id FROM notebook WHERE id = $id",
+            {"id": ensure_record_id(str(nb_id))},
+        )
+        if not rows:
+            continue
+        role = await effective_role_for_notebook(
+            rows[0].get("user_id"), str(nb_id), request
+        )
+        if role is not None:
+            return
+    raise HTTPException(status_code=404, detail=detail)
+
+
+async def assert_note_editable_or_403(
+    note_id: str, request: Request, detail: str
+) -> None:
+    if not auth_enforces_ownership():
+        return
+    links = await repo_query(
+        "SELECT out AS notebook_id FROM artifact WHERE in = $note_id",
+        {"note_id": ensure_record_id(note_id)},
+    )
+    for link in links:
+        nb_id = link.get("notebook_id")
+        if not nb_id:
+            continue
+        rows = await repo_query(
+            "SELECT user_id FROM notebook WHERE id = $id",
+            {"id": ensure_record_id(str(nb_id))},
+        )
+        if not rows:
+            continue
+        role = await effective_role_for_notebook(
+            rows[0].get("user_id"), str(nb_id), request
+        )
+        if role is None:
+            continue
+        if role_at_least(role, "editor"):
+            return
+        raise HTTPException(
+            status_code=403,
+            detail="Editor access is required for this action",
+        )
+    raise HTTPException(status_code=404, detail=detail)
 
 
 async def filter_notes_by_owner(notes: list, request: Request) -> list:
-    """Keep only notes reachable through a notebook the current user owns.
-
-    List-endpoint counterpart to assert_note_owner_or_404, batched like
-    filter_search_results_by_owner instead of one query per note.
-    """
+    """Keep notes linked to a notebook the user can view."""
     if not auth_enforces_ownership():
         return notes
     user = current_user_optional(request)
     if user is None:
         return notes
-    note_ids = [ensure_record_id(note.id) for note in notes if note.id]
-    if not note_ids:
-        return []
-    owned_ids = {
-        str(row["id"])
-        for row in await repo_query(
-            "SELECT in AS id FROM artifact WHERE in IN $ids AND out.user_id = $owner_id",
-            {"ids": note_ids, "owner_id": ensure_record_id(user.id)},
-        )
-    }
-    return [note for note in notes if str(note.id) in owned_ids]
+    kept = []
+    for note in notes:
+        if not note.id:
+            continue
+        try:
+            await assert_note_owner_or_404(note.id, request, "Note not found")
+            kept.append(note)
+        except HTTPException:
+            continue
+    return kept
 
 
 def filter_owned_or_hidden(items: list, request: Request, owner_id_of) -> list:
-    """Keep only items whose owner (per `owner_id_of`) is the current user.
-
-    In-memory counterpart to `ownership_where` for records already fetched
-    without a `user_id` column to filter in SQL. No-op when ownership isn't
-    enforced; fails closed (hides items with no owner or a different owner)
-    otherwise.
-    """
+    """Keep items owned by current user (legacy; prefer notebook-aware podcast filter)."""
     if not auth_enforces_ownership():
         return items
     user = current_user_optional(request)
@@ -127,39 +422,62 @@ def filter_owned_or_hidden(items: list, request: Request, owner_id_of) -> list:
     return [item for item in items if _same_owner(owner_id_of(item), user.id)]
 
 
+async def filter_episodes_by_access(episodes: list, request: Request) -> list:
+    """Keep episodes owned by user or whose notebook the user can view."""
+    if not auth_enforces_ownership():
+        return episodes
+    user = current_user_optional(request)
+    if user is None:
+        return episodes
+    kept = []
+    for ep in episodes:
+        if _same_owner(getattr(ep, "user_id", None), user.id):
+            kept.append(ep)
+            continue
+        nb_id = getattr(ep, "notebook_id", None)
+        if not nb_id:
+            continue
+        rows = await repo_query(
+            "SELECT user_id FROM notebook WHERE id = $id",
+            {"id": ensure_record_id(str(nb_id))},
+        )
+        if not rows:
+            continue
+        role = await effective_role_for_notebook(
+            rows[0].get("user_id"), str(nb_id), request
+        )
+        if role is not None:
+            kept.append(ep)
+    return kept
+
+
 async def filter_search_results_by_owner(results: list[dict], request: Request) -> list[dict]:
-    """Keep only search results owned through a source or notebook."""
+    """Keep search results the user can view via source or notebook grants."""
     if not auth_enforces_ownership():
         return results
     user = current_user_optional(request)
     if user is None:
         return results
 
-    source_ids = [
-        ensure_record_id(str(result["parent_id"]))
-        for result in results
-        if str(result.get("parent_id", "")).startswith("source:")
-    ]
-    note_ids = [
-        ensure_record_id(str(result["parent_id"]))
-        for result in results
-        if str(result.get("parent_id", "")).startswith("note:")
-    ]
-    owned_ids: set[str] = set()
-    if source_ids:
-        owned_ids.update(
-            str(row["id"])
-            for row in await repo_query(
-                "SELECT id FROM source WHERE id IN $ids AND user_id = $owner_id",
-                {"ids": source_ids, "owner_id": ensure_record_id(user.id)},
+    kept: list[dict] = []
+    for result in results:
+        parent = str(result.get("parent_id", ""))
+        if parent.startswith("source:"):
+            rows = await repo_query(
+                "SELECT user_id FROM source WHERE id = $id",
+                {"id": ensure_record_id(parent)},
             )
-        )
-    if note_ids:
-        owned_ids.update(
-            str(row["id"])
-            for row in await repo_query(
-                "SELECT in AS id FROM artifact WHERE in IN $ids AND out.user_id = $owner_id",
-                {"ids": note_ids, "owner_id": ensure_record_id(user.id)},
+            if not rows:
+                continue
+            role = await effective_role_for_source(
+                rows[0].get("user_id"), parent, request
             )
-        )
-    return [result for result in results if str(result.get("parent_id")) in owned_ids]
+            if role is not None:
+                kept.append(result)
+        elif parent.startswith("note:"):
+            try:
+                await assert_note_owner_or_404(parent, request, "Note not found")
+                kept.append(result)
+            except HTTPException:
+                continue
+    return kept

@@ -2,7 +2,11 @@ from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
-from api.ownership import assert_owner_or_404
+from api.ownership import (
+    assert_can_edit_notebook_or_403,
+    assert_can_edit_source_or_403,
+    assert_can_view_source_or_404,
+)
 from open_notebook.domain.notebook import Notebook, SourceInsight
 from open_notebook.exceptions import (
     InvalidInputError,
@@ -23,7 +27,9 @@ async def get_insight(insight_id: str, request: Request):
 
         # Get source ID from the insight relationship
         source = await insight.get_source()
-        assert_owner_or_404(source.user_id, request, "Insight not found")
+        await assert_can_view_source_or_404(
+            source.user_id, source.id or "", request, "Insight not found"
+        )
 
         return SourceInsightResponse(
             id=insight.id or "",
@@ -51,7 +57,9 @@ async def delete_insight(insight_id: str, request: Request):
             raise HTTPException(status_code=404, detail="Insight not found")
 
         source = await insight.get_source()
-        assert_owner_or_404(source.user_id, request, "Insight not found")
+        await assert_can_edit_source_or_403(
+            source.user_id, source.id or "", request, "Insight not found"
+        )
 
         await insight.delete()
 
@@ -76,10 +84,17 @@ async def save_insight_as_note(
             raise HTTPException(status_code=404, detail="Insight not found")
 
         source = await insight.get_source()
-        assert_owner_or_404(source.user_id, http_request, "Insight not found")
+        await assert_can_view_source_or_404(
+            source.user_id, source.id or "", http_request, "Insight not found"
+        )
         if request.notebook_id:
             notebook = await Notebook.get(request.notebook_id)
-            assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
+            await assert_can_edit_notebook_or_403(
+                notebook.user_id,
+                request.notebook_id,
+                http_request,
+                "Notebook not found",
+            )
 
         # Use the existing save_as_note method from the domain model
         note = await insight.save_as_note(request.notebook_id)

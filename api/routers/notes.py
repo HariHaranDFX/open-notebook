@@ -5,8 +5,10 @@ from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
 from api.ownership import (
+    assert_can_edit_notebook_or_403,
+    assert_can_view_notebook_or_404,
+    assert_note_editable_or_403,
     assert_note_owner_or_404,
-    assert_owner_or_404,
     filter_notes_by_owner,
 )
 from open_notebook.domain.notebook import Note
@@ -31,7 +33,9 @@ async def get_notes(
             from open_notebook.domain.notebook import Notebook
 
             notebook = await Notebook.get(notebook_id)
-            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+            await assert_can_view_notebook_or_404(
+                notebook.user_id, notebook_id, request, "Notebook not found"
+            )
             notes = await notebook.get_notes()
         else:
             # Get all notes, then hide ones reached through a notebook the
@@ -102,10 +106,11 @@ async def create_note(note_data: NoteCreate, request: Request):
         if note_data.notebook_id:
             from open_notebook.domain.notebook import Notebook
 
-            # Verify the notebook exists (raises NotFoundError -> 404) and is
-            # owned by the current user.
+            # Creating a note requires editor+ on the notebook.
             notebook = await Notebook.get(note_data.notebook_id)
-            assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+            await assert_can_edit_notebook_or_403(
+                notebook.user_id, note_data.notebook_id, request, "Notebook not found"
+            )
             await new_note.add_to_notebook(note_data.notebook_id)
 
         return NoteResponse(
@@ -161,7 +166,7 @@ async def update_note(note_id: str, note_update: NoteUpdate, request: Request):
     """Update a note."""
     try:
         note = await Note.get(note_id)
-        await assert_note_owner_or_404(note_id, request, "Note not found")
+        await assert_note_editable_or_403(note_id, request, "Note not found")
 
         # Update only provided fields
         if note_update.title is not None:
@@ -205,7 +210,7 @@ async def delete_note(note_id: str, request: Request):
     """Delete a note."""
     try:
         note = await Note.get(note_id)
-        await assert_note_owner_or_404(note_id, request, "Note not found")
+        await assert_note_editable_or_403(note_id, request, "Note not found")
 
         await note.delete()
 

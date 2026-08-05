@@ -87,6 +87,7 @@ class PodcastService:
                 "briefing_suffix": briefing_suffix,
                 "user_id": user_id,
                 "client_id": client_id,
+                "notebook_id": notebook_id,
             }
 
             # Ensure command modules are imported before submitting
