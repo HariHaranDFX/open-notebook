@@ -1,0 +1,9 @@
+{
+  "appName": "Northstar Research",
+  "logoUrl": "/brand/northstar.svg",
+  "logoDarkUrl": "/brand/northstar-dark.svg",
+  "faviconUrl": "/brand/northstar.svg",
+  "actionLight": "#5B2C83",
+  "actionDark": "#D5B5F2",
+  "supportUrl": "https://example.com/support"
+}
