@@ -11,6 +11,9 @@ import {
 import { Database, Server, ChevronDown, ExternalLink } from 'lucide-react'
 import { ConnectionError } from '@/lib/types/config'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useBrand } from '@/components/providers/BrandProvider'
+
+const UPSTREAM_DOCUMENTATION_URL = 'https://github.com/lfnovo/open-notebook'
 
 interface ConnectionErrorOverlayProps {
   error: ConnectionError
@@ -22,6 +25,7 @@ export function ConnectionErrorOverlay({
   onRetry,
 }: ConnectionErrorOverlayProps) {
   const { t } = useTranslation()
+  const { appName, supportUrl } = useBrand()
   const [showDetails, setShowDetails] = useState(false)
   const isApiError = error.type === 'api-unreachable'
 
@@ -106,12 +110,12 @@ export function ConnectionErrorOverlay({
         <div className="text-sm">
           <p>{t('connectionErrors.seeDocumentation')}</p>
           <a
-            href="https://github.com/lfnovo/open-notebook"
+            href={supportUrl ?? UPSTREAM_DOCUMENTATION_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline inline-flex items-center gap-1"
           >
-            {t('connectionErrors.docLink')}
+            {supportUrl ? appName : t('connectionErrors.docLink')}
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>

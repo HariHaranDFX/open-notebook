@@ -41,7 +41,7 @@ export const bnIN = {
     podcast: "পডকাস্ট",
     quickActions: "দ্রুত ক্রিয়া",
     quickActionsDesc: "নেভিগেশন, অনুসন্ধান, প্রশ্ন, থিম",
-    appName: "ওপেন নোটবুক",
+    appName: "{{appName}}",
     add: "যোগ করুন",
     remove: "সরান",
     confirm: "নিশ্চিত করুন",
@@ -189,7 +189,7 @@ export const bnIN = {
   },
   connectionErrors: {
     apiTitle: "API সার্ভারে সংযোগ করতে অক্ষম",
-    apiDesc: "ওপেন নোটবুক API সার্ভারে পৌঁছানো যায়নি",
+    apiDesc: "{{appName}} API সার্ভারে পৌঁছানো যায়নি",
     dbTitle: "ডেটাবেস সংযোগ ব্যর্থ",
     dbDesc: "API সার্ভার চালু আছে, কিন্তু ডেটাবেস অ্যাক্সেসযোগ্য নয়",
     troubleshooting: "এটি সাধারণত মানে:",
@@ -215,7 +215,7 @@ export const bnIN = {
     localDevLabel: "স্থানীয় ডেভেলপমেন্টের জন্য",
   },
   auth: {
-    loginTitle: "ওপেন নোটবুক",
+    loginTitle: "{{appName}}",
     loginDesc: "অ্যাপ্লিকেশন অ্যাক্সেস করতে আপনার পাসওয়ার্ড লিখুন",
     passwordPlaceholder: "পাসওয়ার্ড",
     signingIn: "সাইন ইন করা হচ্ছে...",

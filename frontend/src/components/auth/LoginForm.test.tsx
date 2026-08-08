@@ -4,6 +4,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { BrandProvider } from '@/components/providers/BrandProvider'
 import { LoginForm } from './LoginForm'
 
+vi.mock('@/lib/hooks/use-translation', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { appName?: string }) => options?.appName ?? key,
+    language: 'en-US',
+  }),
+}))
+
 vi.mock('@/lib/config', () => ({ getConfig: vi.fn(() => new Promise(() => {})) }))
 
 vi.mock('@/lib/stores/auth-store', () => {

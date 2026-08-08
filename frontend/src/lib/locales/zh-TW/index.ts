@@ -833,7 +833,7 @@ export const zhTW = {
     visionEnabled: "描述圖片和圖表",
     visionHelp: "使用 Docling 引擎時，使用視覺模型描述圖片並擷取圖表資料。處理速度明顯較慢，且可能呼叫視覺模型。",
     autoDeletePlaceholder: "選擇自動刪除選項",
-    filesHelp: "檔案處理完成後，原始件不再需要。建議開啟自動刪除以節省儲存空間。除非您將其作為主要儲存位置（不建議），否則請選擇“是”。",
+    filesHelp: "在 {{appName}} 中，檔案處理完成後，原始件不再需要。建議開啟自動刪除以節省儲存空間。除非您將其作為主要儲存位置（不建議），否則請選擇“是”。",
     loadFailed: "載入設定失敗",
   },
   advanced: {

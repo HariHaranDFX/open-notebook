@@ -833,7 +833,7 @@ export const zhCN = {
     visionEnabled: "描述图片和图表",
     visionHelp: "使用 Docling 引擎时，使用视觉模型描述图片并提取图表数据。处理速度明显变慢，并且可能调用视觉模型。",
     autoDeletePlaceholder: "选择自动删除选项",
-    filesHelp: "文件处理完成后，原始件不再需要。建议开启自动删除以节省存储空间。除非您将其作为主要存储位置（不建议），否则请选择“是”。",
+    filesHelp: "在 {{appName}} 中，文件处理完成后，原始件不再需要。建议开启自动删除以节省存储空间。除非您将其作为主要存储位置（不建议），否则请选择“是”。",
     loadFailed: "加载设置失败",
   },
   advanced: {

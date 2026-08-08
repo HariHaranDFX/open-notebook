@@ -16,11 +16,14 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 function LoginBrand() {
   const { appName } = useBrand()
+  const { t } = useTranslation()
 
   return (
     <div className="flex min-w-0 flex-col items-center gap-3">
       <BrandLogo size={48} priority />
-      <CardTitle className="max-w-full break-words text-center">{appName}</CardTitle>
+      <CardTitle className="max-w-full break-words text-center">
+        {t('auth.loginTitle', { appName })}
+      </CardTitle>
     </div>
   )
 }
