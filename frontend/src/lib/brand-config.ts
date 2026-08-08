@@ -99,10 +99,11 @@ export function getBrandConfig(): BrandConfig {
     throw new Error('BRAND_CONFIG_PATH must be an absolute path')
   }
 
-  const configPath = configuredPath ?? path.resolve(process.cwd(), '../config/brand.default.json')
+  const configPath = configuredPath
+    ?? path.resolve(/* turbopackIgnore: true */ process.cwd(), '../config/brand.default.json')
 
   try {
-    const parsed = JSON.parse(readFileSync(configPath, 'utf8'))
+    const parsed = JSON.parse(readFileSync(/* turbopackIgnore: true */ configPath, 'utf8'))
     cachedBrandConfig = Object.freeze(brandSchema.parse(parsed)) as BrandConfig
     return cachedBrandConfig
   } catch (error) {

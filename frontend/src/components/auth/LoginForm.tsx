@@ -10,7 +10,20 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { BrandLogo } from '@/components/common/BrandLogo'
+import { useBrand } from '@/components/providers/BrandProvider'
 import { useTranslation } from '@/lib/hooks/use-translation'
+
+function LoginBrand() {
+  const { appName } = useBrand()
+
+  return (
+    <div className="flex min-w-0 flex-col items-center gap-3">
+      <BrandLogo size={48} priority />
+      <CardTitle className="max-w-full break-words text-center">{appName}</CardTitle>
+    </div>
+  )
+}
 
 export function LoginForm() {
   const { t, language } = useTranslation()
@@ -178,7 +191,7 @@ export function LoginForm() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle>{t('auth.loginTitle')}</CardTitle>
+            <LoginBrand />
             <CardDescription>{t('auth.entraLoginDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -202,7 +215,7 @@ export function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>{t('auth.loginTitle')}</CardTitle>
+          <LoginBrand />
           <CardDescription>
             {t('auth.loginDesc')}
           </CardDescription>

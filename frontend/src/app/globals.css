@@ -72,8 +72,8 @@
   --card-foreground: #172433;
   --popover: #FDFEFE;
   --popover-foreground: #172433;
-  --primary: #275E91;
-  --primary-foreground: #FFFFFF;
+  --primary: var(--brand-action-light, #275E91);
+  --primary-foreground: var(--brand-action-light-foreground, #FFFFFF);
   --secondary: #E5EBF0;
   --secondary-foreground: #172433;
   --muted: #E5EBF0;
@@ -119,8 +119,8 @@
   --card-foreground: #EAF0F4;
   --popover: #17222C;
   --popover-foreground: #EAF0F4;
-  --primary: #74A9D6;
-  --primary-foreground: #0C2130;
+  --primary: var(--brand-action-dark, #74A9D6);
+  --primary-foreground: var(--brand-action-dark-foreground, #0C2130);
   --secondary: #1E2C37;
   --secondary-foreground: #EAF0F4;
   --muted: #1E2C37;

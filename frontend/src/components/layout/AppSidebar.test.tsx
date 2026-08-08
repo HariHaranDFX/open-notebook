@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
+import { BrandProvider } from '@/components/providers/BrandProvider'
 import { AppSidebar } from './AppSidebar'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
@@ -11,6 +12,22 @@ vi.mock('@/components/ui/tooltip', () => ({
 }))
 
 describe('AppSidebar', () => {
+  it('renders the configured deployment identity', () => {
+    render(
+      <BrandProvider brand={{
+        appName: 'Atlas Research',
+        logoUrl: '/brand/atlas.svg',
+        actionLight: '#275E91',
+        actionDark: '#74A9D6',
+      }}>
+        <AppSidebar mode="drawer" />
+      </BrandProvider>
+    )
+
+    expect(screen.getByText('Atlas Research')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Atlas Research' })).toBeInTheDocument()
+  })
+
   it('renders every primary and administrative destination', () => {
     render(<AppSidebar />)
 

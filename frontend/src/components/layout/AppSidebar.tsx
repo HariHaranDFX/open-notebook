@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { TFunction } from 'i18next'
@@ -21,7 +20,9 @@ import {
 } from 'lucide-react'
 
 import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { BrandLogo } from '@/components/common/BrandLogo'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
+import { useBrand } from '@/components/providers/BrandProvider'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -83,6 +84,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ mode = 'persistent', onNavigate }: AppSidebarProps) {
   const { t } = useTranslation()
+  const { appName } = useBrand()
   const { logout, isAdmin } = useAuth()
   const pathname = usePathname()
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
@@ -129,13 +131,13 @@ export function AppSidebar({ mode = 'persistent', onNavigate }: AppSidebarProps)
             isDrawer ? 'px-4 pr-12' : 'justify-center px-3 min-[1440px]:justify-start min-[1440px]:px-4'
           )}
         >
-          <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} priority />
+          <BrandLogo priority />
           <span className={cn('truncate text-base font-semibold text-white', labelClass)}>
-            {t('common.appName')}
+            {appName}
           </span>
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label={t('common.appName')}>
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label={appName}>
           <div className="mb-3">
             <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
               <Tooltip>
