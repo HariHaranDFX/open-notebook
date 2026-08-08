@@ -4,6 +4,9 @@ export const esES = {
   common: {
     search: "Buscar...",
     create: "Nuevo",
+    openNavigation: "Abrir navegación",
+    closeNavigation: "Cerrar navegación",
+    skipToContent: "Saltar al contenido principal",
     new: "Nuevo",
     cancel: "Cancelar",
     delete: "Eliminar",

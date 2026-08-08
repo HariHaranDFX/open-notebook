@@ -161,10 +161,11 @@ describe('Unused Key Detection', () => {
     // over 180s cold, because per-file syscalls are far more expensive there.
     // On Linux CI it finishes in seconds.
     //
-    // The original 30s failed on any Windows run; 120s still failed cold.
-    // Set well above the slowest observed cold run so a dev box does not see
+    // The original 30s failed on any Windows run; 120s still failed cold, and
+    // a full cold scan has exceeded 300s on Windows with real-time scanning.
+    // Set above the slowest observed cold run so a dev box does not see
     // spurious failures. It remains a hard ceiling rather than no timeout at
     // all, so a genuine hang is still caught -- just not quickly.
-    300_000,
+    600_000,
   )
 })

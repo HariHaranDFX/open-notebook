@@ -4,6 +4,9 @@ export const plPL = {
   common: {
     search: "Szukaj...",
     create: "Nowy",
+    openNavigation: "Otwórz nawigację",
+    closeNavigation: "Zamknij nawigację",
+    skipToContent: "Przejdź do głównej treści",
     new: "Nowy",
     cancel: "Anuluj",
     delete: "Usuń",

@@ -4,6 +4,9 @@ export const jaJP = {
   common: {
     search: "検索...",
     create: "新規",
+    openNavigation: "ナビゲーションを開く",
+    closeNavigation: "ナビゲーションを閉じる",
+    skipToContent: "メインコンテンツへ移動",
     new: "新規",
     cancel: "キャンセル",
     delete: "削除",

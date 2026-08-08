@@ -4,6 +4,9 @@ export const bnIN = {
   common: {
     search: "অনুসন্ধান...",
     create: "নতুন",
+    openNavigation: "নেভিগেশন খুলুন",
+    closeNavigation: "নেভিগেশন বন্ধ করুন",
+    skipToContent: "মূল কনটেন্টে যান",
     new: "নতুন",
     cancel: "বাতিল",
     delete: "মুছে ফেলুন",

@@ -52,3 +52,4 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [PDR-001](PDR-001-single-user-first.md) | Single-user first; don't preclude multi-user | Accepted |
 | [PDR-002](PDR-002-provider-agnostic-core.md) | Provider-agnostic core by default | Accepted |
 | [PDR-003](PDR-003-per-user-ownership-and-sharing.md) | Per-user ownership now; sharing & groups after WP2 | Accepted |
+| [PDR-004](PDR-004-wp3-adaptive-research-shell.md) | One adaptive research shell for WP3 | Accepted |

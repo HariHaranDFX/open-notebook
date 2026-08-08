@@ -7,6 +7,9 @@ export const deDE = {
   common: {
     search: "Suchen...",
     create: "Neu",
+    openNavigation: "Navigation öffnen",
+    closeNavigation: "Navigation schließen",
+    skipToContent: "Zum Hauptinhalt springen",
     new: "Neu",
     cancel: "Abbrechen",
     delete: "Löschen",

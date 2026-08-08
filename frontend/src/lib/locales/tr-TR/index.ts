@@ -4,6 +4,9 @@ export const trTR = {
   common: {
     search: "Ara...",
     create: "Yeni",
+    openNavigation: "Gezinmeyi aç",
+    closeNavigation: "Gezinmeyi kapat",
+    skipToContent: "Ana içeriğe geç",
     new: "Yeni",
     cancel: "İptal",
     delete: "Sil",

@@ -1,49 +1,46 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { useSidebarStore } from '@/lib/stores/sidebar-store'
-import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import type { TFunction } from 'i18next'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+  Book,
+  Bot,
+  Command,
+  FileText,
+  LogOut,
+  Mic,
+  Plus,
+  Search,
+  Settings,
+  Shuffle,
+  Users,
+  Wrench,
+} from 'lucide-react'
+
+import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { LanguageToggle } from '@/components/common/LanguageToggle'
-import { isNavItemActive } from '@/components/layout/nav-active'
-import type { TFunction } from 'i18next'
-import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
 import {
-  Book,
-  Search,
-  Mic,
-  Bot,
-  Shuffle,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  Menu,
-  FileText,
-  Plus,
-  Wrench,
-  Command,
-  Users,
-} from 'lucide-react'
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useAuth } from '@/lib/hooks/use-auth'
+import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
+import { isNavItemActive } from './nav-active'
 
 const getNavigation = (t: TFunction) => [
   {
@@ -63,6 +60,7 @@ const getNavigation = (t: TFunction) => [
     title: t('navigation.create'),
     items: [
       { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic },
+      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle },
     ],
   },
   {
@@ -70,7 +68,6 @@ const getNavigation = (t: TFunction) => [
     items: [
       { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, adminOnly: true },
       { name: t('navigation.groups'), href: '/settings/groups', icon: Users, adminOnly: true },
-      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle },
       { name: t('navigation.settings'), href: '/settings', icon: Settings, adminOnly: true },
       { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, adminOnly: true },
     ],
@@ -79,9 +76,20 @@ const getNavigation = (t: TFunction) => [
 
 type CreateTarget = 'source' | 'notebook' | 'podcast'
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  mode?: 'persistent' | 'drawer'
+  onNavigate?: () => void
+}
+
+export function AppSidebar({ mode = 'persistent', onNavigate }: AppSidebarProps) {
   const { t } = useTranslation()
   const { logout, isAdmin } = useAuth()
+  const pathname = usePathname()
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const [createMenuOpen, setCreateMenuOpen] = useState(false)
+  const [isMac, setIsMac] = useState(true)
+  const isDrawer = mode === 'drawer'
+
   const navigation = getNavigation(t)
     .map((section) => ({
       ...section,
@@ -90,15 +98,8 @@ export function AppSidebar() {
       ),
     }))
     .filter((section) => section.items.length > 0)
-  const pathname = usePathname()
   const navHrefs = navigation.flatMap((section) => section.items.map((item) => item.href))
-  const { isCollapsed, toggleCollapse } = useSidebarStore()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
 
-  const [createMenuOpen, setCreateMenuOpen] = useState(false)
-  const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
-
-  // Detect platform for keyboard shortcut display
   useEffect(() => {
     setIsMac(navigator.platform.toLowerCase().includes('mac'))
   }, [])
@@ -106,145 +107,75 @@ export function AppSidebar() {
   const handleCreateSelection = (target: CreateTarget) => {
     setCreateMenuOpen(false)
 
-    if (target === 'source') {
-      openSourceDialog()
-    } else if (target === 'notebook') {
-      openNotebookDialog()
-    } else if (target === 'podcast') {
-      openPodcastDialog()
-    }
+    if (target === 'source') openSourceDialog()
+    if (target === 'notebook') openNotebookDialog()
+    if (target === 'podcast') openPodcastDialog()
   }
 
+  const labelClass = isDrawer ? '' : 'hidden min-[1440px]:inline'
+  const sectionClass = isDrawer ? '' : 'hidden min-[1440px]:block'
+
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delayDuration={300}>
       <div
         className={cn(
-          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
-          isCollapsed ? 'w-16' : 'w-64'
+          'app-sidebar flex h-full flex-col border-r border-sidebar-border',
+          isDrawer ? 'w-full' : 'w-[72px] min-[1440px]:w-64'
         )}
       >
         <div
           className={cn(
-            'flex h-16 items-center group',
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+            'flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border',
+            isDrawer ? 'px-4 pr-12' : 'justify-center px-3 min-[1440px]:justify-start min-[1440px]:px-4'
           )}
         >
-          {isCollapsed ? (
-            <div className="relative flex items-center justify-center w-full">
-              <Image
-                src="/logo.svg"
-                alt="Open Notebook"
-                width={32}
-                height={32}
-                className="transition-opacity group-hover:opacity-0"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleCollapse}
-                className="absolute text-sidebar-foreground hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} />
-                <span className="text-base font-medium text-sidebar-foreground">
-                  {t('common.appName')}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleCollapse}
-                className="text-sidebar-foreground hover:bg-sidebar-accent"
-                data-testid="sidebar-toggle"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+          <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} priority />
+          <span className={cn('truncate text-base font-semibold text-white', labelClass)}>
+            {t('common.appName')}
+          </span>
         </div>
 
-        <nav
-          className={cn(
-            'flex-1 space-y-1 py-4',
-            isCollapsed ? 'px-2' : 'px-3'
-          )}
-        >
-          <div
-            className={cn(
-              'mb-4',
-              isCollapsed ? 'px-0' : 'px-3'
-            )}
-          >
+        <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label={t('common.appName')}>
+          <div className="mb-3">
             <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
-              {isCollapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        onClick={() => setCreateMenuOpen(true)}
-                        variant="default"
-                        size="sm"
-                        className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                        aria-label={t('common.create')}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                   <TooltipContent side="right">{t('common.create')}</TooltipContent>
-                </Tooltip>
-              ) : (
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    onClick={() => setCreateMenuOpen(true)}
-                    variant="default"
-                    size="sm"
-                    className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                   >
-                    <Plus className="h-4 w-4 mr-2" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className={cn(
+                        'w-full border-0 bg-primary text-primary-foreground hover:bg-primary/90',
+                        isDrawer ? 'justify-start' : 'justify-center px-2 min-[1440px]:justify-start min-[1440px]:px-3'
+                      )}
+                      aria-label={t('common.create')}
+                    >
+                      <Plus className="size-4" />
+                      <span className={labelClass}>{t('common.create')}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                {!isDrawer && (
+                  <TooltipContent side="right" className="min-[1440px]:hidden">
                     {t('common.create')}
-                  </Button>
-                </DropdownMenuTrigger>
-              )}
-
+                  </TooltipContent>
+                )}
+              </Tooltip>
               <DropdownMenuContent
-                align={isCollapsed ? 'end' : 'start'}
-                side={isCollapsed ? 'right' : 'bottom'}
+                align={isDrawer ? 'start' : 'end'}
+                side={isDrawer ? 'bottom' : 'right'}
                 className="w-48"
               >
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    handleCreateSelection('source')
-                  }}
-                  className="gap-2"
-                >
-                   <FileText className="h-4 w-4" />
+                <DropdownMenuItem onSelect={() => handleCreateSelection('source')} className="gap-2">
+                  <FileText className="size-4" />
                   {t('common.source')}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    handleCreateSelection('notebook')
-                  }}
-                  className="gap-2"
-                >
-                   <Book className="h-4 w-4" />
+                <DropdownMenuItem onSelect={() => handleCreateSelection('notebook')} className="gap-2">
+                  <Book className="size-4" />
                   {t('common.notebook')}
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    handleCreateSelection('podcast')
-                  }}
-                  className="gap-2"
-                >
-                   <Mic className="h-4 w-4" />
+                <DropdownMenuItem onSelect={() => handleCreateSelection('podcast')} className="gap-2">
+                  <Mic className="size-4" />
                   {t('common.podcast')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -253,49 +184,48 @@ export function AppSidebar() {
 
           {navigation.map((section, index) => (
             <div key={section.title}>
-              {index > 0 && (
-                <Separator className="my-3" />
-              )}
-              <div className="space-y-1">
-                {!isCollapsed && (
-                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-                    {section.title}
-                  </h3>
+              {index > 0 && <Separator className="my-3 bg-sidebar-border" />}
+              <h2
+                className={cn(
+                  'mb-2 px-3 text-xs font-semibold uppercase tracking-[0.08em] text-sidebar-foreground',
+                  sectionClass
                 )}
-
+              >
+                {section.title}
+              </h2>
+              <div className="space-y-1">
                 {section.items.map((item) => {
                   const isActive = isNavItemActive(pathname, item.href, navHrefs)
-                  const button = (
+                  const link = (
                     <Button
-                      variant={isActive ? 'secondary' : 'ghost'}
+                      asChild
+                      variant="ghost"
                       className={cn(
-                        'w-full gap-3 text-sidebar-foreground sidebar-menu-item',
-                        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
-                        isCollapsed ? 'justify-center px-2' : 'justify-start'
+                        'sidebar-menu-item w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                        isDrawer ? 'justify-start' : 'justify-center px-2 min-[1440px]:justify-start min-[1440px]:px-4',
+                        isActive && 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
                       )}
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.name}</span>}
+                      <Link
+                        href={item.href}
+                        onClick={onNavigate}
+                        aria-current={isActive ? 'page' : undefined}
+                      >
+                        <item.icon className="size-4" />
+                        <span className={labelClass}>{item.name}</span>
+                      </Link>
                     </Button>
                   )
 
-                  if (isCollapsed) {
-                    return (
-                      <Tooltip key={item.name}>
-                        <TooltipTrigger asChild>
-                          <Link href={item.href}>
-                            {button}
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{item.name}</TooltipContent>
-                      </Tooltip>
-                    )
-                  }
+                  if (isDrawer) return <div key={item.name}>{link}</div>
 
                   return (
-                    <Link key={item.name} href={item.href}>
-                      {button}
-                    </Link>
+                    <Tooltip key={item.name}>
+                      <TooltipTrigger asChild>{link}</TooltipTrigger>
+                      <TooltipContent side="right" className="min-[1440px]:hidden">
+                        {item.name}
+                      </TooltipContent>
+                    </Tooltip>
                   )
                 })}
               </div>
@@ -303,88 +233,52 @@ export function AppSidebar() {
           ))}
         </nav>
 
-        <div
-          className={cn(
-            'border-t border-sidebar-border p-3 space-y-2',
-            isCollapsed && 'px-2'
-          )}
-        >
-          {/* Command Palette hint */}
-          {!isCollapsed && (
-            <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">
-              <div className="flex items-center justify-between">
-                 <span className="flex items-center gap-1.5">
-                  <Command className="h-3 w-3" />
-                  {t('common.quickActions')}
-                </span>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
-                </kbd>
-              </div>
-               <p className="mt-1 text-[10px] text-sidebar-foreground/40">
-                {t('common.quickActionsDesc')}
-              </p>
+        <div className="shrink-0 space-y-2 border-t border-sidebar-border p-2 min-[1440px]:p-3">
+          <div className={cn('px-3 py-1.5 text-xs text-sidebar-foreground', sectionClass)}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <Command className="size-3" />
+                {t('common.quickActions')}
+              </span>
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded-[var(--surface-radius)] border border-sidebar-border px-1.5 font-mono text-[10px] font-medium">
+                {isMac ? '⌘K' : 'Ctrl+K'}
+              </kbd>
             </div>
-          )}
-
-           <div
-            className={cn(
-              'flex flex-col gap-2',
-              isCollapsed ? 'items-center' : 'items-stretch'
-            )}
-          >
-            {isCollapsed ? (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <ThemeToggle iconOnly />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{t('common.theme')}</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <LanguageToggle iconOnly />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{t('common.language')}</TooltipContent>
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <ThemeToggle />
-                <LanguageToggle />
-              </>
-            )}
+            <p className="mt-1 text-xs text-sidebar-foreground/80">{t('common.quickActionsDesc')}</p>
           </div>
 
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-center sidebar-menu-item"
-                  onClick={logout}
-                  aria-label={t('common.signOut')}
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-               <TooltipContent side="right">{t('common.signOut')}</TooltipContent>
-            </Tooltip>
+          {isDrawer ? (
+            <>
+              <ThemeToggle />
+              <LanguageToggle />
+            </>
           ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 sidebar-menu-item"
-              onClick={logout}
-              aria-label={t('common.signOut')}
-             >
-              <LogOut className="h-4 w-4" />
-              {t('common.signOut')}
-            </Button>
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild><div className="min-[1440px]:hidden"><ThemeToggle iconOnly /></div></TooltipTrigger>
+                <TooltipContent side="right" className="min-[1440px]:hidden">{t('common.theme')}</TooltipContent>
+              </Tooltip>
+              <div className="hidden min-[1440px]:block"><ThemeToggle /></div>
+              <Tooltip>
+                <TooltipTrigger asChild><div className="min-[1440px]:hidden"><LanguageToggle iconOnly /></div></TooltipTrigger>
+                <TooltipContent side="right" className="min-[1440px]:hidden">{t('common.language')}</TooltipContent>
+              </Tooltip>
+              <div className="hidden min-[1440px]:block"><LanguageToggle /></div>
+            </>
           )}
+
+          <Button
+            variant="outline"
+            className={cn(
+              'sidebar-menu-item w-full border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              isDrawer ? 'justify-start' : 'justify-center px-2 min-[1440px]:justify-start min-[1440px]:px-4'
+            )}
+            onClick={logout}
+            aria-label={t('common.signOut')}
+          >
+            <LogOut className="size-4" />
+            <span className={labelClass}>{t('common.signOut')}</span>
+          </Button>
         </div>
       </div>
     </TooltipProvider>

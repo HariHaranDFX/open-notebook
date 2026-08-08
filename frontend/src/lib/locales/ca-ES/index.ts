@@ -4,6 +4,9 @@ export const caES = {
   common: {
     search: "Cerca...",
     create: "Nou",
+    openNavigation: "Obre la navegació",
+    closeNavigation: "Tanca la navegació",
+    skipToContent: "Ves al contingut principal",
     new: "Nou",
     cancel: "Cancel·la",
     delete: "Suprimeix",

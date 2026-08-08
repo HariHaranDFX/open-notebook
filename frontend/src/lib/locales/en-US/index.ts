@@ -2,6 +2,9 @@ export const enUS = {
   common: {
     search: "Search...",
     create: "New",
+    openNavigation: "Open navigation",
+    closeNavigation: "Close navigation",
+    skipToContent: "Skip to main content",
     new: "New",
     cancel: "Cancel",
     delete: "Delete",

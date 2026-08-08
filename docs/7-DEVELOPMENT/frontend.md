@@ -18,6 +18,21 @@ Pages (src/app/, App Router) → Feature components (src/components/) → Hooks 
 
 Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → ThemeProvider → QueryProvider → I18nProvider → ConnectionGuard → Toaster.
 
+## WP3 design foundation and shell
+
+[DESIGN.md](../../DESIGN.md) is the single visual and interaction contract. `app/globals.css` maps its Survey Blue roles onto the existing Tailwind semantic variables and also exposes provenance and semantic-state roles. Source Sans 3 is the operational font; the `font-research` utility selects Source Serif 4 for research reading and thought hierarchy only. Both are configured through `next/font` in the root layout, and the provider order above remains unchanged.
+
+`AppShell` provides one responsive navigation hierarchy and one focusable `#main-content` landmark:
+
+- below `1024px`: the sidebar is a left-hand drawer;
+- `1024–1439px`: a `72px` rail keeps every destination label in the DOM and exposes it on demand;
+- `1440px` and above: the same sidebar expands and shows its labels;
+- route changes focus the main landmark without scrolling it, and a skip link is the first shell control.
+
+`PageFrame` is the outer container for migrated routes. It owns the page's single vertical scroller, responsive gutters, and one of the shared `full`, `content`, or `reading` width constraints. Do not wrap an existing page-level scroller inside it; remove the old scroller as part of that route's migration. `PageHeader` standardizes eyebrow, title, description, subordinate actions, and the view's one primary action while allowing actions to wrap on narrow screens.
+
+The shell and primitives deliberately reuse the current Radix, Tailwind, theme, and routing foundations. Do not add another theme provider, navigation registry, UI framework, or page-builder abstraction. Customer branding must not remap provenance, focus, or semantic-state meaning.
+
 ## Flow walkthrough: notebook chat
 
 1. `notebooks/[id]/page.tsx` passes `notebookId` to `ChatColumn`.

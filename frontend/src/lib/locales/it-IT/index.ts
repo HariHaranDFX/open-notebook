@@ -4,6 +4,9 @@ export const itIT = {
   common: {
     search: "Cerca...",
     create: "Nuovo",
+    openNavigation: "Apri navigazione",
+    closeNavigation: "Chiudi navigazione",
+    skipToContent: "Vai al contenuto principale",
     new: "Nuovo",
     cancel: "Annulla",
     delete: "Elimina",

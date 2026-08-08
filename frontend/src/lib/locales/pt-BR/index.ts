@@ -4,6 +4,9 @@ export const ptBR = {
   common: {
     search: "Buscar...",
     create: "Novo",
+    openNavigation: "Abrir navegação",
+    closeNavigation: "Fechar navegação",
+    skipToContent: "Ir para o conteúdo principal",
     new: "Novo",
     cancel: "Cancelar",
     delete: "Excluir",

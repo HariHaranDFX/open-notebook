@@ -4,6 +4,9 @@ export const ruRU = {
   common: {
     search: "Поиск...",
     create: "Создать",
+    openNavigation: "Открыть навигацию",
+    closeNavigation: "Закрыть навигацию",
+    skipToContent: "Перейти к основному содержимому",
     new: "Новый",
     cancel: "Отмена",
     delete: "Удалить",

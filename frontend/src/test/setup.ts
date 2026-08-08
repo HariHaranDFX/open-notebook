@@ -48,14 +48,6 @@ vi.mock('@/lib/hooks/use-auth', () => ({
   })),
 }))
 
-// Mock @/lib/stores/sidebar-store
-vi.mock('@/lib/stores/sidebar-store', () => ({
-  useSidebarStore: vi.fn(() => ({
-    isCollapsed: false,
-    toggleCollapse: vi.fn(),
-  })),
-}))
-
 // Mock @/lib/hooks/use-create-dialogs
 vi.mock('@/lib/hooks/use-create-dialogs', () => ({
   useCreateDialogs: vi.fn(() => ({

@@ -4,6 +4,9 @@ export const frFR = {
   common: {
     search: "Recherche...",
     create: "Créer",
+    openNavigation: "Ouvrir la navigation",
+    closeNavigation: "Fermer la navigation",
+    skipToContent: "Aller au contenu principal",
     new: "Nouveau",
     cancel: "Annuler",
     delete: "Supprimer",

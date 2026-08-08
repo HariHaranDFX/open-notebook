@@ -4,6 +4,9 @@ export const zhCN = {
   common: {
     search: "搜索...",
     create: "新建",
+    openNavigation: "打开导航",
+    closeNavigation: "关闭导航",
+    skipToContent: "跳转到主要内容",
     new: "新建",
     cancel: "取消",
     delete: "删除",

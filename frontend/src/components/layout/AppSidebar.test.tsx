@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { AppSidebar } from './AppSidebar'
-import { useSidebarStore } from '@/lib/stores/sidebar-store'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -13,38 +11,17 @@ vi.mock('@/components/ui/tooltip', () => ({
 }))
 
 describe('AppSidebar', () => {
-  it('renders correctly when expanded', () => {
+  it('renders every primary and administrative destination', () => {
     render(<AppSidebar />)
 
-    // With mocked t() returning keys, check for translation key strings
-    expect(screen.getByText('common.appName')).toBeDefined()
-    expect(screen.getByText('navigation.sources')).toBeDefined()
-    expect(screen.getByText('navigation.notebooks')).toBeDefined()
-  })
-
-  it('toggles collapse state when clicking handle', () => {
-    const toggleCollapse = vi.fn()
-    vi.mocked(useSidebarStore).mockReturnValue({
-      isCollapsed: false,
-      toggleCollapse,
-    } as any)
-
-    render(<AppSidebar />)
-
-    fireEvent.click(screen.getByTestId('sidebar-toggle'))
-
-    expect(toggleCollapse).toHaveBeenCalled()
-  })
-
-  it('shows collapsed view when isCollapsed is true', () => {
-    vi.mocked(useSidebarStore).mockReturnValue({
-      isCollapsed: true,
-      toggleCollapse: vi.fn(),
-    } as any)
-
-    render(<AppSidebar />)
-
-    // In collapsed mode, app name shouldn't be visible (as text)
-    expect(screen.queryByText('common.appName')).toBeNull()
+    expect(screen.getByRole('link', { name: 'navigation.sources' })).toHaveAttribute('href', '/sources')
+    expect(screen.getByRole('link', { name: 'navigation.notebooks' })).toHaveAttribute('href', '/notebooks')
+    expect(screen.getByRole('link', { name: 'navigation.askAndSearch' })).toHaveAttribute('href', '/search')
+    expect(screen.getByRole('link', { name: 'navigation.podcasts' })).toHaveAttribute('href', '/podcasts')
+    expect(screen.getByRole('link', { name: 'navigation.transformations' })).toHaveAttribute('href', '/transformations')
+    expect(screen.getByRole('link', { name: 'navigation.models' })).toHaveAttribute('href', '/settings/api-keys')
+    expect(screen.getByRole('link', { name: 'navigation.groups' })).toHaveAttribute('href', '/settings/groups')
+    expect(screen.getByRole('link', { name: 'navigation.settings' })).toHaveAttribute('href', '/settings')
+    expect(screen.getByRole('link', { name: 'navigation.advanced' })).toHaveAttribute('href', '/advanced')
   })
 })

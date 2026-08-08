@@ -4,6 +4,9 @@ export const zhTW = {
   common: {
     search: "搜尋...",
     create: "新增",
+    openNavigation: "開啟導覽",
+    closeNavigation: "關閉導覽",
+    skipToContent: "跳至主要內容",
     new: "新建",
     cancel: "取消",
     delete: "刪除",
