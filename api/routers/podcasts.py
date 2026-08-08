@@ -5,14 +5,19 @@ from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
 
-from api.auth.deps import current_user_optional
-from api.ownership import assert_owner_or_404, filter_owned_or_hidden
+from api.auth.deps import auth_enforces_ownership, current_user_optional
+from api.ownership import (
+    assert_can_edit_notebook_or_403,
+    canonical_id,
+    filter_episodes_by_access,
+)
 from api.podcast_service import (
     PodcastGenerationRequest,
     PodcastGenerationResponse,
     PodcastService,
 )
 from open_notebook.ai.models import Model
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
@@ -87,6 +92,36 @@ async def _resolve_snapshot_models(
         return {}
 
 
+async def _assert_episode_view_or_404(episode: PodcastEpisode, request: Request) -> None:
+    """Play/get: episode owner OR notebook viewer+."""
+    kept = await filter_episodes_by_access([episode], request)
+    if not kept:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+
+async def _assert_episode_edit_or_403(episode: PodcastEpisode, request: Request) -> None:
+    """Delete/retry: episode owner OR notebook editor+."""
+    if not auth_enforces_ownership():
+        return
+    user = current_user_optional(request)
+    if user is None:
+        return
+    if episode.user_id and canonical_id(str(episode.user_id)) == canonical_id(user.id):
+        return
+    nb_id = getattr(episode, "notebook_id", None)
+    if not nb_id:
+        raise HTTPException(status_code=404, detail="Episode not found")
+    rows = await repo_query(
+        "SELECT user_id FROM notebook WHERE id = $id",
+        {"id": ensure_record_id(str(nb_id))},
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Episode not found")
+    await assert_can_edit_notebook_or_403(
+        rows[0].get("user_id"), str(nb_id), request, "Episode not found"
+    )
+
+
 def _delete_episode_audio(episode: PodcastEpisode, episode_id: str) -> None:
     """Best-effort unlink of an episode's audio file, refusing invalid paths.
 
@@ -133,7 +168,12 @@ async def generate_podcast(request: PodcastGenerationRequest, http_request: Requ
     try:
         if request.notebook_id:
             notebook = await Notebook.get(request.notebook_id)
-            assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
+            await assert_can_edit_notebook_or_403(
+                notebook.user_id,
+                request.notebook_id,
+                http_request,
+                "Notebook not found",
+            )
 
         user = current_user_optional(http_request)
         job_id = await PodcastService.submit_generation_job(
@@ -189,9 +229,7 @@ async def list_podcast_episodes(request: Request):
     """List all podcast episodes"""
     try:
         episodes = await PodcastService.list_episodes()
-        episodes = filter_owned_or_hidden(
-            episodes, request, lambda episode: episode.user_id
-        )
+        episodes = await filter_episodes_by_access(episodes, request)
 
         # Batch-fetch job status for every episode with a command in one
         # query instead of one round trip per episode (see
@@ -277,7 +315,7 @@ async def get_podcast_episode(episode_id: str, request: Request):
     """Get a specific podcast episode"""
     try:
         episode = await PodcastService.get_episode(episode_id)
-        assert_owner_or_404(episode.user_id, request, "Episode not found")
+        await _assert_episode_view_or_404(episode, request)
 
         # Get job status and error message if available
         job_status = None
@@ -337,7 +375,7 @@ async def stream_podcast_episode_audio(episode_id: str, request: Request):
     """Stream the audio file associated with a podcast episode"""
     try:
         episode = await PodcastService.get_episode(episode_id)
-        assert_owner_or_404(episode.user_id, request, "Episode not found")
+        await _assert_episode_view_or_404(episode, request)
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -372,7 +410,7 @@ async def retry_podcast_episode(episode_id: str, request: Request):
     """Retry a failed podcast episode by deleting it and submitting a new job"""
     try:
         episode = await PodcastService.get_episode(episode_id)
-        assert_owner_or_404(episode.user_id, request, "Episode not found")
+        await _assert_episode_edit_or_403(episode, request)
 
         # Validate episode is in a failed state
         detail = await episode.get_job_detail()
@@ -387,6 +425,7 @@ async def retry_podcast_episode(episode_id: str, request: Request):
         sp_profile_name = episode.speaker_profile.get("name")
         episode_name = episode.name
         content = episode.content
+        notebook_id = episode.notebook_id
 
         if not ep_profile_name or not sp_profile_name:
             raise HTTPException(
@@ -400,12 +439,13 @@ async def retry_podcast_episode(episode_id: str, request: Request):
         # Delete the failed episode
         await episode.delete()
 
-        # Submit a new job, preserving the original episode's owner
+        # Submit a new job, preserving the original episode's owner + notebook
         job_id = await PodcastService.submit_generation_job(
             episode_profile_name=ep_profile_name,
             speaker_profile_name=sp_profile_name,
             episode_name=episode_name,
             content=content,
+            notebook_id=notebook_id,
             user_id=episode.user_id,
             client_id=episode.client_id,
         )
@@ -429,7 +469,7 @@ async def delete_podcast_episode(episode_id: str, request: Request):
     try:
         # Get the episode first to check if it exists and get the audio file path
         episode = await PodcastService.get_episode(episode_id)
-        assert_owner_or_404(episode.user_id, request, "Episode not found")
+        await _assert_episode_edit_or_403(episode, request)
 
         # Delete the physical audio file if it exists
         _delete_episode_audio(episode, episode_id)

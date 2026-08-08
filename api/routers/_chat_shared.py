@@ -18,7 +18,10 @@ from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
-from api.ownership import assert_owner_or_404
+from api.ownership import (
+    assert_can_edit_notebook_or_403,
+    assert_can_view_notebook_or_404,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Notebook, Source
 from open_notebook.exceptions import NotFoundError
@@ -91,29 +94,57 @@ async def get_session_notebook_id(full_session_id: str) -> Optional[str]:
     return notebook_query[0]["out"] if notebook_query else None
 
 
+async def _session_notebook_owner(
+    full_session_id: str,
+) -> tuple[Optional[str], Optional[str]]:
+    """Return (notebook_id, owner_user_id) for a chat session, or (None, None)."""
+    notebook_id = await get_session_notebook_id(full_session_id)
+    if not notebook_id:
+        return None, None
+    try:
+        owner_user_id = (await Notebook.get(notebook_id)).user_id
+    except NotFoundError:
+        return str(notebook_id), None
+    return str(notebook_id), owner_user_id
+
+
 async def assert_session_owner_or_404(
     full_session_id: str, request: Request, detail: str
 ) -> None:
-    """Raise 404 unless the current user owns the notebook this chat session
-    refers to.
+    """Raise 404 unless the current user can view the notebook this chat
+    session refers to (viewer+ may chat/read).
 
-    Chat sessions carry no `user_id` of their own; ownership is derived
-    through the notebook they're related to via `refers_to`. Fails closed:
-    a session with no (or a since-deleted) notebook link is treated as
-    unowned, same as `assert_owner_or_404`'s null-owner handling.
+    Chat sessions carry no `user_id` of their own; access is derived through
+    the notebook they're related to via `refers_to`. Fails closed: a session
+    with no (or a since-deleted) notebook link is treated as inaccessible.
     """
     if not auth_enforces_ownership():
         return
     if current_user_optional(request) is None:
         return
-    notebook_id = await get_session_notebook_id(full_session_id)
-    owner_user_id = None
-    if notebook_id:
-        try:
-            owner_user_id = (await Notebook.get(notebook_id)).user_id
-        except NotFoundError:
-            owner_user_id = None
-    assert_owner_or_404(owner_user_id, request, detail)
+    notebook_id, owner_user_id = await _session_notebook_owner(full_session_id)
+    if not notebook_id:
+        raise HTTPException(status_code=404, detail=detail)
+    await assert_can_view_notebook_or_404(
+        owner_user_id, notebook_id, request, detail
+    )
+
+
+async def assert_session_editable_or_403(
+    full_session_id: str, request: Request, detail: str
+) -> None:
+    """Raise 404/403 unless the current user can edit the session's notebook
+    (delete session and similar mutations)."""
+    if not auth_enforces_ownership():
+        return
+    if current_user_optional(request) is None:
+        return
+    notebook_id, owner_user_id = await _session_notebook_owner(full_session_id)
+    if not notebook_id:
+        raise HTTPException(status_code=404, detail=detail)
+    await assert_can_edit_notebook_or_403(
+        owner_user_id, notebook_id, request, detail
+    )
 
 
 def extract_chat_messages(raw_messages: Iterable[Any]) -> List[ChatMessage]:

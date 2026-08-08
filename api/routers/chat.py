@@ -7,10 +7,11 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from api.ownership import assert_owner_or_404
+from api.ownership import assert_can_view_notebook_or_404
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
+    assert_session_editable_or_403,
     assert_session_owner_or_404,
     extract_chat_messages,
     get_session_notebook_id,
@@ -98,11 +99,13 @@ async def get_sessions(
 ):
     """Get all chat sessions for a notebook."""
     try:
-        # Get notebook to verify it exists and is owned by the current user
+        # Viewer+ may list chat sessions
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+        await assert_can_view_notebook_or_404(
+            notebook.user_id, notebook_id, request, "Notebook not found"
+        )
 
         # Get sessions for this notebook
         sessions_list = await notebook.get_chat_sessions()
@@ -144,11 +147,13 @@ async def get_sessions(
 async def create_session(request: CreateSessionRequest, http_request: Request):
     """Create a new chat session."""
     try:
-        # Verify notebook exists and is owned by the current user
+        # Viewer+ may create chat sessions
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
+        await assert_can_view_notebook_or_404(
+            notebook.user_id, request.notebook_id, http_request, "Notebook not found"
+        )
 
         # Create new session
         session = ChatSession(
@@ -289,10 +294,11 @@ async def update_session(
 async def delete_session(session_id: str, request: Request):
     """Delete a chat session."""
     try:
-        # Get session (normalizes the ID and 404s if missing), then verify
-        # the current user owns the notebook it belongs to.
+        # Deleting a session requires editor+ on the notebook.
         full_session_id, session = await get_session_or_404(session_id)
-        await assert_session_owner_or_404(full_session_id, request, "Session not found")
+        await assert_session_editable_or_403(
+            full_session_id, request, "Session not found"
+        )
 
         await session.delete()
 
@@ -400,11 +406,13 @@ async def execute_chat(request: ExecuteChatRequest, http_request: Request):
 async def build_context(request: BuildContextRequest, http_request: Request):
     """Build context for a notebook based on context configuration."""
     try:
-        # Verify notebook exists and is owned by the current user
+        # Viewer+ may build chat context
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        assert_owner_or_404(notebook.user_id, http_request, "Notebook not found")
+        await assert_can_view_notebook_or_404(
+            notebook.user_id, request.notebook_id, http_request, "Notebook not found"
+        )
 
         context_data, total_content = await build_notebook_context(
             notebook, request.context_config

@@ -1,0 +1,39 @@
+-- Migration 28: WP2b sharing ACL — local groups, resource grants, episode→notebook.
+
+DEFINE TABLE IF NOT EXISTS user_group SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE user_group TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE user_group TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS source ON TABLE user_group TYPE string DEFAULT "local"
+  ASSERT $value IN ["local", "entra"];
+DEFINE FIELD IF NOT EXISTS entra_group_oid ON TABLE user_group TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON user_group DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON user_group DEFAULT time::now() VALUE time::now();
+DEFINE INDEX IF NOT EXISTS idx_user_group_name ON TABLE user_group COLUMNS name UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_user_group_entra ON TABLE user_group COLUMNS entra_group_oid UNIQUE;
+
+DEFINE TABLE IF NOT EXISTS user_group_member SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS group_id ON TABLE user_group_member TYPE record<user_group>;
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE user_group_member TYPE record<user>;
+DEFINE FIELD IF NOT EXISTS created ON user_group_member DEFAULT time::now() VALUE $before OR time::now();
+DEFINE INDEX IF NOT EXISTS idx_group_member_unique ON TABLE user_group_member COLUMNS group_id, user_id UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_group_member_user ON TABLE user_group_member COLUMNS user_id;
+
+DEFINE TABLE IF NOT EXISTS resource_grant SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS resource_type ON TABLE resource_grant TYPE string
+  ASSERT $value IN ["notebook", "source"];
+DEFINE FIELD IF NOT EXISTS resource_id ON TABLE resource_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS principal_type ON TABLE resource_grant TYPE string
+  ASSERT $value IN ["user", "group"];
+DEFINE FIELD IF NOT EXISTS principal_id ON TABLE resource_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS role ON TABLE resource_grant TYPE string
+  ASSERT $value IN ["viewer", "editor"];
+DEFINE FIELD IF NOT EXISTS granted_by ON TABLE resource_grant TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS created ON resource_grant DEFAULT time::now() VALUE $before OR time::now();
+DEFINE INDEX IF NOT EXISTS idx_grant_unique ON TABLE resource_grant
+  COLUMNS resource_type, resource_id, principal_type, principal_id UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_grant_resource ON TABLE resource_grant
+  COLUMNS resource_type, resource_id;
+DEFINE INDEX IF NOT EXISTS idx_grant_principal ON TABLE resource_grant
+  COLUMNS principal_type, principal_id;
+
+DEFINE FIELD IF NOT EXISTS notebook_id ON TABLE episode TYPE option<record<notebook>>;

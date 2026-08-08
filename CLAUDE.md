@@ -9,10 +9,10 @@ Rules:
 - One branch per work package (wp-<n>-<slug>). Never mix packages.
 - A package is done only when its acceptance criteria pass AND tests are green.
 - Stop and report at the end of each package for human review. Do not roll on.
-- Current work package: **WP2 complete on `main`** (Identity & Microsoft Entra ID
-  auth). Next: **WP3 (Frontend map + white-label)** — not started. WP0, WP1,
-  WP-DEC, and WP2 are complete on `main`. Stop for human review before opening
-  `wp-3-white-label`.
+- Current work package: **WP2b in progress on `wp-2b-sharing`** (Sharing ACL,
+  groups, admin allocate). WP0–WP2 and WP-DEC are complete on `main`. After
+  WP2b merges, next is **WP3 (Frontend map + white-label)** — do not mix on
+  this branch.
 
 WP0 landed: `upstream-base` tag at the fork point (upstream `30c7e2a`, v1.14.0
 — not v1.10.0 as the plan states), verified build steps + baselines in
@@ -72,5 +72,8 @@ Open items carried forward (not WP2 blockers unless noted):
 - Product gaps found while testing (not licensing): uploaded `.html` files are
   rejected — only *inline* HTML content is processed — as are `.json` and
   `.png` without Docling enabled.
+- **Sharing follow-ons after WP2b** (WBS 4.20–4.22, see [SHARING.md](docs/SHARING.md)):
+  Entra ID group sync; full org directory user picker (Graph); public links /
+  editor reshare / ownership transfer. Schema reserved; not in WP2b scope.
 
 @AGENTS.md

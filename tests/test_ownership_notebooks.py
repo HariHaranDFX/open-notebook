@@ -114,16 +114,20 @@ class TestNotebookCreateStamping:
 
 
 class TestNotebookList:
+    @patch("api.ownership.repo_query", new_callable=AsyncMock)
     @patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
-    def test_filters_by_current_user_when_auth_enabled(self, mock_query, monkeypatch):
+    def test_filters_by_current_user_when_auth_enabled(
+        self, mock_query, mock_own_query, monkeypatch
+    ):
+        mock_own_query.return_value = []
         mock_query.return_value = []
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         client.get("/api/notebooks")
 
         query_str, params = mock_query.call_args.args
-        assert "user_id = $owner_id" in query_str
-        assert str(params["owner_id"]) == "user:a"
+        assert "user_id = $access_uid" in query_str
+        assert "user:a" in str(params["access_uid"])
 
     @patch("api.routers.notebooks.repo_query", new_callable=AsyncMock)
     def test_no_filter_when_auth_disabled(self, mock_query, monkeypatch):
@@ -341,16 +345,20 @@ class TestSourceUpdateDeleteOwnership:
 
 
 class TestSourceList:
+    @patch("api.ownership.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
-    def test_filters_by_current_user_when_auth_enabled(self, mock_query, monkeypatch):
+    def test_filters_by_current_user_when_auth_enabled(
+        self, mock_query, mock_own_query, monkeypatch
+    ):
+        mock_own_query.return_value = []
         mock_query.return_value = []
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         client.get("/api/sources")
 
         query_str, params = mock_query.call_args.args
-        assert "user_id = $owner_id" in query_str
-        assert str(params["owner_id"]) == "user:a"
+        assert "user_id = $access_uid" in query_str
+        assert "user:a" in str(params["access_uid"])
 
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     def test_no_filter_when_auth_disabled(self, mock_query, monkeypatch):
@@ -360,7 +368,9 @@ class TestSourceList:
         client.get("/api/sources")
 
         query_str, _params = mock_query.call_args.args
-        assert "user_id" not in query_str
+        # SELECT may project user_id; the WHERE must not filter by owner.
+        assert "user_id = $" not in query_str
+        assert "WHERE user_id" not in query_str
 
 
 class TestSearchOwnership:
@@ -376,10 +386,29 @@ class TestSearchOwnership:
             {"id": "note:a", "parent_id": "note:a", "title": "My note"},
             {"id": "note:b", "parent_id": "note:b", "title": "Their note"},
         ]
-        mock_query.side_effect = [
-            [{"id": "source:a"}],
-            [{"id": "note:a"}],
-        ]
+
+        async def ownership_queries(sql, params=None):
+            text = " ".join(str(sql).split())
+            params = params or {}
+            if "FROM source WHERE id" in text:
+                sid = str(params.get("id", ""))
+                if "source:a" in sid:
+                    return [{"user_id": "user:a"}]
+                return [{"user_id": "user:b"}]
+            if "user_group_member" in text or "resource_grant" in text:
+                return []
+            if "FROM reference WHERE" in text:
+                return []
+            if "FROM artifact WHERE" in text:
+                note_id = str(params.get("note_id", ""))
+                if "note:a" in note_id:
+                    return [{"notebook_id": "notebook:a"}]
+                return []
+            if "FROM notebook WHERE id" in text:
+                return [{"user_id": "user:a"}]
+            return []
+
+        mock_query.side_effect = ownership_queries
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         response = client.post("/api/search", json={"query": "x", "type": "text"})

@@ -40,11 +40,15 @@ WP2 schema must not preclude WP2b: keep `user_id` / `client_id` on notebooks and
 
 - WP2 acceptance criteria stay: users only see **their own** notebooks/sources until WP2b.
 - Characterization tests that assume global data must be updated intentionally in WP2.
-- **WP2b backlog (must track):**
-  - [ ] ACL / share grants (notebook & source → user, read/write as needed)
-  - [ ] User **groups** model + membership
-  - [ ] Admin **allocate** to users and groups
-  - [ ] List/get filters: owner **OR** explicit grant **OR** group grant
-  - [ ] Share / allocate UI (owner + admin)
-  - [ ] Docs: sharing model in `docs/AUTH.md` (or `docs/SHARING.md`)
+- **WP2b backlog (implemented on `wp-2b-sharing`):**
+  - [x] ACL / share grants (notebook & source → user/group, viewer/editor)
+  - [x] User **groups** model + membership (app-local; Entra sync later)
+  - [x] Admin **allocate** to users and groups (same grant API)
+  - [x] List/get filters: owner **OR** explicit grant **OR** group grant
+  - [x] Share / allocate UI (owner + admin)
+  - [x] Docs: `docs/SHARING.md` + AUTH.md pointer
+- **Post-WP2b follow-ons (WBS — Pending, not WP2b blockers):**
+  - [ ] **4.20** Entra ID group sync (`source=entra`, `entra_group_oid`)
+  - [ ] **4.21** Full org directory user picker (Graph; not only signed-in users)
+  - [ ] **4.22** Public links / editor reshare / ownership transfer (product decide)
 - PDR-001 remains the upstream OSS posture; this record is the **commercial fork** multi-user rule under Model A.

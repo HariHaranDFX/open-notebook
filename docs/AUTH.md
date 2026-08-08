@@ -84,8 +84,12 @@ For local development, omit `AUTH_PROVIDER` (or set it to `password`) and set
 `OPEN_NOTEBOOK_PASSWORD`. Requests then use the existing Bearer-password flow.
 Leaving `OPEN_NOTEBOOK_PASSWORD` unset disables password authentication.
 
-## Sharing after WP2
+## Sharing (WP2b)
 
-WP2 makes notebooks and sources owner-only. Sharing with users or groups, and
-admin allocation, are deferred to WP2b; see
+Notebooks and sources are private by default. Owners can share; admins can
+allocate to users and app-local groups. Roles are `viewer` and `editor`.
+See [SHARING.md](SHARING.md) and
 [PDR-003](7-DEVELOPMENT/decisions/PDR-003-per-user-ownership-and-sharing.md).
+
+**Deferred (WBS 4.20–4.22, not in WP2b):** Entra ID group sync; full org
+directory user picker; public links / editor reshare / ownership transfer.
