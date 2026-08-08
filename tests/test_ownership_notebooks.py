@@ -8,6 +8,7 @@ routers, ownership helpers and response models run without a live SurrealDB.
 from typing import Optional
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
@@ -39,6 +40,13 @@ class _StubAuthProvider:
 
     def auth_enabled(self) -> bool:
         return self._enabled
+
+
+@pytest.fixture(autouse=True)
+def _isolate_grant_queries():
+    with patch("api.ownership.repo_query", new_callable=AsyncMock) as mock_query:
+        mock_query.return_value = []
+        yield
 
 
 def _client(monkeypatch, *, auth_enabled: bool, user: Optional[AuthenticatedUser]) -> TestClient:
