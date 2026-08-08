@@ -23,6 +23,10 @@ RUN i=0; until npm ci; do \
       echo "npm ci failed (attempt $i); retrying in 15s"; sleep 15; \
     done
 
+# The frontend validates its checked-in deployment identity during the build.
+# Keep this at /app/config so the same default path is used by build and runtime.
+COPY config/ /app/config/
+
 # Copy the rest of the frontend source and build
 COPY frontend/ ./
 RUN npm run build
