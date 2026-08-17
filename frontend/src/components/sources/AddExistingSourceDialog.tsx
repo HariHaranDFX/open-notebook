@@ -209,7 +209,7 @@ export function AddExistingSourceDialog({
           </div>
 
           {/* Source List */}
-          <ScrollArea className="h-[400px] border rounded-md">
+          <ScrollArea className="h-[400px] rounded-[var(--surface-radius)] border">
             {isSearching && filteredSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
                 <LoaderIcon className="h-12 w-12 mb-2 animate-spin" />
@@ -229,7 +229,7 @@ export function AddExistingSourceDialog({
                   return (
                     <div
                       key={source.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors min-w-0 ${
+                      className={`flex min-w-0 items-start gap-3 rounded-[var(--surface-radius)] border p-3 transition-colors ${
                         isSelected ? 'bg-accent border-accent-foreground/20' : 'hover:bg-accent/50'
                       }`}
                     >

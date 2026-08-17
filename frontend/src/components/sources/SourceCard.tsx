@@ -29,8 +29,8 @@ import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { TFunction } from 'i18next'
 import { cn } from '@/lib/utils'
-import { ContextToggle } from '@/components/common/ContextToggle'
-import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
+import { ContextSelector } from '@/components/common/ContextSelector'
+import type { ContextMode } from '@/lib/types/notebook-context'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -223,104 +223,42 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'transition-all duration-200 hover:shadow-md group relative cursor-pointer border border-border/60 dark:border-border/40',
+        'group relative cursor-pointer border border-border/60 py-0 transition-all duration-200 hover:shadow-md dark:border-border/40',
         className
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="px-3 py-1">
-        {/* Header with status indicator */}
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="flex-1 min-w-0">
-            {/* Status badge - only show if not completed */}
-            {!isCompleted && (
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn(
-                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
-                  statusConfig.bgColor,
-                  statusConfig.color
-                )}>
-                  <StatusIcon className={cn(
-                    'h-3 w-3',
-                    isProcessing && 'animate-spin'
-                  )} />
-                  {statusLoading && shouldFetchStatus ? t('sources.checking') : statusConfig.label}
-                </div>
-
-                {/* Source type indicator */}
-                <div className="flex items-center gap-1 text-gray-500">
-                  <SourceTypeIcon className="h-3 w-3" />
-                  <span className="text-xs capitalize">{t('common.source')}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Title */}
-            <div className={cn('mb-1.5', !isCompleted && 'mb-1')}>
-              <h4
-                className="text-sm font-medium leading-tight line-clamp-2 break-all"
-                title={title}
-              >
-                {title}
-              </h4>
-            </div>
-
-            {/* Processing message for active statuses */}
-            {statusData?.message && (isProcessing || isFailed) && (
-              <p className="text-xs text-gray-600 mb-2 italic">
-                {statusData.message}
-              </p>
-            )}
-
-            {/* Metadata badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Source type badge */}
-              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+      <CardContent className="p-3">
+        <div className="workbench-item-header mb-2 flex items-start justify-between gap-2">
+          <div className="workbench-item-actions flex min-w-0 items-center gap-2">
+            <div
+              data-slot="source-primary-badges"
+              className="flex min-w-0 flex-nowrap items-center gap-2"
+            >
+              <Badge variant="secondary" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
                 <SourceTypeIcon className="h-3 w-3" />
                 {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}
               </Badge>
 
               {isCompleted && source.insights_count > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="shrink-0 whitespace-nowrap text-xs">
                   {t('sources.insightsCount', { count: source.insights_count })}
                 </Badge>
-              )}
-              {source.topics && source.topics.length > 0 && isCompleted && (
-                <>
-                  {source.topics.slice(0, 2).map((topic, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {topic}
-                    </Badge>
-                  ))}
-                  {source.topics.length > 2 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{source.topics.length - 2}
-                    </Badge>
-                  )}
-                </>
               )}
             </div>
           </div>
 
-          {/* Context toggle and actions */}
-          <div className="flex items-center gap-1">
-            {/* Context toggle - only show if handler provided */}
-            {onContextModeChange && contextMode && (
-              <ContextToggle
-                mode={contextMode}
-                hasInsights={source.insights_count > 0}
-                onChange={onContextModeChange}
-              />
-            )}
-
+          {/* Actions */}
+          <div className="workbench-item-actions flex min-w-0 items-center gap-1">
             {/* Actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-8 w-8 p-0"
                   onClick={(e) => e.stopPropagation()}
+                  aria-label={t('common.actions')}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -388,10 +326,60 @@ function SourceCardImpl({
           </DropdownMenu>
           </div>
         </div>
+
+        <h4
+          className="mb-2 text-sm font-medium leading-tight line-clamp-2 break-all"
+          title={title}
+        >
+          {title}
+        </h4>
+
+        {!isCompleted && (
+          <div className="mb-2 flex items-center gap-2">
+            <div className={cn(
+              'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+              statusConfig.bgColor,
+              statusConfig.color
+            )}>
+              <StatusIcon className={cn(
+                'h-3 w-3',
+                isProcessing && 'animate-spin'
+              )} />
+              {statusLoading && shouldFetchStatus ? t('sources.checking') : statusConfig.label}
+            </div>
+
+            <div className="flex items-center gap-1 text-gray-500">
+              <SourceTypeIcon className="h-3 w-3" />
+              <span className="text-xs capitalize">{t('common.source')}</span>
+            </div>
+          </div>
+        )}
+
+        {statusData?.message && (isProcessing || isFailed) && (
+          <p className="mb-2 text-xs italic text-gray-600">
+            {statusData.message}
+          </p>
+        )}
+
+        {source.topics && source.topics.length > 0 && isCompleted && (
+          <div className="flex flex-wrap items-center gap-2">
+            {source.topics.slice(0, 2).map((topic, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {topic}
+              </Badge>
+            ))}
+            {source.topics.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{source.topics.length - 2}
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Prominent retry action surfaced directly on failed cards so it's
             discoverable without opening the dropdown menu (#726). */}
         {isFailed ? (
-          <div className="flex gap-2 pt-2 border-t">
+          <div className="mt-3 flex gap-2 border-t pt-2">
             <Button
               variant="default"
               size="sm"
@@ -423,6 +411,20 @@ function SourceCardImpl({
                 style={{ width: `${statusData.processing_info.progress as number}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {onContextModeChange && contextMode && (
+          <div
+            data-slot="source-card-footer"
+            className="mt-3 flex min-w-0 items-end justify-start gap-2"
+          >
+            <ContextSelector
+              value={contextMode}
+              kind="source"
+              hasInsights={source.insights_count > 0}
+              onValueChange={onContextModeChange}
+            />
           </div>
         )}
       </CardContent>

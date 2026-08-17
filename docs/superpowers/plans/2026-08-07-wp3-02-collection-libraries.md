@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Redesign notebook and source collection routes as calm, row-based libraries with clear search, sort, state, ownership, and recovery while preserving current actions and pagination.
+**Goal:** Redesign notebook and source collection routes as calm libraries with clear search, sort, state, ownership, recovery, and user-selectable list/card views while preserving current actions and pagination.
 
 **Architecture:** Reuse `PageFrame`, `PageHeader`, existing hooks, dialogs, and mutations. Keep notebook filtering client-side because both active and archived collections are already loaded; add one optional server-side source-title query because the source collection is paginated and client-only filtering would be incomplete.
 
@@ -10,13 +10,15 @@
 
 ## Global Constraints
 
-- Notebook and source libraries follow: title + one primary action → search/filter/sort → row collection → pagination/infinite loading.
-- Rows expose title, type, ownership/role, processing state, useful counts, and updated time without requiring detail navigation.
-- Row selection/navigation and row actions remain separate; no nested button-in-button markup.
+- Notebook and source libraries follow: title + one primary action → search/filter/sort/view → collection → pagination/infinite loading.
+- List rows and cards expose title, type, ownership/role, processing state, useful counts, and updated time without requiring detail navigation.
+- The complete row/card surface opens its resource through one native link; row/card actions remain separate and above the stretched-link layer with no nested interactive markup.
+- Sources and notebooks each remember their independently selected list/card view after navigation and reload; render list view until the persisted store hydrates.
 - No hover-only actions. Overflow may hold infrequent actions, but its trigger remains visible.
 - Removing a source from a notebook and deleting it globally retain distinct labels and confirmations.
 - Active, archived, and recently viewed work remain reachable; do not add a dashboard.
-- Mobile uses labeled row stacks with no horizontal table scroll.
+- Mobile uses one-column list/card stacks with no horizontal table scroll; card grids expand to two and then three columns as space permits.
+- Semantic interactive elements across the app use the pointer cursor; disabled controls use the unavailable cursor and text-entry controls keep text-entry behavior.
 
 ---
 
@@ -132,7 +134,7 @@ Assert loading renders skeleton rows, empty active state exposes the create acti
 
 Remove `NotebookCard`, the view toggle, and `notebook-view-store`. Use `PageHeader` with “New notebook” as the sole primary action, search as a visible labeled control, and rows for every collection state.
 
-Keep `RecentlyViewed` inside the library but render it as compact mixed-resource rows rather than a card grid. Preserve notebook/source links and timestamps.
+Keep `RecentlyViewed` inside the library as a mixed-resource collection that follows the selected view: compact rows in List mode and concise cards in Card mode. Preserve notebook/source links and timestamps.
 
 - [ ] **Step 3: Apply role-aware row actions**
 
@@ -187,7 +189,53 @@ npm run build
 
 Expected: all commands exit 0.
 
-### Task 5: Visual verification and commit
+### Task 5: Restore accessible list/card choice and complete-surface navigation
+
+**Files:**
+- Create: `frontend/src/lib/stores/library-view-store.ts`
+- Create: `frontend/src/lib/stores/library-view-store.test.ts`
+- Modify: `frontend/src/app/(dashboard)/notebooks/page.tsx`
+- Modify: `frontend/src/app/(dashboard)/notebooks/components/NotebookList.tsx`
+- Modify: `frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx`
+- Modify: `frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.tsx`
+- Modify: `frontend/src/app/(dashboard)/notebooks/components/NotebookList.test.tsx`
+- Create: `frontend/src/app/(dashboard)/notebooks/components/RecentlyViewed.test.tsx`
+- Modify: `frontend/src/app/(dashboard)/sources/page.tsx`
+- Modify: `frontend/src/components/sources/SourceLibraryRow.tsx`
+- Modify: `frontend/src/components/sources/SourceLibraryRow.test.tsx`
+- Modify: `frontend/src/app/globals.css`
+- Modify: `frontend/src/lib/design-system.test.ts`
+- Modify: every locale file under `frontend/src/lib/locales/`
+
+**Interfaces:**
+- Produces: `LibraryViewMode = 'list' | 'card'` and `setViewMode(library, mode)` for the `notebooks` and `sources` libraries.
+- Produces: `viewMode?: LibraryViewMode` on reusable notebook/source collection items.
+
+- [x] **Step 1: Write failing tests**
+
+Assert independent persisted view preferences, list/card collection classes, a complete-surface stretched native link, action controls above the link layer, and global semantic pointer/disabled cursor selectors.
+
+- [x] **Step 2: Implement the minimal shared view preference**
+
+Use the already-installed Zustand persist middleware with the unique `library-view-storage` key. Default both libraries to list and expose hydration state so server and first client render agree.
+
+- [x] **Step 3: Implement reusable list/card variants**
+
+Add a labeled, pressed-state view switch to each library toolbar. Reuse `NotebookRow` and `SourceLibraryRow` with a `viewMode` prop; do not restore duplicate card components or JavaScript router navigation.
+
+- [x] **Step 4: Make each complete surface a native link**
+
+Use a pseudo-element stretched link inside a relatively positioned article. Keep retry and overflow controls in a higher stacking context. Apply visible focus to the complete article with `:focus-within` without hiding the native link name.
+
+- [x] **Step 5: Add global semantic cursor behavior and translations**
+
+Scope pointer cursors to enabled links, buttons, selects, summaries, labels for controls, and enabled ARIA button/menu/tab/options. Scope `not-allowed` to disabled or `aria-disabled` controls. Add list/card view labels to all locales.
+
+- [x] **Step 6: Verify the refinement**
+
+Run focused store/component/design-system tests, locale parity, lint, and the production build.
+
+### Task 6: Visual verification and commit
 
 - [ ] **Step 1: Inspect both libraries**
 

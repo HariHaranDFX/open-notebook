@@ -6,10 +6,10 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
 
-export function useNotebooks(archived?: boolean) {
+export function useNotebooks(archived?: boolean, orderBy = 'updated desc') {
   return useQuery({
-    queryKey: [...QUERY_KEYS.notebooks, { archived }],
-    queryFn: () => notebooksApi.list({ archived, order_by: 'updated desc' }),
+    queryKey: [...QUERY_KEYS.notebooks, { archived, orderBy }],
+    queryFn: () => notebooksApi.list({ archived, order_by: orderBy }),
   })
 }
 

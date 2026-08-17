@@ -128,14 +128,14 @@ export function EpisodesTab() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-[var(--surface-radius)] border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           {t('podcasts.loadingEpisodes')}
         </div>
       ) : null}
 
       {emptyState ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center">
+        <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-10 text-center">
           <p className="text-sm text-muted-foreground">
             {t('podcasts.noEpisodesYet')}
           </p>

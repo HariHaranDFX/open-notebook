@@ -307,7 +307,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                               </div>
                             </div>
                             {episode.episode_profile?.default_briefing ? (
-                              <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                              <div className="rounded-[var(--surface-radius)] border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
                                 {episode.episode_profile.default_briefing}
                               </div>
                             ) : null}
@@ -326,7 +326,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                             {episode.speaker_profile?.speakers?.map((speaker, index) => (
                               <div
                                 key={`${speaker.name}-${index}`}
-                                className="rounded-md border bg-muted/20 p-3 text-xs"
+                                className="rounded-[var(--surface-radius)] border bg-muted/20 p-3 text-xs"
                               >
                                 <p className="font-semibold text-foreground">{speaker.name}</p>
                                 <p className="text-muted-foreground">{t('podcasts.voiceId')}: {speaker.voice_id}</p>
@@ -343,7 +343,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                           {episode.briefing ? (
                             <section className="space-y-2">
                               <h4 className="text-sm font-semibold text-foreground">{t('podcasts.briefing')}</h4>
-                              <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                              <div className="rounded-[var(--surface-radius)] border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
                                 {episode.briefing}
                               </div>
                             </section>
@@ -357,7 +357,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                         {outlineSegments.length > 0 ? (
                           <div className="space-y-3">
                             {outlineSegments.map((segment, index) => (
-                              <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
+                              <div key={index} className="space-y-1 rounded-[var(--surface-radius)] border bg-muted/20 p-3 text-xs">
                                 <div className="flex items-center justify-between gap-2">
                                   <p className="font-semibold text-foreground">{segment.name ?? `${t('podcasts.segment')} ${index + 1}`}</p>
                                   {segment.size ? (
@@ -378,7 +378,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                       <ScrollArea className="h-full pr-4 space-y-3">
                         {transcriptEntries.length > 0 ? (
                           transcriptEntries.map((entry, index) => (
-                            <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
+                            <div key={index} className="space-y-1 rounded-[var(--surface-radius)] border bg-muted/20 p-3 text-xs">
                               <p className="font-semibold text-foreground">{entry.speaker ?? t('podcasts.speaker')}</p>
                               <p className="text-muted-foreground whitespace-pre-wrap">{entry.dialogue ?? ''}</p>
                             </div>
@@ -435,7 +435,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         ) : null}
 
         {isFailed && episode.error_message ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
+          <div className="rounded-[var(--surface-radius)] border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
             <p className="text-xs font-medium text-red-800 dark:text-red-300">{t('podcasts.errorDetails')}</p>
             <p className="mt-1 text-xs whitespace-pre-wrap text-red-700 dark:text-red-400">{episode.error_message}</p>
           </div>

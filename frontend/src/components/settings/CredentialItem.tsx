@@ -78,7 +78,7 @@ export function CredentialItem({
 
   return (
     <>
-      <div className="border rounded-lg p-3 space-y-2">
+      <div className="space-y-2 rounded-[var(--surface-radius)] border p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-medium truncate">{credential.name}</span>

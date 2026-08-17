@@ -270,6 +270,7 @@ def parse_source_form_data(
 async def get_sources(
     request: Request,
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+    query: Optional[str] = Query(None, max_length=200, description="Filter by source title"),
     limit: int = Query(
         50, ge=1, le=100, description="Number of sources to return (1-100)"
     ),
@@ -317,11 +318,16 @@ async def get_sources(
             from_clause = "source"
 
         where_clause, where_params = await source_access_where(request)
-        where_sql = f"WHERE {where_clause}" if where_clause else ""
+        where_parts = [f"({where_clause})"] if where_clause else []
+        normalized_query = query.strip().lower() if query else ""
+        if normalized_query:
+            where_parts.append("string::lowercase(title OR '') CONTAINS $title_query")
+            params["title_query"] = normalized_query
+        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
         params.update(where_params)
 
         # Query sources - include command field with FETCH
-        query = f"""
+        query_sql = f"""
             SELECT id, asset, created, title, updated, topics, command, user_id,
             string::lowercase(title OR '') AS title_sort,
             ({SOURCE_TYPE_EXPRESSION}) AS type,
@@ -333,7 +339,7 @@ async def get_sources(
             LIMIT $limit START $offset
             FETCH command
         """
-        result = await repo_query(query, params)
+        result = await repo_query(query_sql, params)
 
         # Convert result to response model
         # Command data is already fetched via FETCH command clause

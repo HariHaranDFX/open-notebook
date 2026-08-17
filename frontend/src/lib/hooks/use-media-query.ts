@@ -30,3 +30,10 @@ export function useMediaQuery(query: string): boolean {
 export function useIsDesktop(): boolean {
   return useMediaQuery('(min-width: 1024px)')
 }
+
+/**
+ * Returns true if viewport is 768-1023px (Tailwind's md-only range).
+ */
+export function useIsTablet(): boolean {
+  return useMediaQuery('(min-width: 768px) and (max-width: 1023px)')
+}

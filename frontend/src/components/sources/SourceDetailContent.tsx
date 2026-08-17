@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import type { ReactNode } from 'react'
+import { formatDistanceToNow } from 'date-fns'
 import { useQueryClient } from '@tanstack/react-query'
-import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { sourcesApi } from '@/lib/api/sources'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useSource, useUpdateSource, useDeleteSource } from '@/lib/hooks/use-sources'
@@ -16,10 +17,7 @@ import { ContentUnavailable } from '@/components/common/ContentUnavailable'
 import { isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DropdownMenu,
@@ -39,50 +37,53 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Link as LinkIcon,
   Upload,
   AlignLeft,
-  ExternalLink,
   Download,
-  Copy,
-  CheckCircle,
-  Youtube,
   MoreVertical,
   Trash2,
-  Sparkles,
-  Plus,
-  Lightbulb,
   Database,
-  AlertCircle,
   MessageSquare,
   Share2,
+  ArrowLeft,
 } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { getDateLocale } from '@/lib/utils/date-locale'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
-import { NotebookAssociations } from '@/components/sources/NotebookAssociations'
 import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { SourceContentPane } from '@/components/sources/SourceContentPane'
+import { SourceInsightsPane } from '@/components/sources/SourceInsightsPane'
+import { DetailHeader, DetailHeaderActions } from '@/components/workbench/DetailHeader'
+import { WorkspaceSkeleton } from '@/components/workbench/WorkspaceSkeleton'
 import { useAuth } from '@/lib/hooks/use-auth'
+import { getDateLocale } from '@/lib/utils/date-locale'
 import {
   canDeleteSource,
   canEditContent,
   canManageAcl,
 } from '@/lib/utils/access-role'
 
+export interface SourceDetailWorkspacePanes {
+  content: ReactNode
+  insights: ReactNode
+  details: ReactNode
+  insightCount: number
+}
+
 interface SourceDetailContentProps {
   sourceId: string
   showChatButton?: boolean
   onChatClick?: () => void
   onClose?: () => void
+  showBackButton?: boolean
+  renderWorkspace?: (panes: SourceDetailWorkspacePanes) => ReactNode
 }
 
 const safeExternalHref = (url: string | null | undefined): string | null => {
@@ -108,7 +109,9 @@ function SourceDetailContentInner({
   sourceId,
   showChatButton = false,
   onChatClick,
-  onClose
+  onClose,
+  showBackButton = false,
+  renderWorkspace,
 }: SourceDetailContentProps) {
   const { t, language } = useTranslation()
   const { isAdmin } = useAuth()
@@ -126,6 +129,7 @@ function SourceDetailContentInner({
   const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
   const [deletingInsight, setDeletingInsight] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false)
 
   // A 404 means the source was deleted (e.g. a dangling chat/ask reference) —
   // handled by the shared "content no longer exists" state. The global query
@@ -372,11 +376,6 @@ function SourceDetailContentInner({
     return null
   }
 
-  const isYouTubeUrl = useMemo(() => {
-    if (!externalHref) return false
-    return !!(getYouTubeVideoId(externalHref))
-  }, [externalHref])
-
   const youTubeVideoId = useMemo(() => {
     if (!externalHref) return null
     return getYouTubeVideoId(externalHref)
@@ -399,7 +398,7 @@ function SourceDetailContentInner({
   }
 
   if (isPending) {
-    return (
+    return renderWorkspace ? <WorkspaceSkeleton kind="source" /> : (
       <div className="flex h-full items-center justify-center p-8">
         <LoadingSpinner />
       </div>
@@ -419,36 +418,93 @@ function SourceDetailContentInner({
     )
   }
 
+  const canEdit = canEditContent(source.access_role)
+  const contentPane = (
+    <SourceContentPane
+      source={source}
+      sourceId={sourceId}
+      section="content"
+      externalHref={externalHref}
+      youTubeVideoId={youTubeVideoId}
+      copied={copied}
+      isEmbedding={isEmbedding}
+      isDownloadingFile={isDownloadingFile}
+      fileAvailable={fileAvailable}
+      canEdit={canEdit}
+      onEmbedContent={() => void handleEmbedContent()}
+      onCopyUrl={handleCopyUrl}
+      onOpenExternal={handleOpenExternal}
+      onDownloadFile={() => void handleDownloadFile()}
+      onRefresh={() => void refetchSource()}
+    />
+  )
+  const insightsPane = (
+    <SourceInsightsPane
+      insights={insights}
+      transformations={transformations}
+      selectedTransformation={selectedTransformation}
+      loadingInsights={loadingInsights}
+      creatingInsight={creatingInsight}
+      canEdit={canEdit}
+      onTransformationChange={setSelectedTransformation}
+      onCreateInsight={() => void createInsight()}
+      onViewInsight={setSelectedInsight}
+      onDeleteInsight={setInsightToDelete}
+    />
+  )
+  const detailsPane = (
+    <SourceContentPane
+      source={source}
+      sourceId={sourceId}
+      section="details"
+      externalHref={externalHref}
+      youTubeVideoId={youTubeVideoId}
+      copied={copied}
+      isEmbedding={isEmbedding}
+      isDownloadingFile={isDownloadingFile}
+      fileAvailable={fileAvailable}
+      canEdit={canEdit}
+      onEmbedContent={() => void handleEmbedContent()}
+      onCopyUrl={handleCopyUrl}
+      onOpenExternal={handleOpenExternal}
+      onDownloadFile={() => void handleDownloadFile()}
+      onRefresh={() => void refetchSource()}
+    />
+  )
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="pb-4 px-2">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+    <div
+      className={renderWorkspace
+        ? 'flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
+        : 'flex h-full min-h-0 min-w-0 flex-col'}
+    >
+      <DetailHeader
+        className={renderWorkspace ? 'border-b-0 px-4 pb-3 pt-3 sm:px-6 lg:pt-4' : 'px-4 sm:px-6'}
+      >
+        <div
+          data-slot="detail-header-layout"
+          className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+        >
+          <div className="min-w-0 space-y-1">
             {canEditContent(source.access_role) ? (
               <InlineEdit
                 value={source.title || ''}
                 onSave={handleUpdateTitle}
-                className="text-2xl font-bold"
-                inputClassName="text-2xl font-bold"
+                className="truncate font-serif text-lg font-semibold leading-tight"
+                inputClassName="font-serif text-lg font-semibold leading-tight"
                 placeholder={t('sources.titlePlaceholder')}
                 emptyText={t('sources.untitledSource')}
               />
             ) : (
-              <h1 className="text-2xl font-bold">
+              <h1 className="truncate font-serif text-lg font-semibold leading-tight">
                 {source.title || t('sources.untitledSource')}
               </h1>
             )}
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t('sources.id')}: {source.id}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {getSourceIcon()}
-            <Badge variant="secondary" className="text-sm">
-              {getSourceType()}
-            </Badge>
-
+          <DetailHeaderActions>
             {/* Chat with source button - only in modal */}
             {showChatButton && onChatClick && (
               <Button variant="outline" size="sm" onClick={onChatClick}>
@@ -457,24 +513,49 @@ function SourceDetailContentInner({
               </Button>
             )}
 
+            {showBackButton && onClose && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClose}
+                aria-label={t('workbench.backToSources')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden md:inline">{t('workbench.backToSources')}</span>
+              </Button>
+            )}
+
             {canManageAcl(source.access_role, isAdmin) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowShareDialog(true)}
+                aria-label={t('sharing.share')}
               >
-                <Share2 className="h-4 w-4 mr-2" />
-                {t('sharing.share')}
+                <Share2 className="h-4 w-4" />
+                <span className="hidden md:inline">{t('sharing.share')}</span>
               </Button>
             )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={t('common.actions')}
+                  title={t('common.actions')}
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {renderWorkspace && (
+                  <DropdownMenuItem onClick={() => setShowDetailsDialog(true)}>
+                    <AlignLeft className="mr-2 h-4 w-4" />
+                    {t('sources.details')}
+                  </DropdownMenuItem>
+                )}
                 {source.asset?.file_path && (
                   <>
                     <DropdownMenuItem
@@ -514,13 +595,35 @@ function SourceDetailContentInner({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+          </DetailHeaderActions>
+          <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
+            <Badge variant="secondary" className="gap-1.5">
+              {getSourceIcon()}
+              {getSourceType()}
+            </Badge>
+            <Badge variant="secondary" className="font-normal">
+              {t('common.created', {
+                time: formatDistanceToNow(new Date(source.created), {
+                  addSuffix: true,
+                  locale: getDateLocale(language),
+                }),
+              })}
+            </Badge>
+            <Badge variant="secondary" className="font-normal">
+              {t('common.updated', {
+                time: formatDistanceToNow(new Date(source.updated), {
+                  addSuffix: true,
+                  locale: getDateLocale(language),
+                }),
+              })}
+            </Badge>
           </div>
         </div>
-      </div>
+      </DetailHeader>
 
-      {/* Tabs Content */}
-      <div className="flex-1 overflow-y-auto px-2">
-        <Tabs defaultValue="content" className="w-full">
+      <div className={renderWorkspace ? 'flex min-h-0 flex-1 overflow-hidden' : 'flex-1 overflow-y-auto px-2'}>
+        {renderWorkspace ? renderWorkspace({ content: contentPane, insights: insightsPane, details: detailsPane, insightCount: insights.length }) : (
+          <Tabs defaultValue="content" className="w-full">
           <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
             <TabsTrigger value="content">{t('sources.content')}</TabsTrigger>
             <TabsTrigger value="insights">
@@ -530,322 +633,30 @@ function SourceDetailContentInner({
           </TabsList>
 
           <TabsContent value="content" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {isYouTubeUrl && <Youtube className="h-5 w-5" />}
-                  {t('sources.content')}
-                </CardTitle>
-                {externalHref && !isYouTubeUrl && (
-                  <CardDescription className="flex items-center gap-2">
-                    <LinkIcon className="h-4 w-4" />
-                    <a
-                      href={externalHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline text-blue-600"
-                    >
-                      {source.asset?.url}
-                    </a>
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                {isYouTubeUrl && youTubeVideoId && (
-                  <div className="mb-6">
-                    <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${youTubeVideoId}`}
-                        title={t('common.accessibility.ytVideo')}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                    {externalHref && (
-                      <div className="mt-2">
-                        <a
-                          href={externalHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          {t('sources.openOnYoutube')}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <MarkdownRenderer>
-                  {source.full_text || t('sources.noContent')}
-                </MarkdownRenderer>
-              </CardContent>
-            </Card>
+            {contentPane}
           </TabsContent>
 
           <TabsContent value="insights" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5" />
-                    {t('common.insights')}
-                  </span>
-                  <Badge variant="secondary">{insights.length}</Badge>
-                </CardTitle>
-                <CardDescription>
-                  {t('sources.insightsDesc')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Create New Insight */}
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <Label 
-                    htmlFor="transformation-select"
-                    className="mb-3 text-sm font-semibold flex items-center gap-2"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {t('sources.generateNewInsight')}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Select
-                      name="transformation"
-                      value={selectedTransformation}
-                      onValueChange={setSelectedTransformation}
-                      disabled={creatingInsight}
-                    >
-                      <SelectTrigger id="transformation-select" className="flex-1">
-                        <SelectValue placeholder={t('sources.selectTransformation')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {transformations.map((trans) => (
-                          <SelectItem key={trans.id} value={trans.id}>
-                            {trans.title || trans.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      onClick={createInsight}
-                      disabled={!selectedTransformation || creatingInsight}
-                    >
-                      {creatingInsight ? (
-                        <>
-                          <LoadingSpinner className="mr-2 h-3 w-3" />
-                          {t('common.creating')}
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-4 w-4" />
-                          {t('common.create')}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Insights List */}
-                {loadingInsights ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : insights.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">{t('sources.noInsightsYet')}</p>
-                    <p className="text-xs mt-1">{t('sources.createFirstInsight')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {insights.map((insight) => (
-                      <div key={insight.id} className="rounded-lg border bg-background p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs uppercase">
-                              {insight.insight_type}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
-                        </p>
-                        <div className="mt-3 flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>
-                            {t('sources.viewInsight')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setInsightToDelete(insight.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {insightsPane}
           </TabsContent>
 
           <TabsContent value="details" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('sources.details')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Embedding Alert */}
-                {!source.embedded && (
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>
-                      {t('sources.notEmbeddedAlert')}
-                    </AlertTitle>
-                    <AlertDescription>
-                      {t('sources.notEmbeddedDesc')}
-                      <div className="mt-3">
-                        <Button
-                          onClick={handleEmbedContent}
-                          disabled={isEmbedding}
-                          size="sm"
-                        >
-                          <Database className="mr-2 h-4 w-4" />
-                          {isEmbedding ? t('sources.embedding') : t('sources.embedContent')}
-                        </Button>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Source Information */}
-                <div className="space-y-4">
-                  {source.asset?.url && (
-                    <div>
-                      <h3 className="mb-2 text-sm font-semibold">{t('common.url')}</h3>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
-                          {source.asset.url}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCopyUrl}
-                        >
-                          {copied ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleOpenExternal}
-                          disabled={!externalHref}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {source.asset?.file_path && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold">{t('sources.uploadedFile')}</h3>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <code className="rounded bg-muted px-2 py-1 text-sm">
-                          {source.asset.file_path}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleDownloadFile}
-                          disabled={isDownloadingFile || fileAvailable === false}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          {fileAvailable === false
-                            ? t('sources.fileUnavailable')
-                            : isDownloadingFile
-                              ? t('sources.preparing')
-                              : t('common.download')}
-                        </Button>
-                      </div>
-                      {fileAvailable === false ? (
-                        <p className="text-xs text-muted-foreground">
-                          {t('sources.fileUnavailableDesc')}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {source.topics && source.topics.length > 0 && (
-                    <div>
-                      <h3 className="mb-2 text-sm font-semibold">{t('sources.topics')}</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {source.topics.map((topic, idx) => (
-                          <Badge key={idx} variant="outline">
-                            {topic}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Metadata */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold">{t('sources.metadata')}</h3>
-                    <div className="flex items-center gap-2">
-                      <Database className="h-3.5 w-3.5 text-muted-foreground" />
-                      <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
-                        {source.embedded ? t('sources.embedded') : t('sources.notEmbedded')}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">{t('common.created_label')}</p>
-                      <p className="text-sm">
-                        {formatDistanceToNow(new Date(source.created), {
-                          addSuffix: true,
-                          locale: getDateLocale(language)
-                        })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(source.created).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">{t('common.updated_label')}</p>
-                      <p className="text-sm">
-                        {formatDistanceToNow(new Date(source.updated), {
-                          addSuffix: true,
-                          locale: getDateLocale(language)
-                        })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(source.updated).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Notebook Associations */}
-            <NotebookAssociations
-              sourceId={sourceId}
-              currentNotebookIds={source.notebooks || []}
-              onSave={() => void refetchSource()}
-            />
+            {detailsPane}
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        )}
       </div>
+
+      {renderWorkspace && (
+        <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t('sources.details')}</DialogTitle>
+            </DialogHeader>
+            {detailsPane}
+          </DialogContent>
+        </Dialog>
+      )}
 
       <SourceInsightDialog
         open={Boolean(selectedInsight)}

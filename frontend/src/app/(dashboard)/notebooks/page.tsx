@@ -1,133 +1,145 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Plus, RefreshCw } from 'lucide-react'
 
+import { LibraryToolbar } from '@/components/common/LibraryToolbar'
 import { AppShell } from '@/components/layout/AppShell'
+import { PageFrame } from '@/components/layout/PageFrame'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
+import { Button } from '@/components/ui/button'
+import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { useLibraryView } from '@/lib/stores/library-view-store'
+import type { NotebookResponse } from '@/lib/types/api'
 import { NotebookList } from './components/NotebookList'
 import { RecentlyViewed } from './components/RecentlyViewed'
-import { Button } from '@/components/ui/button'
-import { Plus, RefreshCw, LayoutGrid, List } from 'lucide-react'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
-import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
-import { Input } from '@/components/ui/input'
-import { useTranslation } from '@/lib/hooks/use-translation'
-import { useNotebookViewStore } from '@/lib/stores/notebook-view-store'
+
+type NotebookSortField = 'updated' | 'name' | 'created'
+
+const notebookSortOptions: Array<{ value: NotebookSortField; label: string }> = [
+  { value: 'updated', label: 'common.updated_label' },
+  { value: 'name', label: 'common.name' },
+  { value: 'created', label: 'common.created_label' },
+]
+
+function filterNotebooks(
+  notebooks: NotebookResponse[] | undefined,
+  query: string,
+) {
+  if (!notebooks) return notebooks
+
+  return notebooks.filter(notebook => !query || notebook.name.toLowerCase().includes(query))
+}
 
 export default function NotebooksPage() {
   const { t } = useTranslation()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const viewMode = useNotebookViewStore((state) => state.viewMode)
-  const setViewMode = useNotebookViewStore((state) => state.setViewMode)
-  const { data: notebooks, isLoading, refetch } = useNotebooks(false)
-  const { data: archivedNotebooks } = useNotebooks(true)
+  const [sortBy, setSortBy] = useState<NotebookSortField>('updated')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const { viewMode, setViewMode } = useLibraryView('notebooks')
+  const {
+    data: notebooks,
+    isLoading,
+    isError: activeError,
+    refetch: refetchActive,
+  } = useNotebooks(false, `${sortBy} ${sortDirection}`)
+  const {
+    data: archivedNotebooks,
+    isLoading: archivedLoading,
+    isError: archivedError,
+    refetch: refetchArchived,
+  } = useNotebooks(true, `${sortBy} ${sortDirection}`)
 
   const normalizedQuery = searchTerm.trim().toLowerCase()
-
-  const filteredActive = useMemo(() => {
-    if (!notebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return notebooks
-    }
-    return notebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
-    )
-  }, [notebooks, normalizedQuery])
-
-  const filteredArchived = useMemo(() => {
-    if (!archivedNotebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return archivedNotebooks
-    }
-    return archivedNotebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
-    )
-  }, [archivedNotebooks, normalizedQuery])
-
-  const hasArchived = (archivedNotebooks?.length ?? 0) > 0
+  const filteredActive = useMemo(
+    () => filterNotebooks(notebooks, normalizedQuery),
+    [notebooks, normalizedQuery],
+  )
+  const filteredArchived = useMemo(
+    () => filterNotebooks(archivedNotebooks, normalizedQuery),
+    [archivedNotebooks, normalizedQuery],
+  )
   const isSearching = normalizedQuery.length > 0
+  const showArchived = (archivedNotebooks?.length ?? 0) > 0 || isSearching
 
   return (
     <AppShell>
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">{t('notebooks.title')}</h1>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4" />
+      <PageFrame className="space-y-4 py-4 sm:py-4">
+        <PageHeader
+          title={t('notebooks.title')}
+          description={t('notebooks.description')}
+          secondaryActions={(
+            <Button
+              variant="outline"
+              onClick={() => void Promise.all([refetchActive(), refetchArchived()])}
+            >
+              <RefreshCw />
+              {t('common.refresh')}
             </Button>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div className="flex items-center rounded-md border p-0.5">
-              <Button
-                variant={viewMode === 'tile' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('tile')}
-                aria-label={t('notebooks.tileView')}
-                aria-pressed={viewMode === 'tile'}
-                title={t('notebooks.tileView')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                aria-label={t('notebooks.listView')}
-                aria-pressed={viewMode === 'list'}
-                title={t('notebooks.listView')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-            <Input
-              id="notebook-search"
-              name="notebook-search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t('notebooks.searchPlaceholder')}
-              autoComplete="off"
-              aria-label={t('common.accessibility.searchNotebooks') || "Search notebooks"}
-              className="w-full sm:w-64"
-            />
+          )}
+          primaryAction={(
             <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus />
               {t('notebooks.newNotebook')}
             </Button>
-          </div>
-        </div>
-        
-        <div className="space-y-8">
-          <RecentlyViewed />
+          )}
+        />
 
-          <NotebookList 
-            notebooks={filteredActive} 
+        <LibraryToolbar
+          id="notebook-library"
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchLabel={t('common.accessibility.searchNotebooks')}
+          searchPlaceholder={t('notebooks.searchPlaceholder')}
+          sortValue={sortBy}
+          onSortChange={value => setSortBy(value as NotebookSortField)}
+          sortLabel={t('notebooks.sortLabel')}
+          sortOptions={notebookSortOptions.map(option => ({
+            value: option.value,
+            label: t(option.label),
+          }))}
+          sortDirection={sortDirection}
+          onSortDirectionChange={setSortDirection}
+          sortDirectionLabel={t('notebooks.sortDirection')}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          viewModeLabel={t('common.viewMode')}
+          listLabel={t('common.listView')}
+          cardLabel={t('common.cardView')}
+        />
+
+        <div className="space-y-8">
+          {!isSearching && <RecentlyViewed viewMode={viewMode} />}
+          <NotebookList
+            notebooks={filteredActive}
             isLoading={isLoading}
+            isError={activeError}
+            onRetry={() => void refetchActive()}
             title={t('notebooks.activeNotebooks')}
             emptyTitle={isSearching ? t('common.noMatches') : undefined}
             emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
             onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
             actionLabel={!isSearching ? t('notebooks.newNotebook') : undefined}
+            viewMode={viewMode}
           />
-          
-          {hasArchived && (
-            <NotebookList 
-              notebooks={filteredArchived} 
-              isLoading={false}
+          {showArchived && (
+            <NotebookList
+              notebooks={filteredArchived}
+              isLoading={archivedLoading}
+              isError={archivedError}
+              onRetry={() => void refetchArchived()}
               title={t('notebooks.archivedNotebooks')}
               collapsible
               emptyTitle={isSearching ? t('common.noMatches') : undefined}
               emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
+              viewMode={viewMode}
             />
           )}
         </div>
-        </div>
-      </div>
+      </PageFrame>
 
       <CreateNotebookDialog
         open={createDialogOpen}

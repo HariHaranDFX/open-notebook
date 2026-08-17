@@ -4,7 +4,14 @@ import { useState } from 'react'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Archive, ArchiveRestore, Trash2, Share2 } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowLeft, MoreVertical, Trash2, Share2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { DetailHeader, DetailHeaderActions } from '@/components/workbench/DetailHeader'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 import { ShareDialog } from '@/components/sharing/ShareDialog'
@@ -21,9 +28,10 @@ import {
 
 interface NotebookHeaderProps {
   notebook: NotebookResponse
+  onBack: () => void
 }
 
-export function NotebookHeader({ notebook }: NotebookHeaderProps) {
+export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
   const { t, language } = useTranslation()
   const dfLocale = getDateLocale(language)
   const { isAdmin } = useAuth()
@@ -63,106 +71,127 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
 
   return (
     <>
-      <div className="border-b pb-6">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
+      <DetailHeader
+        className="border-b-0 pb-3"
+      >
+        <div
+          data-slot="detail-header-layout"
+          className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+        >
+          <div className="min-w-0 space-y-1">
+            <div className="min-w-0">
               {canEdit ? (
                 <InlineEdit
                   id="notebook-name"
                   name="notebook-name"
                   value={notebook.name}
                   onSave={handleUpdateName}
-                  className="text-2xl font-bold"
-                  inputClassName="text-2xl font-bold"
+                  className="font-serif text-[1.375rem] font-semibold leading-tight"
+                  inputClassName="font-serif text-[1.375rem] font-semibold leading-tight"
                   placeholder={t('notebooks.namePlaceholder')}
                 />
               ) : (
-                <h1 className="text-2xl font-bold">{notebook.name}</h1>
-              )}
-              {notebook.archived && (
-                <Badge variant="secondary">{t('notebooks.archived')}</Badge>
+                <h1 className="font-serif text-[1.375rem] font-semibold leading-tight">{notebook.name}</h1>
               )}
             </div>
-            <div className="flex gap-2">
-              {canShare && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowShareDialog(true)}
-                >
-                  <Share2 className="h-4 w-4 mr-2" />
-                  {t('sharing.share')}
-                </Button>
-              )}
-              {canEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleArchiveToggle}
-                >
-                  {notebook.archived ? (
-                    <>
-                      <ArchiveRestore className="h-4 w-4 mr-2" />
-                      {t('notebooks.unarchive')}
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="h-4 w-4 mr-2" />
-                      {t('notebooks.archive')}
-                    </>
-                  )}
-                </Button>
-              )}
-              {canDelete && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('common.delete')}
-                </Button>
-              )}
-            </div>
+            {canEdit ? (
+              <InlineEdit
+                id="notebook-description"
+                name="notebook-description"
+                value={notebook.description || ''}
+                onSave={handleUpdateDescription}
+                className="text-sm leading-5 text-muted-foreground"
+                inputClassName="text-sm leading-5 text-muted-foreground"
+                placeholder={t('notebooks.addDescription')}
+                multiline
+                emptyText={t('notebooks.addDescription')}
+              />
+            ) : (
+              notebook.description && (
+                <p className="text-sm leading-5 text-muted-foreground">{notebook.description}</p>
+              )
+            )}
           </div>
 
-          {canEdit ? (
-            <InlineEdit
-              id="notebook-description"
-              name="notebook-description"
-              value={notebook.description || ''}
-              onSave={handleUpdateDescription}
-              className="text-muted-foreground"
-              inputClassName="text-muted-foreground"
-              placeholder={t('notebooks.addDescription')}
-              multiline
-              emptyText={t('notebooks.addDescription')}
-            />
-          ) : (
-            notebook.description && (
-              <p className="text-muted-foreground">{notebook.description}</p>
-            )
-          )}
+          <DetailHeaderActions>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onBack}
+              aria-label={t('workbench.backToNotebooks')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden md:inline">{t('workbench.backToNotebooks')}</span>
+            </Button>
+            {canShare && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowShareDialog(true)}
+                aria-label={t('sharing.share')}
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden md:inline">{t('sharing.share')}</span>
+              </Button>
+            )}
+            {(canEdit || canDelete) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label={t('common.actions')}
+                    title={t('common.actions')}
+                  >
+                    <MoreVertical />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canEdit && (
+                    <DropdownMenuItem onClick={handleArchiveToggle}>
+                      {notebook.archived ? <ArchiveRestore /> : <Archive />}
+                      {notebook.archived
+                        ? t('notebooks.unarchive')
+                        : t('notebooks.archive')}
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 />
+                      {t('common.delete')}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </DetailHeaderActions>
 
-          <div className="text-sm text-muted-foreground">
-            {t('common.created', {
+          <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
+            {role && <Badge variant="secondary">{t(`sharing.${role}`)}</Badge>}
+            {notebook.archived && <Badge variant="secondary">{t('notebooks.archived')}</Badge>}
+            <Badge variant="secondary" className="font-normal">
+              {t('common.created', {
               time: formatDistanceToNow(new Date(notebook.created), {
                 addSuffix: true,
                 locale: dfLocale,
               }),
-            })}{' '}
-            •
-            {t('common.updated', {
+              })}
+            </Badge>
+            <Badge variant="secondary" className="font-normal">
+              {t('common.updated', {
               time: formatDistanceToNow(new Date(notebook.updated), {
                 addSuffix: true,
                 locale: dfLocale,
               }),
-            })}
+              })}
+            </Badge>
           </div>
         </div>
-      </div>
+      </DetailHeader>
 
       <NotebookDeleteDialog
         open={showDeleteDialog}

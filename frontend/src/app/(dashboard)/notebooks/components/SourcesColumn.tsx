@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown, Loader2, ListChecks } from 'lucide-react'
+import { Plus, FileText, Link2, Loader2, ListChecks } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
@@ -19,10 +19,8 @@ import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
-import { ContextMode } from '../[id]/page'
+import type { ContextMode } from '@/lib/types/notebook-context'
 import type { SourceBulkAction } from '@/lib/utils/source-context'
-import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
-import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { AccessRole } from '@/lib/types/api'
 import { canEditContent, canDeleteSource } from '@/lib/utils/access-role'
@@ -71,13 +69,6 @@ export function SourcesColumn({
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
-
-  // Collapsible column state
-  const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
-  const collapseButton = useMemo(
-    () => createCollapseButton(toggleSources, t('navigation.sources')),
-    [toggleSources, t('navigation.sources')]
-  )
 
   // Scroll container ref for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -156,23 +147,21 @@ export function SourcesColumn({
 
   return (
     <>
-      <CollapsibleColumn
-        isCollapsed={sourcesCollapsed}
-        onToggle={toggleSources}
-        collapsedIcon={FileText}
-        collapsedLabel={t('navigation.sources')}
-      >
-        <Card className="h-full flex flex-col flex-1 overflow-hidden">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{t('navigation.sources')}</CardTitle>
-              <div className="flex items-center gap-2">
+        <Card className="h-full flex flex-col flex-1 gap-0 overflow-hidden rounded-none border-0 py-0 shadow-none">
+          <CardHeader className="flex-shrink-0 px-4 pb-2 pt-4">
+            <div className="workbench-toolbar flex items-center justify-between gap-3">
+              <CardTitle className="sr-only">{t('navigation.sources')}</CardTitle>
+              <div className="workbench-toolbar-actions flex items-center gap-2">
                 {onBulkContextModeChange && sources && sources.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" title={t('sources.bulkContext')}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={t('sources.bulkContext')}
+                      >
                         <ListChecks className="h-4 w-4" />
-                        <ChevronDown className="h-4 w-4 ml-1" />
+                        {t('sources.bulkContext')}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -192,9 +181,8 @@ export function SourcesColumn({
                   <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="h-4 w-4" />
                         {t('sources.addSource')}
-                        <ChevronDown className="h-4 w-4 ml-2" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -209,12 +197,11 @@ export function SourcesColumn({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                {collapseButton}
               </div>
             </div>
           </CardHeader>
 
-          <CardContent ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
+          <CardContent ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
@@ -255,7 +242,6 @@ export function SourcesColumn({
             )}
           </CardContent>
         </Card>
-      </CollapsibleColumn>
 
       <AddSourceDialog
         open={addDialogOpen}

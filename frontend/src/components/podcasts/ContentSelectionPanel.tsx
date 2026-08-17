@@ -93,7 +93,7 @@ export function ContentSelectionPanel({
         </div>
       </div>
 
-      <div className="rounded-lg border bg-muted/30">
+      <div className="rounded-[var(--surface-radius)] border bg-muted/30">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('podcasts.loadingNotebooks')}
@@ -184,7 +184,7 @@ export function ContentSelectionPanel({
                                 return (
                                   <div
                                     key={source.id}
-                                    className="flex items-center gap-3 rounded border bg-background px-3 py-2"
+                                    className="flex items-center gap-3 rounded-[var(--surface-radius)] border bg-background px-3 py-2"
                                   >
                                     <Checkbox
                                       id={`source-selection-${source.id}`}
@@ -263,7 +263,7 @@ export function ContentSelectionPanel({
                                 return (
                                   <div
                                     key={note.id}
-                                    className="flex items-center gap-3 rounded border bg-background px-3 py-2"
+                                    className="flex items-center gap-3 rounded-[var(--surface-radius)] border bg-background px-3 py-2"
                                   >
                                     <Checkbox
                                       id={`note-selection-${note.id}`}

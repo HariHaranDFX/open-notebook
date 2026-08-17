@@ -514,7 +514,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                   <Loader2 className="h-4 w-4 animate-spin" /> {t('podcasts.loadingProfiles')}
                 </div>
               ) : episodeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
                   {t('podcasts.noProfilesFound')}
                 </div>
               ) : (

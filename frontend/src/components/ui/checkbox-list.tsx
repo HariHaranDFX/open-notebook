@@ -28,7 +28,7 @@ export function CheckboxList({
 }: CheckboxListProps) {
   if (loading) {
     return (
-      <div className={cn('border border-border rounded-md p-4 bg-card', className)}>
+      <div className={cn('rounded-[var(--surface-radius)] border border-border bg-card p-4', className)}>
         <div className="animate-pulse space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex items-center gap-3">
@@ -46,14 +46,14 @@ export function CheckboxList({
 
   if (items.length === 0) {
     return (
-      <div className={cn('border border-border rounded-md p-4 bg-card', className)}>
+      <div className={cn('rounded-[var(--surface-radius)] border border-border bg-card p-4', className)}>
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <div className={cn('border border-border rounded-md bg-card', className)}>
+    <div className={cn('rounded-[var(--surface-radius)] border border-border bg-card', className)}>
       <div className="max-h-48 overflow-y-auto p-4">
         <div className="space-y-3">
           {items.map((item) => (

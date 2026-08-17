@@ -237,7 +237,7 @@ export function SpeakerProfileFormDialog({
             <Separator />
 
             {fields.map((field, index) => (
-              <div key={field.id} className="rounded-lg border p-4 space-y-4">
+              <div key={field.id} className="space-y-4 rounded-[var(--surface-radius)] border p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">
                     {t('podcasts.speakerNumber', { number: (index + 1).toString() })}

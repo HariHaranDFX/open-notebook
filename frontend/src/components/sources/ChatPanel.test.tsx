@@ -22,6 +22,33 @@ describe('ChatPanel composer', () => {
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
 
+  it('uses the same flat, edge-aligned surface as the other workbench panes', () => {
+    render(
+      <ChatPanel
+        title="Synthesis"
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+        onCreateSession={vi.fn()}
+        onSelectSession={vi.fn()}
+        onDeleteSession={vi.fn()}
+      />
+    )
+
+    const card = screen.getByText('Synthesis').closest('[data-slot="card"]')
+    const header = screen.getByText('Synthesis').closest('[data-slot="card-header"]')
+    const headerRow = screen.getByText('Synthesis').closest('[data-slot="card-title"]')?.parentElement
+
+    expect(card).toHaveClass('gap-0', 'rounded-none', 'border-0', 'py-0')
+    expect(header).toHaveClass('flex', 'h-12', 'items-center', 'border-b', 'bg-card', 'pl-4', 'pr-12', 'py-0')
+    expect(headerRow).toHaveClass('h-full', 'w-full', 'flex-nowrap', 'items-center')
+    expect(screen.getByRole('button', { name: 'chat.sessions' })).toHaveClass(
+      'border-border-strong',
+      'bg-card',
+    )
+  })
+
   it('sends the typed message and clears the input on send-button click', () => {
     const onSendMessage = vi.fn()
     render(
@@ -42,6 +69,22 @@ describe('ChatPanel composer', () => {
     expect(onSendMessage).toHaveBeenCalledTimes(1)
     expect(onSendMessage).toHaveBeenCalledWith('hello world', undefined)
     expect(textarea.value).toBe('')
+  })
+
+  it('uses an upward arrow for the shared send action', () => {
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+      />
+    )
+
+    const sendButton = screen.getByRole('button')
+
+    expect(sendButton.querySelector('.lucide-arrow-up')).toBeInTheDocument()
+    expect(sendButton.querySelector('.lucide-send')).not.toBeInTheDocument()
   })
 
   it('sends on Cmd+Enter on macOS', () => {

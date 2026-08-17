@@ -103,7 +103,7 @@ function DefaultModelSelect({
           </SelectContent>
         </Select>
         {!config.required && currentValue && (
-          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} className="h-8 w-8 shrink-0">
+          <Button variant="ghost" size="icon-sm" onClick={() => onChange(config.key, "")} className="shrink-0">
             <X className="h-3 w-3" />
           </Button>
         )}

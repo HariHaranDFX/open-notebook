@@ -122,7 +122,7 @@ export function SessionManager({
         <CardContent className="flex-1 p-0 min-h-0">
           <ScrollArea className="h-full px-4">
             {isCreating && (
-              <div className="p-3 border rounded-lg mb-3">
+              <div className="mb-3 rounded-[var(--surface-radius)] border p-3">
                 <Input
                   value={newSessionTitle}
                   onChange={(e) => setNewSessionTitle(e.target.value)}
@@ -166,7 +166,7 @@ export function SessionManager({
                 {sessions.map((session) => (
                   <div
                     key={session.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`cursor-pointer rounded-[var(--surface-radius)] border p-3 transition-colors ${
                       currentSessionId === session.id
                         ? 'bg-primary/10 border-primary'
                         : 'hover:bg-muted'

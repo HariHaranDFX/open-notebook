@@ -83,7 +83,7 @@ export function SpeakerProfilesPanel({
       </div>
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
           {t('podcasts.noSpeakerProfiles')}
         </div>
       ) : (
@@ -136,7 +136,7 @@ export function SpeakerProfilesPanel({
                     {profile.speakers.map((speaker) => (
                       <div
                         key={speaker.name}
-                        className="rounded-md border bg-muted/30 p-3"
+                        className="rounded-[var(--surface-radius)] border bg-muted/30 p-3"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -179,8 +179,7 @@ export function SpeakerProfilesPanel({
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                            size="icon-sm"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-4 w-4" />

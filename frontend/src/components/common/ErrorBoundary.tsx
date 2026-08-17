@@ -66,7 +66,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </CardHeader>
             <CardContent className="space-y-4">
               {process.env.NODE_ENV === 'development' && this.state.error && (
-                <details className="text-xs bg-muted p-3 rounded border">
+                <details className="rounded-[var(--surface-radius)] border bg-muted p-3 text-xs">
                   <summary className="cursor-pointer font-medium">{t?.common?.errorDetails || 'Error Details'}</summary>
                   <pre className="mt-2 whitespace-pre-wrap break-all">
                     {this.state.error.toString()}

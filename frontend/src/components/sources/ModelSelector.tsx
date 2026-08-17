@@ -88,10 +88,10 @@ export function ModelSelector({
           variant="outline" 
           size="sm"
           disabled={disabled}
-          className="gap-2"
+          className="max-w-full min-w-0 gap-2"
         >
           <Settings2 className="h-4 w-4" />
-          <span className="text-xs">
+          <span className="truncate text-xs">
             {currentModelName}
           </span>
         </Button>

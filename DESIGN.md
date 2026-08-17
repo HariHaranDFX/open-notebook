@@ -89,7 +89,7 @@ The palette is **Survey Blue**: cool, restrained, and instrument-like. Neutral s
 | Navigation active surface | `#203B51` | Active destination. |
 | Navigation active ink | `#83B7DE` | Active destination label and icon. |
 
-The light navigation uses `#172433` for its canvas, `#AFBBC5` for inactive ink, `#FFFFFF` for strong ink, `#637485` for boundaries, `#263D52` for the active surface, and `#9BC5E6` for active ink.
+The light navigation uses `#E5EBF0` for its canvas, `#526575` for inactive ink, `#172433` for strong ink, `#B6C2CC` for boundaries, `#D2E1EC` for the active surface, and `#214E73` for active ink. The light and dark navigation canvases must visibly follow the selected theme; a permanently dark rail is not part of the brand signature.
 
 ### Semantic states
 
@@ -156,7 +156,8 @@ The spatial model is a persistent application shell around four related surface 
 ### Application shell
 
 - Use one adaptive sidebar with an icon and visible label for every top-level destination.
-- The wide sidebar collapses to a labeled-on-demand rail at laptop widths. Small screens use the same hierarchy in a drawer; do not introduce a competing bottom navigation model.
+- Desktop users can expand or collapse the sidebar with a dedicated control or `Ctrl+B` / `Cmd+B`. In the expanded state, the control remains separate from the brand. In the collapsed state, the centered brand slot is the expansion control: it shows the logo at rest, reveals the expand icon on hover or keyboard focus, and keeps the icon visible for coarse pointers. The choice persists locally; without a saved choice, the sidebar defaults to expanded on wide screens and collapsed at laptop widths.
+- Small screens use the same hierarchy in a drawer; do not introduce a competing bottom navigation model.
 - Group research destinations, output studios, and administration visibly. Keep theme, language, account, and global activity available without making them primary destinations.
 - Keep Search / Ask and the common create action keyboard-reachable. A command palette accelerates navigation; it does not replace visible navigation.
 - Show the current location in navigation using shape, label weight, and color. Core navigation remains reachable from deep routes.
@@ -164,24 +165,20 @@ The spatial model is a persistent application shell around four related surface 
 
 ### Parallel evidence workbench
 
-The desktop research workspace presents three related regions:
+Notebook and source research workspaces use two related regions: a tabbed research panel and a persistent synthesis panel. Notebook tabs are Sources / Notes; source tabs are Content / Insights. Chat remains visible beside them on capable screens and collapses to an explicit rail when the researcher needs more reading space. This preserves parallel evidence and synthesis without forcing three narrow columns.
 
-1. **Evidence** — sources, source insights, notes available for context, processing state, permissions, and selection controls.
-2. **Notes** — human-authored and AI-saved notes, clearly distinguished, editable without losing the surrounding evidence.
-3. **Synthesis** — source or notebook chat, Ask output, current session, streaming state, and numbered references.
+The research-panel width is resizable on desktop and persists per workspace. Every panel has one deliberate vertical scroller; avoid scroll regions nested inside other scroll regions. Native overflow regions and custom scroll areas use the same thin, token-driven scrollbar treatment with a transparent track and a clearly visible thumb in both themes; the navigation scroller maps that treatment to sidebar tokens. Panel controls remain visible without covering the last content row. Opening a reference updates the appropriate evidence or preview region without discarding the synthesis response.
 
-Pane widths are resizable on desktop and persist per workspace. Every pane has one deliberate vertical scroller; avoid scroll regions nested inside other scroll regions. Pane controls remain visible without covering the last content row. Opening a reference updates the appropriate evidence or preview region without discarding the synthesis response.
-
-Notebook workspaces use Evidence / Notes / Synthesis. Source workspaces use Content / Insights / Source chat. Search uses Query / Results / Preview, or Query / Answer / References when Ask is active. These are expressions of one workbench model, not unrelated page templates.
+On narrow screens, Notebook and Source serialize into an explicit Chat / Research-panel segmented choice, defaulting to Chat so the composer remains usable. Search may use Query / Results / Preview, or Query / Answer / References when Ask is active. These are expressions of one evidence-first workbench model, not unrelated page templates.
 
 ### Responsive behavior
 
 | Viewport | Navigation | Workspace behavior |
 |---|---|---|
-| Wide, `≥1440px` | Expanded labeled sidebar | Three visible, resizable panes. |
-| Laptop, `1024–1439px` | Collapsed rail with accessible labels | Three panes remain available; density tightens without removing labels or actions. |
-| Tablet, `768–1023px` | Navigation drawer | One active workspace pane plus a persistent inspector or context summary. |
-| Phone, `320–767px` | Navigation drawer | Sticky Evidence / Notes / Synthesis tabs, one active pane, and a persistent context summary. |
+| Wide, `≥1440px` | Expanded labeled sidebar by default; user may collapse it | Tabbed research panel plus resizable, collapsible chat. |
+| Laptop, `1024–1439px` | Collapsed rail by default; user may expand it | The same two-panel workspace with a narrower research-panel default. |
+| Tablet, `768–1023px` | Navigation drawer | Chat / Research-panel segmented choice; internal research tabs remain available. |
+| Phone, `320–767px` | Navigation drawer | Chat / Research-panel segmented choice, defaulting to Chat. |
 
 Every capability remains available at every supported width. Library tables become labeled row stacks on narrow screens. Studio grids become ordered lists. Administration subnavigation becomes a sheet or select control. Multi-column forms become one column. Fixed elements respect safe areas and reserve content space. No page causes horizontal viewport scrolling.
 
@@ -215,7 +212,7 @@ Selection, focus, loading, and validation change border, tone, icon, or label—
 
 The form language is compact and instrument-like rather than soft and bubbly:
 
-- **Surfaces:** 2px radius for panes, rows grouped as objects, cards, and structural containers.
+- **Surfaces:** 4px radius for standalone cards and bordered list containers. Connected workbench panes, tables, and rows inside a unified bordered list remain square.
 - **Controls:** 5px radius for buttons, fields, segmented controls, menus, and compact interactive elements.
 - **Overlays:** 10px radius for dialogs and sheets, giving temporary layers a slightly more forgiving silhouette.
 - **Pills:** 999px radius only for genuine tags, toggles, status tokens, and avatars. It is not a general container style.
@@ -331,7 +328,7 @@ Animate transform and opacity, not layout dimensions or pane geometry. Do not ch
 ### Do
 
 - **Do** make the active evidence boundary, authorship, processing state, and permission scope visible wherever they affect an answer or action.
-- **Do** use the three-pane workbench to reveal evidence–notes–synthesis relationships on wide screens and preserve the same model through tabs and context summaries on small screens.
+- **Do** keep research material and synthesis parallel on wide screens through a tabbed research panel plus chat, then serialize them through an explicit segmented choice on small screens.
 - **Do** use Source Sans 3 for operations and Source Serif 4 only for research reading and thought hierarchy.
 - **Do** use rows for repeated evidence and reserve cards for top-level objects that benefit from a bounded preview.
 - **Do** preserve drafts, filters, scroll, sessions, context selection, pane widths, and return paths through navigation and authentication.

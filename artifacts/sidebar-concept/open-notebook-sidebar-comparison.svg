@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#142230" flood-opacity=".12"/>
+    </filter>
+    <clipPath id="clipA"><rect x="54" y="232" width="520" height="738" rx="16"/></clipPath>
+    <clipPath id="clipB"><rect x="640" y="232" width="520" height="738" rx="16"/></clipPath>
+    <clipPath id="clipC"><rect x="1226" y="232" width="520" height="738" rx="16"/></clipPath>
+    <symbol id="logo" viewBox="0 0 32 32">
+      <circle cx="16" cy="5" r="3.3" fill="#6B7BFF"/><circle cx="24.5" cy="10" r="3.3" fill="#9F8CFF"/>
+      <circle cx="24.5" cy="20" r="3.3" fill="#65CBE9"/><circle cx="16" cy="25" r="3.3" fill="#8C79FF"/>
+      <circle cx="7.5" cy="20" r="3.3" fill="#79DCF1"/><circle cx="7.5" cy="10" r="3.3" fill="#B8A8FF"/>
+      <circle cx="16" cy="15" r="3" fill="#6E82FF"/>
+    </symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20H7zM14 3.5V8h4M10 12h5M10 15h5" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="book" viewBox="0 0 24 24"><path d="M4.5 5.5c2.8-.8 5-.2 7.5 1.4v12c-2.5-1.6-4.7-2.2-7.5-1.4zM19.5 5.5c-2.8-.8-5-.2-7.5 1.4v12c2.5-1.6 4.7-2.2 7.5-1.4z" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.65"/><path d="m15 15 4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></symbol>
+    <symbol id="mic" viewBox="0 0 24 24"><rect x="8.5" y="3.5" width="7" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.55"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></symbol>
+    <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="panel" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 4v16M13.5 9.5 16 12l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <style>
+      .ui{font-family:"Segoe UI",Arial,sans-serif}.caps{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.4px}.label{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;font-weight:600}.body{font-family:"Segoe UI",Arial,sans-serif;font-size:12px}.title{font-family:Georgia,"Times New Roman",serif;font-weight:700}.muted{fill:#617485}.ink{fill:#1B2A38}.stroke{stroke:#B6C2CC}.icon{color:#526575}.hair{shape-rendering:crispEdges}
+    </style>
+  </defs>
+
+  <rect width="1800" height="1120" fill="#EDF2F5"/>
+  <path d="M0 0h1800v12H0z" fill="#27343E"/>
+  <text x="54" y="80" class="ui ink" font-size="15" font-weight="700" letter-spacing="2">OPEN NOTEBOOK / SIDEBAR MIGRATION</text>
+  <text x="54" y="128" class="title ink" font-size="44">From custom shell to a true icon sidebar</text>
+  <text x="54" y="164" class="ui muted" font-size="16">Same product, routes and Survey Blue identity — simpler interaction architecture.</text>
+  <line x1="54" y1="194" x2="1746" y2="194" stroke="#B6C2CC"/>
+
+  <!-- labels -->
+  <circle cx="70" cy="216" r="4" fill="#AD7620"/><text x="84" y="221" class="caps" fill="#526575">BEFORE · CUSTOM EXPANDED</text>
+  <circle cx="656" cy="216" r="4" fill="#275E91"/><text x="670" y="221" class="caps" fill="#526575">NEW · SHADCN EXPANDED</text>
+  <circle cx="1242" cy="216" r="4" fill="#275E91"/><text x="1256" y="221" class="caps" fill="#526575">NEW · ICON COLLAPSED</text>
+
+  <!-- PANEL A -->
+  <g filter="url(#shadow)"><rect x="54" y="232" width="520" height="738" rx="16" fill="#F8FAFB"/></g>
+  <g clip-path="url(#clipA)">
+    <rect x="54" y="232" width="202" height="738" fill="#E5EBF0"/>
+    <rect x="256" y="232" width="318" height="738" fill="#F1F5F8"/>
+    <line x1="256" y1="232" x2="256" y2="970" stroke="#B6C2CC"/>
+    <line x1="54" y1="296" x2="256" y2="296" stroke="#B6C2CC"/>
+    <use href="#logo" x="73" y="250" width="30" height="30"/><text x="114" y="271" class="ui ink" font-size="13" font-weight="700">Open Notebook</text>
+    <rect x="213" y="245" width="32" height="38" rx="8" fill="#F8FAFB" stroke="#AD7620"/><use href="#panel" x="220" y="252" width="18" height="18" class="icon"/>
+    <rect x="68" y="312" width="174" height="40" rx="7" fill="#275E91"/><use href="#plus" x="82" y="321" width="20" height="20" color="#fff"/><text x="110" y="337" class="label" fill="#fff">New</text>
+    <text x="74" y="382" class="caps muted">COLLECT</text>
+    <use href="#file" x="76" y="397" width="20" height="20" class="icon"/><text x="108" y="412" class="body" fill="#39536A">Sources</text>
+    <line x1="68" y1="434" x2="242" y2="434" stroke="#B6C2CC"/>
+    <text x="74" y="462" class="caps muted">PROCESS</text>
+    <rect x="68" y="475" width="174" height="40" rx="7" fill="#D2E1EC"/><use href="#book" x="76" y="485" width="20" height="20" color="#214E73"/><text x="108" y="501" class="label" fill="#214E73">Notebooks</text>
+    <use href="#search" x="76" y="526" width="20" height="20" class="icon"/><text x="108" y="542" class="body" fill="#39536A">Ask and Search</text>
+    <line x1="68" y1="562" x2="242" y2="562" stroke="#B6C2CC"/>
+    <text x="74" y="590" class="caps muted">CREATE</text>
+    <use href="#mic" x="76" y="606" width="20" height="20" class="icon"/><text x="108" y="621" class="body" fill="#39536A">Podcasts</text>
+    <line x1="68" y1="654" x2="242" y2="654" stroke="#B6C2CC"/>
+    <text x="74" y="682" class="caps muted">MANAGE</text>
+    <use href="#settings" x="76" y="698" width="20" height="20" class="icon"/><text x="108" y="713" class="body" fill="#39536A">Models</text>
+    <rect x="68" y="848" width="174" height="38" rx="7" fill="#F8FAFB" stroke="#B6C2CC"/><use href="#sun" x="81" y="857" width="20" height="20" class="icon"/><text x="110" y="872" class="body ink">Theme</text>
+    <rect x="68" y="896" width="174" height="38" rx="7" fill="#F8FAFB" stroke="#B6C2CC"/><text x="82" y="920" class="label muted">文</text><text x="110" y="920" class="body ink">Language</text>
+    <rect x="270" y="254" width="34" height="34" rx="6" fill="#fff" stroke="#B6C2CC"/><use href="#panel" x="277" y="261" width="20" height="20" class="icon"/>
+    <text x="318" y="278" class="title ink" font-size="25">Notebooks</text>
+    <rect x="484" y="251" width="70" height="38" rx="7" fill="#275E91"/><text x="498" y="275" class="label" fill="#fff">+ New</text>
+    <line x1="276" y1="310" x2="550" y2="310" stroke="#B6C2CC"/>
+    <text x="276" y="348" class="ui ink" font-size="16" font-weight="700">Recently Viewed</text><rect x="426" y="332" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="434" y="348" class="body muted">2</text>
+    <rect x="276" y="370" width="278" height="96" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="292" y="389" width="22" height="22" class="icon"/><text x="326" y="407" class="label ink">Sprout</text><text x="326" y="431" class="body muted">Viewed 2 hours ago</text>
+    <text x="276" y="518" class="ui ink" font-size="16" font-weight="700">Active Notebooks</text><rect x="416" y="502" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="424" y="518" class="body muted">1</text>
+    <rect x="276" y="542" width="218" height="182" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="294" y="563" width="22" height="22" class="icon"/><text x="328" y="580" class="label ink">Sprout</text><text x="294" y="626" class="body muted">No description</text><line x1="294" y1="666" x2="474" y2="666" stroke="#B6C2CC"/><rect x="294" y="682" width="40" height="23" rx="11" fill="#F8FAFB" stroke="#B6C2CC"/><text x="307" y="698" class="body muted">1</text>
+  </g>
+  <rect x="54" y="232" width="520" height="738" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <!-- PANEL B -->
+  <g filter="url(#shadow)"><rect x="640" y="232" width="520" height="738" rx="16" fill="#F8FAFB"/></g>
+  <g clip-path="url(#clipB)">
+    <rect x="640" y="232" width="202" height="738" fill="#E5EBF0"/>
+    <rect x="842" y="232" width="318" height="738" fill="#F1F5F8"/>
+    <line x1="842" y1="232" x2="842" y2="970" stroke="#B6C2CC"/>
+    <use href="#logo" x="658" y="250" width="32" height="32"/><text x="702" y="271" class="ui ink" font-size="13" font-weight="700">Open Notebook</text>
+    <rect x="654" y="306" width="174" height="40" rx="7" fill="#275E91"/><use href="#plus" x="668" y="315" width="20" height="20" color="#fff"/><text x="696" y="331" class="label" fill="#fff">New</text>
+    <text x="660" y="377" class="caps muted">COLLECT</text>
+    <use href="#file" x="662" y="392" width="20" height="20" class="icon"/><text x="694" y="407" class="body" fill="#39536A">Sources</text>
+    <text x="660" y="450" class="caps muted">PROCESS</text>
+    <rect x="654" y="464" width="174" height="40" rx="7" fill="#D2E1EC"/><use href="#book" x="662" y="474" width="20" height="20" color="#214E73"/><text x="694" y="490" class="label" fill="#214E73">Notebooks</text>
+    <use href="#search" x="662" y="515" width="20" height="20" class="icon"/><text x="694" y="531" class="body" fill="#39536A">Ask and Search</text>
+    <text x="660" y="578" class="caps muted">CREATE</text>
+    <use href="#mic" x="662" y="593" width="20" height="20" class="icon"/><text x="694" y="608" class="body" fill="#39536A">Podcasts</text>
+    <text x="660" y="654" class="caps muted">MANAGE</text>
+    <use href="#settings" x="662" y="669" width="20" height="20" class="icon"/><text x="694" y="684" class="body" fill="#39536A">Models</text>
+    <rect x="654" y="846" width="174" height="40" rx="7" fill="transparent"/><use href="#sun" x="662" y="856" width="20" height="20" class="icon"/><text x="694" y="871" class="body ink">Theme</text>
+    <rect x="654" y="894" width="174" height="40" rx="7" fill="transparent"/><text x="666" y="919" class="label muted">文</text><text x="694" y="919" class="body ink">Language</text>
+    <rect x="856" y="254" width="36" height="36" rx="7" fill="#fff" stroke="#B6C2CC"/><use href="#panel" x="864" y="262" width="20" height="20" class="icon"/>
+    <text x="906" y="278" class="title ink" font-size="25">Notebooks</text>
+    <rect x="1070" y="251" width="70" height="38" rx="7" fill="#275E91"/><text x="1084" y="275" class="label" fill="#fff">+ New</text>
+    <line x1="856" y1="310" x2="1136" y2="310" stroke="#B6C2CC"/>
+    <text x="856" y="348" class="ui ink" font-size="16" font-weight="700">Recently Viewed</text><rect x="1006" y="332" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="1014" y="348" class="body muted">2</text><path d="m1041 339 5 5-5 5" fill="none" stroke="#617485" stroke-width="1.5"/>
+    <rect x="856" y="370" width="280" height="96" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="872" y="389" width="22" height="22" class="icon"/><text x="906" y="407" class="label ink">Sprout</text><text x="906" y="431" class="body muted">Viewed 2 hours ago</text>
+    <text x="856" y="518" class="ui ink" font-size="16" font-weight="700">Active Notebooks</text><rect x="996" y="502" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="1004" y="518" class="body muted">1</text>
+    <rect x="856" y="542" width="220" height="182" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="874" y="563" width="22" height="22" class="icon"/><text x="908" y="580" class="label ink">Sprout</text><text x="874" y="626" class="body muted">No description</text><line x1="874" y1="666" x2="1056" y2="666" stroke="#B6C2CC"/><rect x="874" y="682" width="40" height="23" rx="11" fill="#F8FAFB" stroke="#B6C2CC"/><text x="887" y="698" class="body muted">1</text>
+    <rect x="839" y="232" width="6" height="738" fill="transparent"/><rect x="840" y="405" width="2" height="118" rx="1" fill="#8798A6" opacity=".72"/>
+  </g>
+  <rect x="640" y="232" width="520" height="738" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <!-- PANEL C -->
+  <g filter="url(#shadow)"><rect x="1226" y="232" width="520" height="738" rx="16" fill="#F8FAFB"/></g>
+  <g clip-path="url(#clipC)">
+    <rect x="1226" y="232" width="64" height="738" fill="#E5EBF0"/>
+    <rect x="1290" y="232" width="456" height="738" fill="#F1F5F8"/>
+    <line x1="1290" y1="232" x2="1290" y2="970" stroke="#B6C2CC"/>
+    <use href="#logo" x="1242" y="249" width="32" height="32"/>
+    <rect x="1236" y="305" width="44" height="44" rx="8" fill="#275E91"/><use href="#plus" x="1248" y="317" width="20" height="20" color="#fff"/>
+    <use href="#file" x="1248" y="382" width="20" height="20" class="icon"/>
+    <rect x="1236" y="422" width="44" height="44" rx="8" fill="#D2E1EC"/><use href="#book" x="1248" y="434" width="20" height="20" color="#214E73"/>
+    <use href="#search" x="1248" y="479" width="20" height="20" class="icon"/>
+    <use href="#mic" x="1248" y="544" width="20" height="20" class="icon"/>
+    <use href="#settings" x="1248" y="609" width="20" height="20" class="icon"/>
+    <use href="#sun" x="1248" y="856" width="20" height="20" class="icon"/>
+    <text x="1249" y="924" class="label muted">文</text>
+    <rect x="1299" y="254" width="36" height="36" rx="7" fill="#fff" stroke="#B6C2CC"/><use href="#panel" x="1307" y="262" width="20" height="20" class="icon"/>
+    <text x="1349" y="278" class="title ink" font-size="25">Notebooks</text>
+    <rect x="1656" y="251" width="70" height="38" rx="7" fill="#275E91"/><text x="1670" y="275" class="label" fill="#fff">+ New</text>
+    <line x1="1300" y1="310" x2="1726" y2="310" stroke="#B6C2CC"/>
+    <text x="1300" y="348" class="ui ink" font-size="16" font-weight="700">Recently Viewed</text><rect x="1450" y="332" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="1458" y="348" class="body muted">2</text><path d="m1485 339 5 5-5 5" fill="none" stroke="#617485" stroke-width="1.5"/>
+    <rect x="1300" y="370" width="204" height="96" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="1316" y="389" width="22" height="22" class="icon"/><text x="1350" y="407" class="label ink">Sprout</text><text x="1350" y="431" class="body muted">Viewed 2 hours ago</text>
+    <rect x="1518" y="370" width="208" height="96" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#file" x="1534" y="389" width="22" height="22" class="icon"/><text x="1568" y="407" class="label ink">Research dossier</text><text x="1568" y="431" class="body muted">Viewed 2 hours ago</text>
+    <text x="1300" y="518" class="ui ink" font-size="16" font-weight="700">Active Notebooks</text><rect x="1440" y="502" width="24" height="22" rx="11" fill="#E5EBF0"/><text x="1448" y="518" class="body muted">1</text>
+    <rect x="1300" y="542" width="204" height="182" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="1318" y="563" width="22" height="22" class="icon"/><text x="1352" y="580" class="label ink">Sprout</text><text x="1318" y="626" class="body muted">No description</text><line x1="1318" y1="666" x2="1484" y2="666" stroke="#B6C2CC"/><rect x="1318" y="682" width="40" height="23" rx="11" fill="#F8FAFB" stroke="#B6C2CC"/><text x="1331" y="698" class="body muted">1</text>
+    <rect x="1286" y="232" width="8" height="738" fill="transparent"/><rect x="1289" y="408" width="2" height="118" rx="1" fill="#8798A6" opacity=".72"/>
+    <rect x="1284" y="426" width="92" height="36" rx="7" fill="#1B2A38"/><path d="m1284 438-7 6 7 6" fill="#1B2A38"/><text x="1300" y="449" class="body" fill="#fff">Notebooks</text>
+  </g>
+  <rect x="1226" y="232" width="520" height="738" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <!-- footer annotations -->
+  <line x1="54" y1="1022" x2="1746" y2="1022" stroke="#B6C2CC"/>
+  <text x="54" y="1060" class="caps" fill="#275E91">TARGET</text>
+  <text x="127" y="1060" class="ui ink" font-size="15" font-weight="600">240 px expanded · 64 px collapsed · one provider · one mobile sheet · one scrollbar system</text>
+  <text x="1746" y="1060" text-anchor="end" class="ui muted" font-size="13">Logo, routes, actions and theme remain Open Notebook.</text>
+</svg>

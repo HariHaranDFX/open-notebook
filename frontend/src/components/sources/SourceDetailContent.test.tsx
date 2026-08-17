@@ -32,6 +32,10 @@ vi.mock('@/lib/api/embedding', () => ({
   },
 }))
 
+vi.mock('@/lib/hooks/use-auth', () => ({
+  useAuth: () => ({ isAdmin: false }),
+}))
+
 vi.mock('@/components/sources/SourceInsightDialog', () => ({
   SourceInsightDialog: () => null,
 }))
@@ -52,11 +56,15 @@ const networkError = Object.assign(new Error('Network Error'), {
   response: undefined,
 })
 
-function renderContent(onClose?: () => void) {
+function renderContent(onClose?: () => void, showBackButton = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <SourceDetailContent sourceId="source:missing" onClose={onClose} />
+      <SourceDetailContent
+        sourceId="source:missing"
+        onClose={onClose}
+        showBackButton={showBackButton}
+      />
     </QueryClientProvider>
   )
 }
@@ -141,5 +149,108 @@ describe('SourceDetailContent', () => {
     })
     screen.getByText('common.close').click()
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('keeps a viewer read-only while preserving source content', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:viewer',
+      title: 'Grounded source',
+      access_role: 'viewer',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SourceDetailContent sourceId="source:viewer" />
+      </QueryClientProvider>
+    )
+
+    expect(await screen.findByText('Grounded source')).toBeInTheDocument()
+    const evidence = screen.getByText('Visible evidence')
+    expect(evidence).toBeInTheDocument()
+    expect(evidence.closest('[data-slot="card"]')?.querySelector('[data-slot="card-header"]')).toBeNull()
+    expect(evidence.closest('[data-slot="card-content"]')).toHaveClass('pt-4')
+    expect(screen.queryByText('sharing.share')).not.toBeInTheDocument()
+    expect(screen.queryByText('sources.generateNewInsight')).not.toBeInTheDocument()
+    expect(screen.queryByText('sources.manageNotebooks')).not.toBeInTheDocument()
+  })
+
+  it('keeps the source return action inside the source header', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:header',
+      title: 'Grounded source',
+      access_role: 'owner',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+    const onClose = vi.fn()
+
+    renderContent(onClose, true)
+
+    const title = await screen.findByText('Grounded source')
+    const backButton = screen.getByRole('button', {
+      name: 'workbench.backToSources',
+    })
+    const shareButton = screen.getByRole('button', { name: 'sharing.share' })
+    const headerLayout = title.closest('[data-slot="detail-header-layout"]')
+
+    expect(backButton.closest('header')).toContainElement(title)
+    expect(backButton.parentElement).toBe(shareButton.parentElement)
+    expect(backButton.nextElementSibling).toBe(shareButton)
+    expect(backButton.className).toBe(shareButton.className)
+    expect(headerLayout).toContainElement(screen.getByText(/sources\.id/))
+    expect(headerLayout).toHaveClass(
+      'grid',
+      'lg:grid-cols-[minmax(0,1fr)_auto]',
+      'lg:items-center',
+    )
+    backButton.click()
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses an undivided workspace header with an outlined actions button', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:header',
+      title: 'Grounded source',
+      access_role: 'owner',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SourceDetailContent
+          sourceId="source:header"
+          showBackButton
+          renderWorkspace={({ content }) => content}
+        />
+      </QueryClientProvider>,
+    )
+
+    const title = await screen.findByText('Grounded source')
+    const actionsButton = screen.getByRole('button', { name: 'common.actions' })
+    const sourceDetail = title.closest('header')?.parentElement
+
+    expect(title.closest('header')).not.toHaveClass('border-b')
+    expect(sourceDetail).toHaveClass('min-h-0', 'min-w-0', 'flex-1', 'overflow-hidden')
+    expect(actionsButton).toHaveClass('border-border-strong', 'bg-card')
   })
 })

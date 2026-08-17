@@ -57,9 +57,9 @@ available at `frontend/public/brand` for a host process or
 dimensions, meaningful brand names, and equivalent light/dark logo treatments.
 Do not encode scripts, external trackers, or secrets in customer assets.
 
-The example client file references placeholder Northstar assets that are not
-checked in. Supply matching files in the asset directory or replace those paths
-with approved HTTPS URLs before visual review.
+The example client uses the checked-in Northstar demonstration assets under
+`frontend/public/brand`. Replace those files and the example support URL with
+the customer's approved identity and support destination before deployment.
 
 ## Local same-build switch
 

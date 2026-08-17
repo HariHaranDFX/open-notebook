@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,20 +10,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, ListChecks, ChevronDown } from 'lucide-react'
+import { Plus, StickyNote, Bot, User, MoreVertical, Trash2, ListChecks } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { NoteEditorDialog } from './NoteEditorDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { formatDistanceToNow } from 'date-fns'
-import { ContextToggle } from '@/components/common/ContextToggle'
-import type { NoteContextMode } from '../[id]/page'
+import { ContextSelector } from '@/components/common/ContextSelector'
+import type { NoteContextMode } from '@/lib/types/notebook-context'
 import type { NoteContextDefault } from '@/lib/utils/source-context'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
-import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { AccessRole } from '@/lib/types/api'
 import { canEditContent } from '@/lib/utils/access-role'
@@ -56,13 +54,7 @@ export function NotesColumn({
 
   const deleteNote = useDeleteNote()
 
-  // Collapsible column state
-  const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const notesLabel = t('common.notes')
-  const collapseButton = useMemo(
-    () => createCollapseButton(toggleNotes, notesLabel),
-    [toggleNotes, notesLabel]
-  )
 
   const handleDeleteClick = (noteId: string) => {
     setNoteToDelete(noteId)
@@ -83,23 +75,21 @@ export function NotesColumn({
 
   return (
     <>
-      <CollapsibleColumn
-        isCollapsed={notesCollapsed}
-        onToggle={toggleNotes}
-        collapsedIcon={StickyNote}
-        collapsedLabel={notesLabel}
-      >
-        <Card className="h-full flex flex-col flex-1 overflow-hidden">
-          <CardHeader className="pb-3 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{notesLabel}</CardTitle>
-              <div className="flex items-center gap-2">
+        <Card className="h-full flex flex-col flex-1 gap-0 overflow-hidden rounded-none border-0 py-0 shadow-none">
+          <CardHeader className="flex-shrink-0 px-4 pb-2 pt-4">
+            <div className="workbench-toolbar flex items-center justify-between gap-3">
+              <CardTitle className="sr-only">{notesLabel}</CardTitle>
+              <div className="workbench-toolbar-actions flex items-center gap-2">
                 {onBulkContextModeChange && notes && notes.length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" title={t('sources.bulkContext')}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        aria-label={t('sources.bulkContext')}
+                      >
                         <ListChecks className="h-4 w-4" />
-                        <ChevronDown className="h-4 w-4 ml-1" />
+                        {t('sources.bulkContext')}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -120,16 +110,15 @@ export function NotesColumn({
                       setShowAddDialog(true)
                     }}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4" />
                     {t('common.writeNote')}
                   </Button>
                 )}
-                {collapseButton}
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto min-h-0">
+          <CardContent className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-2">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
@@ -145,11 +134,11 @@ export function NotesColumn({
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-3 border rounded-lg card-hover group relative cursor-pointer"
+                    className="relative cursor-pointer rounded-[var(--surface-radius)] border p-3 card-hover group"
                     onClick={() => setEditingNote(note)}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                    <div className="workbench-item-header mb-2 flex items-start justify-between gap-2">
+                      <div className="workbench-item-actions flex min-w-0 items-center gap-2">
                         {note.note_type === 'ai' ? (
                           <Bot className="h-4 w-4 text-primary" />
                         ) : (
@@ -160,52 +149,33 @@ export function NotesColumn({
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(note.updated), { 
-                            addSuffix: true,
-                            locale: getDateLocale(language)
-                          })}
-                        </span>
-
-                        {/* Context toggle - only show if handler provided */}
-                        {onContextModeChange && contextSelections?.[note.id] && (
-                          <div onClick={(event) => event.stopPropagation()}>
-                            <ContextToggle
-                              mode={contextSelections[note.id]}
-                              hasInsights={false}
-                              onChange={(mode) => onContextModeChange(note.id, mode)}
-                            />
-                          </div>
-                        )}
-
-                        {canEdit && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteClick(note.id)
-                                }}
-                                className="text-red-600 focus:text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {t('notebooks.deleteNote')}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </div>
+                      {canEdit && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              aria-label={t('common.actions')}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteClick(note.id)
+                              }}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              {t('notebooks.deleteNote')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
 
                     {note.title && (
@@ -217,13 +187,37 @@ export function NotesColumn({
                         {note.content}
                       </p>
                     )}
+
+                    <div
+                      data-slot="note-card-footer"
+                      className="mt-3 flex min-w-0 items-end justify-between gap-2"
+                    >
+                      {onContextModeChange && contextSelections?.[note.id] && (
+                        <div onClick={(event) => event.stopPropagation()}>
+                          <ContextSelector
+                            value={contextSelections[note.id]}
+                            kind="note"
+                            onValueChange={(mode) => onContextModeChange(note.id, mode === 'insights' ? 'off' : mode)}
+                          />
+                        </div>
+                      )}
+                      <time
+                        dateTime={note.updated}
+                        title={note.updated}
+                        className="ml-auto shrink-0 text-right text-xs text-muted-foreground"
+                      >
+                        {formatDistanceToNow(new Date(note.updated), {
+                          addSuffix: true,
+                          locale: getDateLocale(language),
+                        })}
+                      </time>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
-      </CollapsibleColumn>
 
       <NoteEditorDialog
         open={showAddDialog || Boolean(editingNote)}

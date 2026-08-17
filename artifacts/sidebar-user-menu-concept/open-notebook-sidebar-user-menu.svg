@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1120" viewBox="0 0 1800 1120">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="24" flood-color="#142230" flood-opacity=".13"/></filter>
+    <clipPath id="screenA"><rect x="54" y="236" width="760" height="730" rx="16"/></clipPath>
+    <clipPath id="screenB"><rect x="864" y="236" width="390" height="730" rx="16"/></clipPath>
+    <symbol id="logo" viewBox="0 0 32 32"><circle cx="16" cy="5" r="3.3" fill="#6B7BFF"/><circle cx="24.5" cy="10" r="3.3" fill="#9F8CFF"/><circle cx="24.5" cy="20" r="3.3" fill="#65CBE9"/><circle cx="16" cy="25" r="3.3" fill="#8C79FF"/><circle cx="7.5" cy="20" r="3.3" fill="#79DCF1"/><circle cx="7.5" cy="10" r="3.3" fill="#B8A8FF"/><circle cx="16" cy="15" r="3" fill="#6E82FF"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="file" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20H7zM14 3.5V8h4M10 12h5M10 15h5" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="book" viewBox="0 0 24 24"><path d="M4.5 5.5c2.8-.8 5-.2 7.5 1.4v12c-2.5-1.6-4.7-2.2-7.5-1.4zM19.5 5.5c-2.8-.8-5-.2-7.5 1.4v12c2.5-1.6 4.7-2.2 7.5-1.4z" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/></symbol>
+    <symbol id="search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.65"/><path d="m15 15 4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"/></symbol>
+    <symbol id="mic" viewBox="0 0 24 24"><rect x="8.5" y="3.5" width="7" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.55"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></symbol>
+    <symbol id="bot" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.55"/><path d="M12 3v4M9 12h.01M15 12h.01M9 15h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="panelClose" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 4v16m7-10-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="panelOpen" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 4v16m5-10 2 2-2 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="logout" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="chevrons" viewBox="0 0 24 24"><path d="m8 9 4-4 4 4M16 15l-4 4-4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <style>.ui{font-family:"Segoe UI",Arial,sans-serif}.title{font-family:Georgia,"Times New Roman",serif;font-weight:700}.caps{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.45px}.label{font-family:"Segoe UI",Arial,sans-serif;font-size:13px;font-weight:600}.body{font-family:"Segoe UI",Arial,sans-serif;font-size:12px}.ink{fill:#1B2A38}.muted{fill:#617485}.icon{color:#526575}</style>
+  </defs>
+  <rect width="1800" height="1120" fill="#EDF2F5"/><path d="M0 0h1800v12H0z" fill="#27343E"/>
+  <text x="54" y="80" class="ui ink" font-size="15" font-weight="700" letter-spacing="2">OPEN NOTEBOOK / SIDEBAR 07 ADAPTATION</text>
+  <text x="54" y="128" class="title ink" font-size="44">Navigation above. Identity anchored below.</text>
+  <text x="54" y="164" class="ui muted" font-size="16">The shadcn behavior moves in; Open Notebook’s placement and product hierarchy stay intact.</text>
+  <line x1="54" y1="194" x2="1746" y2="194" stroke="#B6C2CC"/>
+  <circle cx="70" cy="218" r="4" fill="#275E91"/><text x="84" y="223" class="caps muted">EXPANDED · CURRENT TRIGGER PLACEMENT</text>
+  <circle cx="880" cy="218" r="4" fill="#275E91"/><text x="894" y="223" class="caps muted">COLLAPSED · SHADCN ICON MODE</text>
+  <circle cx="1316" cy="218" r="4" fill="#AD7620"/><text x="1330" y="223" class="caps muted">USER MENU · OPEN</text>
+
+  <!-- Expanded app -->
+  <g filter="url(#shadow)"><rect x="54" y="236" width="760" height="730" rx="16" fill="#F8FAFB"/></g>
+  <g clip-path="url(#screenA)">
+    <rect x="54" y="236" width="240" height="730" fill="#E5EBF0"/><rect x="294" y="236" width="520" height="730" fill="#F1F5F8"/><line x1="294" y1="236" x2="294" y2="966" stroke="#B6C2CC"/>
+    <line x1="54" y1="300" x2="294" y2="300" stroke="#B6C2CC"/>
+    <use href="#logo" x="74" y="251" width="32" height="32"/><text x="118" y="273" class="ui ink" font-size="14" font-weight="700">Open Notebook</text>
+    <rect x="246" y="247" width="36" height="40" rx="8" fill="#F8FAFB" stroke="#B6C2CC"/><use href="#panelClose" x="254" y="257" width="20" height="20" class="icon"/>
+    <rect x="68" y="316" width="212" height="40" rx="7" fill="#275E91"/><use href="#plus" x="82" y="326" width="20" height="20" color="#fff"/><text x="111" y="341" class="label" fill="#fff">New</text>
+    <text x="74" y="387" class="caps muted">COLLECT</text><use href="#file" x="76" y="402" width="20" height="20" class="icon"/><text x="108" y="417" class="body" fill="#39536A">Sources</text>
+    <text x="74" y="461" class="caps muted">PROCESS</text><rect x="68" y="474" width="212" height="40" rx="7" fill="#D2E1EC"/><use href="#book" x="76" y="484" width="20" height="20" color="#214E73"/><text x="108" y="500" class="label" fill="#214E73">Notebooks</text><use href="#search" x="76" y="526" width="20" height="20" class="icon"/><text x="108" y="542" class="body" fill="#39536A">Ask and Search</text>
+    <text x="74" y="586" class="caps muted">CREATE</text><use href="#mic" x="76" y="601" width="20" height="20" class="icon"/><text x="108" y="616" class="body" fill="#39536A">Podcasts</text>
+    <text x="74" y="660" class="caps muted">MANAGE</text><use href="#bot" x="76" y="675" width="20" height="20" class="icon"/><text x="108" y="690" class="body" fill="#39536A">Models</text>
+    <!-- footer identity -->
+    <line x1="54" y1="875" x2="294" y2="875" stroke="#B6C2CC"/>
+    <rect x="66" y="888" width="170" height="58" rx="9" fill="transparent"/><circle cx="91" cy="917" r="17" fill="#275E91"/><text x="91" y="921" text-anchor="middle" class="ui" fill="#fff" font-size="11" font-weight="700">HB</text><text x="118" y="914" class="label ink">Hari Babu</text><text x="118" y="932" class="body muted">Administrator</text><use href="#chevrons" x="211" y="906" width="20" height="20" class="icon"/>
+    <rect x="241" y="895" width="41" height="44" rx="8" fill="#F8FAFB" stroke="#B6C2CC"/><use href="#sun" x="251" y="906" width="20" height="20" class="icon"/>
+    <!-- content -->
+    <text x="326" y="282" class="title ink" font-size="28">Notebooks</text><rect x="712" y="252" width="76" height="40" rx="7" fill="#275E91"/><text x="729" y="277" class="label" fill="#fff">+ New</text><line x1="326" y1="312" x2="788" y2="312" stroke="#B6C2CC"/>
+    <text x="326" y="354" class="ui ink" font-size="17" font-weight="700">Recently Viewed</text><rect x="480" y="337" width="25" height="23" rx="11" fill="#E5EBF0"/><text x="489" y="354" class="body muted">2</text>
+    <rect x="326" y="378" width="218" height="100" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="344" y="398" width="22" height="22" class="icon"/><text x="378" y="415" class="label ink">Sprout</text><text x="378" y="441" class="body muted">Viewed 2 hours ago</text>
+    <rect x="558" y="378" width="230" height="100" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#file" x="576" y="398" width="22" height="22" class="icon"/><text x="610" y="415" class="label ink">Research dossier</text><text x="610" y="441" class="body muted">Viewed 2 hours ago</text>
+    <text x="326" y="530" class="ui ink" font-size="17" font-weight="700">Active Notebooks</text><rect x="470" y="513" width="25" height="23" rx="11" fill="#E5EBF0"/><text x="479" y="530" class="body muted">1</text>
+    <rect x="326" y="554" width="218" height="186" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="344" y="576" width="22" height="22" class="icon"/><text x="378" y="593" class="label ink">Sprout</text><text x="344" y="640" class="body muted">No description</text><line x1="344" y1="682" x2="526" y2="682" stroke="#B6C2CC"/><rect x="344" y="699" width="40" height="23" rx="11" fill="#F8FAFB" stroke="#B6C2CC"/><text x="358" y="715" class="body muted">1</text>
+  </g><rect x="54" y="236" width="760" height="730" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <!-- Collapsed app -->
+  <g filter="url(#shadow)"><rect x="864" y="236" width="390" height="730" rx="16" fill="#F8FAFB"/></g>
+  <g clip-path="url(#screenB)">
+    <rect x="864" y="236" width="64" height="730" fill="#E5EBF0"/><rect x="928" y="236" width="326" height="730" fill="#F1F5F8"/><line x1="928" y1="236" x2="928" y2="966" stroke="#B6C2CC"/>
+    <use href="#logo" x="880" y="251" width="32" height="32"/><rect x="874" y="315" width="44" height="44" rx="8" fill="#275E91"/><use href="#plus" x="886" y="327" width="20" height="20" color="#fff"/>
+    <use href="#file" x="886" y="392" width="20" height="20" class="icon"/><rect x="874" y="429" width="44" height="44" rx="8" fill="#D2E1EC"/><use href="#book" x="886" y="441" width="20" height="20" color="#214E73"/><use href="#search" x="886" y="491" width="20" height="20" class="icon"/><use href="#mic" x="886" y="557" width="20" height="20" class="icon"/><use href="#bot" x="886" y="623" width="20" height="20" class="icon"/>
+    <line x1="864" y1="836" x2="928" y2="836" stroke="#B6C2CC"/><rect x="874" y="849" width="44" height="44" rx="8" fill="#F8FAFB" stroke="#B6C2CC"/><use href="#sun" x="886" y="861" width="20" height="20" class="icon"/><circle cx="896" cy="925" r="18" fill="#275E91"/><text x="896" y="929" text-anchor="middle" class="ui" fill="#fff" font-size="11" font-weight="700">HB</text>
+    <rect x="878" y="249" width="36" height="36" rx="8" fill="#F8FAFB" opacity="0"/><rect x="926" y="250" width="110" height="35" rx="7" fill="#1B2A38"/><path d="m926 261-7 6 7 6" fill="#1B2A38"/><text x="942" y="273" class="body" fill="#fff">Hover: expand</text>
+    <text x="958" y="282" class="title ink" font-size="26">Notebooks</text><line x1="958" y1="312" x2="1228" y2="312" stroke="#B6C2CC"/><text x="958" y="354" class="ui ink" font-size="17" font-weight="700">Recently Viewed</text><rect x="958" y="378" width="270" height="100" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="976" y="398" width="22" height="22" class="icon"/><text x="1010" y="415" class="label ink">Sprout</text><text x="1010" y="441" class="body muted">Viewed 2 hours ago</text><text x="958" y="530" class="ui ink" font-size="17" font-weight="700">Active Notebooks</text><rect x="958" y="554" width="218" height="186" rx="8" fill="#fff" stroke="#B6C2CC"/><use href="#book" x="976" y="576" width="22" height="22" class="icon"/><text x="1010" y="593" class="label ink">Sprout</text><text x="976" y="640" class="body muted">No description</text>
+  </g><rect x="864" y="236" width="390" height="730" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <!-- menu detail -->
+  <g filter="url(#shadow)"><rect x="1300" y="236" width="446" height="520" rx="16" fill="#F8FAFB"/></g>
+  <rect x="1316" y="252" width="414" height="488" rx="14" fill="#FFFFFF" stroke="#AEBCC7"/>
+  <text x="1340" y="285" class="caps muted">PROFILE</text>
+  <circle cx="1368" cy="333" r="24" fill="#275E91"/><text x="1368" y="338" text-anchor="middle" class="ui" fill="#fff" font-size="13" font-weight="700">HB</text><text x="1408" y="325" class="ui ink" font-size="15" font-weight="700">Hari Babu</text><text x="1408" y="348" class="body muted">hari@example.com</text>
+  <line x1="1332" y1="378" x2="1714" y2="378" stroke="#D5DEE5"/>
+  <rect x="1330" y="392" width="386" height="52" rx="8" fill="#F1F5F8"/><use href="#settings" x="1348" y="407" width="22" height="22" class="icon"/><text x="1384" y="425" class="ui ink" font-size="14" font-weight="600">Settings</text><path d="m1688 412 7 7-7 7" fill="none" stroke="#617485" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="1330" y="452" width="386" height="52" rx="8" fill="transparent"/><text x="1349" y="485" class="ui muted" font-size="17" font-weight="700">文</text><text x="1384" y="485" class="ui ink" font-size="14" font-weight="600">Language</text><text x="1685" y="485" text-anchor="end" class="body muted">English</text><path d="m1694 472 7 7-7 7" fill="none" stroke="#617485" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="1332" y1="520" x2="1714" y2="520" stroke="#D5DEE5"/>
+  <rect x="1330" y="534" width="386" height="52" rx="8" fill="transparent"/><use href="#logout" x="1348" y="549" width="22" height="22" class="icon"/><text x="1384" y="567" class="ui ink" font-size="14" font-weight="600">Sign out</text>
+  <rect x="1330" y="612" width="386" height="96" rx="10" fill="#EDF3F7"/><text x="1348" y="640" class="caps" fill="#275E91">FOOTER BEHAVIOR</text><text x="1348" y="669" class="body ink">Avatar/name opens this menu.</text><text x="1348" y="691" class="body ink">Theme remains a one-click control beside it.</text>
+  <rect x="1300" y="236" width="446" height="520" rx="16" fill="none" stroke="#AEBCC7"/>
+
+  <line x1="54" y1="1018" x2="1746" y2="1018" stroke="#B6C2CC"/>
+  <text x="54" y="1057" class="caps" fill="#275E91">IDENTITY DATA</text><text x="172" y="1057" class="ui ink" font-size="14" font-weight="600">Name + email from /auth/me · initials avatar until an image URL exists</text>
+  <text x="1746" y="1057" text-anchor="end" class="ui muted" font-size="13">Settings moves out of Manage; Models, Groups and Advanced remain.</text>
+</svg>

@@ -28,17 +28,26 @@
 
 ## Dependency Order
 
-1. [WP3-00: WP2b integration baseline](2026-08-07-wp3-00-wp2b-integration.md)
-2. [WP3-01: Design foundation and adaptive shell](2026-08-07-wp3-01-foundation-shell.md)
-3. [WP3-01B: Deployment-level white-label branding](2026-08-07-wp3-01b-branding.md)
-4. [WP3-02: Collection libraries](2026-08-07-wp3-02-collection-libraries.md)
-5. [WP3-03: Research workbench](2026-08-07-wp3-03-research-workbench.md)
-6. [WP3-04: Ask and Search](2026-08-07-wp3-04-ask-search.md)
-7. [WP3-05: Output studios](2026-08-07-wp3-05-output-studios.md)
-8. [WP3-06: Administration, authentication, and sharing](2026-08-07-wp3-06-admin-auth-sharing.md)
-9. [WP3-07: Hardening and release verification](2026-08-07-wp3-07-hardening.md)
+1. [x] [WP3-00: WP2b integration baseline](2026-08-07-wp3-00-wp2b-integration.md) — Complete
+2. [x] [WP3-01: Design foundation and adaptive shell](2026-08-07-wp3-01-foundation-shell.md) — Complete and approved
+3. [x] [WP3-01B: Deployment-level white-label branding](2026-08-07-wp3-01b-branding.md) — Complete and approved
+4. [x] [WP3-02: Collection libraries](2026-08-07-wp3-02-collection-libraries.md) — Complete and approved
+5. [x] [WP3-03: Research workbench](2026-08-07-wp3-03-research-workbench.md) — Complete and approved
+6. [ ] [WP3-04: Ask and Search](2026-08-07-wp3-04-ask-search.md)
+7. [ ] [WP3-05: Output studios](2026-08-07-wp3-05-output-studios.md)
+8. [ ] [WP3-06: Administration, authentication, and sharing](2026-08-07-wp3-06-admin-auth-sharing.md)
+9. [ ] [WP3-07: Hardening and release verification](2026-08-07-wp3-07-hardening.md)
 
 Do not execute packages out of order. WP3-01 establishes tokens and structural interfaces consumed by every route plan. WP3-01B adds deployment identity without allowing customer configuration to override semantic, provenance, or focus meaning. WP3-03 establishes the workbench and resource-preview interfaces consumed by Ask/Search. WP3-06 consumes WP2b sharing types and may add access-origin metadata without weakening existing authorization.
+
+## Recorded Product Follow-ups
+
+These issues were discovered while testing the running WP3 application. They are executable Superpowers plans, but they are tracked separately from the nine WP3 redesign packages so completed WP3 package status remains accurate.
+
+1. [ ] [Source–notebook relationship integrity](2026-08-13-source-notebook-relationship-integrity.md) — correct reversed edge predicates, make repeated linking idempotent, and enforce pair uniqueness. Complete before bulk notebook population.
+2. [ ] [Notebook–source documentation truth](2026-08-13-notebook-source-documentation-truth.md) — remove the stale one-notebook-per-source and re-upload guidance, then document reuse, unlinking, and global deletion accurately.
+3. [ ] [Ingestion runtime capabilities](2026-08-13-ingestion-runtime-capabilities.md) — require a complete FFmpeg/FFprobe runtime for advertised media support, gate images on optional Docling, and remove unsupported ZIP/TAR/GZ from the picker.
+4. [ ] [Long-context handling](2026-08-13-long-context-handling.md) — add model-aware context budgeting, warnings, and recovery without silently dropping selected evidence.
 
 ## Shared Interfaces
 

@@ -98,13 +98,13 @@ export function EpisodeProfilesPanel({
       </div>
 
       {disableCreate ? (
-        <p className="rounded-lg border border-dashed bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="rounded-[var(--surface-radius)] border border-dashed bg-amber-50 p-4 text-sm text-amber-900">
           {t('podcasts.createSpeakerFirst')}
         </p>
       ) : null}
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
           {t('podcasts.noEpisodeProfiles')}
         </div>
       ) : (
@@ -148,8 +148,7 @@ export function EpisodeProfilesPanel({
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
+                            size="icon-sm"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-4 w-4" />

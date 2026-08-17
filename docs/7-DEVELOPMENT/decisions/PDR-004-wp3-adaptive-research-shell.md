@@ -1,6 +1,6 @@
 # PDR-004: One adaptive research shell for WP3
 
-- **Status**: Accepted
+- **Status**: Superseded by [PDR-005](PDR-005-user-controlled-adaptive-sidebar.md)
 - **Date**: 2026-08
 - **Related**: [PRODUCT.md](../../../PRODUCT.md), [DESIGN.md](../../../DESIGN.md), [WP3 roadmap](../../superpowers/plans/2026-08-07-wp3-redesign-roadmap.md)
 

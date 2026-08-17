@@ -153,3 +153,6 @@ screenshot-*.png
 history.txt
 .review-diffstat.txt
 .superpowers/sdd/
+
+# Project-local package manager cache
+.pnpm-store/

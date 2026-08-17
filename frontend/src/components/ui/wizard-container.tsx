@@ -85,7 +85,7 @@ export function WizardContainer({
   className
 }: WizardContainerProps) {
   return (
-    <div className={cn('flex flex-col h-[500px] min-w-0 overflow-hidden bg-card rounded-lg border border-border', className)}>
+    <div className={cn('flex h-[500px] min-w-0 flex-col overflow-hidden rounded-[var(--surface-radius)] border border-border bg-card', className)}>
       <StepIndicator
         currentStep={currentStep}
         steps={steps}

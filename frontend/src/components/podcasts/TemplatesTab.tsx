@@ -39,7 +39,7 @@ export function TemplatesTab() {
       <Accordion type="single" collapsible className="w-full">
         <AccordionItem
           value="overview"
-          className="overflow-hidden rounded-xl border border-border bg-muted/40 px-4"
+          className="overflow-hidden rounded-[var(--surface-radius)] border border-border bg-muted/40 px-4"
         >
           <AccordionTrigger className="gap-2 py-4 text-left text-sm font-semibold">
             <div className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export function TemplatesTab() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-[var(--surface-radius)] border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           {t('podcasts.loadingTemplates')}
         </div>

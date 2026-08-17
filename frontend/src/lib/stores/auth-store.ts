@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import apiClient, { setEntraAuthMode } from '@/lib/api/client'
 import { getApiUrl } from '@/lib/config'
-import type { AuthProvider, UserRole } from '@/lib/types/auth'
+import type { AuthProvider, AuthUser, UserRole } from '@/lib/types/auth'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -16,6 +16,7 @@ interface AuthState {
   authRequired: boolean | null
   provider: AuthProvider
   role: UserRole | null
+  user: AuthUser | null
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (password: string) => Promise<boolean>
@@ -35,6 +36,24 @@ function roleFromMe(data: unknown): UserRole {
   return 'user'
 }
 
+function userFromMe(data: unknown): AuthUser | null {
+  if (!data || typeof data !== 'object') return null
+
+  const user = data as Record<string, unknown>
+  if (
+    typeof user.id !== 'string' ||
+    typeof user.email !== 'string' ||
+    typeof user.display_name !== 'string'
+  ) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    role: user.role === 'admin' ? 'admin' : 'user',
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -48,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
       authRequired: null,
       provider: 'password',
       role: null,
+      user: null,
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
@@ -77,6 +97,12 @@ export const useAuthStore = create<AuthState>()(
               token: 'not-required',
               isCheckingAuth: false,
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
           }
 
@@ -126,6 +152,12 @@ export const useAuthStore = create<AuthState>()(
               error: null,
               // Password provider always elevates to admin (see api/auth/password.py).
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
             return true
           } else {
@@ -146,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               role: null,
+              user: null,
             })
             return false
           }
@@ -167,6 +200,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             token: null,
             role: null,
+            user: null,
           })
           return false
         }
@@ -191,6 +225,7 @@ export const useAuthStore = create<AuthState>()(
             lastAuthCheck: null,
             isCheckingAuth: false,
             role: null,
+            user: null,
           })
           if (typeof window !== 'undefined') {
             window.location.href = '/login'
@@ -204,6 +239,7 @@ export const useAuthStore = create<AuthState>()(
           error: null,
           lastAuthCheck: null,
           role: null,
+          user: null,
         })
       },
       
@@ -223,11 +259,13 @@ export const useAuthStore = create<AuthState>()(
             // Cookie-session check: apiClient sends the session cookie via
             // withCredentials, no bearer token involved.
             const response = await apiClient.get('/auth/me')
+            const user = userFromMe(response.data)
             set({
               isAuthenticated: true,
               lastAuthCheck: now,
               isCheckingAuth: false,
               role: roleFromMe(response.data),
+              user,
             })
             return true
           } catch (error) {
@@ -237,6 +275,7 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: null,
               isCheckingAuth: false,
               role: null,
+              user: null,
             })
             return false
           }
@@ -276,6 +315,12 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: now,
               isCheckingAuth: false,
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
             return true
           } else {
@@ -285,6 +330,7 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: null,
               isCheckingAuth: false,
               role: null,
+              user: null,
             })
             return false
           }
@@ -296,6 +342,7 @@ export const useAuthStore = create<AuthState>()(
             lastAuthCheck: null,
             isCheckingAuth: false,
             role: null,
+            user: null,
           })
           return false
         }

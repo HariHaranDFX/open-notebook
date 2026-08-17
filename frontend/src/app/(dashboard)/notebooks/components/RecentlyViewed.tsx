@@ -1,12 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { formatDistanceToNow } from 'date-fns'
-import type { Locale } from 'date-fns/locale'
-import { BookOpen, ChevronDown, ChevronRight, FileText } from 'lucide-react'
+import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 
+import { ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,107 +14,127 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { notebooksApi } from '@/lib/api/notebooks'
-import type { RecentlyViewedResponse } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getDateLocale } from '@/lib/utils/date-locale'
+import type { LibraryViewMode } from '@/lib/stores/library-view-store'
+import type { RecentlyViewedResponse } from '@/lib/types/api'
+import { cn } from '@/lib/utils'
+import { formatCompactRelativeTime } from '@/lib/utils/relative-time'
 
 interface RecentlyViewedProps {
+  viewMode: LibraryViewMode
   limit?: number
 }
 
 function getItemHref(item: RecentlyViewedResponse) {
-  if (item.type === 'notebook') {
-    return `/notebooks/${encodeURIComponent(item.id)}`
-  }
-
-  return `/sources/${item.id}`
+  return `/${item.type === 'notebook' ? 'notebooks' : 'sources'}/${encodeURIComponent(item.id)}`
 }
 
-function formatViewedAt(value: string, locale: Locale) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return formatDistanceToNow(date, {
-    addSuffix: true,
-    locale,
-  })
-}
-
-export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
+export function RecentlyViewed({ viewMode, limit = 12 }: RecentlyViewedProps) {
   const { t, language } = useTranslation()
   const [isOpen, setIsOpen] = useState(true)
-  const locale = getDateLocale(language)
-  const { data: items, isLoading, isError } = useQuery({
+  const { data: items, isLoading, isError, refetch } = useQuery({
     queryKey: ['recently-viewed', limit],
     queryFn: () => notebooksApi.recentlyViewed(limit),
   })
 
-  if (isLoading || isError || !items || items.length === 0) {
-    return null
+  if (isLoading) return null
+
+  if (isError) {
+    return (
+      <section className="flex flex-wrap items-center gap-3 border border-warning/40 bg-warning-surface p-4 text-warning" aria-labelledby="recently-viewed-error-title">
+        <AlertTriangle className="size-4" />
+        <h2 id="recently-viewed-error-title" className="font-semibold">{t('notebooks.recentlyViewed')}</h2>
+        <p className="text-sm">{t('common.contentUnavailable.errorDescription')}</p>
+        <Button variant="outline" size="sm" className="ml-auto" onClick={() => void refetch()}>
+          <RefreshCw />
+          {t('common.retry')}
+        </Button>
+      </section>
+    )
   }
 
+  if (!items?.length) return null
+
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-4">
-      <div className="flex items-center gap-2">
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            {isOpen ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-            <span className="sr-only">
-              {t('notebooks.toggleRecentlyViewed', {
-                defaultValue: 'Toggle recently viewed',
-              })}
-            </span>
-          </Button>
-        </CollapsibleTrigger>
-        <h2 className="text-lg font-semibold">
-          {t('notebooks.recentlyViewed', { defaultValue: 'Recently Viewed' })}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-3">
+      <div className="flex min-h-9 items-center gap-2">
+        <h2>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="h-9 justify-start !px-0 text-lg font-semibold">
+              {t('notebooks.recentlyViewed')}
+              <Badge
+                variant="secondary"
+                className="pointer-events-none min-w-6 px-1.5 tabular-nums"
+              >
+                {items.length}
+              </Badge>
+              {isOpen
+                ? <ChevronDown />
+                : <ChevronRight />}
+            </Button>
+          </CollapsibleTrigger>
         </h2>
-        <span className="text-sm text-muted-foreground">({items.length})</span>
       </div>
 
       <CollapsibleContent>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => {
-            const Icon = item.type === 'notebook' ? BookOpen : FileText
-            const typeLabel =
-              item.type === 'notebook'
-                ? t('notebooks.recentlyViewedNotebook', {
-                    defaultValue: 'Notebook',
-                  })
-                : t('notebooks.recentlyViewedSource', {
-                    defaultValue: 'Source',
-                  })
+        <div
+          data-testid="recently-viewed-collection"
+          data-view-mode={viewMode}
+          className={cn(
+            viewMode === 'card'
+              ? 'grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-5'
+              : 'overflow-hidden rounded-[var(--surface-radius)] border border-border',
+          )}
+        >
+          {items.map(item => {
+            const typeLabel = item.type === 'notebook'
+              ? t('notebooks.recentlyViewedNotebook')
+              : t('notebooks.recentlyViewedSource')
 
             return (
               <Link
                 key={`${item.type}-${item.id}`}
                 href={getItemHref(item)}
-                className="group flex min-h-20 items-center gap-3 rounded-md border border-border/60 p-3 transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                title={item.title}
+                className={cn(
+                  'group min-w-0 bg-card outline-none transition-colors duration-[var(--motion-standard)] hover:bg-secondary/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  viewMode === 'card'
+                    ? 'flex min-h-28 flex-col gap-3 rounded-[var(--surface-radius)] border border-border p-3'
+                    : 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-border px-2 py-2 last:border-b-0 sm:px-3',
+                )}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:text-primary">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate text-sm font-medium">{item.title}</p>
-                    <Badge variant="outline" className="shrink-0 text-[11px]">
-                      {typeLabel}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {t('notebooks.lastViewed', {
-                      time: formatViewedAt(item.last_viewed_at, locale),
-                      defaultValue: 'Viewed {{time}}',
-                    })}
-                  </p>
-                </div>
+                <span
+                  className="flex min-w-0 items-center gap-2"
+                >
+                  <ResourceTypeIcon
+                    kind={item.type === 'notebook' ? 'notebook' : 'source'}
+                  />
+                  <span
+                    className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug"
+                  >
+                    {item.title}
+                  </span>
+                </span>
+                <span
+                  className={cn(
+                    'flex items-center gap-2',
+                    viewMode === 'card'
+                      ? 'mt-auto flex-wrap justify-between border-t border-border pt-3'
+                      : 'shrink-0 flex-nowrap justify-end',
+                  )}
+                >
+                  <Badge variant="outline">{typeLabel}</Badge>
+                    <time
+                      dateTime={item.last_viewed_at}
+                      title={item.last_viewed_at}
+                      className={cn(
+                        'text-xs text-muted-foreground',
+                        viewMode === 'card' && 'ml-auto self-end',
+                      )}
+                    >
+                    {formatCompactRelativeTime(item.last_viewed_at, language)}
+                  </time>
+                </span>
               </Link>
             )
           })}

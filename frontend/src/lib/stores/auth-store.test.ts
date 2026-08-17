@@ -25,6 +25,7 @@ const resetStore = () => {
     provider: 'password',
     authRequired: null,
     role: null,
+    user: null,
   })
 }
 
@@ -82,7 +83,14 @@ describe('auth-store provider branching', () => {
     })
 
     it('marks authenticated when GET /auth/me succeeds via cookie session', async () => {
-      mockedGet.mockResolvedValueOnce({ data: { id: 'u1', role: 'user' } })
+      mockedGet.mockResolvedValueOnce({
+        data: {
+          id: 'u1',
+          email: 'researcher@example.com',
+          display_name: 'Researcher One',
+          role: 'user',
+        },
+      })
 
       const result = await useAuthStore.getState().checkAuth()
 
@@ -90,6 +98,12 @@ describe('auth-store provider branching', () => {
       expect(mockedGet).toHaveBeenCalledWith('/auth/me')
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
       expect(useAuthStore.getState().role).toBe('user')
+      expect(useAuthStore.getState().user).toEqual({
+        id: 'u1',
+        email: 'researcher@example.com',
+        displayName: 'Researcher One',
+        role: 'user',
+      })
     })
 
     it('stores admin role from /auth/me', async () => {

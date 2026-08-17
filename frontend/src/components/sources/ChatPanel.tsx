@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { ArrowUp, Bot, User, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -103,19 +103,21 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <Card className="flex h-full flex-1 flex-col gap-0 overflow-hidden rounded-none border-0 py-0">
+      <CardHeader className="flex h-12 flex-shrink-0 items-center border-b border-border bg-card py-0 pl-4 pr-12 [.border-b]:pb-0">
+        <div className="flex h-full w-full min-w-0 flex-nowrap items-center gap-2">
+          <CardTitle className="flex min-w-0 flex-1 items-center gap-2">
             <Bot className="h-5 w-5" />
-            {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
+            <span className="truncate">
+              {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
+            </span>
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="gap-2"
+                className="ml-auto gap-2"
                 onClick={() => setSessionManagerOpen(true)}
                 disabled={loadingSessions}
               >
@@ -271,10 +273,10 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3 border-t">
+    <div className="flex-shrink-0 space-y-3 border-t p-4">
       {/* Model selector */}
       {onModelChange && (
-        <div className="flex items-center justify-between">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
           <ModelSelector
             currentModel={modelOverride}
@@ -306,7 +308,7 @@ function ChatComposer({
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Send className="h-4 w-4" />
+            <ArrowUp className="h-4 w-4" />
           )}
         </Button>
       </div>

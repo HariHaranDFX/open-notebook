@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -60,6 +60,18 @@ describe('getBrandConfig', () => {
     expect(exampleBrand.logoUrl).not.toBe(defaultBrand.logoUrl)
     expect(exampleBrand.actionLight).not.toBe(defaultBrand.actionLight)
     expect(exampleBrand.actionDark).not.toBe(defaultBrand.actionDark)
+  })
+
+  it('ships every local asset referenced by the example deployment', () => {
+    const exampleBrand = JSON.parse(readFileSync(exampleConfigPath, 'utf8')) as Record<string, unknown>
+
+    for (const [field, value] of Object.entries(exampleBrand)) {
+      if (typeof value !== 'string' || !value.startsWith('/')) continue
+      expect(
+        existsSync(path.resolve(process.cwd(), 'public', value.slice(1))),
+        `${field} references missing public asset ${value}`,
+      ).toBe(true)
+    }
   })
 
   it.each([

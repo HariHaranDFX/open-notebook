@@ -74,7 +74,7 @@ export default function GroupsPage() {
               <p className="text-muted-foreground mt-1">{t('groups.description')}</p>
             </div>
 
-            <div className="rounded border p-4 space-y-3">
+            <div className="space-y-3 rounded-[var(--surface-radius)] border p-4">
               <h2 className="font-medium">{t('groups.create')}</h2>
               <div className="space-y-2">
                 <Label htmlFor="group-name">{t('groups.name')}</Label>
@@ -116,7 +116,7 @@ export default function GroupsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedGroupId(group.id)}
-                        className={`w-full text-left rounded border px-3 py-2 ${
+                        className={`w-full rounded-[var(--surface-radius)] border px-3 py-2 text-left ${
                           selectedGroupId === group.id
                             ? 'border-primary bg-accent'
                             : 'hover:bg-muted/50'
@@ -139,7 +139,7 @@ export default function GroupsPage() {
                 </ul>
 
                 {selectedGroupId && (
-                  <div className="rounded border p-4 space-y-3">
+                  <div className="space-y-3 rounded-[var(--surface-radius)] border p-4">
                     <div className="flex items-center justify-between">
                       <h2 className="font-medium">{t('groups.members')}</h2>
                       <Button

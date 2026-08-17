@@ -156,7 +156,7 @@ export function NotebookAssociations({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ScrollArea className="h-[300px] border rounded-md p-4">
+        <ScrollArea className="h-[300px] rounded-[var(--surface-radius)] border p-4">
           <div className="space-y-3">
             {notebooks
               .filter(nb => !nb.archived)
@@ -167,7 +167,7 @@ export function NotebookAssociations({
                 return (
                   <div
                     key={notebook.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                    className={`flex items-start gap-3 rounded-[var(--surface-radius)] border p-3 transition-colors ${
                       isSelected ? 'bg-accent border-accent-foreground/20' : 'hover:bg-accent/50'
                     }`}
                   >
