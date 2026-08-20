@@ -18,7 +18,9 @@ import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/sources/SessionManager'
 import { MessageActions } from '@/components/sources/MessageActions'
-import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
+import { EmptyState } from '@/components/common/EmptyState'
+import { buildCompactReferences } from '@/lib/utils/source-references'
+import { ChatReferences, createReferenceCitationComponent } from '@/components/sources/ChatReferences'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -144,41 +146,40 @@ export function ChatPanel({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 py-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">
-                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
-                </p>
-                <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
-              </div>
-            ) : (
-              messages.map((message) => (
+        {messages.length === 0 && !isStreaming ? (
+          <EmptyState
+            className="flex-1"
+            icon={Bot}
+            title={t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
+            description={t('chat.askQuestions')}
+          />
+        ) : (
+          <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
+            <div className="space-y-4 py-4">
+              {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
                   message={message}
                   notebookId={notebookId}
                   onReferenceClick={handleReferenceClick}
                 />
-              ))
-            )}
-            {isStreaming && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
+              ))}
+              {isStreaming && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div className="rounded-lg px-4 py-2 bg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 </div>
-                <div className="rounded-lg px-4 py-2 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        )}
 
         {/* Context Indicators */}
         {contextIndicators && (
@@ -385,18 +386,17 @@ function AIMessageContent({
   content: string
   onReferenceClick: (type: string, id: string) => void
 }) {
-  const { t } = useTranslation()
-  // Convert references to compact markdown with numbered citations
-  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content, t('common.references'))
-
-  // Create custom link component for compact references
-  const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
+  // Inline references become numbered citation pills; the deduped list renders
+  // as compact chips beneath the answer instead of an appended text block.
+  const { markdown, references } = buildCompactReferences(content)
+  const LinkComponent = createReferenceCitationComponent(onReferenceClick)
 
   return (
-    <MarkdownRenderer components={{
-      a: LinkComponent
-    }}>
-      {markdownWithCompactRefs}
-    </MarkdownRenderer>
+    <>
+      <MarkdownRenderer components={{ a: LinkComponent }}>
+        {markdown}
+      </MarkdownRenderer>
+      <ChatReferences references={references} onReferenceClick={onReferenceClick} />
+    </>
   )
 }

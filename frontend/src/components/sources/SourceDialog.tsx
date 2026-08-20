@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { SourceDetailContent } from './SourceDetailContent'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 interface SourceDialogProps {
   open: boolean
@@ -21,9 +22,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
   const { t } = useTranslation()
   const router = useRouter()
   // Ensure source ID has 'source:' prefix for API calls and routing
-  const sourceIdWithPrefix = sourceId
-    ? (sourceId.includes(':') ? sourceId : `source:${sourceId}`)
-    : null
+  const sourceIdWithPrefix = sourceId ? toReferenceRecordId('source', sourceId) : null
 
   const handleChatClick = () => {
     if (sourceIdWithPrefix) {

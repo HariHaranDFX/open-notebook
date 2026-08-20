@@ -8,10 +8,12 @@ import {
   Database,
   Download,
   ExternalLink,
+  FileText,
   Link as LinkIcon,
 } from 'lucide-react'
 
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -68,7 +70,7 @@ export function SourceContentPane({
     const linkHeaderHref = youTubeVideoId ? null : externalHref
 
     return (
-      <Card className="gap-0 rounded-none border-0 py-0 shadow-none">
+      <Card className="min-h-full gap-0 rounded-none border-0 py-0 shadow-none">
         {linkHeaderHref && (
           <CardHeader className="px-4 pb-2 pt-4">
             <CardTitle className="sr-only">{t('sources.content')}</CardTitle>
@@ -85,7 +87,7 @@ export function SourceContentPane({
             </CardDescription>
           </CardHeader>
         )}
-        <CardContent className={`px-4 pb-4 ${linkHeaderHref ? 'pt-2' : 'pt-4'}`}>
+        <CardContent className={`flex flex-1 flex-col px-4 pb-4 ${linkHeaderHref ? 'pt-2' : 'pt-4'}`}>
           {youTubeVideoId && (
             <div className="mx-auto mb-6 w-full max-w-4xl">
               <div className="aspect-video w-full overflow-hidden rounded-[var(--panel-radius)] bg-black">
@@ -110,14 +112,16 @@ export function SourceContentPane({
               )}
             </div>
           )}
-          <div
-            data-slot="source-reading-content"
-            className="mx-auto min-w-0 w-full max-w-[75ch] overflow-x-hidden"
-          >
-            <MarkdownRenderer>
-              {source.full_text || t('sources.noContent')}
-            </MarkdownRenderer>
-          </div>
+          {source.full_text ? (
+            <div
+              data-slot="source-reading-content"
+              className="mx-auto min-w-0 w-full max-w-[75ch] overflow-x-hidden"
+            >
+              <MarkdownRenderer>{source.full_text}</MarkdownRenderer>
+            </div>
+          ) : (
+            <EmptyState className="flex-1" icon={FileText} title={t('sources.noContent')} />
+          )}
         </CardContent>
       </Card>
     )

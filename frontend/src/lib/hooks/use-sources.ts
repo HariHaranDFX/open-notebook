@@ -123,11 +123,11 @@ export function useSourceLibrary(params: SourceLibraryParams) {
   }
 }
 
-export function useSource(id: string) {
+export function useSource(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEYS.source(id),
     queryFn: () => sourcesApi.get(id),
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
     staleTime: 30 * 1000, // 30 seconds - shorter stale time for more responsive updates
     refetchOnWindowFocus: true, // Refetch when user comes back to the tab
   })

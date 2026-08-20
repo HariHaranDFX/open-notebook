@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
 import { isNotFoundError } from '@/lib/utils/error-handler'
+import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 const createNoteSchema = z.object({
   title: z.string().optional(),
@@ -38,9 +39,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   const isEditing = Boolean(note)
 
   // Ensure note ID has 'note:' prefix for API calls
-  const noteIdWithPrefix = note?.id
-    ? (note.id.includes(':') ? note.id : `note:${note.id}`)
-    : ''
+  const noteIdWithPrefix = note?.id ? toReferenceRecordId('note', note.id) : ''
 
   const {
     data: fetchedNote,

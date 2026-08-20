@@ -11,6 +11,7 @@ import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
 import { isNotFoundError } from '@/lib/utils/error-handler'
+import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -32,9 +33,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Ensure insight ID has 'source_insight:' prefix for API calls
-  const insightIdWithPrefix = insight?.id
-    ? (insight.id.includes(':') ? insight.id : `source_insight:${insight.id}`)
-    : ''
+  const insightIdWithPrefix = insight?.id ? toReferenceRecordId('source_insight', insight.id) : ''
 
   const { data: fetchedInsight, isLoading, isError, error } = useInsight(insightIdWithPrefix, { enabled: open && !!insight?.id })
 

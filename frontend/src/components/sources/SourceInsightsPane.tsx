@@ -3,6 +3,7 @@
 import { Lightbulb, Plus, Sparkles, Trash2 } from 'lucide-react'
 
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,7 +41,7 @@ export function SourceInsightsPane({
   const { t } = useTranslation()
 
   return (
-    <Card className="gap-0 rounded-none border-0 py-0 shadow-none">
+    <Card className="min-h-full gap-0 rounded-none border-0 py-0 shadow-none">
       <CardHeader className="sr-only">
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
@@ -51,7 +52,7 @@ export function SourceInsightsPane({
         </CardTitle>
         <CardDescription>{t('sources.insightsDesc')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 px-4 py-4">
+      <CardContent className="flex flex-1 flex-col gap-4 px-4 py-4">
         {canEdit && (
           <div className="border bg-muted/30 p-4">
             <Label htmlFor="transformation-select" className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -105,15 +106,16 @@ export function SourceInsightsPane({
         )}
 
         {loadingInsights ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex flex-1 items-center justify-center py-8">
             <LoadingSpinner />
           </div>
         ) : insights.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <Lightbulb className="mx-auto mb-3 size-12 opacity-50" />
-            <p className="text-sm">{t('sources.noInsightsYet')}</p>
-            {canEdit && <p className="mt-1 text-xs">{t('sources.createFirstInsight')}</p>}
-          </div>
+          <EmptyState
+            className="flex-1"
+            icon={Lightbulb}
+            title={t('sources.noInsightsYet')}
+            description={canEdit ? t('sources.createFirstInsight') : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {insights.map(insight => (
