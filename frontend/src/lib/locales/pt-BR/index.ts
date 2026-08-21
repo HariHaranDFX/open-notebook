@@ -939,6 +939,10 @@ export const ptBR = {
     overrideModelDesc: "Substitua o modelo padrão para esta sessão de chat. Deixe vazio para usar o padrão do sistema.",
     sessionUseReplacement: "Esta sessão usará {{name}} em vez do modelo padrão.",
     systemDefault: "Padrão do Sistema",
+    testInPlayground: "Testar no playground",
+    notFound: "Transformação não encontrada",
+    notFoundDesc: "Esta transformação pode ter sido excluída ou não está mais disponível.",
+    backToLibrary: "Voltar para a biblioteca",
   },
   models: {
     embedding: "Modelos de Embedding",

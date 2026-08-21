@@ -11,7 +11,23 @@ vi.mock('./TransformationEditorDialog', () => ({
 }))
 
 vi.mock('./TransformationCard', () => ({
-  TransformationCard: () => <div data-testid="transformation-card" />,
+  TransformationCard: ({
+    transformation,
+    onPlayground,
+    onEdit,
+  }: {
+    transformation: Transformation
+    onPlayground?: () => void
+    onEdit?: () => void
+  }) => (
+    <div data-testid="transformation-card">
+      <span>{transformation.name}</span>
+      {onPlayground && (
+        <button onClick={onPlayground}>transformations.testInPlayground</button>
+      )}
+      {onEdit && <button onClick={onEdit}>common.edit</button>}
+    </div>
+  ),
 }))
 
 const mockTransformation: Transformation = {
@@ -24,6 +40,13 @@ const mockTransformation: Transformation = {
   model_id: null,
   created: '2026-01-01T00:00:00Z',
   updated: '2026-01-01T00:00:00Z',
+}
+
+const secondTransformation: Transformation = {
+  ...mockTransformation,
+  id: 'transformation:2',
+  name: 'extract',
+  title: 'Extract',
 }
 
 describe('TransformationsList', () => {
@@ -41,5 +64,28 @@ describe('TransformationsList', () => {
     fireEvent.click(screen.getByText('transformations.createNew'))
 
     expect(screen.getByTestId('transformation-editor-dialog')).toBeInTheDocument()
+  })
+
+  it('calls onPlayground with the selected row transformation, not a stale one', () => {
+    const onPlayground = vi.fn()
+    render(
+      <TransformationsList
+        transformations={[mockTransformation, secondTransformation]}
+        isLoading={false}
+        onPlayground={onPlayground}
+      />
+    )
+
+    const buttons = screen.getAllByText('transformations.testInPlayground')
+    fireEvent.click(buttons[1])
+
+    expect(onPlayground).toHaveBeenCalledTimes(1)
+    expect(onPlayground).toHaveBeenCalledWith(secondTransformation)
+  })
+
+  it('omits the playground action when onPlayground is not provided', () => {
+    render(<TransformationsList transformations={[mockTransformation]} isLoading={false} />)
+
+    expect(screen.queryByText('transformations.testInPlayground')).not.toBeInTheDocument()
   })
 })

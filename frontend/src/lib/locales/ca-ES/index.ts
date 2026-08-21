@@ -939,6 +939,10 @@ export const caES = {
     overrideModelDesc: "Substitueix el model per defecte per a aquesta sessió de xat. Deixa-ho buit per usar el valor per defecte del sistema.",
     sessionUseReplacement: "Aquesta sessió usarà {{name}} en lloc del model per defecte.",
     systemDefault: "Valor per defecte del sistema",
+    testInPlayground: "Prova-ho al playground",
+    notFound: "Transformació no trobada",
+    notFoundDesc: "És possible que aquesta transformació s'hagi suprimit o ja no estigui disponible.",
+    backToLibrary: "Torna a la biblioteca",
   },
   models: {
     embedding: "Models d'incrustació",

@@ -940,6 +940,10 @@ export const esES = {
     overrideModelDesc: "Anula el modelo predeterminado para esta sesión de chat. Déjalo vacío para usar el predeterminado del sistema.",
     sessionUseReplacement: "Esta sesión usará {{name}} en lugar del modelo predeterminado.",
     systemDefault: "Predeterminado del sistema",
+    testInPlayground: "Probar en el playground",
+    notFound: "Transformación no encontrada",
+    notFoundDesc: "Es posible que esta transformación se haya eliminado o ya no esté disponible.",
+    backToLibrary: "Volver a la biblioteca",
   },
   models: {
     embedding: "Modelos de embedding",

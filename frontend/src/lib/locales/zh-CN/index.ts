@@ -939,6 +939,10 @@ export const zhCN = {
     overrideModelDesc: "为此聊天会话覆盖默认模型。留空则使用系统默认。",
     sessionUseReplacement: "此会话将使用 {{name}} 而不是默认模型。",
     systemDefault: "系统默认",
+    testInPlayground: "在测试场中试用",
+    notFound: "未找到转换",
+    notFoundDesc: "此转换可能已被删除或不再可用。",
+    backToLibrary: "返回库",
   },
   models: {
     embedding: "嵌入模型",

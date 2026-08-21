@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Play, Loader2 } from 'lucide-react'
+import { EmptyState } from '@/components/common/EmptyState'
+import { ArrowLeft, FileQuestion, Play, Loader2 } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
 import { useExecuteTransformation } from '@/lib/hooks/use-transformations'
 import { ModelSelector } from '@/components/common/ModelSelector'
@@ -19,18 +20,40 @@ import rehypeKatex from 'rehype-katex'
 
 interface TransformationPlaygroundProps {
   transformations: Transformation[] | undefined
-  selectedTransformation?: Transformation
+  /** Raw `?transformation=` id from the URL, resolved against `transformations` below. */
+  selectedTransformationId?: string | null
+  onBackToLibrary?: () => void
 }
 
-export function TransformationPlayground({ transformations, selectedTransformation }: TransformationPlaygroundProps) {
+export function TransformationPlayground({
+  transformations,
+  selectedTransformationId,
+  onBackToLibrary,
+}: TransformationPlaygroundProps) {
   const { t } = useTranslation()
-  const [selectedId, setSelectedId] = useState(selectedTransformation?.id || '')
+  const activeTransformations = transformations?.filter((transformation) => !transformation.deleted_at)
+  const resolvedTransformation = selectedTransformationId
+    ? activeTransformations?.find((transformation) => transformation.id === selectedTransformationId)
+    : undefined
+  // Only flag "not found" once the list has actually loaded (transformations
+  // is an array, not undefined) — otherwise every fresh load would flash the
+  // not-found state before the fetch resolves.
+  const notFound = Boolean(selectedTransformationId) && Array.isArray(transformations) && !resolvedTransformation
+
+  const [selectedId, setSelectedId] = useState(selectedTransformationId || '')
   const [inputText, setInputText] = useState('')
   const [modelId, setModelId] = useState('')
   const [output, setOutput] = useState('')
-  
+
   const executeTransformation = useExecuteTransformation()
-  const activeTransformations = transformations?.filter((t) => !t.deleted_at)
+
+  // Restore the selection once the transformation list (re)loads — e.g. on
+  // a hard reload of ?view=playground&transformation=<id>.
+  useEffect(() => {
+    if (resolvedTransformation) {
+      setSelectedId(resolvedTransformation.id)
+    }
+  }, [resolvedTransformation])
 
   const handleExecute = async () => {
     if (!selectedId || !modelId || !inputText.trim()) {
@@ -47,6 +70,28 @@ export function TransformationPlayground({ transformations, selectedTransformati
   }
 
   const canExecute = selectedId && modelId && inputText.trim() && !executeTransformation.isPending
+
+  if (notFound) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <EmptyState
+            icon={FileQuestion}
+            title={t('transformations.notFound')}
+            description={t('transformations.notFoundDesc')}
+            action={
+              onBackToLibrary && (
+                <Button variant="outline" onClick={onBackToLibrary}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  {t('transformations.backToLibrary')}
+                </Button>
+              )
+            }
+          />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">

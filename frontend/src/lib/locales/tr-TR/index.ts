@@ -939,6 +939,10 @@ export const trTR = {
     overrideModelDesc: "Bu sohbet oturumu için varsayılan modeli geçersiz kılın. Sistem varsayılanını kullanmak için boş bırakın.",
     sessionUseReplacement: "Bu oturum varsayılan model yerine {{name}} kullanacak.",
     systemDefault: "Sistem Varsayılanı",
+    testInPlayground: "Oyun alanında dene",
+    notFound: "Dönüştürme bulunamadı",
+    notFoundDesc: "Bu dönüştürme silinmiş veya artık kullanılamıyor olabilir.",
+    backToLibrary: "Kitaplığa dön",
   },
   models: {
     embedding: "Gömme Modelleri",

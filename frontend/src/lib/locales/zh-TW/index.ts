@@ -939,6 +939,10 @@ export const zhTW = {
     overrideModelDesc: "為此對話會話覆蓋預設模型。留空則使用系統預設。",
     sessionUseReplacement: "此會話將使用 {{name}} 而不是預設模型。",
     systemDefault: "系統預設",
+    testInPlayground: "在測試場中試用",
+    notFound: "找不到轉換",
+    notFoundDesc: "此轉換可能已被刪除或不再可用。",
+    backToLibrary: "返回資料庫",
   },
   models: {
     embedding: "嵌入模型",

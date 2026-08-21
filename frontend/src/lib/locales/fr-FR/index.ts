@@ -939,6 +939,10 @@ export const frFR = {
     overrideModelDesc: "Remplacer le modèle par défaut pour cette session de chat. Laissez vide pour utiliser le modèle par défaut du système.",
     sessionUseReplacement: "Cette session utilisera {{name}} au lieu du modèle par défaut.",
     systemDefault: "Défaut Système",
+    testInPlayground: "Tester dans le playground",
+    notFound: "Transformation introuvable",
+    notFoundDesc: "Cette transformation a peut-être été supprimée ou n'est plus disponible.",
+    backToLibrary: "Retour à la bibliothèque",
   },
   models: {
     embedding: "Modèles d'Embedding",

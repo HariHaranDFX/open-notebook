@@ -939,6 +939,10 @@ export const jaJP = {
     overrideModelDesc: "このチャットセッションのデフォルトモデルを上書きします。空欄の場合はシステムデフォルトを使用します。",
     sessionUseReplacement: "このセッションはデフォルトモデルの代わりに{{name}}を使用します。",
     systemDefault: "システムデフォルト",
+    testInPlayground: "プレイグラウンドでテスト",
+    notFound: "変換が見つかりません",
+    notFoundDesc: "この変換は削除されたか、利用できなくなっている可能性があります。",
+    backToLibrary: "ライブラリに戻る",
   },
   models: {
     embedding: "Embeddingモデル",

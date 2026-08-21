@@ -938,6 +938,10 @@ export const enUS = {
     overrideModelDesc: "Override the default model for this chat session. Leave empty to use the system default.",
     sessionUseReplacement: "This session will use {{name}} instead of the default model.",
     systemDefault: "System Default",
+    testInPlayground: "Test in playground",
+    notFound: "Transformation not found",
+    notFoundDesc: "This transformation may have been deleted or is no longer available.",
+    backToLibrary: "Back to library",
   },
   models: {
     embedding: "Embedding Models",

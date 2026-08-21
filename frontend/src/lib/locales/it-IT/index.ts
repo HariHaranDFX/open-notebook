@@ -939,6 +939,10 @@ export const itIT = {
     overrideModelDesc: "Sovrascrivi il modello predefinito per questa sessione chat. Lascia vuoto per usare il default di sistema.",
     sessionUseReplacement: "Questa sessione userà {{name}} invece del modello predefinito.",
     systemDefault: "Predefinito di sistema",
+    testInPlayground: "Prova nel playground",
+    notFound: "Trasformazione non trovata",
+    notFoundDesc: "Questa trasformazione potrebbe essere stata eliminata o non è più disponibile.",
+    backToLibrary: "Torna alla libreria",
   },
   models: {
     embedding: "Modelli di embedding",

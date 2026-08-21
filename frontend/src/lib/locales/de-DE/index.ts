@@ -942,6 +942,10 @@ export const deDE = {
     overrideModelDesc: "Überschreibe das Standardmodell für diese Chat-Sitzung. Leer lassen, um den Systemstandard zu verwenden.",
     sessionUseReplacement: "Diese Sitzung verwendet {{name}} statt des Standardmodells.",
     systemDefault: "Systemstandard",
+    testInPlayground: "In der Spielwiese testen",
+    notFound: "Transformation nicht gefunden",
+    notFoundDesc: "Diese Transformation wurde möglicherweise gelöscht oder ist nicht mehr verfügbar.",
+    backToLibrary: "Zurück zur Bibliothek",
   },
   models: {
     embedding: "Embedding-Modelle",

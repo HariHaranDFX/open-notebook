@@ -939,6 +939,10 @@ export const plPL = {
     overrideModelDesc: "Nadpisz domyślny model dla tej sesji czatu. Pozostaw puste, aby użyć domyślnego modelu systemowego.",
     sessionUseReplacement: "Ta sesja użyje modelu {{name}} zamiast domyślnego.",
     systemDefault: "Domyślny systemowy",
+    testInPlayground: "Testuj w playgroundzie",
+    notFound: "Nie znaleziono transformacji",
+    notFoundDesc: "Ta transformacja mogła zostać usunięta lub nie jest już dostępna.",
+    backToLibrary: "Powrót do biblioteki",
   },
   models: {
     embedding: "Modele osadzania",
