@@ -26,6 +26,9 @@ export interface WorkbenchPane {
   icon: ComponentType<{ className?: string }>
   content: ReactNode
   count?: number
+  // Optional control shown at the right of the tab bar while this pane is active
+  // (e.g. a close button for the preview pane).
+  action?: ReactNode
 }
 
 interface ResearchWorkbenchProps {
@@ -46,6 +49,8 @@ function PaneTabs({
     : panes[0]?.id
 
   if (!activePane) return null
+
+  const activePaneAction = panes.find(pane => pane.id === activePane)?.action
 
   return (
     <Tabs
@@ -75,6 +80,9 @@ function PaneTabs({
             </TabsTrigger>
           )
         })}
+        {activePaneAction && (
+          <span className="ml-auto flex items-center pr-1">{activePaneAction}</span>
+        )}
       </TabsList>
       {panes.map(pane => (
         <TabsContent

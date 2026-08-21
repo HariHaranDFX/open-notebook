@@ -11,6 +11,14 @@ export function isNotFoundError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 404
 }
 
+/**
+ * Returns true when the error is an HTTP 403 response, i.e. the user is
+ * authenticated but not permitted to see the requested item.
+ */
+export function isForbiddenError(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 403
+}
+
 function responseStatus(error: unknown): number | undefined {
   return isAxiosError(error) ? error.response?.status : undefined
 }

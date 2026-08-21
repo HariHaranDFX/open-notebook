@@ -274,37 +274,40 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 space-y-3 border-t p-4">
-      {/* Model selector */}
-      {onModelChange && (
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-          <ModelSelector
-            currentModel={modelOverride}
-            onModelChange={onModelChange}
-            disabled={isStreaming}
-          />
-        </div>
-      )}
-
-      <div className="flex gap-2 items-end min-w-0">
-        <Textarea
-          id={chatInputId}
-          name="chat-message"
-          autoComplete="off"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
-          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
-          rows={1}
-        />
+    // Full-width composer (no enclosing box), matching the Ask/Search composer:
+    // the message field spans the panel, with the model control on the left of a
+    // footer and the send button on the right.
+    <div className="flex-shrink-0 space-y-2 border-t p-4">
+      <Textarea
+        id={chatInputId}
+        name="chat-message"
+        autoComplete="off"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
+        disabled={isStreaming}
+        className="max-h-[160px] min-h-[44px] w-full resize-none"
+        rows={1}
+      />
+      <div className="flex items-center justify-between gap-2">
+        {onModelChange ? (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0 text-xs text-muted-foreground">{t('chat.model')}</span>
+            <ModelSelector
+              currentModel={modelOverride}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+          </div>
+        ) : (
+          <span />
+        )}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
+          className="size-8 flex-shrink-0"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type WorkbenchPaneId = 'evidence' | 'notes'
+export type WorkbenchPaneId = 'evidence' | 'notes' | 'preview'
 export type WorkbenchMobileView = 'chat' | 'panel'
 
 export const MIN_LEFT_PANEL_WIDTH = 280
