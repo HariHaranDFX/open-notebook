@@ -98,7 +98,7 @@ export function EpisodeProfilesPanel({
       </div>
 
       {disableCreate ? (
-        <p className="rounded-[var(--surface-radius)] border border-dashed bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="rounded-[var(--surface-radius)] border border-dashed border-warning/40 bg-warning-surface p-4 text-sm text-warning">
           {t('podcasts.createSpeakerFirst')}
         </p>
       ) : null}
@@ -125,7 +125,7 @@ export function EpisodeProfilesPanel({
                         {profile.name}
                       </CardTitle>
                       {unconfigured ? (
-                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                        <Badge variant="outline" className="border-warning/40 bg-warning-surface text-warning text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           {t('podcasts.setupRequired')}
                         </Badge>

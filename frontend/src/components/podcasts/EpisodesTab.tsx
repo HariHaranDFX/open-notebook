@@ -6,7 +6,6 @@ import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react'
 import { useDeletePodcastEpisode, usePodcastEpisodes, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
 import { EpisodeCard } from '@/components/podcasts/EpisodeCard'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
@@ -40,12 +39,11 @@ const getSTATUS_ORDER = (t: TFunction): Array<{
   },
 ]
 
-function SummaryBadge({ label, value }: { label: string; value: number }) {
+function SummaryCount({ label, value }: { label: string; value: number }) {
   return (
-    <Badge variant="outline" className="font-medium">
-      <span className="text-muted-foreground mr-1.5">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </Badge>
+    <span>
+      {label} <strong className="font-semibold text-foreground">{value}</strong>
+    </span>
   )
 }
 
@@ -109,13 +107,13 @@ export function EpisodesTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <SummaryBadge label={t('podcasts.total')} value={statusCounts.total} />
-        <SummaryBadge label={t('podcasts.processingLabel')} value={statusCounts.running} />
-        <SummaryBadge label={t('podcasts.completedLabel')} value={statusCounts.completed} />
-        <SummaryBadge label={t('podcasts.failedLabel')} value={statusCounts.failed} />
-        <SummaryBadge label={t('podcasts.pendingLabel')} value={statusCounts.pending} />
-      </div>
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <SummaryCount label={t('podcasts.total')} value={statusCounts.total} />
+        <SummaryCount label={t('podcasts.processingLabel')} value={statusCounts.running} />
+        <SummaryCount label={t('podcasts.pendingLabel')} value={statusCounts.pending} />
+        <SummaryCount label={t('podcasts.completedLabel')} value={statusCounts.completed} />
+        <SummaryCount label={t('podcasts.failedLabel')} value={statusCounts.failed} />
+      </p>
 
       {isError ? (
         <Alert variant="destructive">

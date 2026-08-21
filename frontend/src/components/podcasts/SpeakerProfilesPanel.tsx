@@ -103,7 +103,7 @@ export function SpeakerProfilesPanel({
                           {profile.name}
                         </CardTitle>
                         {unconfigured ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                          <Badge variant="outline" className="border-warning/40 bg-warning-surface text-warning text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             {t('podcasts.setupRequired')}
                           </Badge>
