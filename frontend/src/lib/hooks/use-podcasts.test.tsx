@@ -1,16 +1,18 @@
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { podcastsApi } from '@/lib/api/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
-import { usePodcastEpisode } from '@/lib/hooks/use-podcasts'
+import { usePodcastEpisode, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
 import { isNotFoundError } from '@/lib/utils/error-handler'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
 
+// useTranslation is mocked globally in setup.ts (t returns the key string).
+
 vi.mock('@/lib/api/podcasts', () => ({
-  podcastsApi: { getEpisode: vi.fn() },
+  podcastsApi: { getEpisode: vi.fn(), retryEpisode: vi.fn() },
 }))
 
 function makeEpisode(overrides: Partial<PodcastEpisode> = {}): PodcastEpisode {
@@ -37,9 +39,7 @@ function makeEpisode(overrides: Partial<PodcastEpisode> = {}): PodcastEpisode {
   }
 }
 
-function createWrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-
+function createWrapper(client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>
   }
@@ -83,5 +83,27 @@ describe('usePodcastEpisode', () => {
     })
 
     expect(isNotFoundError(notFound)).toBe(true)
+  })
+})
+
+describe('useRetryPodcastEpisode', () => {
+  beforeEach(() => vi.mocked(podcastsApi.retryEpisode).mockReset())
+
+  it('refreshes both the episode list and the single-episode key for the retried id', async () => {
+    vi.mocked(podcastsApi.retryEpisode).mockResolvedValue({ job_id: 'job:1', message: 'retrying' })
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const refetch = vi.spyOn(client, 'refetchQueries')
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+
+    const { result } = renderHook(() => useRetryPodcastEpisode(), {
+      wrapper: createWrapper(client),
+    })
+
+    await act(async () => {
+      await result.current.mutateAsync('episode:1')
+    })
+
+    expect(refetch).toHaveBeenCalledWith({ queryKey: QUERY_KEYS.podcastEpisodes })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: QUERY_KEYS.podcastEpisode('episode:1') })
   })
 })

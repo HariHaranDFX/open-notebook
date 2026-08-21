@@ -3,26 +3,12 @@
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { RefreshCcw, Trash2 } from 'lucide-react'
 
-import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
-import { cn } from '@/lib/utils'
-import { AccessRole, canDeleteSource, canEditContent } from '@/lib/utils/access-role'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+import { PodcastEpisode } from '@/lib/types/podcasts'
+import { AccessRole } from '@/lib/utils/access-role'
 import { Card, CardContent } from '@/components/ui/card'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { StatusBadge } from './EpisodeDetail'
+import { DeleteEpisodeAction, RetryEpisodeButton, StatusBadge } from './EpisodeActions'
 
 interface EpisodeCardProps {
   episode: PodcastEpisode
@@ -48,20 +34,6 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
     ? t('podcasts.created', { time: distance })
     : null
 
-  const handleDelete = () => {
-    void onDelete(episode.id)
-  }
-
-  const handleRetry = () => {
-    if (onRetry) {
-      void onRetry(episode.id)
-    }
-  }
-
-  const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
-  const canRetry = canEditContent(role)
-  const canDelete = canDeleteSource(role)
-
   return (
     <Card className="shadow-sm">
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -81,41 +53,8 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {isFailed && onRetry && canRetry ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetry}
-              disabled={retrying}
-            >
-              <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
-              {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
-            </Button>
-          ) : null}
-          {canDelete ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t('podcasts.delete')}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('podcasts.deleteEpisodeTitle')}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('podcasts.deleteEpisodeDesc', { name: episode.name })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                    {deleting ? t('podcasts.deleting') : t('podcasts.delete')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : null}
+          <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} />
+          <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} />
         </div>
       </CardContent>
     </Card>

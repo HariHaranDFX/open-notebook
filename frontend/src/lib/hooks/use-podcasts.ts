@@ -103,8 +103,9 @@ export function useRetryPodcastEpisode() {
 
   return useMutation({
     mutationFn: (episodeId: string) => podcastsApi.retryEpisode(episodeId),
-    onSuccess: async () => {
+    onSuccess: async (_data, episodeId) => {
       await queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisode(episodeId) })
       toast({
         title: t('podcasts.retryStarted'),
         description: t('podcasts.retryStartedDesc'),

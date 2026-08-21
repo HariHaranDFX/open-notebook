@@ -3,30 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { RefreshCcw, Trash2 } from 'lucide-react'
 
 import apiClient from '@/lib/api/client'
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
 import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
-import { cn } from '@/lib/utils'
-import { AccessRole, canDeleteSource, canEditContent } from '@/lib/utils/access-role'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { AccessRole } from '@/lib/utils/access-role'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import type { TFunction } from 'i18next'
+import { DeleteEpisodeAction, RetryEpisodeButton, StatusBadge } from './EpisodeActions'
 
 interface EpisodeDetailProps {
   episode: PodcastEpisode
@@ -36,62 +22,6 @@ interface EpisodeDetailProps {
   retrying?: boolean
   /** Missing role (open/auth-off mode, or callers that haven't wired ACLs) grants full access. */
   role?: AccessRole | null
-}
-
-const getSTATUS_META = (t: TFunction): Record<
-  EpisodeStatus | 'unknown',
-  { label: string; className: string }
-> => ({
-  running: {
-    label: t('podcasts.processingLabel'),
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
-  },
-  processing: {
-    label: t('podcasts.processingLabel'),
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
-  },
-  completed: {
-    label: t('podcasts.completedLabel'),
-    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  },
-  failed: {
-    label: t('podcasts.failedLabel'),
-    className: 'bg-red-100 text-red-800 border-red-200',
-  },
-  error: {
-    label: t('podcasts.failedLabel'),
-    className: 'bg-red-100 text-red-800 border-red-200',
-  },
-  pending: {
-    label: t('podcasts.pendingLabel'),
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
-  },
-  submitted: {
-    label: t('podcasts.pendingLabel'),
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
-  },
-  unknown: {
-    label: t('common.unknown'),
-    className: 'bg-muted text-muted-foreground border-transparent',
-  },
-})
-
-export function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
-  const { t } = useTranslation()
-  // Don't show badge for completed episodes
-  if (status === 'completed') {
-    return null
-  }
-
-  const meta = getSTATUS_META(t)[status ?? 'unknown']
-  return (
-    <Badge
-      variant="outline"
-      className={cn('uppercase tracking-wide text-xs', meta.className)}
-    >
-      {meta.label}
-    </Badge>
-  )
 }
 
 type OutlineSegment = {
@@ -212,19 +142,7 @@ export function EpisodeDetail({
     ? t('podcasts.created', { time: distance })
     : null
 
-  const handleDelete = () => {
-    void onDelete(episode.id)
-  }
-
-  const handleRetry = () => {
-    if (onRetry) {
-      void onRetry(episode.id)
-    }
-  }
-
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
-  const canRetry = canEditContent(role)
-  const canDelete = canDeleteSource(role)
 
   return (
     <div className="space-y-4">
@@ -239,41 +157,8 @@ export function EpisodeDetail({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isFailed && onRetry && canRetry ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRetry}
-              disabled={retrying}
-            >
-              <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
-              {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
-            </Button>
-          ) : null}
-          {canDelete ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t('podcasts.delete')}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t('podcasts.deleteEpisodeTitle')}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t('podcasts.deleteEpisodeDesc', { name: episode.name })}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                    {deleting ? t('podcasts.deleting') : t('podcasts.delete')}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : null}
+          <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} />
+          <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} />
         </div>
       </div>
 
