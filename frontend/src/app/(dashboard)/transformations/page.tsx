@@ -40,6 +40,9 @@ export default function TransformationsPage() {
     (next: string) => {
       const params = new URLSearchParams(searchParams?.toString() || '')
       params.set('view', next)
+      if (next === 'library') {
+        params.delete('transformation')
+      }
       router.push(`${pathname}?${params.toString()}`, { scroll: false })
     },
     [searchParams, router, pathname]

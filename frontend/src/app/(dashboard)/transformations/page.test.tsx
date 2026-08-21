@@ -98,6 +98,19 @@ describe('TransformationsPage', () => {
     )
   })
 
+  it('switching to the library tab clears a stale transformation param', () => {
+    searchParamsString.current = 'view=playground&transformation=transformation%3A1'
+
+    render(<TransformationsPage />)
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /transformations.title/ }), {
+      button: 0,
+      ctrlKey: false,
+    })
+
+    expect(push).toHaveBeenCalledWith('/transformations?view=library', { scroll: false })
+  })
+
   it('back to library clears the transformation param but preserves unrelated params', () => {
     searchParamsString.current = 'view=playground&transformation=transformation%3A1&foo=bar'
 
