@@ -36,6 +36,11 @@ export const podcastsApi = {
     return response.data
   },
 
+  getEpisode: async (episodeId: string) => {
+    const response = await apiClient.get<PodcastEpisode>(`/podcasts/episodes/${episodeId}`)
+    return response.data
+  },
+
   deleteEpisode: async (episodeId: string) => {
     await apiClient.delete(`/podcasts/episodes/${episodeId}`)
   },

@@ -6,14 +6,6 @@ import type { PodcastEpisode } from '@/lib/types/podcasts'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
-vi.mock('@/lib/api/client', () => ({
-  default: { get: vi.fn() },
-}))
-
-vi.mock('@/lib/api/podcasts', () => ({
-  resolvePodcastAssetUrl: vi.fn(async () => undefined),
-}))
-
 function makeEpisode(overrides: Partial<PodcastEpisode> = {}): PodcastEpisode {
   return {
     id: 'episode:1',
@@ -38,100 +30,70 @@ function makeEpisode(overrides: Partial<PodcastEpisode> = {}): PodcastEpisode {
   }
 }
 
-function renderAndOpenDetails(episode: PodcastEpisode) {
-  render(<EpisodeCard episode={episode} onDelete={vi.fn()} />)
-  fireEvent.click(screen.getByText('podcasts.details'))
-}
-
-describe('EpisodeCard model details', () => {
-  it('renders API-resolved model display fields for new episodes', () => {
-    renderAndOpenDetails(
-      makeEpisode({
-        episode_profile: {
-          id: 'episode_profile:1',
-          name: 'modern',
-          description: '',
-          speaker_config: null,
-          default_briefing: '',
-          num_segments: 5,
-          outline_llm: 'model:outline',
-          transcript_llm: 'model:transcript',
-          outline_model_provider: 'openai',
-          outline_model_name: 'gpt-4o',
-          transcript_model_provider: 'anthropic',
-          transcript_model_name: 'claude-sonnet',
-        },
-        speaker_profile: {
-          id: 'speaker_profile:1',
-          name: 'modern',
-          description: '',
-          speakers: [],
-          voice_model: 'model:voice',
-          voice_model_provider: 'elevenlabs',
-          voice_model_name: 'eleven_turbo',
-        },
-      })
+describe('EpisodeCard row', () => {
+  it('renders the episode name, profile and created time, linking to its detail route', () => {
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ created: '2024-01-01T00:00:00Z' })}
+        onDelete={vi.fn()}
+      />
     )
 
-    expect(screen.getByText('openai / gpt-4o')).toBeInTheDocument()
-    expect(screen.getByText('anthropic / claude-sonnet')).toBeInTheDocument()
-    expect(screen.getByText('elevenlabs / eleven_turbo')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Test Episode' })
+    expect(link).toHaveAttribute('href', `/podcasts/${encodeURIComponent('episode:1')}`)
+    expect(screen.getByText(/default/)).toBeInTheDocument()
   })
 
-  it('falls back to legacy snapshot strings for old episodes', () => {
-    renderAndOpenDetails(
-      makeEpisode({
-        episode_profile: {
-          id: 'episode_profile:1',
-          name: 'legacy',
-          description: '',
-          speaker_config: null,
-          default_briefing: '',
-          num_segments: 5,
-          outline_provider: 'openai',
-          outline_model: 'gpt-3.5-turbo',
-          transcript_provider: 'openai',
-          transcript_model: 'gpt-4',
-        },
-        speaker_profile: {
-          id: 'speaker_profile:1',
-          name: 'legacy',
-          description: '',
-          speakers: [],
-          tts_provider: 'openai',
-          tts_model: 'tts-1',
-        },
-      })
+  it('shows a status badge for a non-completed episode', () => {
+    render(
+      <EpisodeCard episode={makeEpisode({ job_status: 'running' })} onDelete={vi.fn()} />
     )
 
-    expect(screen.getByText('openai / gpt-3.5-turbo')).toBeInTheDocument()
-    expect(screen.getByText('openai / gpt-4')).toBeInTheDocument()
-    expect(screen.getByText('openai / tts-1')).toBeInTheDocument()
+    expect(screen.getByText('podcasts.processingLabel')).toBeInTheDocument()
   })
 
-  it('degrades to dashes when references are unresolvable and no legacy strings exist', () => {
-    renderAndOpenDetails(
-      makeEpisode({
-        episode_profile: {
-          id: 'episode_profile:1',
-          name: 'orphaned',
-          description: '',
-          speaker_config: null,
-          default_briefing: '',
-          num_segments: 5,
-          outline_llm: 'model:deleted',
-          transcript_llm: 'model:deleted',
-        },
-        speaker_profile: {
-          id: 'speaker_profile:1',
-          name: 'orphaned',
-          description: '',
-          speakers: [],
-          voice_model: 'model:deleted',
-        },
-      })
+  it('offers a retry quick action for a failed episode and calls onRetry with the episode id', () => {
+    const onRetry = vi.fn()
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ job_status: 'failed' })}
+        onDelete={vi.fn()}
+        onRetry={onRetry}
+      />
     )
 
-    expect(screen.getAllByText('— / —')).toHaveLength(3)
+    fireEvent.click(screen.getByText('podcasts.retry'))
+    expect(onRetry).toHaveBeenCalledWith('episode:1')
+  })
+
+  it('deletes after the confirm dialog is accepted', () => {
+    const onDelete = vi.fn()
+    render(<EpisodeCard episode={makeEpisode()} onDelete={onDelete} />)
+
+    fireEvent.click(screen.getByText('podcasts.delete'))
+    const confirmButtons = screen.getAllByText('podcasts.delete')
+    fireEvent.click(confirmButtons[confirmButtons.length - 1])
+
+    expect(onDelete).toHaveBeenCalledWith('episode:1')
+  })
+
+  it('hides the delete quick action for a viewer', () => {
+    render(<EpisodeCard episode={makeEpisode()} onDelete={vi.fn()} role="viewer" />)
+
+    expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
+  })
+
+  it('lets an editor retry but withholds delete', () => {
+    render(
+      <EpisodeCard
+        episode={makeEpisode({ job_status: 'failed' })}
+        onDelete={vi.fn()}
+        onRetry={vi.fn()}
+        role="editor"
+      />
+    )
+
+    expect(screen.getByText('podcasts.retry')).toBeInTheDocument()
+    expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
   })
 })
