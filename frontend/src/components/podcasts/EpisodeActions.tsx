@@ -134,7 +134,11 @@ export function DeleteEpisodeAction({ episode, onDelete, deleting, role }: Delet
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-destructive">
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
           <Trash2 className="mr-2 h-4 w-4" />
           {t('podcasts.delete')}
         </Button>

@@ -6,7 +6,6 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 
 import { PodcastEpisode } from '@/lib/types/podcasts'
 import { AccessRole } from '@/lib/utils/access-role'
-import { Card, CardContent } from '@/components/ui/card'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { DeleteEpisodeAction, RetryEpisodeButton, StatusBadge } from './EpisodeActions'
 
@@ -22,6 +21,7 @@ interface EpisodeCardProps {
 
 export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, role }: EpisodeCardProps) {
   const { t, language } = useTranslation()
+  const href = `/podcasts/${encodeURIComponent(episode.id)}`
 
   const distance = episode.created
     ? formatDistanceToNow(new Date(episode.created), {
@@ -35,28 +35,30 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
     : null
 
   return (
-    <Card className="shadow-sm">
-      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/podcasts/${encodeURIComponent(episode.id)}`}
-              className="truncate text-base font-semibold text-foreground hover:underline"
-            >
-              {episode.name}
-            </Link>
-            <StatusBadge status={episode.job_status} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t('podcasts.profile')}: {episode.episode_profile?.name || t('common.unknown')}
-            {createdLabel ? ` • ${createdLabel}` : ''}
-          </p>
+    <div className="group relative flex flex-col gap-2 rounded-[var(--surface-radius)] border bg-card px-3 py-2 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
+      {/* Stretched link: the whole row is clickable, while the action buttons
+          below sit in a higher stacking layer and stay independently clickable. */}
+      <Link
+        href={href}
+        aria-label={episode.name}
+        className="absolute inset-0 rounded-[var(--surface-radius)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="truncate text-sm font-medium text-foreground group-hover:underline">
+            {episode.name}
+          </span>
+          <StatusBadge status={episode.job_status} />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} />
-          <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} />
-        </div>
-      </CardContent>
-    </Card>
+        <p className="text-xs text-muted-foreground">
+          {t('podcasts.profile')}: {episode.episode_profile?.name || t('common.unknown')}
+          {createdLabel ? ` • ${createdLabel}` : ''}
+        </p>
+      </div>
+      <div className="relative z-10 flex shrink-0 items-center gap-2">
+        <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} />
+        <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} />
+      </div>
+    </div>
   )
 }

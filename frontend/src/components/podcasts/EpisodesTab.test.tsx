@@ -122,7 +122,7 @@ describe('EpisodesTab', () => {
 
     render(<EpisodesTab />)
 
-    expect(screen.getByText('podcasts.total').closest('span')).toHaveTextContent('2')
-    expect(screen.getByText('podcasts.pendingLabel').closest('span')).toHaveTextContent('0')
+    expect(screen.getByText('podcasts.total').closest('div')).toHaveTextContent('2')
+    expect(screen.getByText('podcasts.pendingLabel').closest('div')).toHaveTextContent('0')
   })
 })

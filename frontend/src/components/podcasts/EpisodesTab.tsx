@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 import type { TFunction } from 'i18next'
 
 const getSTATUS_ORDER = (t: TFunction): Array<{
@@ -39,11 +40,28 @@ const getSTATUS_ORDER = (t: TFunction): Array<{
   },
 ]
 
-function SummaryCount({ label, value }: { label: string; value: number }) {
+function StatChip({
+  label,
+  value,
+  dotClass,
+  alert,
+}: {
+  label: string
+  value: number
+  dotClass?: string
+  alert?: boolean
+}) {
   return (
-    <span>
-      {label} <strong className="font-semibold text-foreground">{value}</strong>
-    </span>
+    <div
+      className={cn(
+        'inline-flex items-center gap-2 rounded-[var(--surface-radius)] border bg-card px-3 py-1.5',
+        alert && value > 0 && 'border-destructive/40 bg-destructive/5'
+      )}
+    >
+      {dotClass ? <span className={cn('h-2 w-2 rounded-full', dotClass)} /> : null}
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-foreground">{value}</span>
+    </div>
   )
 }
 
@@ -107,13 +125,13 @@ export function EpisodesTab() {
         </div>
       </div>
 
-      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <SummaryCount label={t('podcasts.total')} value={statusCounts.total} />
-        <SummaryCount label={t('podcasts.processingLabel')} value={statusCounts.running} />
-        <SummaryCount label={t('podcasts.pendingLabel')} value={statusCounts.pending} />
-        <SummaryCount label={t('podcasts.completedLabel')} value={statusCounts.completed} />
-        <SummaryCount label={t('podcasts.failedLabel')} value={statusCounts.failed} />
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <StatChip label={t('podcasts.total')} value={statusCounts.total} />
+        <StatChip label={t('podcasts.processingLabel')} value={statusCounts.running} dotClass="bg-amber-500" />
+        <StatChip label={t('podcasts.pendingLabel')} value={statusCounts.pending} dotClass="bg-sky-500" />
+        <StatChip label={t('podcasts.completedLabel')} value={statusCounts.completed} dotClass="bg-emerald-500" />
+        <StatChip label={t('podcasts.failedLabel')} value={statusCounts.failed} dotClass="bg-red-500" alert />
+      </div>
 
       {isError ? (
         <Alert variant="destructive">
@@ -155,7 +173,7 @@ export function EpisodesTab() {
               ) : null}
             </div>
             <Separator />
-            <div className="space-y-4">
+            <div className="space-y-2">
               {data.map((episode) => (
                 <EpisodeCard
                   key={episode.id}
