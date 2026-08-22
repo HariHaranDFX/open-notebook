@@ -901,6 +901,7 @@ export const jaJP = {
     },
   },
   transformations: {
+    clear: "クリア",
     copy: "コピー",
     outputPlaceholder: "テストを実行すると結果がここに表示されます",
     runError: "変換を実行できませんでした。モデルの設定を確認して、もう一度お試しください。",

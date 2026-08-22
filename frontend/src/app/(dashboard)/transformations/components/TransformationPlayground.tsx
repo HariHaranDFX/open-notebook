@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EmptyState } from '@/components/common/EmptyState'
-import { AlertCircle, ArrowLeft, Check, Copy, FileQuestion, Loader2, Play, RefreshCcw } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, Copy, FileQuestion, Loader2, Play, RefreshCcw, X } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
 import { useExecuteTransformation } from '@/lib/hooks/use-transformations'
 import { ModelSelector } from '@/components/common/ModelSelector'
@@ -80,6 +80,17 @@ export function TransformationPlayground({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleClear = () => {
+    setInputText('')
+    setOutput('')
+    // Reset the mutation so a previous error/output state clears too.
+    executeTransformation.reset?.()
+  }
+
+  const canClear =
+    !executeTransformation.isPending &&
+    Boolean(inputText || output || executeTransformation.isError)
+
   const canExecute = Boolean(selectedId && modelId && inputText.trim()) && !executeTransformation.isPending
 
   if (notFound) {
@@ -147,7 +158,7 @@ export function TransformationPlayground({
           />
         </div>
 
-        <div className="flex justify-start">
+        <div className="flex flex-wrap justify-start gap-2">
           <Button onClick={handleExecute} disabled={!canExecute}>
             {executeTransformation.isPending ? (
               <>
@@ -160,6 +171,10 @@ export function TransformationPlayground({
                 {t('transformations.runTest')}
               </>
             )}
+          </Button>
+          <Button variant="outline" onClick={handleClear} disabled={!canClear}>
+            <X className="h-4 w-4" />
+            {t('transformations.clear')}
           </Button>
         </div>
       </div>

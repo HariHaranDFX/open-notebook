@@ -901,6 +901,7 @@ export const itIT = {
     },
   },
   transformations: {
+    clear: "Cancella",
     copy: "Copia",
     outputPlaceholder: "Esegui un test per vedere il risultato qui",
     runError: "Impossibile eseguire la trasformazione. Verifica che il modello sia configurato e riprova.",

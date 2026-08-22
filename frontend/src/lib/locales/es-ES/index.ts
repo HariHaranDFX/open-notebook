@@ -902,6 +902,7 @@ export const esES = {
     },
   },
   transformations: {
+    clear: "Borrar",
     copy: "Copiar",
     outputPlaceholder: "Ejecuta una prueba para ver el resultado aquí",
     runError: "No se pudo ejecutar la transformación. Comprueba que el modelo esté configurado e inténtalo de nuevo.",

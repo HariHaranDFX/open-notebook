@@ -901,6 +901,7 @@ export const plPL = {
     },
   },
   transformations: {
+    clear: "Wyczyść",
     copy: "Kopiuj",
     outputPlaceholder: "Uruchom test, aby zobaczyć wynik tutaj",
     runError: "Nie udało się uruchomić transformacji. Sprawdź, czy model jest skonfigurowany, i spróbuj ponownie.",

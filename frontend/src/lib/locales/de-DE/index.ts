@@ -904,6 +904,7 @@ export const deDE = {
     },
   },
   transformations: {
+    clear: "Leeren",
     copy: "Kopieren",
     outputPlaceholder: "Führe einen Test aus, um das Ergebnis hier zu sehen",
     runError: "Transformation konnte nicht ausgeführt werden. Prüfe, ob das Modell konfiguriert ist, und versuche es erneut.",

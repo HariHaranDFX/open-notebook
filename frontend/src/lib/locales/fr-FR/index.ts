@@ -901,6 +901,7 @@ export const frFR = {
     },
   },
   transformations: {
+    clear: "Effacer",
     copy: "Copier",
     outputPlaceholder: "Lancez un test pour voir le résultat ici",
     runError: "Impossible d'exécuter la transformation. Vérifiez que le modèle est configuré, puis réessayez.",

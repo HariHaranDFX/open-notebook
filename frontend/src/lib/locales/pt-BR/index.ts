@@ -901,6 +901,7 @@ export const ptBR = {
     },
   },
   transformations: {
+    clear: "Limpar",
     copy: "Copiar",
     outputPlaceholder: "Execute um teste para ver o resultado aqui",
     runError: "Não foi possível executar a transformação. Verifique se o modelo está configurado e tente novamente.",

@@ -900,6 +900,7 @@ export const enUS = {
     },
   },
   transformations: {
+    clear: "Clear",
     copy: "Copy",
     outputPlaceholder: "Run a test to see the output here",
     runError: "Couldn't run the transformation. Check the model is configured and try again.",

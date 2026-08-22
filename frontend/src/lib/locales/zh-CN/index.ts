@@ -901,6 +901,7 @@ export const zhCN = {
     },
   },
   transformations: {
+    clear: "清除",
     copy: "复制",
     outputPlaceholder: "运行测试后在此查看输出",
     runError: "无法运行转换。请检查模型是否已配置，然后重试。",

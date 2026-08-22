@@ -901,6 +901,7 @@ export const zhTW = {
     },
   },
   transformations: {
+    clear: "清除",
     copy: "複製",
     outputPlaceholder: "執行測試後在此查看輸出",
     runError: "無法執行轉換。請檢查模型是否已設定，然後重試。",

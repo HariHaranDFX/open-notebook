@@ -902,6 +902,7 @@ export const bnIN = {
     },
   },
   transformations: {
+    clear: "সাফ করুন",
     copy: "কপি করুন",
     outputPlaceholder: "আউটপুট দেখতে একটি টেস্ট চালান",
     runError: "রূপান্তরটি চালানো যায়নি। মডেল কনফিগার করা আছে কিনা দেখে আবার চেষ্টা করুন।",

@@ -901,6 +901,7 @@ export const trTR = {
     },
   },
   transformations: {
+    clear: "Temizle",
     copy: "Kopyala",
     outputPlaceholder: "Sonucu burada görmek için bir test çalıştırın",
     runError: "Dönüşüm çalıştırılamadı. Modelin yapılandırıldığını kontrol edip tekrar deneyin.",

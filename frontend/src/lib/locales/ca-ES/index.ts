@@ -901,6 +901,7 @@ export const caES = {
     },
   },
   transformations: {
+    clear: "Esborra",
     copy: "Copia",
     outputPlaceholder: "Executa una prova per veure el resultat aquí",
     runError: "No s'ha pogut executar la transformació. Comprova que el model estigui configurat i torna-ho a provar.",
