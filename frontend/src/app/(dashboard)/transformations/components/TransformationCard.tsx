@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Badge } from '@/components/ui/badge'
@@ -52,11 +51,16 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
   return (
     <>
       <Collapsible open={isPromptOpen} onOpenChange={setIsPromptOpen}>
-        <Card className={cn('shadow-sm', isDeleted && 'opacity-70')}>
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          className={cn(
+            'rounded-[var(--surface-radius)] border bg-card transition-colors hover:bg-muted/50',
+            isDeleted && 'opacity-70'
+          )}
+        >
+          <div className="flex items-center justify-between gap-3 px-3 py-2">
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="truncate text-base font-semibold text-foreground">
+                <span className="truncate text-sm font-medium text-foreground">
                   {transformation.title || transformation.name}
                 </span>
                 {transformation.apply_default && (
@@ -73,7 +77,9 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                 )}
               </div>
               {transformation.description && (
-                <p className="truncate text-sm text-muted-foreground">{transformation.description}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {transformation.description}
+                </p>
               )}
               <p className="text-xs text-muted-foreground">
                 {t('transformations.model')}: {transformation.model_id || t('transformations.systemDefault')}
@@ -81,27 +87,32 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5">
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" aria-label={t('transformations.systemPrompt')}>
                   {isPromptOpen ? (
-                    <ChevronDown className="h-4 w-4 mr-2" />
+                    <ChevronDown className="h-4 w-4 sm:mr-2" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 mr-2" />
+                    <ChevronRight className="h-4 w-4 sm:mr-2" />
                   )}
-                  {t('transformations.systemPrompt')}
+                  <span className="hidden sm:inline">{t('transformations.systemPrompt')}</span>
                 </Button>
               </CollapsibleTrigger>
               {onPlayground && !isDeleted && (
-                <Button variant="outline" size="sm" onClick={onPlayground}>
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  {t('transformations.testInPlayground')}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onPlayground}
+                  aria-label={t('transformations.testInPlayground')}
+                >
+                  <Wand2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('transformations.testInPlayground')}</span>
                 </Button>
               )}
               {onEdit && canEdit && !isDeleted && (
-                <Button variant="outline" size="sm" onClick={onEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  {t('common.edit')}
+                <Button variant="outline" size="sm" onClick={onEdit} aria-label={t('common.edit')}>
+                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('common.edit')}</span>
                 </Button>
               )}
               {canRestore && (
@@ -110,34 +121,36 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   size="sm"
                   onClick={() => restoreTransformation.mutate(transformation.id)}
                   disabled={restoreTransformation.isPending}
+                  aria-label={t('transformations.restore')}
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  {t('transformations.restore')}
+                  <RotateCcw className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('transformations.restore')}</span>
                 </Button>
               )}
               {canDelete && !isDeleted && (
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
                   onClick={() => setShowDeleteDialog(true)}
+                  aria-label={t('common.delete')}
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('common.delete')}
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('common.delete')}</span>
                 </Button>
               )}
             </div>
-          </CardContent>
+          </div>
 
           <CollapsibleContent>
-            <CardContent className="pt-0">
-              <p className="text-sm text-muted-foreground">{t('transformations.systemPrompt')}</p>
-              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted p-3 text-sm font-mono">
+            <div className="border-t px-3 pb-3 pt-2">
+              <p className="text-xs text-muted-foreground">{t('transformations.systemPrompt')}</p>
+              <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted p-3 text-xs font-mono text-muted-foreground">
                 {transformation.prompt}
               </pre>
-            </CardContent>
+            </div>
           </CollapsibleContent>
-        </Card>
+        </div>
       </Collapsible>
 
       <ConfirmDialog
