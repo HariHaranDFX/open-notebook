@@ -615,6 +615,33 @@ async def filter_episodes_by_access(episodes: list, request: Request) -> list:
     return kept
 
 
+async def effective_role_for_episode(
+    episode, request: Request
+) -> Optional[AccessRole]:
+    """Episode's effective role: owner if the episode owner, else inherited
+    from its notebook. Mirrors filter_episodes_by_access / the edit guard so
+    the response reflects the same decision the enforcement helpers make."""
+    if not auth_enforces_ownership():
+        return "owner"
+    user = current_user_optional(request)
+    if user is None:
+        return "owner"
+    if _same_owner(getattr(episode, "user_id", None), user.id):
+        return "owner"
+    nb_id = getattr(episode, "notebook_id", None)
+    if not nb_id:
+        return None
+    rows = await repo_query(
+        "SELECT user_id FROM notebook WHERE id = $id",
+        {"id": ensure_record_id(str(nb_id))},
+    )
+    if not rows:
+        return None
+    return await effective_role_for_notebook(
+        rows[0].get("user_id"), str(nb_id), request
+    )
+
+
 async def filter_search_results_by_owner(results: list[dict], request: Request) -> list[dict]:
     """Keep search results the user can view via source or notebook grants."""
     if not auth_enforces_ownership():

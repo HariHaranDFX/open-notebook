@@ -7,8 +7,10 @@ from pydantic import BaseModel
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
 from api.ownership import (
+    AccessRole,
     assert_can_edit_notebook_or_403,
     canonical_id,
+    effective_role_for_episode,
     filter_episodes_by_access,
 )
 from api.podcast_service import (
@@ -157,6 +159,7 @@ class PodcastEpisodeResponse(BaseModel):
     created: Optional[str] = None
     job_status: Optional[str] = None
     error_message: Optional[str] = None
+    access_role: Optional[AccessRole] = None
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -294,6 +297,7 @@ async def list_podcast_episodes(request: Request):
                     created=str(episode.created) if episode.created else None,
                     job_status=job_status,
                     error_message=error_message,
+                    access_role=await effective_role_for_episode(episode, request),
                 )
             )
 
@@ -359,6 +363,7 @@ async def get_podcast_episode(episode_id: str, request: Request):
             created=str(episode.created) if episode.created else None,
             job_status=job_status,
             error_message=error_message,
+            access_role=await effective_role_for_episode(episode, request),
         )
 
     except HTTPException:
