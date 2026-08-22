@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next'
 
 import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
 import { cn } from '@/lib/utils'
-import { AccessRole, canDeleteSource, canEditContent } from '@/lib/utils/access-role'
+import { AccessRole, canEditContent } from '@/lib/utils/access-role'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,7 +129,7 @@ interface DeleteEpisodeActionProps {
 export function DeleteEpisodeAction({ episode, onDelete, deleting, role, compact }: DeleteEpisodeActionProps) {
   const { t } = useTranslation()
 
-  if (!canDeleteSource(role)) {
+  if (!canEditContent(role)) {
     return null
   }
 

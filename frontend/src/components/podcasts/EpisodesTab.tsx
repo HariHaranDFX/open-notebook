@@ -178,6 +178,7 @@ export function EpisodesTab() {
                 <EpisodeCard
                   key={episode.id}
                   episode={episode}
+                  role={episode.access_role}
                   onDelete={handleDelete}
                   deleting={deleteEpisode.isPending}
                   onRetry={handleRetry}

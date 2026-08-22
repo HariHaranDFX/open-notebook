@@ -88,6 +88,7 @@ export default function EpisodeDetailPage() {
         />
         <EpisodeDetail
           episode={episode}
+          role={episode.access_role}
           onDelete={handleDelete}
           deleting={deleteEpisode.isPending}
           onRetry={handleRetry}

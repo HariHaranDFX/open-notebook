@@ -125,4 +125,26 @@ describe('EpisodesTab', () => {
     expect(screen.getByText('podcasts.total').closest('div')).toHaveTextContent('2')
     expect(screen.getByText('podcasts.pendingLabel').closest('div')).toHaveTextContent('0')
   })
+
+  it('hides retry and delete on a failed row when access is viewer', () => {
+    mockEpisodes([
+      makeEpisode({ id: 'episode:failed', job_status: 'failed', access_role: 'viewer' }),
+    ])
+
+    render(<EpisodesTab />)
+
+    expect(screen.queryByText('podcasts.retry')).not.toBeInTheDocument()
+    expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
+  })
+
+  it('keeps retry and delete on a failed row when access is editor', () => {
+    mockEpisodes([
+      makeEpisode({ id: 'episode:failed', job_status: 'failed', access_role: 'editor' }),
+    ])
+
+    render(<EpisodesTab />)
+
+    expect(screen.getByText('podcasts.retry')).toBeInTheDocument()
+    expect(screen.getByText('podcasts.delete')).toBeInTheDocument()
+  })
 })
