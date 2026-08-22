@@ -688,6 +688,7 @@ export const ruRU = {
     voiceId: "ID голоса",
     backstory: "Биография",
     personality: "Личность",
+    voiceDetails: "Сведения о голосе",
     edit: "Редактировать",
     duplicate: "Дублировать",
     deleteSpeakerProfileTitle: "Удалить профиль говорящего?",

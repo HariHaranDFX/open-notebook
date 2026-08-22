@@ -686,6 +686,7 @@ export const enUS = {
     voiceId: "Voice ID",
     backstory: "Backstory",
     personality: "Personality",
+    voiceDetails: "Voice details",
     edit: "Edit",
     duplicate: "Duplicate",
     deleteSpeakerProfileTitle: "Delete speaker profile?",

@@ -691,6 +691,7 @@ export const deDE = {
     voiceId: "Stimmen-ID",
     backstory: "Hintergrundgeschichte",
     personality: "Persönlichkeit",
+    voiceDetails: "Stimmdetails",
     edit: "Bearbeiten",
     duplicate: "Duplizieren",
     deleteSpeakerProfileTitle: "Sprecherprofil löschen?",

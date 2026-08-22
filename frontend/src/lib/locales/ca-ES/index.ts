@@ -688,6 +688,7 @@ export const caES = {
     voiceId: "ID de veu",
     backstory: "Història de fons",
     personality: "Personalitat",
+    voiceDetails: "Detalls de la veu",
     edit: "Edita",
     duplicate: "Duplica",
     deleteSpeakerProfileTitle: "Vols suprimir el perfil del locutor?",

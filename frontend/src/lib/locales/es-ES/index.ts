@@ -688,6 +688,7 @@ export const esES = {
     voiceId: "ID de voz",
     backstory: "Historia",
     personality: "Personalidad",
+    voiceDetails: "Detalles de la voz",
     edit: "Editar",
     duplicate: "Duplicar",
     deleteSpeakerProfileTitle: "¿Eliminar perfil de locutor?",

@@ -688,6 +688,7 @@ export const zhCN = {
     voiceId: "声音 ID",
     backstory: "背景故事",
     personality: "性格",
+    voiceDetails: "语音详情",
     edit: "编辑",
     duplicate: "复制",
     deleteSpeakerProfileTitle: "删除发言人简介？",

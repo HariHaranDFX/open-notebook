@@ -688,6 +688,7 @@ export const zhTW = {
     voiceId: "聲音 ID",
     backstory: "背景故事",
     personality: "性格",
+    voiceDetails: "語音詳情",
     edit: "編輯",
     duplicate: "複製",
     deleteSpeakerProfileTitle: "刪除發言人簡介？",

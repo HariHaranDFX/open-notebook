@@ -688,6 +688,7 @@ export const plPL = {
     voiceId: "Identyfikator głosu",
     backstory: "Tło",
     personality: "Osobowość",
+    voiceDetails: "Szczegóły głosu",
     edit: "Edytuj",
     duplicate: "Duplikuj",
     deleteSpeakerProfileTitle: "Usunąć profil mówcy?",

@@ -688,6 +688,7 @@ export const bnIN = {
     voiceId: "ভয়েস ID",
     backstory: "পটভূমির গল্প",
     personality: "ব্যক্তিত্ব",
+    voiceDetails: "কণ্ঠস্বরের বিবরণ",
     edit: "সম্পাদনা",
     duplicate: "ডুপ্লিকেট",
     deleteSpeakerProfileTitle: "স্পিকার প্রোফাইল মুছে ফেলবেন?",

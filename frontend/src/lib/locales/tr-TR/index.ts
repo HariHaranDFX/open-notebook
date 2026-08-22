@@ -688,6 +688,7 @@ export const trTR = {
     voiceId: "Ses Kimliği",
     backstory: "Geçmiş",
     personality: "Kişilik",
+    voiceDetails: "Ses ayrıntıları",
     edit: "Düzenle",
     duplicate: "Çoğalt",
     deleteSpeakerProfileTitle: "Konuşmacı profili silinsin mi?",

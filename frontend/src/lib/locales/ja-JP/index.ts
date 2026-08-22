@@ -688,6 +688,7 @@ export const jaJP = {
     voiceId: "Voice ID",
     backstory: "バックストーリー",
     personality: "パーソナリティ",
+    voiceDetails: "音声の詳細",
     edit: "編集",
     duplicate: "複製",
     deleteSpeakerProfileTitle: "スピーカープロファイルを削除しますか？",

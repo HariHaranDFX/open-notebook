@@ -688,6 +688,7 @@ export const frFR = {
     voiceId: "ID de la voix",
     backstory: "Histoire (Backstory)",
     personality: "Personnalité",
+    voiceDetails: "Détails de la voix",
     edit: "Modifier",
     duplicate: "Dupliquer",
     deleteSpeakerProfileTitle: "Supprimer le profil de l'intervenant ?",

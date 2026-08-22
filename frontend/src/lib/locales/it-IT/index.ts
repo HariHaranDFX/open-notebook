@@ -688,6 +688,7 @@ export const itIT = {
     voiceId: "ID Voce",
     backstory: "Background",
     personality: "Personalità",
+    voiceDetails: "Dettagli della voce",
     edit: "Modifica",
     duplicate: "Duplica",
     deleteSpeakerProfileTitle: "Eliminare il profilo speaker?",

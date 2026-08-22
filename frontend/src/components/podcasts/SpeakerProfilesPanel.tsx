@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Copy, Edit3, MoreVertical, Trash2, Volume2 } from 'lucide-react'
+import { Volume2 } from 'lucide-react'
 
 import { SpeakerProfile, needsModelSetup } from '@/lib/types/podcasts'
 import {
@@ -10,33 +10,8 @@ import {
 } from '@/lib/hooks/use-podcasts'
 import { useModels } from '@/lib/hooks/use-models'
 import { SpeakerProfileFormDialog } from '@/components/podcasts/forms/SpeakerProfileFormDialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
+import { MetaChip, ProfileCard, ProfileDisclosure } from '@/components/podcasts/ProfileCard'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface SpeakerProfilesPanelProps {
@@ -91,150 +66,95 @@ export function SpeakerProfilesPanel({
           {sortedProfiles.map((profile) => {
             const usageCount = usage[profile.name] ?? 0
             const deleteDisabled = usageCount > 0
-            const unconfigured = needsModelSetup(profile)
+            const voiceModelLabel = profile.voice_model
+              ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
+              : t('podcasts.notConfigured')
 
             return (
-              <Card key={profile.id} className="shadow-sm">
-                <CardHeader className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg font-semibold">
-                          {profile.name}
-                        </CardTitle>
-                        {unconfigured ? (
-                          <Badge variant="outline" className="border-warning/40 bg-warning-surface text-warning text-xs">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            {t('podcasts.setupRequired')}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <CardDescription className="text-sm text-muted-foreground">
-                        {profile.description || t('podcasts.noDescription')}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {profile.voice_model
-                        ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
-                        : t('podcasts.notConfigured')}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge
-                      variant={usageCount > 0 ? 'secondary' : 'outline'}
-                      className="text-xs"
-                    >
-                      {usageCount > 0
+              <ProfileCard
+                key={profile.id}
+                name={profile.name}
+                description={profile.description}
+                setupRequired={needsModelSetup(profile)}
+                onEdit={() => setEditProfile(profile)}
+                onDuplicate={() => duplicateProfile.mutate(profile.id)}
+                duplicating={duplicateProfile.isPending}
+                onDelete={() =>
+                  deleteProfile.mutate({ profileId: profile.id, name: profile.name })
+                }
+                deleting={deleteProfile.isPending}
+                deleteDisabled={deleteDisabled}
+                deleteDisabledHint={t('podcasts.deleteSpeakerDisabledHint')}
+                deleteTitle={t('podcasts.deleteSpeakerProfileTitle')}
+                deleteDescription={t('podcasts.deleteSpeakerProfileDesc', { name: profile.name })}
+              >
+                <div className="flex flex-wrap gap-2">
+                  <MetaChip
+                    icon={Volume2}
+                    value={voiceModelLabel}
+                    tone={profile.voice_model ? 'default' : 'warning'}
+                  />
+                  <MetaChip
+                    value={
+                      usageCount > 0
                         ? t('podcasts.usedByCount', { count: usageCount })
-                        : t('podcasts.unused')}
-                    </Badge>
-                  </div>
-                </CardHeader>
+                        : t('podcasts.unused')
+                    }
+                    tone={usageCount > 0 ? 'accent' : 'default'}
+                  />
+                </div>
 
-                <CardContent className="space-y-4 text-sm">
-                  <div className="space-y-3">
-                    {profile.speakers.map((speaker) => (
-                      <div
-                        key={speaker.name}
-                        className="rounded-[var(--surface-radius)] border bg-muted/30 p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Volume2 className="h-4 w-4" />
-                            <span className="font-medium text-foreground">
-                              {speaker.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {t('podcasts.voiceId')}: {speaker.voice_id}
-                            </span>
-                            {speaker.voice_model ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {modelNameMap[speaker.voice_model] ?? speaker.voice_model}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">{t('podcasts.backstory')}:</span> {speaker.backstory}
-                        </p>
-                        <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">{t('podcasts.personality')}:</span> {speaker.personality}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditProfile(profile)}
-                    >
-                      <Edit3 className="mr-2 h-4 w-4" /> {t('podcasts.edit')}
-                    </Button>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-48"
-                          onClick={(e) => e.stopPropagation()}
+                {profile.speakers.length > 0 ? (
+                  <div className="flex flex-col gap-2 border-t border-border pt-3">
+                    {profile.speakers.map((speaker) => {
+                      const speakerModel = speaker.voice_model
+                        ? (modelNameMap[speaker.voice_model] ?? speaker.voice_model)
+                        : null
+                      return (
+                        <div
+                          key={speaker.name}
+                          className="flex items-center justify-between gap-2"
                         >
-                          <DropdownMenuItem
-                            onClick={() => duplicateProfile.mutate(profile.id)}
-                            disabled={duplicateProfile.isPending}
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            {t('podcasts.duplicate')}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              disabled={deleteDisabled}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              {t('podcasts.delete')}
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{t('podcasts.deleteSpeakerProfileTitle')}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {t('podcasts.deleteSpeakerProfileDesc', { name: profile.name })}
-                          </AlertDialogDescription>
-                          {deleteDisabled ? (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {t('podcasts.deleteSpeakerDisabledHint')}
-                            </p>
-                          ) : null}
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteProfile.mutate({ profileId: profile.id, name: profile.name })}
-                            disabled={deleteDisabled || deleteProfile.isPending}
-                          >
-                            {deleteProfile.isPending ? t('podcasts.deleting') : t('podcasts.delete')}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          <span className="text-sm font-medium text-foreground">
+                            {speaker.name}
+                          </span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {t('podcasts.voiceId')}: {speaker.voice_id}
+                            {speakerModel ? ` · ${speakerModel}` : ''}
+                          </span>
+                        </div>
+                      )
+                    })}
                   </div>
-                </CardContent>
-              </Card>
+                ) : null}
+
+                {profile.speakers.length > 0 ? (
+                  <ProfileDisclosure label={t('podcasts.voiceDetails')}>
+                    <div className="space-y-2">
+                      {profile.speakers.map((speaker) => (
+                        <div
+                          key={speaker.name}
+                          className="rounded-[var(--surface-radius)] border border-border bg-muted/30 p-3"
+                        >
+                          <p className="text-sm font-medium text-foreground">{speaker.name}</p>
+                          <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">
+                              {t('podcasts.backstory')}:
+                            </span>{' '}
+                            {speaker.backstory}
+                          </p>
+                          <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">
+                              {t('podcasts.personality')}:
+                            </span>{' '}
+                            {speaker.personality}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </ProfileDisclosure>
+                ) : null}
+              </ProfileCard>
             )
           })}
         </div>

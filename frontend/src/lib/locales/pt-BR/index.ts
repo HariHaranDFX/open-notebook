@@ -688,6 +688,7 @@ export const ptBR = {
     voiceId: "ID da Voz",
     backstory: "História",
     personality: "Personalidade",
+    voiceDetails: "Detalhes da voz",
     edit: "Editar",
     duplicate: "Duplicar",
     deleteSpeakerProfileTitle: "Excluir perfil de locutor?",
