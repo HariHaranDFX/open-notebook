@@ -35,7 +35,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
     : null
 
   return (
-    <div className="group relative flex flex-col gap-2 rounded-[var(--surface-radius)] border bg-card px-3 py-2 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
+    <div className="group relative flex items-center justify-between gap-3 rounded-[var(--surface-radius)] border bg-card px-3 py-2 transition-colors hover:bg-muted/50">
       {/* Stretched link: the whole row is clickable, while the action buttons
           below sit in a higher stacking layer and stay independently clickable. */}
       <Link
@@ -56,8 +56,8 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
         </p>
       </div>
       <div className="relative z-10 flex shrink-0 items-center gap-2">
-        <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} />
-        <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} />
+        <RetryEpisodeButton episode={episode} onRetry={onRetry} retrying={retrying} role={role} compact />
+        <DeleteEpisodeAction episode={episode} onDelete={onDelete} deleting={deleting} role={role} compact />
       </div>
     </div>
   )

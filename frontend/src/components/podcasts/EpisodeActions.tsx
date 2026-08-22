@@ -90,9 +90,11 @@ interface RetryEpisodeButtonProps {
   retrying?: boolean
   /** Missing role (open/auth-off mode, or callers that haven't wired ACLs) grants full access. */
   role?: AccessRole | null
+  /** Collapse to icon-only on narrow screens so the row never wraps. */
+  compact?: boolean
 }
 
-export function RetryEpisodeButton({ episode, onRetry, retrying, role }: RetryEpisodeButtonProps) {
+export function RetryEpisodeButton({ episode, onRetry, retrying, role, compact }: RetryEpisodeButtonProps) {
   const { t } = useTranslation()
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
@@ -105,9 +107,11 @@ export function RetryEpisodeButton({ episode, onRetry, retrying, role }: RetryEp
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying}>
-      <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
-      {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
+    <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying} aria-label={t('podcasts.retry')}>
+      <RefreshCcw className={cn('h-4 w-4', compact ? 'sm:mr-2' : 'mr-2', retrying && 'animate-spin')} />
+      <span className={cn(compact && 'hidden sm:inline')}>
+        {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
+      </span>
     </Button>
   )
 }
@@ -118,9 +122,11 @@ interface DeleteEpisodeActionProps {
   deleting?: boolean
   /** Missing role (open/auth-off mode, or callers that haven't wired ACLs) grants full access. */
   role?: AccessRole | null
+  /** Collapse to icon-only on narrow screens so the row never wraps. */
+  compact?: boolean
 }
 
-export function DeleteEpisodeAction({ episode, onDelete, deleting, role }: DeleteEpisodeActionProps) {
+export function DeleteEpisodeAction({ episode, onDelete, deleting, role, compact }: DeleteEpisodeActionProps) {
   const { t } = useTranslation()
 
   if (!canDeleteSource(role)) {
@@ -137,10 +143,11 @@ export function DeleteEpisodeAction({ episode, onDelete, deleting, role }: Delet
         <Button
           variant="outline"
           size="sm"
+          aria-label={t('podcasts.delete')}
           className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash2 className="mr-2 h-4 w-4" />
-          {t('podcasts.delete')}
+          <Trash2 className={cn('h-4 w-4', compact ? 'sm:mr-2' : 'mr-2')} />
+          <span className={cn(compact && 'hidden sm:inline')}>{t('podcasts.delete')}</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
