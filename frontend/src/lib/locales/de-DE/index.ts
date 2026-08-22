@@ -288,6 +288,10 @@ export const deDE = {
     grantUpdated: "Rolle aktualisiert",
     grantRevoked: "Zugriff entzogen",
     principalType: "Teilen mit",
+    originOpen: "Offener Zugriff",
+    originDirect: "Mit Ihnen geteilt",
+    originGroup: "Geteilt über {{name}}",
+    originNotebook: "Zugriff über {{name}}",
   },
   groups: {
     title: "Gruppen",

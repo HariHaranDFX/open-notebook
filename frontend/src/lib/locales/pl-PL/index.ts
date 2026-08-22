@@ -285,6 +285,10 @@ export const plPL = {
     grantUpdated: "Zaktualizowano rolę",
     grantRevoked: "Cofnięto dostęp",
     principalType: "Udostępnij dla",
+    originOpen: "Otwarty dostęp",
+    originDirect: "Udostępniono Tobie",
+    originGroup: "Udostępniono przez {{name}}",
+    originNotebook: "Dostęp przez {{name}}",
   },
   groups: {
     title: "Grupy",

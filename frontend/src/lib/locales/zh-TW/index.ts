@@ -285,6 +285,10 @@ export const zhTW = {
     grantUpdated: "角色已更新",
     grantRevoked: "已撤銷存取",
     principalType: "分享給",
+    originOpen: "開放存取",
+    originDirect: "已與您分享",
+    originGroup: "透過 {{name}} 分享",
+    originNotebook: "透過 {{name}} 取得存取權",
   },
   groups: {
     title: "群組",

@@ -285,6 +285,10 @@ export const ruRU = {
     grantUpdated: "Роль обновлена",
     grantRevoked: "Доступ отозван",
     principalType: "Поделиться с",
+    originOpen: "Открытый доступ",
+    originDirect: "Доступно вам напрямую",
+    originGroup: "Доступ через группу {{name}}",
+    originNotebook: "Доступ через {{name}}",
   },
   groups: {
     title: "Группы",

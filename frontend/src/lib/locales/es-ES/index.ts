@@ -285,6 +285,10 @@ export const esES = {
     grantUpdated: "Rol actualizado",
     grantRevoked: "Acceso revocado",
     principalType: "Compartir con",
+    originOpen: "Acceso abierto",
+    originDirect: "Compartido contigo",
+    originGroup: "Compartido a través de {{name}}",
+    originNotebook: "Acceso a través de {{name}}",
   },
   groups: {
     title: "Grupos",

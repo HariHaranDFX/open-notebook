@@ -2,6 +2,17 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+# How the current user reached their access_role on a notebook/source
+# (WP3-06) - purely additive alongside access_role, never used to make
+# authorization decisions. See api/ownership.py's access_summary_for_*.
+AccessOrigin = Literal["owner", "direct", "group", "notebook", "open"]
+
+
+class AccessSummary(BaseModel):
+    role: Literal["owner", "editor", "viewer"]
+    origin: AccessOrigin
+    origin_label: Optional[str] = None
+
 
 # Notebook models
 class NotebookCreate(BaseModel):
@@ -27,6 +38,7 @@ class NotebookResponse(BaseModel):
     source_count: int
     note_count: int
     access_role: Optional[Literal["owner", "editor", "viewer"]] = None
+    access_summary: Optional[AccessSummary] = None
 
 
 class RecentlyViewedResponse(BaseModel):
@@ -381,6 +393,7 @@ class SourceResponse(BaseModel):
     # Notebook associations
     notebooks: Optional[List[str]] = None
     access_role: Optional[Literal["owner", "editor", "viewer"]] = None
+    access_summary: Optional[AccessSummary] = None
 
 
 class SourceListResponse(BaseModel):
@@ -399,6 +412,7 @@ class SourceListResponse(BaseModel):
     status: Optional[str] = None
     processing_info: Optional[Dict[str, Any]] = None
     access_role: Optional[Literal["owner", "editor", "viewer"]] = None
+    access_summary: Optional[AccessSummary] = None
 
 
 # Insights API models

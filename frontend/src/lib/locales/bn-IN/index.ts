@@ -285,6 +285,10 @@ export const bnIN = {
     grantUpdated: "ভূমিকা আপডেট",
     grantRevoked: "অ্যাক্সেস বাতিল",
     principalType: "শেয়ার করুন",
+    originOpen: "উন্মুক্ত অ্যাক্সেস",
+    originDirect: "আপনার সাথে শেয়ার করা হয়েছে",
+    originGroup: "{{name}} এর মাধ্যমে শেয়ার করা হয়েছে",
+    originNotebook: "{{name}} এর মাধ্যমে অ্যাক্সেস",
   },
   groups: {
     title: "গ্রুপ",

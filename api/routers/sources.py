@@ -24,6 +24,7 @@ from api.auth.types import AuthenticatedUser
 from api.command_service import CommandService
 from api.credentials_service import validate_url
 from api.models import (
+    AccessSummary,
     AssetModel,
     CreateSourceInsightRequest,
     InsightCreationResponse,
@@ -35,12 +36,12 @@ from api.models import (
     SourceUpdate,
 )
 from api.ownership import (
+    access_summary_for_source,
     assert_can_delete_source_or_403,
     assert_can_edit_notebook_or_403,
-    assert_can_edit_source_or_403,
     assert_can_view_notebook_or_404,
     assert_can_view_source_or_404,
-    effective_role_for_source,
+    role_at_least,
     source_access_where,
 )
 from commands.source_commands import SourceProcessingInput
@@ -372,7 +373,7 @@ async def get_sources(
                 status = "unknown"
 
             source_id = str(row["id"])
-            access_role = await effective_role_for_source(
+            summary = await access_summary_for_source(
                 row.get("user_id"), source_id, request
             )
             response_list.append(
@@ -397,7 +398,8 @@ async def get_sources(
                     command_id=command_id,
                     status=status,
                     processing_info=processing_info,
-                    access_role=access_role,
+                    access_role=summary.role if summary else None,
+                    access_summary=summary,
                 )
             )
 
@@ -576,6 +578,9 @@ async def _create_source_async_path(
             status="new",
             processing_info={"async": True, "queued": True},
             access_role="owner" if user else None,
+            access_summary=AccessSummary(role="owner", origin="owner")
+            if user
+            else None,
         )
 
     except (HTTPException, OpenNotebookError):
@@ -669,6 +674,9 @@ async def _create_source_sync_path(
             processed_source,
             embedded_chunks=embedded_chunks,
             access_role="owner" if user else None,
+            access_summary=AccessSummary(role="owner", origin="owner")
+            if user
+            else None,
         )
 
     except Exception as e:
@@ -805,9 +813,14 @@ async def get_source(source_id: str, request: Request):
     """Get a specific source by ID."""
     try:
         source = await Source.get(source_id)
-        access_role = await assert_can_view_source_or_404(
-            source.user_id, source_id, request, "Source not found"
+        # Single resolver call carries both the authorization decision (404
+        # if None) and the origin metadata for the response - see
+        # api/ownership.py's access_summary_for_source.
+        summary = await access_summary_for_source(
+            source.user_id, source_id, request
         )
+        if summary is None:
+            raise HTTPException(status_code=404, detail="Source not found")
 
         await _stamp_source_view(source.id or source_id)
 
@@ -843,7 +856,8 @@ async def get_source(source_id: str, request: Request):
             processing_info=processing_info,
             # Notebook associations
             notebooks=notebook_ids,
-            access_role=access_role,
+            access_role=summary.role,
+            access_summary=summary,
         )
     except HTTPException:
         raise
@@ -958,9 +972,19 @@ async def update_source(source_id: str, source_update: SourceUpdate, request: Re
     """Update a source."""
     try:
         source = await Source.get(source_id)
-        access_role = await assert_can_edit_source_or_403(
-            source.user_id, source_id, request, "Source not found"
+        # Single resolver call carries both the authorization decision
+        # (404/403) and the origin metadata for the response - mirrors
+        # assert_can_edit_source_or_403 exactly (see api/ownership.py).
+        summary = await access_summary_for_source(
+            source.user_id, source_id, request
         )
+        if summary is None:
+            raise HTTPException(status_code=404, detail="Source not found")
+        if not role_at_least(summary.role, "editor"):
+            raise HTTPException(
+                status_code=403,
+                detail="Editor access is required for this action",
+            )
 
         # Update only provided fields
         if source_update.title is not None:
@@ -972,7 +996,10 @@ async def update_source(source_id: str, source_update: SourceUpdate, request: Re
 
         embedded_chunks = await source.get_embedded_chunks()
         return _source_to_response(
-            source, embedded_chunks=embedded_chunks, access_role=access_role
+            source,
+            embedded_chunks=embedded_chunks,
+            access_role=summary.role,
+            access_summary=summary,
         )
     except HTTPException:
         raise
@@ -991,9 +1018,18 @@ async def retry_source_processing(source_id: str, request: Request):
     try:
         # First, verify source exists and is editable (retry reprocesses content)
         source = await Source.get(source_id)
-        access_role = await assert_can_edit_source_or_403(
-            source.user_id, source_id, request, "Source not found"
+        # Single resolver call - mirrors assert_can_edit_source_or_403
+        # exactly (see api/ownership.py).
+        summary = await access_summary_for_source(
+            source.user_id, source_id, request
         )
+        if summary is None:
+            raise HTTPException(status_code=404, detail="Source not found")
+        if not role_at_least(summary.role, "editor"):
+            raise HTTPException(
+                status_code=403,
+                detail="Editor access is required for this action",
+            )
 
         # Check if source already has a running command
         if source.command:
@@ -1088,7 +1124,8 @@ async def retry_source_processing(source_id: str, request: Request):
                 command_id=command_id,
                 status="queued",
                 processing_info={"retry": True, "queued": True},
-                access_role=access_role,
+                access_role=summary.role,
+                access_summary=summary,
             )
 
         except Exception as e:

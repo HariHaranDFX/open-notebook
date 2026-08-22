@@ -283,6 +283,10 @@ export const enUS = {
     grantUpdated: "Role updated",
     grantRevoked: "Access revoked",
     principalType: "Share with",
+    originOpen: "Open access",
+    originDirect: "Shared with you",
+    originGroup: "Shared via {{name}}",
+    originNotebook: "Access via {{name}}",
   },
   groups: {
     title: "Groups",

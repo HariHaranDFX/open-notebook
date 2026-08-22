@@ -1,5 +1,15 @@
 export type AccessRole = 'owner' | 'editor' | 'viewer'
 
+/** How the current user reached their access_role (WP3-06) - presentation
+ * only, never used for authorization decisions. */
+export type AccessOrigin = 'owner' | 'direct' | 'group' | 'notebook' | 'open'
+
+export interface AccessSummary {
+  role: AccessRole
+  origin: AccessOrigin
+  origin_label?: string | null
+}
+
 export interface NotebookResponse {
   id: string
   name: string
@@ -10,6 +20,7 @@ export interface NotebookResponse {
   source_count: number
   note_count: number
   access_role?: AccessRole | null
+  access_summary?: AccessSummary | null
 }
 
 export interface NoteResponse {
@@ -40,6 +51,7 @@ export interface SourceListResponse {
   status?: string
   processing_info?: Record<string, unknown>
   access_role?: AccessRole | null
+  access_summary?: AccessSummary | null
 }
 
 export interface SourceDetailResponse extends SourceListResponse {

@@ -285,6 +285,10 @@ export const jaJP = {
     grantUpdated: "ロールを更新しました",
     grantRevoked: "アクセスを取り消しました",
     principalType: "共有先",
+    originOpen: "オープンアクセス",
+    originDirect: "あなたと共有されています",
+    originGroup: "{{name}} 経由で共有",
+    originNotebook: "{{name}} 経由でアクセス",
   },
   groups: {
     title: "グループ",

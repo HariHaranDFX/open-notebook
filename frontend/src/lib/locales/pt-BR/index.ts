@@ -285,6 +285,10 @@ export const ptBR = {
     grantUpdated: "Função atualizada",
     grantRevoked: "Acesso revogado",
     principalType: "Compartilhar com",
+    originOpen: "Acesso aberto",
+    originDirect: "Compartilhado com você",
+    originGroup: "Compartilhado via {{name}}",
+    originNotebook: "Acesso via {{name}}",
   },
   groups: {
     title: "Grupos",

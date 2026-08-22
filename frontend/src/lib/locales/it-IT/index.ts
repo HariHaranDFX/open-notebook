@@ -285,6 +285,10 @@ export const itIT = {
     grantUpdated: "Ruolo aggiornato",
     grantRevoked: "Accesso revocato",
     principalType: "Condividi con",
+    originOpen: "Accesso aperto",
+    originDirect: "Condiviso con te",
+    originGroup: "Condiviso tramite {{name}}",
+    originNotebook: "Accesso tramite {{name}}",
   },
   groups: {
     title: "Gruppi",

@@ -5,6 +5,7 @@ from loguru import logger
 
 from api.auth.deps import current_user_optional
 from api.models import (
+    AccessSummary,
     NotebookCreate,
     NotebookDeletePreview,
     NotebookDeleteResponse,
@@ -13,11 +14,10 @@ from api.models import (
     RecentlyViewedResponse,
 )
 from api.ownership import (
+    access_summary_for_notebook,
     access_where,
     assert_can_edit_notebook_or_403,
-    assert_can_view_notebook_or_404,
     assert_owner_or_404,
-    effective_role_for_notebook,
     source_access_where,
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -121,7 +121,7 @@ async def get_notebooks(
         responses = []
         for nb in result:
             nb_id = str(nb.get("id", ""))
-            role = await effective_role_for_notebook(
+            summary = await access_summary_for_notebook(
                 nb.get("user_id"), nb_id, request
             )
             responses.append(
@@ -134,7 +134,8 @@ async def get_notebooks(
                     updated=str(nb.get("updated", "")),
                     source_count=nb.get("source_count", 0),
                     note_count=nb.get("note_count", 0),
-                    access_role=role,
+                    access_role=summary.role if summary else None,
+                    access_summary=summary,
                 )
             )
         return responses
@@ -172,6 +173,9 @@ async def create_notebook(notebook: NotebookCreate, request: Request):
             source_count=0,  # New notebook has no sources
             note_count=0,  # New notebook has no notes
             access_role="owner" if user else None,
+            access_summary=AccessSummary(role="owner", origin="owner")
+            if user
+            else None,
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -287,9 +291,14 @@ async def get_notebook(notebook_id: str, request: Request):
             raise HTTPException(status_code=404, detail="Notebook not found")
 
         nb = result[0]
-        role = await assert_can_view_notebook_or_404(
-            nb.get("user_id"), notebook_id, request, "Notebook not found"
+        # Single resolver call carries both the authorization decision (404
+        # if None) and the origin metadata for the response - see
+        # api/ownership.py's access_summary_for_notebook.
+        summary = await access_summary_for_notebook(
+            nb.get("user_id"), notebook_id, request
         )
+        if summary is None:
+            raise HTTPException(status_code=404, detail="Notebook not found")
 
         await _stamp_notebook_view(notebook_id)
         return NotebookResponse(
@@ -301,7 +310,8 @@ async def get_notebook(notebook_id: str, request: Request):
             updated=str(nb.get("updated", "")),
             source_count=nb.get("source_count", 0),
             note_count=nb.get("note_count", 0),
-            access_role=role,
+            access_role=summary.role,
+            access_summary=summary,
         )
     except HTTPException:
         raise

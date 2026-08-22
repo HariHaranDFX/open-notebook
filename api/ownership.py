@@ -11,6 +11,7 @@ from typing import Literal, Optional, Tuple
 from fastapi import HTTPException, Request
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
+from api.models import AccessSummary
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 AccessRole = Literal["owner", "editor", "viewer"]
@@ -234,6 +235,169 @@ async def effective_role_for_source(
         else:
             role = _max_role(role, nb_role)
     return role
+
+
+async def _grant_matches_for_resource(
+    user_id: str,
+    resource_type: ResourceType,
+    resource_id: str,
+    group_ids: list[str],
+) -> list[dict]:
+    """Grant rows for this resource/user, keeping enough to tell a direct
+    user grant from a group grant apart (role + principal_type +
+    principal_id) - unlike _grant_roles_for_resource, which only needs the
+    role. Same WHERE/binds as that query; used solely by the access-summary
+    path below so effective_role_for_notebook/_source (and the tests that
+    pin their exact query behaviour) are untouched.
+    """
+    uid = _canonical_id(user_id)
+    rid = _canonical_id(resource_id)
+    rows = await repo_query(
+        """
+        SELECT role, principal_type, principal_id FROM resource_grant
+        WHERE resource_type = $rtype AND resource_id = $rid
+          AND (
+            (principal_type = 'user' AND principal_id = $uid)
+            OR (principal_type = 'group' AND principal_id IN $gids)
+          )
+        """,
+        {
+            "rtype": resource_type,
+            "rid": rid,
+            "uid": uid,
+            "gids": group_ids or ["__none__"],
+        },
+    )
+    return [row for row in rows if row.get("role") in ("viewer", "editor")]
+
+
+async def _group_name(group_id: str) -> Optional[str]:
+    if not group_id:
+        return None
+    rows = await repo_query(
+        "SELECT name FROM $id", {"id": ensure_record_id(group_id)}
+    )
+    if rows and rows[0].get("name"):
+        return str(rows[0]["name"])
+    return None
+
+
+def _direct_or_group_match(
+    matches: list[dict], role: AccessRole
+) -> Optional[dict]:
+    """The grant row that reaches ``role``, preferring a direct user grant
+    over a group grant when both qualify (equal-role tie-break)."""
+    winners = [m for m in matches if m.get("role") == role]
+    direct = next((m for m in winners if m.get("principal_type") == "user"), None)
+    if direct is not None:
+        return direct
+    return next((m for m in winners if m.get("principal_type") == "group"), None)
+
+
+async def access_summary_for_notebook(
+    owner_user_id: Optional[str], notebook_id: str, request: Request
+) -> Optional[AccessSummary]:
+    """Role + provenance for a notebook (WP3-06).
+
+    Computes the exact same role as effective_role_for_notebook (same
+    grant rows, same highest-role-wins reduction) while also reporting how
+    that access was reached, for display only.
+    """
+    if not auth_enforces_ownership():
+        return AccessSummary(role="owner", origin="open")
+    user = current_user_optional(request)
+    if user is None:
+        return AccessSummary(role="owner", origin="open")
+    if _same_owner(owner_user_id, user.id):
+        return AccessSummary(role="owner", origin="owner")
+    group_ids = await list_user_group_ids(user.id)
+    matches = await _grant_matches_for_resource(
+        user.id, "notebook", notebook_id, group_ids
+    )
+    role: Optional[AccessRole] = None
+    for m in matches:
+        role = _max_role(role, m.get("role"))
+    if role is None:
+        return None
+    match = _direct_or_group_match(matches, role)
+    if match is not None and match.get("principal_type") == "group":
+        label = await _group_name(str(match.get("principal_id", "")))
+        return AccessSummary(role=role, origin="group", origin_label=label)
+    return AccessSummary(role=role, origin="direct")
+
+
+async def access_summary_for_source(
+    owner_user_id: Optional[str], source_id: str, request: Request
+) -> Optional[AccessSummary]:
+    """Role + provenance for a source, cascading through linked notebooks
+    (WP3-06). Computes the exact same role as effective_role_for_source.
+
+    When the winning role is reached only via a linked notebook (not a
+    grant on the source itself), origin is "notebook" and origin_label is
+    that notebook's name.
+    """
+    if not auth_enforces_ownership():
+        return AccessSummary(role="owner", origin="open")
+    user = current_user_optional(request)
+    if user is None:
+        return AccessSummary(role="owner", origin="open")
+    if _same_owner(owner_user_id, user.id):
+        return AccessSummary(role="owner", origin="owner")
+    group_ids = await list_user_group_ids(user.id)
+
+    matches = await _grant_matches_for_resource(
+        user.id, "source", source_id, group_ids
+    )
+    role: Optional[AccessRole] = None
+    for m in matches:
+        role = _max_role(role, m.get("role"))
+
+    best_notebook_role: Optional[AccessRole] = None
+    best_notebook_label: Optional[str] = None
+    links = await repo_query(
+        "SELECT out AS notebook_id FROM reference WHERE in = $sid",
+        {"sid": ensure_record_id(source_id)},
+    )
+    for link in links:
+        nb_id = link.get("notebook_id")
+        if not nb_id:
+            continue
+        nb_rows = await repo_query(
+            "SELECT user_id, name FROM notebook WHERE id = $id",
+            {"id": ensure_record_id(str(nb_id))},
+        )
+        if not nb_rows:
+            continue
+        nb_role = await effective_role_for_notebook(
+            nb_rows[0].get("user_id"), str(nb_id), request
+        )
+        # Same cascade rule as effective_role_for_source: a notebook owned
+        # by someone else grants editor (not owner) on sources merely
+        # linked into it.
+        cascaded_role: Optional[AccessRole] = (
+            "editor" if nb_role == "owner" else nb_role
+        )
+        role = _max_role(role, cascaded_role)
+        if cascaded_role is not None and (
+            best_notebook_role is None
+            or _ROLE_RANK[cascaded_role] > _ROLE_RANK[best_notebook_role]
+        ):
+            best_notebook_role = cascaded_role
+            best_notebook_label = nb_rows[0].get("name")
+
+    if role is None:
+        return None
+
+    match = _direct_or_group_match(matches, role)
+    if match is not None:
+        if match.get("principal_type") == "group":
+            label = await _group_name(str(match.get("principal_id", "")))
+            return AccessSummary(role=role, origin="group", origin_label=label)
+        return AccessSummary(role=role, origin="direct")
+    if best_notebook_role == role:
+        label = str(best_notebook_label) if best_notebook_label else None
+        return AccessSummary(role=role, origin="notebook", origin_label=label)
+    return AccessSummary(role=role, origin="direct")
 
 
 def assert_owner_or_404(

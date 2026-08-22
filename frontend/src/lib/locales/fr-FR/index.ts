@@ -285,6 +285,10 @@ export const frFR = {
     grantUpdated: "Rôle mis à jour",
     grantRevoked: "Accès révoqué",
     principalType: "Partager avec",
+    originOpen: "Accès ouvert",
+    originDirect: "Partagé avec vous",
+    originGroup: "Partagé via {{name}}",
+    originNotebook: "Accès via {{name}}",
   },
   groups: {
     title: "Groupes",

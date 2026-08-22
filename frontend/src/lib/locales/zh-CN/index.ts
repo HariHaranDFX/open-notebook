@@ -285,6 +285,10 @@ export const zhCN = {
     grantUpdated: "角色已更新",
     grantRevoked: "已撤销访问",
     principalType: "分享给",
+    originOpen: "开放访问",
+    originDirect: "与您共享",
+    originGroup: "通过 {{name}} 共享",
+    originNotebook: "通过 {{name}} 获得访问权限",
   },
   groups: {
     title: "群组",

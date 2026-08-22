@@ -285,6 +285,10 @@ export const trTR = {
     grantUpdated: "Rol güncellendi",
     grantRevoked: "Erişim kaldırıldı",
     principalType: "Şununla paylaş",
+    originOpen: "Açık erişim",
+    originDirect: "Sizinle paylaşıldı",
+    originGroup: "{{name}} aracılığıyla paylaşıldı",
+    originNotebook: "{{name}} aracılığıyla erişim",
   },
   groups: {
     title: "Gruplar",

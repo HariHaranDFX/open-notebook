@@ -285,6 +285,10 @@ export const caES = {
     grantUpdated: "Rol actualitzat",
     grantRevoked: "Accés revocat",
     principalType: "Comparteix amb",
+    originOpen: "Accés obert",
+    originDirect: "Compartit amb tu",
+    originGroup: "Compartit mitjançant {{name}}",
+    originNotebook: "Accés mitjançant {{name}}",
   },
   groups: {
     title: "Grups",
