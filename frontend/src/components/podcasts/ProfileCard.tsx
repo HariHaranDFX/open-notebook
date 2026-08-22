@@ -84,7 +84,7 @@ export function ProfileCard({
                 variant="outline"
                 className="border-warning/40 bg-warning-surface text-warning text-xs"
               >
-                <AlertTriangle className="mr-1 h-3 w-3" />
+                <AlertTriangle className="h-3 w-3" />
                 {t('podcasts.setupRequired')}
               </Badge>
             ) : null}
@@ -95,7 +95,7 @@ export function ProfileCard({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit3 className="mr-2 h-4 w-4" /> {t('podcasts.edit')}
+            <Edit3 className="h-4 w-4" /> {t('podcasts.edit')}
           </Button>
           <AlertDialog>
             <DropdownMenu>
@@ -106,13 +106,13 @@ export function ProfileCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem onClick={onDuplicate} disabled={duplicating}>
-                  <Copy className="mr-2 h-4 w-4" />
+                  <Copy className="h-4 w-4" />
                   {t('podcasts.duplicate')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
+                    <Trash2 className="h-4 w-4" />
                     {t('podcasts.delete')}
                   </DropdownMenuItem>
                 </AlertDialogTrigger>

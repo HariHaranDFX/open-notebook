@@ -91,9 +91,9 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" aria-label={t('transformations.systemPrompt')}>
                   {isPromptOpen ? (
-                    <ChevronDown className="h-4 w-4 sm:mr-2" />
+                    <ChevronDown className="h-4 w-4" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 sm:mr-2" />
+                    <ChevronRight className="h-4 w-4" />
                   )}
                   <span className="hidden sm:inline">{t('transformations.systemPrompt')}</span>
                 </Button>
@@ -105,13 +105,13 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   onClick={onPlayground}
                   aria-label={t('transformations.testInPlayground')}
                 >
-                  <Wand2 className="h-4 w-4 sm:mr-2" />
+                  <Wand2 className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('transformations.testInPlayground')}</span>
                 </Button>
               )}
               {onEdit && canEdit && !isDeleted && (
                 <Button variant="outline" size="sm" onClick={onEdit} aria-label={t('common.edit')}>
-                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <Edit className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('common.edit')}</span>
                 </Button>
               )}
@@ -123,7 +123,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   disabled={restoreTransformation.isPending}
                   aria-label={t('transformations.restore')}
                 >
-                  <RotateCcw className="h-4 w-4 sm:mr-2" />
+                  <RotateCcw className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('transformations.restore')}</span>
                 </Button>
               )}
@@ -135,7 +135,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   aria-label={t('common.delete')}
                   className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <Trash2 className="h-4 w-4" />
                   <span className="hidden sm:inline">{t('common.delete')}</span>
                 </Button>
               )}

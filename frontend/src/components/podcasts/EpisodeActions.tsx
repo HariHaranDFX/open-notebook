@@ -108,7 +108,7 @@ export function RetryEpisodeButton({ episode, onRetry, retrying, role, compact }
 
   return (
     <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying} aria-label={t('podcasts.retry')}>
-      <RefreshCcw className={cn('h-4 w-4', compact ? 'sm:mr-2' : 'mr-2', retrying && 'animate-spin')} />
+      <RefreshCcw className={cn('h-4 w-4', retrying && 'animate-spin')} />
       <span className={cn(compact && 'hidden sm:inline')}>
         {retrying ? t('podcasts.retrying') : t('podcasts.retry')}
       </span>
@@ -146,7 +146,7 @@ export function DeleteEpisodeAction({ episode, onDelete, deleting, role, compact
           aria-label={t('podcasts.delete')}
           className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
-          <Trash2 className={cn('h-4 w-4', compact ? 'sm:mr-2' : 'mr-2')} />
+          <Trash2 className="h-4 w-4" />
           <span className={cn(compact && 'hidden sm:inline')}>{t('podcasts.delete')}</span>
         </Button>
       </AlertDialogTrigger>
