@@ -901,6 +901,9 @@ export const itIT = {
     },
   },
   transformations: {
+    copy: "Copia",
+    outputPlaceholder: "Esegui un test per vedere il risultato qui",
+    runError: "Impossibile eseguire la trasformazione. Verifica che il modello sia configurato e riprova.",
     title: "Trasformazioni",
     desc: "Le trasformazioni sono prompt che verranno usati dall'LLM per elaborare una fonte ed estrarre approfondimenti, riepiloghi, ecc.",
     workspace: "Scegli un'area di lavoro",

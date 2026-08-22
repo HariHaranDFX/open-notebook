@@ -902,6 +902,9 @@ export const esES = {
     },
   },
   transformations: {
+    copy: "Copiar",
+    outputPlaceholder: "Ejecuta una prueba para ver el resultado aquí",
+    runError: "No se pudo ejecutar la transformación. Comprueba que el modelo esté configurado e inténtalo de nuevo.",
     title: "Transformaciones",
     desc: "Las transformaciones son prompts que el LLM usará para procesar una fuente y extraer análisis, resúmenes, etc.",
     workspace: "Elige un espacio de trabajo",

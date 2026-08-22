@@ -901,6 +901,9 @@ export const plPL = {
     },
   },
   transformations: {
+    copy: "Kopiuj",
+    outputPlaceholder: "Uruchom test, aby zobaczyć wynik tutaj",
+    runError: "Nie udało się uruchomić transformacji. Sprawdź, czy model jest skonfigurowany, i spróbuj ponownie.",
     title: "Transformacje",
     desc: "Transformacje to prompty używane przez model LLM do przetwarzania źródła oraz wyodrębniania wglądów, podsumowań itp.",
     workspace: "Wybierz obszar roboczy",

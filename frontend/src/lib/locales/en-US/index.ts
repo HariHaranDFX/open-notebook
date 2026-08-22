@@ -900,6 +900,9 @@ export const enUS = {
     },
   },
   transformations: {
+    copy: "Copy",
+    outputPlaceholder: "Run a test to see the output here",
+    runError: "Couldn't run the transformation. Check the model is configured and try again.",
     title: "Transformations",
     desc: "Transformations are prompts that will be used by the LLM to process a source and extract insights, summaries, etc.",
     workspace: "Choose a workspace",

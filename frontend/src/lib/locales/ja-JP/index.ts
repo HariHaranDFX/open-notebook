@@ -901,6 +901,9 @@ export const jaJP = {
     },
   },
   transformations: {
+    copy: "コピー",
+    outputPlaceholder: "テストを実行すると結果がここに表示されます",
+    runError: "変換を実行できませんでした。モデルの設定を確認して、もう一度お試しください。",
     title: "変換",
     desc: "変換はLLMがソースを処理してインサイト、要約などを抽出するためのプロンプトです。",
     workspace: "ワークスペースを選択",

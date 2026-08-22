@@ -901,6 +901,9 @@ export const zhCN = {
     },
   },
   transformations: {
+    copy: "复制",
+    outputPlaceholder: "运行测试后在此查看输出",
+    runError: "无法运行转换。请检查模型是否已配置，然后重试。",
     title: "内容转换规则",
     desc: "转换规则是用于让大模型处理来源并提取见解、摘要等的提示词。",
     workspace: "选择工作区",

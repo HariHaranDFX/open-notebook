@@ -95,7 +95,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   ) : (
                     <ChevronRight className="h-4 w-4" />
                   )}
-                  <span className="hidden sm:inline">{t('transformations.systemPrompt')}</span>
+                  <span className="hidden md:inline">{t('transformations.systemPrompt')}</span>
                 </Button>
               </CollapsibleTrigger>
               {onPlayground && !isDeleted && (
@@ -106,13 +106,13 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   aria-label={t('transformations.testInPlayground')}
                 >
                   <Wand2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('transformations.testInPlayground')}</span>
+                  <span className="hidden md:inline">{t('transformations.testInPlayground')}</span>
                 </Button>
               )}
               {onEdit && canEdit && !isDeleted && (
                 <Button variant="outline" size="sm" onClick={onEdit} aria-label={t('common.edit')}>
                   <Edit className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('common.edit')}</span>
+                  <span className="hidden md:inline">{t('common.edit')}</span>
                 </Button>
               )}
               {canRestore && (
@@ -124,7 +124,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   aria-label={t('transformations.restore')}
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('transformations.restore')}</span>
+                  <span className="hidden md:inline">{t('transformations.restore')}</span>
                 </Button>
               )}
               {canDelete && !isDeleted && (
@@ -136,7 +136,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('common.delete')}</span>
+                  <span className="hidden md:inline">{t('common.delete')}</span>
                 </Button>
               )}
             </div>

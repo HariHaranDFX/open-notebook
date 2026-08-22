@@ -901,6 +901,9 @@ export const ptBR = {
     },
   },
   transformations: {
+    copy: "Copiar",
+    outputPlaceholder: "Execute um teste para ver o resultado aqui",
+    runError: "Não foi possível executar a transformação. Verifique se o modelo está configurado e tente novamente.",
     title: "Transformações",
     desc: "Transformações são prompts que serão usados pelo LLM para processar uma fonte e extrair insights, resumos, etc.",
     workspace: "Escolha um espaço de trabalho",

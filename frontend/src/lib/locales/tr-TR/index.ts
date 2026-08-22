@@ -901,6 +901,9 @@ export const trTR = {
     },
   },
   transformations: {
+    copy: "Kopyala",
+    outputPlaceholder: "Sonucu burada görmek için bir test çalıştırın",
+    runError: "Dönüşüm çalıştırılamadı. Modelin yapılandırıldığını kontrol edip tekrar deneyin.",
     title: "Dönüşümler",
     desc: "Dönüşümler, yapay zekanın bir kaynağı işlemek ve içgörüler, özetler vb. çıkarmak için kullanacağı istemllerdir.",
     workspace: "Çalışma alanı seçin",

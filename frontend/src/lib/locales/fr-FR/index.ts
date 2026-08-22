@@ -901,6 +901,9 @@ export const frFR = {
     },
   },
   transformations: {
+    copy: "Copier",
+    outputPlaceholder: "Lancez un test pour voir le résultat ici",
+    runError: "Impossible d'exécuter la transformation. Vérifiez que le modèle est configuré, puis réessayez.",
     title: "Transformations",
     desc: "Les transformations sont des prompts utilisés par le LLM pour traiter une source et extraire des aperçus, des résumés, etc.",
     workspace: "Choisissez un espace de travail",

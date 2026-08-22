@@ -904,6 +904,9 @@ export const deDE = {
     },
   },
   transformations: {
+    copy: "Kopieren",
+    outputPlaceholder: "Führe einen Test aus, um das Ergebnis hier zu sehen",
+    runError: "Transformation konnte nicht ausgeführt werden. Prüfe, ob das Modell konfiguriert ist, und versuche es erneut.",
     title: "Transformationen",
     desc: "Transformationen sind Prompts, mit denen das LLM eine Quelle verarbeitet und Erkenntnisse, Zusammenfassungen usw. extrahiert.",
     workspace: "Arbeitsbereich auswählen",
