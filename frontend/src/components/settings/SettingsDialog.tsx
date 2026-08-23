@@ -1,62 +1,88 @@
 'use client'
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useEffect, useState } from 'react'
+import { Settings, Wrench } from 'lucide-react'
+
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { SettingsForm } from '@/app/(dashboard)/settings/components/SettingsForm'
 import { SystemInfo, RebuildEmbeddings } from '@/components/settings'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 
 export type SettingsTab = 'general' | 'advanced'
 
 interface SettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Tab shown when the dialog opens; the dialog remounts on each open, so this re-applies. */
+  /** Section selected when the dialog opens. */
   defaultTab?: SettingsTab
 }
 
+// Mirrors the app sidebar's SidebarMenuButton (expanded) so the modal rail reads
+// exactly like the main navigation: sidebar tokens, h-9 rows, hover/active accent.
+const NAV_ITEM =
+  'flex h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-[var(--control-radius)] px-3 text-left text-sm font-medium text-sidebar-foreground outline-none transition-colors duration-[var(--motion-standard)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:size-4 [&>svg]:shrink-0'
+const NAV_ITEM_ACTIVE = 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground'
+
 /**
- * Admin settings as a modal: General (processing/embedding/file defaults) and
- * Advanced (system info + the destructive embedding rebuild) as two tabs.
- * Opened via useSettingsDialog from the sidebar user menu, the command palette,
- * and the embedding-model change flow. Models and Groups stay their own pages.
+ * Admin settings as a modal with a left rail styled like the app sidebar:
+ * General (processing/embedding/file defaults) and Advanced (system info + the
+ * destructive embedding rebuild). Opened via useSettingsDialog from the sidebar
+ * user menu, the command palette, and the embedding-model change flow. Models
+ * and Groups stay their own pages.
  */
 export function SettingsDialog({ open, onOpenChange, defaultTab = 'general' }: SettingsDialogProps) {
   const { t } = useTranslation()
+  const [active, setActive] = useState<SettingsTab>(defaultTab)
+
+  // The dialog instance stays mounted, so re-select the requested section each
+  // time it opens (or when a trigger changes which section to show).
+  useEffect(() => {
+    if (open) setActive(defaultTab)
+  }, [open, defaultTab])
+
+  const sections = [
+    { id: 'general' as const, label: t('navigation.general'), icon: Settings },
+    { id: 'advanced' as const, label: t('navigation.advanced'), icon: Wrench },
+  ]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        aria-describedby={undefined}
-        className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
-      >
-        <DialogHeader className="border-b border-border px-6 py-4 text-left">
-          <DialogTitle>{t('navigation.settings')}</DialogTitle>
-        </DialogHeader>
-        <Tabs defaultValue={defaultTab} className="flex min-h-0 flex-1 flex-col">
-          <TabsList
-            aria-label={t('common.accessibility.settingsNav')}
-            className="mx-6 mt-4 w-fit"
-          >
-            <TabsTrigger value="general">{t('navigation.general')}</TabsTrigger>
-            <TabsTrigger value="advanced">{t('navigation.advanced')}</TabsTrigger>
-          </TabsList>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-            <TabsContent value="general" className="mt-0">
-              <SettingsForm />
-            </TabsContent>
-            <TabsContent value="advanced" className="mt-0 space-y-6">
+      <DialogContent className="flex h-[85vh] w-full gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <div className="flex w-48 shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-2 py-3 text-sidebar-foreground">
+          <DialogTitle className="mb-1 px-3 text-xs font-semibold uppercase tracking-[0.08em] text-sidebar-foreground">
+            {t('navigation.settings')}
+          </DialogTitle>
+          <nav aria-label={t('common.accessibility.settingsNav')}>
+            <ul className="flex min-w-0 flex-col gap-1">
+              {sections.map((section) => (
+                <li key={section.id} className="relative min-w-0">
+                  <button
+                    type="button"
+                    aria-current={active === section.id ? 'page' : undefined}
+                    onClick={() => setActive(section.id)}
+                    className={cn(NAV_ITEM, active === section.id && NAV_ITEM_ACTIVE)}
+                  >
+                    <section.icon />
+                    {section.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-5">
+          {active === 'general' ? (
+            <SettingsForm />
+          ) : (
+            <div className="space-y-6">
               <p className="text-sm text-muted-foreground">{t('advanced.desc')}</p>
               <SystemInfo />
               <RebuildEmbeddings />
-            </TabsContent>
-          </div>
-        </Tabs>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
