@@ -72,7 +72,7 @@ export function SettingsDialog({ open, onOpenChange, defaultTab = 'general' }: S
           </nav>
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-6 pt-12">
           {active === 'general' ? (
             <SettingsForm />
           ) : (

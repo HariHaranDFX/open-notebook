@@ -32,7 +32,7 @@ function SheetContent({
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-[var(--control-radius)] p-2 text-muted-foreground transition-colors duration-[var(--motion-standard)] hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover">
+        <DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-[var(--control-radius)] bg-popover p-2 text-muted-foreground transition-colors duration-[var(--motion-standard)] hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-popover">
           <X className="size-4" />
           <span className="sr-only">{t('common.closeNavigation')}</span>
         </DialogPrimitive.Close>
