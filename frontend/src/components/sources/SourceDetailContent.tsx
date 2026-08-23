@@ -57,7 +57,7 @@ import {
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
-import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { SourceContentPane } from '@/components/sources/SourceContentPane'
 import { SourceInsightsPane } from '@/components/sources/SourceInsightsPane'
 import { DetailHeader, DetailHeaderActions } from '@/components/workbench/DetailHeader'
@@ -702,12 +702,13 @@ function SourceDetailContentInner({
         </AlertDialogContent>
       </AlertDialog>
 
-      <ShareDialog
+      <ShareSheet
         resourceType="source"
         resourceId={source.id}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         canManage={canManageAcl(source.access_role, isAdmin)}
+        accessSummary={source.access_summary}
       />
     </div>
   )

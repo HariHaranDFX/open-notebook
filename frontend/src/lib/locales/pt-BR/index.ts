@@ -291,6 +291,10 @@ export const ptBR = {
     originDirect: "Compartilhado com você",
     originGroup: "Compartilhado via {{name}}",
     originNotebook: "Acesso via {{name}}",
+    yourAccess: "Seu acesso",
+    roleLabel: "Função",
+    revokeConfirmTitle: "{{resource}} — revogar o acesso de {{principal}}?",
+    revokeConfirmDescription: "Isso remove a concessão direta como {{role}}. A pessoa ainda pode ter acesso por meio de um grupo, um caderno vinculado ou outra concessão.",
   },
   groups: {
     title: "Grupos",

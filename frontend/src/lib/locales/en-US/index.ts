@@ -289,6 +289,10 @@ export const enUS = {
     originDirect: "Shared with you",
     originGroup: "Shared via {{name}}",
     originNotebook: "Access via {{name}}",
+    yourAccess: "Your access",
+    roleLabel: "Role",
+    revokeConfirmTitle: "{{resource}} — revoke {{principal}}'s access?",
+    revokeConfirmDescription: "This removes their direct {{role}} grant. They may still have access through a group, a linked notebook, or another grant.",
   },
   groups: {
     title: "Groups",

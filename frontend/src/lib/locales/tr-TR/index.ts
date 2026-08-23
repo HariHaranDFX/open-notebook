@@ -291,6 +291,10 @@ export const trTR = {
     originDirect: "Sizinle paylaşıldı",
     originGroup: "{{name}} aracılığıyla paylaşıldı",
     originNotebook: "{{name}} aracılığıyla erişim",
+    yourAccess: "Erişiminiz",
+    roleLabel: "Rol",
+    revokeConfirmTitle: "{{resource}} — {{principal}} kullanıcısının erişimi iptal edilsin mi?",
+    revokeConfirmDescription: "Bu, doğrudan {{role}} yetkisini kaldırır. Bir grup, bağlı bir defter veya başka bir yetki üzerinden erişim devam edebilir.",
   },
   groups: {
     title: "Gruplar",

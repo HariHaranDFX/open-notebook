@@ -10,7 +10,7 @@ vi.mock('@/lib/hooks/use-sources', () => ({
 vi.mock('@/lib/hooks/use-auth', () => ({
   useAuth: () => ({ isAdmin: false }),
 }))
-vi.mock('@/components/sharing/ShareDialog', () => ({ ShareDialog: () => null }))
+vi.mock('@/components/sharing/ShareSheet', () => ({ ShareSheet: () => null }))
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,

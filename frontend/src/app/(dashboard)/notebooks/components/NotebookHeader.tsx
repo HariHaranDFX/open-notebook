@@ -14,7 +14,7 @@ import {
 import { DetailHeader, DetailHeaderActions } from '@/components/workbench/DetailHeader'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
-import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
@@ -201,12 +201,13 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
         redirectAfterDelete
       />
 
-      <ShareDialog
+      <ShareSheet
         resourceType="notebook"
         resourceId={notebook.id}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         canManage={canShare}
+        accessSummary={notebook.access_summary}
       />
     </>
   )

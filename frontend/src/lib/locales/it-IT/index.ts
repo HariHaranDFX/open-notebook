@@ -291,6 +291,10 @@ export const itIT = {
     originDirect: "Condiviso con te",
     originGroup: "Condiviso tramite {{name}}",
     originNotebook: "Accesso tramite {{name}}",
+    yourAccess: "Il tuo accesso",
+    roleLabel: "Ruolo",
+    revokeConfirmTitle: "{{resource}} — revocare l'accesso di {{principal}}?",
+    revokeConfirmDescription: "Questo rimuove la concessione diretta come {{role}}. Potrebbe comunque avere accesso tramite un gruppo, un quaderno collegato o un'altra concessione.",
   },
   groups: {
     title: "Gruppi",

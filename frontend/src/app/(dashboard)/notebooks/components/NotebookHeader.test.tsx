@@ -15,8 +15,8 @@ vi.mock('./NotebookDeleteDialog', () => ({
   NotebookDeleteDialog: () => null,
 }))
 
-vi.mock('@/components/sharing/ShareDialog', () => ({
-  ShareDialog: () => null,
+vi.mock('@/components/sharing/ShareSheet', () => ({
+  ShareSheet: () => null,
 }))
 
 describe('NotebookHeader', () => {

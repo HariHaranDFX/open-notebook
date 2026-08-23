@@ -291,6 +291,10 @@ export const zhCN = {
     originDirect: "与您共享",
     originGroup: "通过 {{name}} 共享",
     originNotebook: "通过 {{name}} 获得访问权限",
+    yourAccess: "您的访问权限",
+    roleLabel: "角色",
+    revokeConfirmTitle: "{{resource}} — 撤销 {{principal}} 的访问权限？",
+    revokeConfirmDescription: "这将移除其直接的{{role}}授权。对方可能仍可通过群组、关联的笔记本或其他授权获得访问权限。",
   },
   groups: {
     title: "群组",

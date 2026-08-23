@@ -291,6 +291,10 @@ export const ruRU = {
     originDirect: "Доступно вам напрямую",
     originGroup: "Доступ через группу {{name}}",
     originNotebook: "Доступ через {{name}}",
+    yourAccess: "Ваш доступ",
+    roleLabel: "Роль",
+    revokeConfirmTitle: "{{resource}} — отозвать доступ у {{principal}}?",
+    revokeConfirmDescription: "Это удалит прямой доступ с ролью «{{role}}». Доступ через группу, связанный блокнот или другое разрешение может сохраниться.",
   },
   groups: {
     title: "Группы",

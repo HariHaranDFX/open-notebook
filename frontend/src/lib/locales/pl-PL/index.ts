@@ -291,6 +291,10 @@ export const plPL = {
     originDirect: "Udostępniono Tobie",
     originGroup: "Udostępniono przez {{name}}",
     originNotebook: "Dostęp przez {{name}}",
+    yourAccess: "Twój dostęp",
+    roleLabel: "Rola",
+    revokeConfirmTitle: "{{resource}} — odebrać dostęp użytkownikowi {{principal}}?",
+    revokeConfirmDescription: "Spowoduje to usunięcie bezpośredniego uprawnienia {{role}}. Dostęp poprzez grupę, powiązany notatnik lub inne uprawnienie może nadal obowiązywać.",
   },
   groups: {
     title: "Grupy",

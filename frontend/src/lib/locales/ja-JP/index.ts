@@ -291,6 +291,10 @@ export const jaJP = {
     originDirect: "あなたと共有されています",
     originGroup: "{{name}} 経由で共有",
     originNotebook: "{{name}} 経由でアクセス",
+    yourAccess: "自分のアクセス権",
+    roleLabel: "役割",
+    revokeConfirmTitle: "{{resource}} — {{principal}}のアクセスを取り消しますか?",
+    revokeConfirmDescription: "直接付与された{{role}}権限が削除されます。グループやリンクされたノートブック、その他の権限によるアクセスは引き続き有効な場合があります。",
   },
   groups: {
     title: "グループ",

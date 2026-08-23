@@ -291,6 +291,10 @@ export const zhTW = {
     originDirect: "已與您分享",
     originGroup: "透過 {{name}} 分享",
     originNotebook: "透過 {{name}} 取得存取權",
+    yourAccess: "您的存取權限",
+    roleLabel: "角色",
+    revokeConfirmTitle: "{{resource}} — 撤銷 {{principal}} 的存取權限？",
+    revokeConfirmDescription: "這將移除其直接的{{role}}授權。對方可能仍可透過群組、關聯的筆記本或其他授權取得存取權限。",
   },
   groups: {
     title: "群組",

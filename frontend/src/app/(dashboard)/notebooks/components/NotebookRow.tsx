@@ -12,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
-import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -196,12 +196,13 @@ export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
         notebookId={notebook.id}
         notebookName={notebook.name}
       />
-      <ShareDialog
+      <ShareSheet
         resourceType="notebook"
         resourceId={notebook.id}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         canManage={canShare}
+        accessSummary={notebook.access_summary}
       />
     </>
   )

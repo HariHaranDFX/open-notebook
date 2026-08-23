@@ -291,6 +291,10 @@ export const esES = {
     originDirect: "Compartido contigo",
     originGroup: "Compartido a través de {{name}}",
     originNotebook: "Acceso a través de {{name}}",
+    yourAccess: "Tu acceso",
+    roleLabel: "Rol",
+    revokeConfirmTitle: "{{resource}} — ¿revocar el acceso de {{principal}}?",
+    revokeConfirmDescription: "Esto elimina su concesión directa como {{role}}. Es posible que aún tenga acceso a través de un grupo, un cuaderno vinculado u otra concesión.",
   },
   groups: {
     title: "Grupos",

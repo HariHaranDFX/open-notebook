@@ -291,6 +291,10 @@ export const caES = {
     originDirect: "Compartit amb tu",
     originGroup: "Compartit mitjançant {{name}}",
     originNotebook: "Accés mitjançant {{name}}",
+    yourAccess: "El teu accés",
+    roleLabel: "Rol",
+    revokeConfirmTitle: "{{resource}} — revocar l'accés de {{principal}}?",
+    revokeConfirmDescription: "Això elimina la seva concessió directa com a {{role}}. Encara pot tenir accés mitjançant un grup, un quadern vinculat o una altra concessió.",
   },
   groups: {
     title: "Grups",

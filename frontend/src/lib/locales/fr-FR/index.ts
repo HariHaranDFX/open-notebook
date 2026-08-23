@@ -291,6 +291,10 @@ export const frFR = {
     originDirect: "Partagé avec vous",
     originGroup: "Partagé via {{name}}",
     originNotebook: "Accès via {{name}}",
+    yourAccess: "Votre accès",
+    roleLabel: "Rôle",
+    revokeConfirmTitle: "{{resource}} — révoquer l'accès de {{principal}} ?",
+    revokeConfirmDescription: "Cela supprime son partage direct en tant que {{role}}. Un accès via un groupe, un carnet lié ou un autre partage peut subsister.",
   },
   groups: {
     title: "Groupes",

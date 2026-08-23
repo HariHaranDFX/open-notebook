@@ -294,6 +294,10 @@ export const deDE = {
     originDirect: "Mit Ihnen geteilt",
     originGroup: "Geteilt über {{name}}",
     originNotebook: "Zugriff über {{name}}",
+    yourAccess: "Ihr Zugriff",
+    roleLabel: "Rolle",
+    revokeConfirmTitle: "{{resource}} — Zugriff von {{principal}} entziehen?",
+    revokeConfirmDescription: "Dies entfernt die direkte Freigabe als {{role}}. Zugriff über eine Gruppe, ein verknüpftes Notebook oder eine andere Freigabe kann weiterhin bestehen.",
   },
   groups: {
     title: "Gruppen",

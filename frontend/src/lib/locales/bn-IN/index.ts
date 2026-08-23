@@ -291,6 +291,10 @@ export const bnIN = {
     originDirect: "আপনার সাথে শেয়ার করা হয়েছে",
     originGroup: "{{name}} এর মাধ্যমে শেয়ার করা হয়েছে",
     originNotebook: "{{name}} এর মাধ্যমে অ্যাক্সেস",
+    yourAccess: "আপনার অ্যাক্সেস",
+    roleLabel: "ভূমিকা",
+    revokeConfirmTitle: "{{resource}} — {{principal}}-এর অ্যাক্সেস বাতিল করবেন?",
+    revokeConfirmDescription: "এটি তাদের সরাসরি {{role}} অনুমতি সরিয়ে দেবে। একটি গ্রুপ, লিঙ্ক করা নোটবুক বা অন্য অনুমতির মাধ্যমে তাদের অ্যাক্সেস এখনও থাকতে পারে।",
   },
   groups: {
     title: "গ্রুপ",

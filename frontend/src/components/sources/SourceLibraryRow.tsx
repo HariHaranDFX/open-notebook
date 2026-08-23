@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 import { getSourceResourceKind, ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
-import { ShareDialog } from '@/components/sharing/ShareDialog'
+import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -262,12 +262,13 @@ export function SourceLibraryRow({
         )}
       </article>
 
-      <ShareDialog
+      <ShareSheet
         resourceType="source"
         resourceId={source.id}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
         canManage={canShare}
+        accessSummary={source.access_summary}
       />
     </>
   )

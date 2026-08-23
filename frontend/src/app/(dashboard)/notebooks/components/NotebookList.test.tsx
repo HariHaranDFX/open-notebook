@@ -29,7 +29,7 @@ vi.mock('@/lib/hooks/use-translation', () => ({
     })[key] ?? key,
   }),
 }))
-vi.mock('@/components/sharing/ShareDialog', () => ({ ShareDialog: () => null }))
+vi.mock('@/components/sharing/ShareSheet', () => ({ ShareSheet: () => null }))
 vi.mock('./NotebookDeleteDialog', () => ({ NotebookDeleteDialog: () => null }))
 
 function notebook(overrides: Partial<NotebookResponse> = {}): NotebookResponse {
