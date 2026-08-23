@@ -7,9 +7,15 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function DropdownMenu({
+  modal = false,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  // Default to non-modal so opening a Dialog/Sheet/AlertDialog from a menu item
+  // doesn't leave the page stuck with `pointer-events: none` — a modal menu sets
+  // that on <body> and Radix fails to clear it across the menu-close/dialog-open
+  // handoff. This is the shadcn-documented pattern for menus that open dialogs
+  // (see the dropdown-menu-dialog example). Callers can still pass modal to override.
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" modal={modal} {...props} />
 }
 
 function DropdownMenuPortal({
