@@ -94,7 +94,7 @@ const getNavigation = (t: TFunction) => [
     items: [
       { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, adminOnly: true },
       { name: t('navigation.groups'), href: '/settings/groups', icon: Users, adminOnly: true },
-      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, adminOnly: true },
+      { name: t('navigation.advanced'), href: '/settings/advanced', icon: Wrench, adminOnly: true },
     ],
   },
 ] as const
