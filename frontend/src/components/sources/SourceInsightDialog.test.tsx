@@ -25,6 +25,11 @@ const networkError = Object.assign(new Error('Network Error'), {
   response: undefined,
 })
 
+const forbiddenError = Object.assign(new Error('Request failed with status code 403'), {
+  isAxiosError: true,
+  response: { status: 403 },
+})
+
 type UseInsightResult = ReturnType<typeof useInsight>
 
 const asResult = (value: Partial<UseInsightResult>) => value as UseInsightResult
@@ -70,6 +75,26 @@ describe('SourceInsightDialog', () => {
     expect(screen.getByText('common.contentUnavailable.errorTitle')).toBeInTheDocument()
     expect(
       screen.queryByText('common.contentUnavailable.notFoundTitle')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the read-only forbidden state when the insight returns 403', () => {
+    mockUseInsight.mockReturnValue(
+      asResult({ data: undefined, isLoading: false, isError: true, error: forbiddenError })
+    )
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+      />
+    )
+
+    expect(screen.getByText('common.contentUnavailable.forbiddenTitle')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenDescription')).toBeInTheDocument()
+    expect(
+      screen.queryByText('common.contentUnavailable.errorTitle')
     ).not.toBeInTheDocument()
   })
 

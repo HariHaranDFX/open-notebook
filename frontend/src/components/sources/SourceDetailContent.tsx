@@ -14,7 +14,7 @@ import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
-import { isNotFoundError } from '@/lib/utils/error-handler'
+import { isForbiddenError, isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -135,7 +135,9 @@ function SourceDetailContentInner({
   // handled by the shared "content no longer exists" state. The global query
   // client never retries 404s, so the not-found state shows immediately.
   const { data: source, isPending, error: loadQueryError, refetch: refetchSource } = useSource(sourceId)
-  const loadError = loadQueryError ? (isNotFoundError(loadQueryError) ? 'not-found' : 'error') : null
+  const loadError = loadQueryError
+    ? (isForbiddenError(loadQueryError) ? 'forbidden' : isNotFoundError(loadQueryError) ? 'not-found' : 'error')
+    : null
   const updateSource = useUpdateSource()
   const deleteSource = useDeleteSource()
 

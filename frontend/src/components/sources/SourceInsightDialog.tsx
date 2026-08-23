@@ -10,7 +10,7 @@ import { useInsight } from '@/lib/hooks/use-insights'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
-import { isNotFoundError } from '@/lib/utils/error-handler'
+import { isForbiddenError, isNotFoundError } from '@/lib/utils/error-handler'
 import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 interface SourceInsightDialogProps {
@@ -128,7 +128,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
               </div>
             ) : isError ? (
               <ContentUnavailable
-                variant={isNotFoundError(error) ? 'not-found' : 'error'}
+                variant={isForbiddenError(error) ? 'forbidden' : isNotFoundError(error) ? 'not-found' : 'error'}
                 onClose={() => onOpenChange(false)}
               />
             ) : displayInsight ? (

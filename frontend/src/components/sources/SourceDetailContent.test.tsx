@@ -56,6 +56,11 @@ const networkError = Object.assign(new Error('Network Error'), {
   response: undefined,
 })
 
+const forbiddenError = Object.assign(new Error('Request failed with status code 403'), {
+  isAxiosError: true,
+  response: { status: 403 },
+})
+
 function renderContent(onClose?: () => void, showBackButton = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -97,6 +102,21 @@ describe('SourceDetailContent', () => {
     expect(screen.getByText('common.contentUnavailable.errorTitle')).toBeInTheDocument()
     expect(
       screen.queryByText('common.contentUnavailable.notFoundTitle')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the read-only forbidden state when the source returns 403', async () => {
+    mockSourcesGet.mockRejectedValue(forbiddenError)
+
+    renderContent()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-unavailable')).toBeInTheDocument()
+    })
+    expect(screen.getByText('common.contentUnavailable.forbiddenTitle')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenDescription')).toBeInTheDocument()
+    expect(
+      screen.queryByText('common.contentUnavailable.errorTitle')
     ).not.toBeInTheDocument()
   })
 

@@ -14,7 +14,7 @@ import { InlineEdit } from '@/components/common/InlineEdit'
 import { cn } from "@/lib/utils";
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
-import { isNotFoundError } from '@/lib/utils/error-handler'
+import { isForbiddenError, isNotFoundError } from '@/lib/utils/error-handler'
 import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 const createNoteSchema = z.object({
@@ -138,7 +138,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
         </DialogTitle>
         {noteUnavailable ? (
           <ContentUnavailable
-            variant={isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
+            variant={isForbiddenError(noteFetchError) ? 'forbidden' : isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
             onClose={handleClose}
           />
         ) : (

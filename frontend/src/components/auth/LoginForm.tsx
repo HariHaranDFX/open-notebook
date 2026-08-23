@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useAuthStore } from '@/lib/stores/auth-store'
-import { getConfig } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { BrandLogo } from '@/components/common/BrandLogo'
 import { useBrand } from '@/components/providers/BrandProvider'
@@ -29,8 +29,9 @@ function LoginBrand() {
 }
 
 export function LoginForm() {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const { login, isLoading, error } = useAuth()
   const {
     authRequired,
@@ -41,21 +42,8 @@ export function LoginForm() {
     provider,
   } = useAuthStore()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
   const router = useRouter()
-
-  // Load config info for debugging
-  useEffect(() => {
-    getConfig().then(cfg => {
-      setConfigInfo({
-        apiUrl: cfg.apiUrl,
-        version: cfg.version,
-        buildTime: cfg.buildTime,
-      })
-    }).catch(err => {
-      console.error('Failed to load config:', err)
-    })
-  }, [])
+  const passwordInputRef = useRef<HTMLInputElement>(null)
 
   // Check if authentication is required on mount; for Entra also probe the
   // session cookie so a successful OAuth callback that soft-landed on /login
@@ -120,11 +108,28 @@ export function LoginForm() {
     }
   }, [hasHydrated, authRequired, checkAuthRequired, checkAuth, router, isAuthenticated, provider])
 
+  // Move keyboard focus to the password field whenever a new sign-in error
+  // appears, so screen reader and keyboard users land on the actionable
+  // control without hunting for it. Also re-runs when the auth-check gate
+  // clears: the password input doesn't exist yet on the loading render, so
+  // an error present at that point (e.g. mocked/edge-case initial state)
+  // would otherwise be missed since `error` itself never changes again.
+  useEffect(() => {
+    if (error) {
+      passwordInputRef.current?.focus()
+    }
+  }, [error, isCheckingAuth])
+
   // Show loading while checking if auth is required
   if (!hasHydrated || isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div
+        className="min-h-screen flex items-center justify-center bg-background"
+        role="status"
+        aria-live="polite"
+      >
         <LoadingSpinner />
+        <span className="sr-only">{t('common.loading')}</span>
       </div>
     )
   }
@@ -133,7 +138,7 @@ export function LoginForm() {
   if (authRequired === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md" role="alert" aria-live="assertive">
           <CardHeader className="text-center">
             <CardTitle>{t('common.connectionError')}</CardTitle>
             <CardDescription>
@@ -142,31 +147,17 @@ export function LoginForm() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start gap-2 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 rounded-[var(--surface-radius)] bg-error-surface p-3 text-sm text-error">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                 <div className="flex-1">
                   {error || t('auth.connectErrorHint')}
                 </div>
               </div>
 
-              {configInfo && (
-                <div className="space-y-2 text-xs text-muted-foreground border-t pt-3">
-                  <div className="font-medium">{t('common.diagnosticInfo')}:</div>
-                  <div className="space-y-1 font-mono">
-                    <div>{t('common.version')}: {configInfo.version}</div>
-                    <div>{t('common.built')}: {new Date(configInfo.buildTime).toLocaleString(language === 'zh-CN' ? 'zh-CN' : language === 'zh-TW' ? 'zh-TW' : 'en-US')}</div>
-                    <div className="break-all">{t('common.apiUrl')}: {configInfo.apiUrl}</div>
-                    <div className="break-all">{t('common.frontendUrl')}: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
-                  </div>
-                  <div className="text-xs pt-2">
-                    {t('common.checkConsoleLogs')}
-                  </div>
-                </div>
-              )}
-
               <Button
                 onClick={() => window.location.reload()}
                 className="w-full"
+                autoFocus
               >
                 {t('common.retryConnection')}
               </Button>
@@ -225,19 +216,46 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="password"
-                placeholder={t('auth.passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
+            <div className="space-y-2 text-left">
+              <Label htmlFor="login-password">{t('auth.passwordPlaceholder')}</Label>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  ref={passwordInputRef}
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? 'login-password-error' : undefined}
+                  className="pr-9"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                  onClick={() => setShowPassword((value) => !value)}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4" />
+              <div
+                id="login-password-error"
+                role="alert"
+                aria-live="assertive"
+                className="flex items-center gap-2 rounded-[var(--surface-radius)] bg-error-surface p-2 text-sm text-error"
+              >
+                <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {error}
               </div>
             )}
@@ -249,13 +267,6 @@ export function LoginForm() {
             >
               {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
-
-            {configInfo && (
-              <div className="text-xs text-center text-muted-foreground pt-2 border-t">
-                <div>{t('common.version')} {configInfo.version}</div>
-                <div className="font-mono text-[10px]">{configInfo.apiUrl}</div>
-              </div>
-            )}
           </form>
         </CardContent>
       </Card>

@@ -32,13 +32,33 @@ Started: 2026-08-23
   keys before adding.
 
 ## Tasks
-- Task 1: Access-origin metadata (backend resolver + shared types) — TODO
-- Task 2: Stamp podcast episodes with notebook-inherited role (backend) — TODO
-- Task 3: Wire the inherited role into the episode UI seam (frontend) — TODO
-- Task 4: One administration hierarchy (nested settings) — TODO
-- Task 5: Sharing as an explicit permission Sheet — TODO
+- Task 1: Access-origin metadata (backend resolver + shared types) — COMPLETE (commit 9c20265, review clean)
+- Task 2: Stamp podcast episodes with notebook-inherited role (backend) — COMPLETE (commit f3493cd, review clean)
+- Task 3: Wire the inherited role into the episode UI seam (frontend) — COMPLETE (commit 091c003, review clean)
+  NOTE: also fixed a latent bug (test-forced, reviewer-confirmed) — DeleteEpisodeAction gate
+  canDeleteSource→canEditContent so editors see delete, matching backend _assert_episode_edit_or_403
+  (editor+) and SHARING.md (editor can delete podcasts). Only EpisodeCard/EpisodeDetail use it.
+  REGRESSION (found during Task 4): T3 impl ran only EpisodesTab.test.tsx, so EpisodeCard.test.tsx +
+  EpisodeDetail.test.tsx "editor withholds delete" assertions were left failing at 091c003 (hard-rule
+  violation: full suite not green pre-commit). Fixed in commit 6954842 (flipped those 2 assertions to
+  the corrected behavior). Full frontend suite now 82 files / 435 tests green. Process lesson: run the
+  full suite (not just the named file) after any change to a shared component.
+- Task 4: One administration hierarchy (nested settings) — COMPLETE (commit b0c433a, review clean)
+- Task 5: Sharing as an explicit permission Sheet — COMPLETE (commit 51ec82d, review clean after 1 fix)
+  Important fix: pending-close protection (brief Step 1) was skipped by impl; added guard + test (re-review ✅).
 - Task 6: Login + global recovery redesign — TODO
 - Task 7: Visual verification (live sweep deferred to WP3-07) — TODO
+
+## Minor findings (final whole-branch review triage)
+- T1 (sources.py:693-699,741-747): 404→403 block from assert_can_edit_source_or_403 duplicated verbatim in update_source + retry_source_processing (~7 lines, inlined to avoid a 2nd query). Candidate `_require_editor(summary)` helper.
+- T1 (access-role.ts describeAccess): 'notebook' origin falls back to '' when origin_label missing, while 'group' falls back to t('sharing.group'); cosmetic, low-probability (backend omits label only if notebook.name is falsy).
+- T1 (ownership.py:381-386): source linked to multiple notebooks with equal winning role uses `>` not `>=`, so the shown notebook label is query-order-dependent on ties. No auth/role impact; UX-cosmetic.
+- T2 (podcasts list endpoint): notebook owner queried twice per episode (filter_episodes_by_access + effective_role_for_episode) — spec-directed N+1 doubling. Candidate: cache resolved notebook-owner per unique notebook_id within the list loop.
+- T4 (api-keys/page.tsx): PageFrame with no width prop defaults to `content` (max-w-1600); report called it "unconstrained". Non-issue at 1600px; align wording/width if desired.
+- T4 (CommandPalette.tsx, EmbeddingModelChangeDialog.tsx): still navigate to legacy /advanced (redirects correctly to /settings/advanced, so not broken; out of Task 4 scope). Optional: repoint directly.
+- T5 (ShareSheet revoke confirm): names resource by TYPE ("Notebook"/"Source"), not title — ShareSheetProps carries no name; defensible, but thread a title if product wants literal naming.
+- T5: stale showShareDialog/setShowShareDialog state names left in 4 callers post-rename (cosmetic, no functional ShareDialog ref remains).
+- T5: 13 non-English locales for the 4 new sharing keys are AI-authored (not native-reviewed) — standing pre-launch item.
 
 ---
 

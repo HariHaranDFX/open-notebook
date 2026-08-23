@@ -53,13 +53,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div
+          className="min-h-screen flex items-center justify-center bg-background p-4"
+          role="alert"
+          aria-live="assertive"
+        >
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mb-4">
-                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className="mx-auto w-12 h-12 rounded-full bg-error-surface flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-error" aria-hidden="true" />
               </div>
-              <CardTitle className="text-red-900 dark:text-red-100">{t?.common?.error || 'Something went wrong'}</CardTitle>
+              <CardTitle>{t?.common?.error || 'Something went wrong'}</CardTitle>
               <CardDescription>
                 {t?.common?.refreshPage || 'An unexpected error occurred. Please try refreshing the page.'}
               </CardDescription>
@@ -73,16 +77,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   </pre>
                 </details>
               )}
-              <Button 
-                onClick={this.resetError} 
+              <Button
+                onClick={this.resetError}
                 className="w-full"
                 variant="outline"
+                autoFocus
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
                 {t?.common?.retry || 'Try Again'}
               </Button>
-              <Button 
-                onClick={() => window.location.reload()} 
+              <Button
+                onClick={() => window.location.reload()}
                 className="w-full"
               >
                 {t?.common?.refresh || 'Refresh Page'}

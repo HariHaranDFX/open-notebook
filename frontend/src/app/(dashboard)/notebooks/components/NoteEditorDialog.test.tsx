@@ -30,6 +30,11 @@ const networkError = Object.assign(new Error('Network Error'), {
   response: undefined,
 })
 
+const forbiddenError = Object.assign(new Error('Request failed with status code 403'), {
+  isAxiosError: true,
+  response: { status: 403 },
+})
+
 type UseNoteResult = ReturnType<typeof useNote>
 
 const asResult = (value: Partial<UseNoteResult>) => value as UseNoteResult
@@ -76,6 +81,22 @@ describe('NoteEditorDialog', () => {
     renderDialog()
 
     expect(screen.getByText('common.contentUnavailable.errorTitle')).toBeInTheDocument()
+    expect(screen.queryByTestId('markdown-editor')).not.toBeInTheDocument()
+  })
+
+  it('shows the read-only forbidden state instead of the editor when the note returns 403', () => {
+    mockUseNote.mockReturnValue(
+      asResult({ data: undefined, isLoading: false, isError: true, error: forbiddenError })
+    )
+
+    renderDialog()
+
+    expect(screen.getByTestId('content-unavailable')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenTitle')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenDescription')).toBeInTheDocument()
+    expect(
+      screen.queryByText('common.contentUnavailable.errorTitle')
+    ).not.toBeInTheDocument()
     expect(screen.queryByTestId('markdown-editor')).not.toBeInTheDocument()
   })
 
