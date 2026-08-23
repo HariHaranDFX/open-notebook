@@ -857,7 +857,6 @@ export const trTR = {
     loadFailed: "Ayarlar yüklenemedi",
   },
   advanced: {
-    title: "Gelişmiş Araçlar",
     desc: "Uzman kullanıcılar için gelişmiş araçlar ve yardımcı programlar",
     systemInfo: "Sistem Bilgisi",
     rebuildEmbeddings: "Gömmeleri Yeniden Oluştur",

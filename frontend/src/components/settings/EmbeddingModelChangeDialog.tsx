@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSettingsDialog } from '@/lib/hooks/use-settings-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,15 +32,15 @@ export function EmbeddingModelChangeDialog({
   newModelName
 }: EmbeddingModelChangeDialogProps) {
   const { t } = useTranslation()
-  const router = useRouter()
+  const { openSettings } = useSettingsDialog()
   const [isConfirming, setIsConfirming] = useState(false)
 
   const handleConfirmAndRebuild = () => {
     setIsConfirming(true)
     onConfirm()
-    // Give a moment for the model to update, then redirect
+    // Give a moment for the model to update, then open the rebuild controls
     setTimeout(() => {
-      router.push('/advanced')
+      openSettings('advanced')
       onOpenChange(false)
       setIsConfirming(false)
     }, 500)

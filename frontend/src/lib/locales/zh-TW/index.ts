@@ -857,7 +857,6 @@ export const zhTW = {
     loadFailed: "載入設定失敗",
   },
   advanced: {
-    title: "進階工具",
     desc: "針對進階使用者的調試和實用工具",
     systemInfo: "系統資訊",
     rebuildEmbeddings: "重建索引",

@@ -856,7 +856,6 @@ export const enUS = {
     loadFailed: "Failed to load settings",
   },
   advanced: {
-    title: "AdvancedTools",
     desc: "Advanced tools and utilities for power users",
     systemInfo: "System Info",
     rebuildEmbeddings: "Rebuild Embeddings",

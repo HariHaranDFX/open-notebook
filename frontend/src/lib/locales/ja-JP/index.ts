@@ -857,7 +857,6 @@ export const jaJP = {
     loadFailed: "設定の読み込みに失敗しました",
   },
   advanced: {
-    title: "詳細ツール",
     desc: "パワーユーザー向けの詳細ツールとユーティリティ",
     systemInfo: "システム情報",
     rebuildEmbeddings: "Embeddingを再構築",

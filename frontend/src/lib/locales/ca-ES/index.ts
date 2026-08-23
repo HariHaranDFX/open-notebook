@@ -857,7 +857,6 @@ export const caES = {
     loadFailed: "Ha fallat la càrrega de la configuració",
   },
   advanced: {
-    title: "Eines avançades",
     desc: "Eines i utilitats avançades per a usuaris experimentats",
     systemInfo: "Informació del sistema",
     rebuildEmbeddings: "Reconstrueix les incrustacions",

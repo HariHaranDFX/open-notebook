@@ -857,7 +857,6 @@ export const itIT = {
     loadFailed: "Impossibile caricare le impostazioni",
   },
   advanced: {
-    title: "Strumenti avanzati",
     desc: "Strumenti e utilità avanzate per utenti esperti",
     systemInfo: "Informazioni sistema",
     rebuildEmbeddings: "Ricostruisci indicizzazioni",

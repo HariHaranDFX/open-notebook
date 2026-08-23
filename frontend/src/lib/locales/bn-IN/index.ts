@@ -858,7 +858,6 @@ export const bnIN = {
     loadFailed: "সেটিংস লোড করতে ব্যর্থ",
   },
   advanced: {
-    title: "উন্নত টুলস",
     desc: "পাওয়ার ব্যবহারকারীদের জন্য উন্নত টুল এবং ইউটিলিটি",
     systemInfo: "সিস্টেম তথ্য",
     rebuildEmbeddings: "এমবেডিং পুনর্নির্মাণ",

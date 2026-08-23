@@ -24,7 +24,6 @@ import {
   Shuffle,
   Sun,
   Users,
-  Wrench,
 } from 'lucide-react'
 
 import { BrandLogo } from '@/components/common/BrandLogo'
@@ -63,6 +62,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import { useSettingsDialog } from '@/lib/hooks/use-settings-dialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useTheme } from '@/lib/stores/theme-store'
 import { cn } from '@/lib/utils'
@@ -94,7 +94,6 @@ const getNavigation = (t: TFunction) => [
     items: [
       { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, adminOnly: true },
       { name: t('navigation.groups'), href: '/settings/groups', icon: Users, adminOnly: true },
-      { name: t('navigation.advanced'), href: '/settings/advanced', icon: Wrench, adminOnly: true },
     ],
   },
 ] as const
@@ -134,6 +133,7 @@ export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { openSettings } = useSettingsDialog()
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true)
 
@@ -390,11 +390,14 @@ export function AppSidebar() {
 
                 <DropdownMenuGroup>
                   {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/settings" onClick={closeMobileSidebar}>
-                        <Settings />
-                        {t('navigation.settings')}
-                      </Link>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        closeMobileSidebar()
+                        openSettings('general')
+                      }}
+                    >
+                      <Settings />
+                      {t('navigation.settings')}
                     </DropdownMenuItem>
                   )}
 

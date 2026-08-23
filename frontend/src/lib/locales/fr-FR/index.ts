@@ -857,7 +857,6 @@ export const frFR = {
     loadFailed: "Échec du chargement des paramètres",
   },
   advanced: {
-    title: "Outils Avancés",
     desc: "Outils et utilitaires avancés pour les utilisateurs expérimentés",
     systemInfo: "Infos Système",
     rebuildEmbeddings: "Reconstruire les index (Embeddings)",

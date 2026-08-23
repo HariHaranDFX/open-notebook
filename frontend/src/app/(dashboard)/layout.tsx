@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { ModalProvider } from '@/components/providers/ModalProvider'
 import { CreateDialogsProvider } from '@/lib/hooks/use-create-dialogs'
+import { SettingsDialogProvider } from '@/lib/hooks/use-settings-dialog'
 import { CommandPalette } from '@/components/common/CommandPalette'
 
 export default function DashboardLayout({
@@ -54,9 +55,11 @@ export default function DashboardLayout({
   return (
     <ErrorBoundary>
       <CreateDialogsProvider>
-        {children}
-        <ModalProvider />
-        <CommandPalette />
+        <SettingsDialogProvider>
+          {children}
+          <ModalProvider />
+          <CommandPalette />
+        </SettingsDialogProvider>
       </CreateDialogsProvider>
     </ErrorBoundary>
   )

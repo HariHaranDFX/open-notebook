@@ -857,7 +857,6 @@ export const plPL = {
     loadFailed: "Nie udało się załadować ustawień",
   },
   advanced: {
-    title: "Narzędzia zaawansowane",
     desc: "Zaawansowane narzędzia i funkcje dla zaawansowanych użytkowników",
     systemInfo: "Informacje o systemie",
     rebuildEmbeddings: "Przebuduj osadzenia",

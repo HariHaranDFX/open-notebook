@@ -63,7 +63,7 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: 'navigation.transformations' })).toHaveAttribute('href', '/transformations')
     expect(screen.getByRole('link', { name: 'navigation.models' })).toHaveAttribute('href', '/settings/api-keys')
     expect(screen.getByRole('link', { name: 'navigation.groups' })).toHaveAttribute('href', '/settings/groups')
-    expect(screen.getByRole('link', { name: 'navigation.advanced' })).toHaveAttribute('href', '/settings/advanced')
+    expect(screen.queryByRole('link', { name: 'navigation.advanced' })).not.toBeInTheDocument()
   })
 
   it('anchors identity in the footer and moves personal controls into its menu', () => {

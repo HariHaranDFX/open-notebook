@@ -858,7 +858,6 @@ export const esES = {
     loadFailed: "Error al cargar la configuración",
   },
   advanced: {
-    title: "Herramientas avanzadas",
     desc: "Herramientas avanzadas y utilidades para usuarios expertos",
     systemInfo: "Información del sistema",
     rebuildEmbeddings: "Reconstruir embeddings",

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import { useSettingsDialog } from '@/lib/hooks/use-settings-dialog'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTheme } from '@/lib/stores/theme-store'
 import {
@@ -30,11 +31,22 @@ import {
   Loader2,
   Users,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import type { TFunction } from 'i18next'
 
-const getNavigationItems = (t: TFunction) => [
+type NavItem = {
+  name: string
+  icon: LucideIcon
+  keywords: string[]
+  adminOnly?: boolean
+} & (
+  | { href: string; settingsTab?: undefined }
+  | { href?: undefined; settingsTab: 'general' | 'advanced' }
+)
+
+const getNavigationItems = (t: TFunction): NavItem[] => [
   { name: t('navigation.sources'), href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
   { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t('navigation.askAndSearch'), href: '/search', icon: Search, keywords: ['find', 'query'] },
@@ -42,8 +54,8 @@ const getNavigationItems = (t: TFunction) => [
   { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'], adminOnly: true },
   { name: t('navigation.groups'), href: '/settings/groups', icon: Users, keywords: ['teams', 'sharing', 'acl'], adminOnly: true },
   { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
-  { name: t('navigation.settings'), href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'], adminOnly: true },
-  { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'], adminOnly: true },
+  { name: t('navigation.settings'), settingsTab: 'general' as const, icon: Settings, keywords: ['preferences', 'config', 'options'], adminOnly: true },
+  { name: t('navigation.advanced'), settingsTab: 'advanced' as const, icon: Wrench, keywords: ['debug', 'system', 'tools'], adminOnly: true },
 ]
 
 const getCreateItems = (t: TFunction) => [
@@ -73,6 +85,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState('')
   const router = useRouter()
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { openSettings } = useSettingsDialog()
   const { setTheme } = useTheme()
   const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false)
 
@@ -118,6 +131,10 @@ export function CommandPalette() {
   const handleNavigate = useCallback((href: string) => {
     handleSelect(() => router.push(href))
   }, [handleSelect, router])
+
+  const handleOpenSettings = useCallback((tab: 'general' | 'advanced') => {
+    handleSelect(() => openSettings(tab))
+  }, [handleSelect, openSettings])
 
   const handleSearch = useCallback(() => {
     if (!query.trim()) return
@@ -211,9 +228,13 @@ export function CommandPalette() {
         <CommandGroup heading={t('navigation.nav')}>
           {navigationItems.map((item) => (
             <CommandItem
-              key={item.href}
+              key={item.name}
               value={`${item.name} ${item.keywords.join(' ')}`}
-              onSelect={() => handleNavigate(item.href)}
+              onSelect={() =>
+                item.settingsTab
+                  ? handleOpenSettings(item.settingsTab)
+                  : handleNavigate(item.href)
+              }
             >
               <item.icon className="h-4 w-4" />
               <span>{item.name}</span>

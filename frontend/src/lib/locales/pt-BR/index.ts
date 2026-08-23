@@ -857,7 +857,6 @@ export const ptBR = {
     loadFailed: "Falha ao carregar configurações",
   },
   advanced: {
-    title: "Ferramentas Avançadas",
     desc: "Ferramentas e utilitários avançados para usuários avançados",
     systemInfo: "Informações do Sistema",
     rebuildEmbeddings: "Reconstruir Embeddings",

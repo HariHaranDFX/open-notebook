@@ -857,7 +857,6 @@ export const zhCN = {
     loadFailed: "加载设置失败",
   },
   advanced: {
-    title: "高级工具",
     desc: "面向进阶用户的调试和实用工具",
     systemInfo: "系统信息",
     rebuildEmbeddings: "重建索引",

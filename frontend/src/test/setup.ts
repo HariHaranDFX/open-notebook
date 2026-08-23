@@ -61,3 +61,10 @@ vi.mock('@/lib/hooks/use-create-dialogs', () => ({
     openPodcastDialog: vi.fn(),
   })),
 }))
+
+// Mock @/lib/hooks/use-settings-dialog
+vi.mock('@/lib/hooks/use-settings-dialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    openSettings: vi.fn(),
+  })),
+}))

@@ -860,7 +860,6 @@ export const deDE = {
     loadFailed: "Einstellungen konnten nicht geladen werden",
   },
   advanced: {
-    title: "Erweiterte Werkzeuge",
     desc: "Erweiterte Werkzeuge und Hilfsfunktionen für erfahrene Nutzer",
     systemInfo: "Systeminformationen",
     rebuildEmbeddings: "Embeddings neu aufbauen",
