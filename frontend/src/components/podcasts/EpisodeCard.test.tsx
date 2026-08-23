@@ -83,7 +83,7 @@ describe('EpisodeCard row', () => {
     expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
   })
 
-  it('lets an editor retry but withholds delete', () => {
+  it('lets an editor retry and delete', () => {
     render(
       <EpisodeCard
         episode={makeEpisode({ job_status: 'failed' })}
@@ -94,6 +94,6 @@ describe('EpisodeCard row', () => {
     )
 
     expect(screen.getByText('podcasts.retry')).toBeInTheDocument()
-    expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
+    expect(screen.getByText('podcasts.delete')).toBeInTheDocument()
   })
 })

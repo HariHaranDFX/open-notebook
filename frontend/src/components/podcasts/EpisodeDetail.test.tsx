@@ -217,7 +217,7 @@ describe('EpisodeDetail access-role gating', () => {
     expect(screen.queryByText('podcasts.retry')).not.toBeInTheDocument()
   })
 
-  it('lets an editor retry a failed episode but withholds delete', () => {
+  it('lets an editor retry and delete a failed episode', () => {
     render(
       <EpisodeDetail
         episode={makeEpisode({ job_status: 'failed' })}
@@ -228,7 +228,7 @@ describe('EpisodeDetail access-role gating', () => {
     )
 
     expect(screen.getByText('podcasts.retry')).toBeInTheDocument()
-    expect(screen.queryByText('podcasts.delete')).not.toBeInTheDocument()
+    expect(screen.getByText('podcasts.delete')).toBeInTheDocument()
   })
 
   it('grants the owner full retry and delete access, confirmed via dialog', () => {
