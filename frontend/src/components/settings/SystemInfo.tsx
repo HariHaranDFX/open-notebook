@@ -1,10 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/card'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Check, ExternalLink } from 'lucide-react'
 import { getConfig } from '@/lib/config'
-import { Badge } from '@/components/ui/badge'
+import { SettingsSection } from '@/components/settings/SettingRow'
 import { useTranslation } from '@/lib/hooks/use-translation'
+
+function InfoRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-t border-border/40 py-3.5">
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <div className="text-sm text-muted-foreground">{children}</div>
+    </div>
+  )
+}
 
 export function SystemInfo() {
   const { t } = useTranslation()
@@ -16,104 +25,60 @@ export function SystemInfo() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const cfg = await getConfig()
-        setConfig(cfg)
-      } catch (error) {
-        console.error('Failed to load config:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadConfig()
+    getConfig()
+      .then(setConfig)
+      .catch((err) => console.error('Failed to load config:', err))
+      .finally(() => setIsLoading(false))
   }, [])
 
-  if (isLoading) {
-    return (
-      <Card className="p-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">{t('advanced.systemInfo')}</h2>
-          <div className="text-sm text-muted-foreground">{t('common.loading')}</div>
-        </div>
-      </Card>
-    )
-  }
-
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">{t('advanced.systemInfo')}</h2>
+    <SettingsSection title={t('advanced.systemInfo')}>
+      <InfoRow label={t('advanced.currentVersion')}>
+        <span className="tabular-nums">
+          {isLoading ? t('common.loading') : config?.version || t('advanced.unknown')}
+        </span>
+      </InfoRow>
 
-        <div className="space-y-3">
-          {/* Current Version */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{t('advanced.currentVersion')}</span>
-            <Badge variant="outline">{config?.version || t('advanced.unknown')}</Badge>
-          </div>
+      {config?.latestVersion && (
+        <InfoRow label={t('advanced.latestVersion')}>
+          <span className="tabular-nums">{config.latestVersion}</span>
+        </InfoRow>
+      )}
 
-          {/* Latest Version */}
-          {config?.latestVersion && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{t('advanced.latestVersion')}</span>
-              <Badge variant="outline">{config.latestVersion}</Badge>
-            </div>
-          )}
+      <InfoRow label={t('advanced.status')}>
+        {config?.hasUpdate ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/50 px-2.5 py-0.5 text-[13px] text-destructive">
+            {t('advanced.updateAvailable', { version: config.latestVersion || '' })}
+          </span>
+        ) : config?.latestVersion ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-green-600 px-2.5 py-0.5 text-[13px] text-green-600">
+            <Check className="size-3.5" />
+            {t('advanced.upToDate')}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">{t('advanced.unknown')}</span>
+        )}
+      </InfoRow>
 
-          {/* Update Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{t('advanced.status')}</span>
-            {config?.hasUpdate ? (
-              <Badge variant="destructive">
-                {t('advanced.updateAvailable', { version: config.latestVersion || '' })}
-              </Badge>
-            ) : config?.latestVersion ? (
-              <Badge variant="outline" className="text-green-600 border-green-600">
-                {t('advanced.upToDate')}
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-muted-foreground">
-                {t('advanced.unknown')}
-              </Badge>
-            )}
-          </div>
-
-          {/* GitHub Repository Link */}
-          {config?.hasUpdate && (
-            <div className="pt-2 border-t">
-              <a
-                href="https://github.com/lfnovo/open-notebook"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-              >
-                {t('advanced.viewOnGithub')}
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                  />
-                </svg>
-              </a>
-            </div>
-          )}
-
-          {/* Version Check Failed Message */}
-          {!config?.latestVersion && config?.version && (
-            <div className="pt-2 text-xs text-muted-foreground">
-              {t('advanced.updateCheckFailed')}
-            </div>
-          )}
+      {config?.hasUpdate && (
+        <div className="border-t border-border/40 py-3.5">
+          <a
+            href="https://github.com/lfnovo/open-notebook"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+          >
+            {t('advanced.viewOnGithub')}
+            <ExternalLink className="size-3.5" />
+          </a>
         </div>
-      </div>
-    </Card>
+      )}
+
+      {!config?.latestVersion && config?.version && (
+        <p className="border-t border-border/40 pt-3.5 text-[13px] text-muted-foreground">
+          {t('advanced.updateCheckFailed')}
+        </p>
+      )}
+    </SettingsSection>
   )
 }
