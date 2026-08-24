@@ -1011,6 +1011,10 @@ export const trTR = {
     addCustomModel: "\"{{name}}\" Ekle",
   },
   apiKeys: {
+    test: "Test et",
+    providers: "Sağlayıcılar",
+    showAll: "Tümü",
+    moreAvailable: "{{count}} tane daha var",
     title: "Yapay zekanızı kendi API anahtarlarınızla yapılandırın",
     description: "{{appName}} uygulamasında yapay zeka sağlayıcılarını etkinleştirmek için API anahtarlarını güvenli şekilde veritabanında saklayın.",
     encryptionRequired: "Şifreleme anahtarı yapılandırılmadı",

@@ -1010,6 +1010,10 @@ export const enUS = {
     addCustomModel: "Add \"{{name}}\"",
   },
   apiKeys: {
+    test: "Test",
+    providers: "Providers",
+    showAll: "All",
+    moreAvailable: "{{count}} more available",
     title: "Configure your AI with your own API keys",
     description: "Store API keys securely in the database to enable AI providers in {{appName}}.",
     encryptionRequired: "Encryption key not configured",

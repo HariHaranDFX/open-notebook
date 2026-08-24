@@ -1011,6 +1011,10 @@ export const itIT = {
     addCustomModel: "Aggiungi \"{{name}}\"",
   },
   apiKeys: {
+    test: "Prova",
+    providers: "Provider",
+    showAll: "Tutti",
+    moreAvailable: "altri {{count}} disponibili",
     title: "Configura la tua IA con le tue chiavi API",
     description: "Salva le chiavi API in modo sicuro nel database per abilitare i provider IA in {{appName}}.",
     encryptionRequired: "Chiave di crittografia non configurata",

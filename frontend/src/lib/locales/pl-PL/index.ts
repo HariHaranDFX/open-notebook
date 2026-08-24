@@ -1011,6 +1011,10 @@ export const plPL = {
     addCustomModel: "Dodaj „{{name}}”",
   },
   apiKeys: {
+    test: "Testuj",
+    providers: "Dostawcy",
+    showAll: "Wszystkie",
+    moreAvailable: "Dostępnych jeszcze: {{count}}",
     title: "Skonfiguruj swoje AI za pomocą własnych kluczy API",
     description: "Przechowuj klucze API bezpiecznie w bazie danych, aby włączyć dostawców AI w {{appName}}.",
     encryptionRequired: "Klucz szyfrowania nie został skonfigurowany",

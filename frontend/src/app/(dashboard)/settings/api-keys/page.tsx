@@ -1,12 +1,15 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PageFrame } from '@/components/layout/PageFrame'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { ShieldAlert, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ShieldAlert, AlertCircle, Search } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 import { useModels, useModelDefaults } from '@/lib/hooks/use-models'
 import {
   useCredentials,
@@ -74,6 +77,22 @@ export default function ApiKeysPage() {
     })
   }, [providers, credentialsByProvider])
 
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<'configured' | 'all'>('configured')
+
+  const searchLower = search.trim().toLowerCase()
+  const searchedProviders = sortedProviders.filter((p) => {
+    if (!searchLower) return true
+    return (
+      (p.display_name || p.name).toLowerCase().includes(searchLower) ||
+      p.name.toLowerCase().includes(searchLower)
+    )
+  })
+  const visibleProviders = searchedProviders.filter(
+    (p) => filter === 'all' || (credentialsByProvider[p.name]?.length ?? 0) > 0
+  )
+  const hiddenCount = searchedProviders.length - visibleProviders.length
+
   const isLoading = credentialsLoading || modelsLoading || defaultsLoading || providersLoading
 
   if (isLoading) {
@@ -113,7 +132,7 @@ export default function ApiKeysPage() {
         <DefaultModelSelectors models={models} defaults={defaults} />
       )}
 
-      {/* Provider Cards */}
+      {/* Providers */}
       {providersError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -121,18 +140,66 @@ export default function ApiKeysPage() {
           <AlertDescription>{t('apiKeys.providersLoadFailedDescription')}</AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-4">
-          {sortedProviders.map(provider => (
-            <ProviderSection
-              key={provider.name}
-              provider={provider}
-              credentials={credentialsByProvider[provider.name] || []}
-              models={models || []}
-              defaults={defaults || null}
-              allCredentials={credentials || []}
-              encryptionReady={encryptionReady}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-semibold">{t('apiKeys.providers')}</h2>
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:w-56">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t('common.search')}
+                  aria-label={t('apiKeys.providers')}
+                  className="pl-8"
+                />
+              </div>
+              <div className="inline-flex shrink-0 rounded-[var(--control-radius)] border border-border p-0.5">
+                {(['configured', 'all'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFilter(f)}
+                    aria-pressed={filter === f}
+                    className={cn(
+                      'rounded-[calc(var(--control-radius)-2px)] px-2.5 py-1 text-xs font-medium transition-colors',
+                      filter === f
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {f === 'configured' ? t('apiKeys.configured') : t('apiKeys.showAll')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {visibleProviders.length > 0 ? (
+            <div className="grid gap-4">
+              {visibleProviders.map((provider) => (
+                <ProviderSection
+                  key={provider.name}
+                  provider={provider}
+                  credentials={credentialsByProvider[provider.name] || []}
+                  models={models || []}
+                  defaults={defaults || null}
+                  allCredentials={credentials || []}
+                  encryptionReady={encryptionReady}
+                />
+              ))}
+            </div>
+          ) : searchLower ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('common.noMatches')}</p>
+          ) : null}
+
+          {filter === 'configured' && hiddenCount > 0 && (
+            <div className="text-center">
+              <Button variant="link" size="sm" onClick={() => setFilter('all')}>
+                {t('apiKeys.moreAvailable', { count: hiddenCount })}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

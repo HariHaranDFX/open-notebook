@@ -1011,6 +1011,10 @@ export const zhTW = {
     addCustomModel: "新增 \"{{name}}\"",
   },
   apiKeys: {
+    test: "測試",
+    providers: "供應商",
+    showAll: "全部",
+    moreAvailable: "另有 {{count}} 個可用",
     title: "使用您自己的 API 金鑰設定 AI",
     description: "將 API 金鑰安全地儲存在資料庫中，以在 {{appName}} 中啟用 AI 服務商。",
     encryptionRequired: "未設定加密金鑰",

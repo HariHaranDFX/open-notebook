@@ -1014,6 +1014,10 @@ export const deDE = {
     addCustomModel: "\"{{name}}\" hinzufügen",
   },
   apiKeys: {
+    test: "Testen",
+    providers: "Anbieter",
+    showAll: "Alle",
+    moreAvailable: "{{count}} weitere verfügbar",
     title: "KI mit eigenen API-Schlüsseln konfigurieren",
     description: "Speichere API-Schlüssel sicher in der Datenbank, um KI-Anbieter in {{appName}} zu aktivieren.",
     encryptionRequired: "Verschlüsselungsschlüssel nicht konfiguriert",

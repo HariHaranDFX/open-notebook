@@ -14,7 +14,14 @@ import {
   Check,
   X,
   Bot,
+  MoreHorizontal,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDeleteModel, useTestModel } from '@/lib/hooks/use-models'
 import { useCredential, useTestCredential } from '@/lib/hooks/use-credentials'
@@ -101,41 +108,42 @@ export function CredentialItem({
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {testResult && (
               testResult.success
                 ? <Check className="h-4 w-4 text-emerald-500" />
                 : <X className="h-4 w-4 text-destructive" />
             )}
             <Button
-              variant="ghost" size="sm"
+              variant="outline" size="sm"
               onClick={() => testCredential(credential.id)}
               disabled={isTestPending || !!credential.decryption_error}
               title={t('apiKeys.testConnection')}
             >
               {isTestPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
-              <span className="hidden sm:inline text-xs">Test</span>
+              <span className="hidden sm:inline">{t('apiKeys.test')}</span>
             </Button>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setDiscoverOpen(true)}
-              disabled={!!credential.decryption_error}
-              title={t('apiKeys.syncModels')}
-            >
-              <Bot className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">Models</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} disabled={!!credential.decryption_error} title={t('common.edit')}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setDeleteOpen(true)}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              title={t('common.delete')}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={t('common.actions')}>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setDiscoverOpen(true)} disabled={!!credential.decryption_error}>
+                  <Bot className="h-4 w-4" />
+                  {t('apiKeys.syncModels')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditOpen(true)} disabled={!!credential.decryption_error}>
+                  <Edit className="h-4 w-4" />
+                  {t('common.edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+                  <Trash2 className="h-4 w-4" />
+                  {t('common.delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

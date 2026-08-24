@@ -1012,6 +1012,10 @@ export const esES = {
     addCustomModel: "Agregar \"{{name}}\"",
   },
   apiKeys: {
+    test: "Probar",
+    providers: "Proveedores",
+    showAll: "Todos",
+    moreAvailable: "{{count}} más disponibles",
     title: "Configura tu IA con tus propias claves API",
     description: "Almacena claves API de forma segura en la base de datos para habilitar proveedores de IA en {{appName}}.",
     encryptionRequired: "Clave de encriptación no configurada",

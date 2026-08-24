@@ -1011,6 +1011,10 @@ export const jaJP = {
     addCustomModel: "\"{{name}}\" を追加",
   },
   apiKeys: {
+    test: "テスト",
+    providers: "プロバイダー",
+    showAll: "すべて",
+    moreAvailable: "他に {{count}} 件",
     title: "独自のAPIキーでAIを設定",
     description: "APIキーをデータベースに安全に保存し、AIプロバイダーを{{appName}}で利用可能にします。",
     encryptionRequired: "暗号化キーが設定されていません",

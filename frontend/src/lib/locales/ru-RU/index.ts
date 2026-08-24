@@ -1011,6 +1011,10 @@ export const ruRU = {
     addCustomModel: "Добавить \"{{name}}\"",
   },
   apiKeys: {
+    test: "Проверить",
+    providers: "Провайдеры",
+    showAll: "Все",
+    moreAvailable: "Ещё {{count}} доступно",
     title: "Настройте ИИ с помощью собственных API-ключей",
     description: "Храните API-ключи в базе данных для безопасного подключения провайдеров ИИ в {{appName}}.",
     encryptionRequired: "Ключ шифрования не настроен",

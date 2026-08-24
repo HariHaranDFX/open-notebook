@@ -1011,6 +1011,10 @@ export const caES = {
     addCustomModel: "Afegeix «{{name}}»",
   },
   apiKeys: {
+    test: "Prova",
+    providers: "Proveïdors",
+    showAll: "Tots",
+    moreAvailable: "{{count}} més disponibles",
     title: "Configura la teva IA amb les teves pròpies claus de l'API",
     description: "Emmagatzema les claus de l'API de manera segura a la base de dades per habilitar els proveïdors d'IA a l'aplicació {{appName}}.",
     encryptionRequired: "Clau de xifratge no configurada",

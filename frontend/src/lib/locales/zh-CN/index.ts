@@ -1011,6 +1011,10 @@ export const zhCN = {
     addCustomModel: "添加 \"{{name}}\"",
   },
   apiKeys: {
+    test: "测试",
+    providers: "提供商",
+    showAll: "全部",
+    moreAvailable: "另有 {{count}} 个可用",
     title: "使用您自己的 API 密钥配置 AI",
     description: "将 API 密钥安全地存储在数据库中，以在 {{appName}} 中启用 AI 服务商。",
     encryptionRequired: "未配置加密密钥",

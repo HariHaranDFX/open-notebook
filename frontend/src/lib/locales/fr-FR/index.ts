@@ -1011,6 +1011,10 @@ export const frFR = {
     addCustomModel: "Ajouter \"{{name}}\"",
   },
   apiKeys: {
+    test: "Tester",
+    providers: "Fournisseurs",
+    showAll: "Tous",
+    moreAvailable: "{{count}} autres disponibles",
     title: "Configurez votre IA avec vos propres clés API",
     description: "Stockez les clés API de manière sécurisée dans la base de données pour activer les fournisseurs d'IA dans {{appName}}.",
     encryptionRequired: "Clé de chiffrement non configurée",

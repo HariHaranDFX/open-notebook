@@ -1011,6 +1011,10 @@ export const ptBR = {
     addCustomModel: "Adicionar \"{{name}}\"",
   },
   apiKeys: {
+    test: "Testar",
+    providers: "Provedores",
+    showAll: "Todos",
+    moreAvailable: "mais {{count}} disponíveis",
     title: "Configure sua IA com suas próprias chaves de API",
     description: "Armazene chaves de API com segurança no banco de dados para habilitar provedores de IA na aplicação {{appName}}.",
     encryptionRequired: "Chave de criptografia não configurada",

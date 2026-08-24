@@ -1012,6 +1012,10 @@ export const bnIN = {
     addCustomModel: "\"{{name}}\" যোগ করুন",
   },
   apiKeys: {
+    test: "পরীক্ষা",
+    providers: "প্রোভাইডার",
+    showAll: "সব",
+    moreAvailable: "আরও {{count}} টি উপলব্ধ",
     title: "আপনার নিজের API কী দিয়ে আপনার AI কনফিগার করুন",
     description: "{{appName}} এ AI প্রোভাইডার সক্ষম করতে ডেটাবেসে নিরাপদভাবে API কী সংরক্ষণ করুন।",
     encryptionRequired: "এনক্রিপশন কী কনফিগার করা হয়নি",
