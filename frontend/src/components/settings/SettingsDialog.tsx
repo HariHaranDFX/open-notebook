@@ -48,15 +48,15 @@ export function SettingsDialog({ open, onOpenChange, defaultTab = 'general' }: S
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[85vh] w-full gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <div className="flex w-48 shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-2 py-3 text-sidebar-foreground">
+      <DialogContent className="flex h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl sm:flex-row">
+        <div className="flex shrink-0 flex-col gap-1 border-b border-sidebar-border bg-sidebar px-2 py-3 pr-12 text-sidebar-foreground sm:w-48 sm:border-b-0 sm:border-r sm:pr-2">
           <DialogTitle className="mb-1 px-3 text-xs font-semibold text-sidebar-foreground">
             {t('navigation.settings')}
           </DialogTitle>
           <nav aria-label={t('common.accessibility.settingsNav')}>
-            <ul className="flex min-w-0 flex-col gap-1">
+            <ul className="flex min-w-0 flex-row gap-1 sm:flex-col">
               {sections.map((section) => (
-                <li key={section.id} className="relative min-w-0">
+                <li key={section.id} className="relative min-w-0 flex-1 sm:flex-none">
                   <button
                     type="button"
                     aria-current={active === section.id ? 'page' : undefined}
@@ -72,7 +72,7 @@ export function SettingsDialog({ open, onOpenChange, defaultTab = 'general' }: S
           </nav>
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-6 pt-12">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 pb-6 pt-6 sm:pt-12">
           {active === 'general' ? (
             <SettingsForm />
           ) : (

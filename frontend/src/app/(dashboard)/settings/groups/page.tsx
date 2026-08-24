@@ -67,7 +67,7 @@ export default function GroupsPage() {
 
   return (
     <>
-      <PageFrame width="reading">
+      <PageFrame width="content" className="flex min-h-full flex-col">
         <PageHeader eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
 
         {isLoading ? (
@@ -75,9 +75,9 @@ export default function GroupsPage() {
             <LoadingSpinner />
           </div>
         ) : (
-          <div className="flex min-h-[440px] overflow-hidden rounded-[var(--surface-radius)] border border-border">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--surface-radius)] border border-border md:flex-row">
             {/* Groups list */}
-            <div className="flex w-[248px] shrink-0 flex-col border-r border-border">
+            <div className="flex shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r">
               <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
                 <span className="text-sm font-medium text-muted-foreground">
                   {t('groups.groupCount', { count: groups?.length ?? 0 })}
@@ -88,12 +88,12 @@ export default function GroupsPage() {
                 </Button>
               </div>
               {!groups?.length ? (
-                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-10 text-center md:py-0">
                   <Users className="size-6 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">{t('groups.noGroups')}</p>
                 </div>
               ) : (
-                <ul className="flex-1 space-y-1 overflow-y-auto p-2">
+                <ul className="max-h-[38vh] flex-1 space-y-1 overflow-y-auto p-2 md:max-h-none">
                   {groups.map((group) => {
                     const active = selectedGroupId === group.id
                     return (
@@ -137,7 +137,7 @@ export default function GroupsPage() {
             </div>
 
             {/* Selected group detail */}
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {!selectedGroup ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
                   <Users className="size-7 text-muted-foreground" />
