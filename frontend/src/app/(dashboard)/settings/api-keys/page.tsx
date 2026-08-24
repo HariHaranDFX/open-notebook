@@ -85,8 +85,9 @@ export default function ApiKeysPage() {
   }
 
   return (
-    <PageFrame>
+    <PageFrame className="pt-3 sm:pt-4">
       <PageHeader
+        bleed
         eyebrow={t('navigation.settings')}
         title={t('apiKeys.title')}
         description={t('apiKeys.description')}

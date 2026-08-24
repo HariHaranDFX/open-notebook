@@ -67,8 +67,8 @@ export default function GroupsPage() {
 
   return (
     <>
-      <PageFrame width="content" className="flex min-h-full flex-col">
-        <PageHeader eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
+      <PageFrame width="content" className="flex min-h-full flex-col pt-3 sm:pt-4">
+        <PageHeader bleed eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
 
         {isLoading ? (
           <div className="flex justify-center py-16">
