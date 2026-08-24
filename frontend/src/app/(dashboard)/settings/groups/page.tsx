@@ -149,7 +149,7 @@ export default function GroupsPage() {
                   <div className="flex h-14 items-center justify-between gap-3 border-b border-border px-4">
                     <div className="min-w-0">
                       <h2 className="truncate text-[15px] font-medium">{selectedGroup.name}</h2>
-                      <p className="text-[13px] text-muted-foreground">{t('groups.memberCount', { count: memberCount })}</p>
+                      <Badge variant="secondary" className="mt-0.5 tabular-nums">{t('groups.memberCount', { count: memberCount })}</Badge>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
