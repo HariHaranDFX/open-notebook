@@ -67,7 +67,7 @@ export default function GroupsPage() {
 
   return (
     <>
-      <PageFrame width="content" className="flex min-h-full flex-col pt-3 sm:pt-4">
+      <PageFrame width="content" className="flex min-h-full flex-col space-y-0 pb-0 pt-3 sm:pt-4">
         <PageHeader bleed eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
 
         {isLoading ? (
@@ -75,10 +75,10 @@ export default function GroupsPage() {
             <LoadingSpinner />
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--surface-radius)] border border-border md:flex-row">
+          <div className="-mx-4 flex min-h-0 flex-1 flex-col overflow-hidden sm:-mx-6 md:flex-row lg:-mx-8">
             {/* Groups list */}
             <div className="flex shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r">
-              <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
+              <div className="flex h-14 items-center justify-between gap-2 border-b border-border px-3.5">
                 <span className="text-sm font-medium text-muted-foreground">
                   {t('groups.groupCount', { count: groups?.length ?? 0 })}
                 </span>
@@ -145,7 +145,7 @@ export default function GroupsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                  <div className="flex h-14 items-center justify-between gap-3 border-b border-border px-4">
                     <div className="min-w-0">
                       <h2 className="truncate text-[15px] font-medium">{selectedGroup.name}</h2>
                       <p className="text-[13px] text-muted-foreground">{t('groups.memberCount', { count: memberCount })}</p>
