@@ -128,7 +128,7 @@ export function ShareSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
-        <SheetContent className="flex w-[min(440px,calc(100vw-24px))] flex-col gap-0 p-0">
+        <SheetContent className="flex w-[min(440px,calc(100vw-24px))] flex-col gap-0 rounded-r-none p-0">
           <div className="border-b border-border px-5 py-4">
             <SheetTitle className="text-lg font-semibold">{t('sharing.title')}</SheetTitle>
             <SheetDescription className="text-sm text-muted-foreground">

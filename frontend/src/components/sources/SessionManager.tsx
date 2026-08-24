@@ -105,7 +105,7 @@ export function SessionManager({
     <>
       <Card className="h-full flex flex-col">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between pr-8">
             <span className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               {t('chat.sessions')}
