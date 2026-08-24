@@ -67,15 +67,15 @@ export default function GroupsPage() {
 
   return (
     <>
-      <PageFrame width="content" className="flex min-h-full flex-col space-y-0 pb-0 pt-3 sm:pt-4">
-        <PageHeader bleed eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
+      <PageFrame width="content" className="flex min-h-full flex-col">
+        <PageHeader eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
 
         {isLoading ? (
           <div className="flex justify-center py-16">
             <LoadingSpinner />
           </div>
         ) : (
-          <div className="-mx-4 flex min-h-0 flex-1 flex-col overflow-hidden sm:-mx-6 md:flex-row lg:-mx-8">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--surface-radius)] border border-border md:flex-row">
             {/* Groups list */}
             <div className="flex shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r">
               <div className="flex h-14 items-center justify-between gap-2 border-b border-border px-3.5">
