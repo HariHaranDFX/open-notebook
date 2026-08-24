@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const bnIN = {
   common: {
+    preferences: "পছন্দসমূহ",
+    appearance: "চেহারা",
     models: "মডেল",
     custom: "কাস্টম",
     preview: "প্রিভিউ",

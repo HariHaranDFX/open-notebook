@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const zhTW = {
   common: {
+    preferences: "偏好設定",
+    appearance: "外觀",
     models: "模型",
     custom: "自訂",
     preview: "預覽",

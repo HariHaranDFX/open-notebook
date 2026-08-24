@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const plPL = {
   common: {
+    preferences: "Preferencje",
+    appearance: "Wygląd",
     models: "Modele",
     custom: "Niestandardowy",
     preview: "Podgląd",

@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const itIT = {
   common: {
+    preferences: "Preferenze",
+    appearance: "Aspetto",
     models: "Modelli",
     custom: "Personalizzato",
     preview: "Anteprima",

@@ -50,7 +50,7 @@ export function SettingsDialog({ open, onOpenChange, defaultTab = 'general' }: S
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[85vh] w-full gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <div className="flex w-48 shrink-0 flex-col gap-1 border-r border-sidebar-border bg-sidebar px-2 py-3 text-sidebar-foreground">
-          <DialogTitle className="mb-1 px-3 text-xs font-semibold uppercase tracking-[0.08em] text-sidebar-foreground">
+          <DialogTitle className="mb-1 px-3 text-xs font-semibold text-sidebar-foreground">
             {t('navigation.settings')}
           </DialogTitle>
           <nav aria-label={t('common.accessibility.settingsNav')}>

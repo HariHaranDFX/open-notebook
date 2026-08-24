@@ -27,6 +27,21 @@ export function SettingsSection({
   )
 }
 
+// Some help strings are middot-bulleted ("· A · B · C"). Render those as clean
+// lines rather than showing the raw "·" characters inline.
+function renderHelp(content: React.ReactNode): React.ReactNode {
+  if (typeof content !== 'string') return content
+  const items = content.split('·').map((s) => s.trim()).filter(Boolean)
+  if (items.length <= 1) return content
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item, i) => (
+        <li key={i}>{item}</li>
+      ))}
+    </ul>
+  )
+}
+
 /** An on-demand help affordance: a small "?" that opens a popover with guidance. */
 export function SettingHelp({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation()
@@ -42,7 +57,7 @@ export function SettingHelp({ children }: { children: React.ReactNode }) {
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 text-[13px] leading-relaxed text-muted-foreground">
-        {children}
+        {renderHelp(children)}
       </PopoverContent>
     </Popover>
   )

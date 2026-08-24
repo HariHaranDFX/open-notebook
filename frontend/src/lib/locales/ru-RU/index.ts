@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const ruRU = {
   common: {
+    preferences: "Параметры",
+    appearance: "Внешний вид",
     models: "Модели",
     custom: "Пользовательский",
     preview: "Предпросмотр",

@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const zhCN = {
   common: {
+    preferences: "偏好设置",
+    appearance: "外观",
     models: "模型",
     custom: "自定义",
     preview: "预览",

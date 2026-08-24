@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const trTR = {
   common: {
+    preferences: "Tercihler",
+    appearance: "Görünüm",
     models: "Modeller",
     custom: "Özel",
     preview: "Önizleme",

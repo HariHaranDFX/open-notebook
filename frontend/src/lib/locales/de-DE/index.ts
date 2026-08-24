@@ -5,6 +5,8 @@ import type { TranslationShape } from '../en-US';
 
 export const deDE = {
   common: {
+    preferences: "Voreinstellungen",
+    appearance: "Darstellung",
     models: "Modelle",
     custom: "Benutzerdefiniert",
     preview: "Vorschau",

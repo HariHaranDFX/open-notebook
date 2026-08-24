@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const ptBR = {
   common: {
+    preferences: "Preferências",
+    appearance: "Aparência",
     models: "Modelos",
     custom: "Personalizado",
     preview: "Pré-visualização",

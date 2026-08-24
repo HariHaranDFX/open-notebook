@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const frFR = {
   common: {
+    preferences: "Préférences",
+    appearance: "Apparence",
     models: "Modèles",
     custom: "Personnalisé",
     preview: "Aperçu",

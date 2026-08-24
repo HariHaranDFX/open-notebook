@@ -1,5 +1,7 @@
 export const enUS = {
   common: {
+    preferences: "Preferences",
+    appearance: "Appearance",
     models: "Models",
     custom: "Custom",
     preview: "Preview",

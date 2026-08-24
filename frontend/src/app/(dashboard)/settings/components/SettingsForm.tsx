@@ -14,6 +14,38 @@ import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useTheme } from '@/lib/stores/theme-store'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Monitor, Sun, Moon, ChevronDown, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const THEME_OPTIONS = [
+  { value: 'system', icon: Monitor },
+  { value: 'light', icon: Sun },
+  { value: 'dark', icon: Moon },
+] as const
+
+const LANGUAGE_OPTIONS = [
+  ['en-US', 'common.english'],
+  ['ca-ES', 'common.catalan'],
+  ['zh-CN', 'common.chinese'],
+  ['zh-TW', 'common.traditionalChinese'],
+  ['pt-BR', 'common.portuguese'],
+  ['ja-JP', 'common.japanese'],
+  ['fr-FR', 'common.french'],
+  ['ru-RU', 'common.russian'],
+  ['bn-IN', 'common.bengali'],
+  ['es-ES', 'common.spanish'],
+  ['de-DE', 'common.german'],
+  ['pl-PL', 'common.polish'],
+  ['tr-TR', 'common.turkish'],
+] as const
+
+function isLanguageActive(code: string, language?: string) {
+  if (code === 'zh-CN') return language === 'zh' || language === 'zh-CN' || Boolean(language?.startsWith('zh-Hans'))
+  if (code === 'zh-TW') return language === 'zh-TW' || Boolean(language?.startsWith('zh-Hant'))
+  return language === code || Boolean(language?.startsWith(code.split('-')[0]))
+}
 
 const settingsSchema = z.object({
   default_content_processing_engine_doc: z.enum(['auto', 'docling', 'simple']).optional(),
@@ -30,7 +62,9 @@ type SettingsFormData = z.infer<typeof settingsSchema>
 const SELECT_WIDTH = 'w-[200px]'
 
 export function SettingsForm() {
-  const { t } = useTranslation()
+  const { t, language, setLanguage } = useTranslation()
+  const { theme, setTheme } = useTheme()
+  const activeLangLabel = LANGUAGE_OPTIONS.find(([code]) => isLanguageActive(code, language))?.[1] ?? 'common.english'
   const { data: settings, isLoading, error } = useSettings()
   const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
@@ -154,7 +188,7 @@ export function SettingsForm() {
         </SettingRow>
 
         <div className="border-t border-border/40 py-3.5">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">{t('settings.docling')}</p>
+          <p className="mb-3 text-xs font-medium text-muted-foreground">{t('settings.docling')}</p>
           <div className="space-y-3.5">
             {doclingToggle('docling_ocr', t('settings.ocrEnabled'), t('settings.ocrHelp'), true)}
             {doclingToggle('docling_formulas', t('settings.formulasEnabled'), t('settings.formulasHelp'), false)}
@@ -224,6 +258,49 @@ export function SettingsForm() {
               />
             )}
           />
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title={t('common.preferences')}>
+        <SettingRow label={t('common.appearance')}>
+          <div className="inline-flex items-center gap-0.5 rounded-[var(--control-radius)] border border-border p-0.5">
+            {THEME_OPTIONS.map(({ value, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                aria-label={t(`common.${value}`)}
+                aria-pressed={theme === value}
+                className={cn(
+                  'flex size-7 items-center justify-center rounded-[3px] transition-colors',
+                  theme === value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Icon className="size-4" />
+              </button>
+            ))}
+          </div>
+        </SettingRow>
+        <SettingRow label={t('common.language')}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-1.5 rounded-[var(--control-radius)] border border-border px-3 text-sm text-foreground transition-colors hover:bg-accent"
+              >
+                {t(activeLangLabel)}
+                <ChevronDown className="size-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+              {LANGUAGE_OPTIONS.map(([code, label]) => (
+                <DropdownMenuItem key={code} onSelect={() => setLanguage(code)}>
+                  {t(label)}
+                  {isLanguageActive(code, language) && <Check className="ml-auto size-4" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SettingRow>
       </SettingsSection>
 

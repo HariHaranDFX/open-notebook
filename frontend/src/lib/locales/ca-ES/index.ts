@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const caES = {
   common: {
+    preferences: "Preferències",
+    appearance: "Aparença",
     models: "Models",
     custom: "Personalitzat",
     preview: "Vista prèvia",

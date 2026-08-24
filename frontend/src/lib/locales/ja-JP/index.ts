@@ -2,6 +2,8 @@ import type { TranslationShape } from '../en-US';
 
 export const jaJP = {
   common: {
+    preferences: "環境設定",
+    appearance: "外観",
     models: "モデル",
     custom: "カスタム",
     preview: "プレビュー",
