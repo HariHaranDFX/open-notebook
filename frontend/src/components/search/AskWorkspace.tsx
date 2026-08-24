@@ -148,7 +148,7 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 text-xs text-muted-foreground"
+            className="text-muted-foreground"
             onClick={() => setShowAdvanced(true)}
             disabled={ask.isStreaming || !hasEmbeddingModel}
           >
@@ -157,20 +157,19 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
           </Button>
           <div className="flex items-center gap-1.5">
             {canRetry && !ask.isStreaming && (
-              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => void ask.retry()}>
+              <Button variant="ghost" size="sm" onClick={() => void ask.retry()}>
                 <RotateCcw className="size-3.5" />
                 {t('common.retry')}
               </Button>
             )}
             {ask.isStreaming ? (
-              <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={ask.cancel}>
+              <Button variant="outline" size="sm" onClick={ask.cancel}>
                 <Square className="size-3.5" />
                 {t('common.cancel')}
               </Button>
             ) : (
               <Button
                 size="sm"
-                className="h-8 gap-1.5"
                 onClick={() => submit(question)}
                 disabled={!question.trim() || !hasEmbeddingModel || !models}
               >

@@ -60,7 +60,7 @@ export function RecentlyViewed({ viewMode, limit = 12 }: RecentlyViewedProps) {
       <div className="flex min-h-9 items-center gap-2">
         <h2>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="h-9 justify-start !px-0 text-lg font-semibold">
+            <Button variant="ghost" className="justify-start !px-0 text-lg font-semibold">
               {t('notebooks.recentlyViewed')}
               <Badge
                 variant="secondary"

@@ -176,7 +176,8 @@ export function CredentialItem({
                           {model.name}
                           {defaultSlot && <span className="ml-0.5 opacity-75">({defaultSlot})</span>}
                           <button
-                            className="ml-0.5 opacity-0 group-hover/model:opacity-60 hover:!opacity-100 transition-opacity"
+                            type="button"
+                            className="ml-0.5 rounded-sm opacity-0 transition-opacity group-hover/model:opacity-60 hover:!opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => testModel(model.id, model.name)}
                             disabled={isModelTestPending && testingModelId === model.id}
                             title={t('models.testModel')}
@@ -187,7 +188,8 @@ export function CredentialItem({
                             }
                           </button>
                           <button
-                            className="opacity-0 group-hover/model:opacity-60 hover:!opacity-100 hover:text-destructive transition-opacity"
+                            type="button"
+                            className="rounded-sm opacity-0 transition-opacity group-hover/model:opacity-60 hover:!opacity-100 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => deleteModel.mutate(model.id)}
                             title={t('models.deleteModel')}
                           >
