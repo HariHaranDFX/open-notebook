@@ -154,7 +154,7 @@ export default function ApiKeysPage() {
                   className="pl-8"
                 />
               </div>
-              <div className="inline-flex shrink-0 rounded-[var(--control-radius)] border border-border p-0.5">
+              <div className="inline-flex h-9 shrink-0 items-center rounded-[var(--control-radius)] border border-border p-0.5">
                 {(['configured', 'all'] as const).map((f) => (
                   <button
                     key={f}
@@ -162,7 +162,7 @@ export default function ApiKeysPage() {
                     onClick={() => setFilter(f)}
                     aria-pressed={filter === f}
                     className={cn(
-                      'rounded-[calc(var(--control-radius)-2px)] px-2.5 py-1 text-xs font-medium transition-colors',
+                      'flex h-full items-center rounded-[calc(var(--control-radius)-2px)] px-2.5 text-xs font-medium transition-colors',
                       filter === f
                         ? 'bg-accent text-accent-foreground'
                         : 'text-muted-foreground hover:text-foreground'

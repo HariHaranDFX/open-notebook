@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Loader2, X, AlertCircle, Wand2 } from 'lucide-react'
+import { Loader2, AlertCircle, Wand2 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useUpdateModelDefaults, useAutoAssignDefaults } from '@/lib/hooks/use-models'
 import { Model, ModelDefaults } from '@/lib/types/models'
@@ -110,11 +110,6 @@ function DefaultModelSelect({
             ))}
           </SelectContent>
         </Select>
-        {!config.required && currentValue && (
-          <Button variant="ghost" size="icon-sm" onClick={() => onChange(config.key, "")} className="shrink-0" aria-label={t('common.remove')}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        )}
       </div>
     </div>
   )
