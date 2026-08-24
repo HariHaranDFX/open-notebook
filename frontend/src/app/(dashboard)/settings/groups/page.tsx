@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { PageFrame } from '@/components/layout/PageFrame'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -79,9 +80,9 @@ export default function GroupsPage() {
             {/* Groups list */}
             <div className="flex shrink-0 flex-col border-b border-border md:w-64 md:border-b-0 md:border-r">
               <div className="flex h-14 items-center justify-between gap-2 border-b border-border px-3.5">
-                <span className="text-sm font-medium text-muted-foreground">
+                <Badge variant="secondary" className="tabular-nums">
                   {t('groups.groupCount', { count: groups?.length ?? 0 })}
-                </span>
+                </Badge>
                 <Button size="sm" onClick={() => setCreateOpen(true)}>
                   <Plus className="size-4" />
                   {t('groups.create')}
@@ -125,9 +126,9 @@ export default function GroupsPage() {
                               </span>
                             )}
                           </span>
-                          <span className={cn('shrink-0 text-xs tabular-nums text-muted-foreground', active && 'text-accent-foreground/80')}>
+                          <Badge variant="secondary" className="shrink-0 tabular-nums">
                             {group.member_count}
-                          </span>
+                          </Badge>
                         </button>
                       </li>
                     )
