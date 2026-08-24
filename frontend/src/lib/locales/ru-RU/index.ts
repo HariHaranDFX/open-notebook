@@ -286,13 +286,17 @@ export const ruRU = {
     revokeConfirmDescription: "Это удалит прямой доступ с ролью «{{role}}». Доступ через группу, связанный блокнот или другое разрешение может сохраниться.",
   },
   groups: {
+    groupCount: "Групп: {{count}}",
+    memberCount: "Участников: {{count}}",
+    noMembers: "Пока нет участников",
+    selectGroupHint: "Выберите группу, чтобы увидеть её участников",
     title: "Группы",
     description: "Управление группами для доступа",
     create: "Новая группа",
     name: "Название",
     namePlaceholder: "Название группы",
     descriptionLabel: "Описание",
-    members: "Участники",
+
     addMember: "Добавить",
     removeMember: "Удалить",
     noGroups: "Групп пока нет",

@@ -286,13 +286,17 @@ export const jaJP = {
     revokeConfirmDescription: "直接付与された{{role}}権限が削除されます。グループやリンクされたノートブック、その他の権限によるアクセスは引き続き有効な場合があります。",
   },
   groups: {
+    groupCount: "{{count}} 個のグループ",
+    memberCount: "{{count}} 人のメンバー",
+    noMembers: "メンバーはまだいません",
+    selectGroupHint: "グループを選択するとメンバーが表示されます",
     title: "グループ",
     description: "共有用グループを管理",
     create: "新しいグループ",
     name: "名前",
     namePlaceholder: "グループ名",
     descriptionLabel: "説明",
-    members: "メンバー",
+
     addMember: "追加",
     removeMember: "削除",
     noGroups: "グループはまだありません",

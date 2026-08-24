@@ -286,13 +286,17 @@ export const ptBR = {
     revokeConfirmDescription: "Isso remove a concessão direta como {{role}}. A pessoa ainda pode ter acesso por meio de um grupo, um caderno vinculado ou outra concessão.",
   },
   groups: {
+    groupCount: "{{count}} grupos",
+    memberCount: "{{count}} membros",
+    noMembers: "Ainda sem membros",
+    selectGroupHint: "Selecione um grupo para ver seus membros",
     title: "Grupos",
     description: "Gerenciar grupos para compartilhamento",
     create: "Novo grupo",
     name: "Nome",
     namePlaceholder: "Nome do grupo",
     descriptionLabel: "Descrição",
-    members: "Membros",
+
     addMember: "Adicionar",
     removeMember: "Remover",
     noGroups: "Nenhum grupo ainda",

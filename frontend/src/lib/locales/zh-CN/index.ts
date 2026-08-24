@@ -286,13 +286,17 @@ export const zhCN = {
     revokeConfirmDescription: "这将移除其直接的{{role}}授权。对方可能仍可通过群组、关联的笔记本或其他授权获得访问权限。",
   },
   groups: {
+    groupCount: "{{count}} 个群组",
+    memberCount: "{{count}} 名成员",
+    noMembers: "暂无成员",
+    selectGroupHint: "选择一个群组以查看其成员",
     title: "群组",
     description: "管理用于分享的群组",
     create: "新建群组",
     name: "名称",
     namePlaceholder: "群组名称",
     descriptionLabel: "描述",
-    members: "成员",
+
     addMember: "添加",
     removeMember: "移除",
     noGroups: "暂无群组",

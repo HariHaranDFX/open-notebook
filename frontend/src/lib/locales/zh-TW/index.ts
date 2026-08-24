@@ -286,13 +286,17 @@ export const zhTW = {
     revokeConfirmDescription: "這將移除其直接的{{role}}授權。對方可能仍可透過群組、關聯的筆記本或其他授權取得存取權限。",
   },
   groups: {
+    groupCount: "{{count}} 個群組",
+    memberCount: "{{count}} 位成員",
+    noMembers: "尚無成員",
+    selectGroupHint: "選擇一個群組以查看其成員",
     title: "群組",
     description: "管理用於分享的群組",
     create: "新增群組",
     name: "名稱",
     namePlaceholder: "群組名稱",
     descriptionLabel: "描述",
-    members: "成員",
+
     addMember: "新增",
     removeMember: "移除",
     noGroups: "尚無群組",

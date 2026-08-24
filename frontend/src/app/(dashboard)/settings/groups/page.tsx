@@ -7,25 +7,28 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  useGroups,
-  useCreateGroup,
-  useDeleteGroup,
-  useGroupMembers,
-  useAddGroupMember,
-  useRemoveGroupMember,
-  useUsers,
+  useGroups, useCreateGroup, useDeleteGroup, useGroupMembers,
+  useAddGroupMember, useRemoveGroupMember, useUsers,
 } from '@/lib/hooks/use-sharing'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Users, X, MoreHorizontal, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+function initials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || '?'
+  )
+}
 
 export default function GroupsPage() {
   const { t } = useTranslation()
@@ -34,18 +37,21 @@ export default function GroupsPage() {
   const createGroup = useCreateGroup()
   const deleteGroup = useDeleteGroup()
 
+  const [createOpen, setCreateOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [memberUserId, setMemberUserId] = useState('')
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
 
-  const { data: members, isLoading: membersLoading } = useGroupMembers(
-    selectedGroupId ?? '',
-    !!selectedGroupId
-  )
+  const { data: members, isLoading: membersLoading } = useGroupMembers(selectedGroupId ?? '', !!selectedGroupId)
   const addMember = useAddGroupMember(selectedGroupId ?? '')
   const removeMember = useRemoveGroupMember(selectedGroupId ?? '')
+
+  const selectedGroup = groups?.find((g) => g.id === selectedGroupId) ?? null
+  const memberIds = new Set(members?.map((m) => m.user_id) ?? [])
+  const availableUsers = users?.filter((u) => !memberIds.has(u.id)) ?? []
+  const memberCount = members?.length ?? selectedGroup?.member_count ?? 0
 
   const handleCreate = async () => {
     if (!name.trim()) return
@@ -55,131 +61,153 @@ export default function GroupsPage() {
     })
     setName('')
     setDescription('')
+    setCreateOpen(false)
     setSelectedGroupId(group.id)
   }
-
-  const memberIds = new Set(members?.map((m) => m.user_id) ?? [])
-  const availableUsers = users?.filter((u) => !memberIds.has(u.id)) ?? []
 
   return (
     <>
       <PageFrame width="reading">
-        <PageHeader
-          eyebrow={t('navigation.settings')}
-          title={t('groups.title')}
-          description={t('groups.description')}
-        />
+        <PageHeader eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
 
-        <div className="space-y-6">
-          <div className="space-y-3 rounded-[var(--surface-radius)] border p-4">
-            <h2 className="font-medium">{t('groups.create')}</h2>
-            <div className="space-y-2">
-              <Label htmlFor="group-name">{t('groups.name')}</Label>
-              <Input
-                id="group-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('groups.namePlaceholder')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="group-desc">{t('groups.descriptionLabel')}</Label>
-              <Input
-                id="group-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={handleCreate}
-              disabled={!name.trim() || createGroup.isPending}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('groups.create')}
-            </Button>
+        {isLoading ? (
+          <div className="flex justify-center py-16">
+            <LoadingSpinner />
           </div>
-
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <LoadingSpinner />
+        ) : (
+          <div className="flex min-h-[440px] overflow-hidden rounded-[var(--surface-radius)] border border-border">
+            {/* Groups list */}
+            <div className="flex w-[248px] shrink-0 flex-col border-r border-border">
+              <div className="flex items-center justify-between gap-2 border-b border-border px-3.5 py-2.5">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {t('groups.groupCount', { count: groups?.length ?? 0 })}
+                </span>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="size-4" />
+                  {t('groups.create')}
+                </Button>
+              </div>
+              {!groups?.length ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+                  <Users className="size-6 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">{t('groups.noGroups')}</p>
+                </div>
+              ) : (
+                <ul className="flex-1 space-y-1 overflow-y-auto p-2">
+                  {groups.map((group) => {
+                    const active = selectedGroupId === group.id
+                    return (
+                      <li key={group.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGroupId(group.id)}
+                          aria-current={active ? 'true' : undefined}
+                          className={cn(
+                            'flex w-full items-center gap-2.5 rounded-[var(--control-radius)] border px-2.5 py-2 text-left transition-colors',
+                            active ? 'border-primary bg-accent' : 'border-transparent hover:bg-muted/60'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'flex size-8 shrink-0 items-center justify-center rounded-[var(--control-radius)]',
+                              active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                            )}
+                          >
+                            <Users className="size-4" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={cn('block truncate text-sm font-medium', active && 'text-accent-foreground')}>
+                              {group.name}
+                            </span>
+                            {group.description && (
+                              <span className={cn('block truncate text-xs text-muted-foreground', active && 'text-accent-foreground/75')}>
+                                {group.description}
+                              </span>
+                            )}
+                          </span>
+                          <span className={cn('shrink-0 text-xs tabular-nums text-muted-foreground', active && 'text-accent-foreground/80')}>
+                            {group.member_count}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </div>
-          ) : !groups?.length ? (
-            <p className="text-muted-foreground">{t('groups.noGroups')}</p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <ul className="space-y-2">
-                {groups.map((group) => (
-                  <li key={group.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedGroupId(group.id)}
-                      className={`w-full rounded-[var(--surface-radius)] border px-3 py-2 text-left ${
-                        selectedGroupId === group.id
-                          ? 'border-primary bg-accent'
-                          : 'hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium truncate">{group.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {group.member_count}
-                        </span>
-                      </div>
-                      {group.description && (
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                          {group.description}
-                        </p>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
 
-              {selectedGroupId && (
-                <div className="space-y-3 rounded-[var(--surface-radius)] border p-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-medium">{t('groups.members')}</h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                      onClick={() => setGroupToDelete(selectedGroupId)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      {t('common.delete')}
-                    </Button>
+            {/* Selected group detail */}
+            <div className="flex min-w-0 flex-1 flex-col">
+              {!selectedGroup ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                  <Users className="size-7 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">{t('groups.selectGroupHint')}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-[15px] font-medium">{selectedGroup.name}</h2>
+                      <p className="text-[13px] text-muted-foreground">{t('groups.memberCount', { count: memberCount })}</p>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" aria-label={t('common.actions')}>
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem variant="destructive" onSelect={() => setGroupToDelete(selectedGroup.id)}>
+                          <Trash2 className="size-4" />
+                          {t('groups.deleteConfirm')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
-                  {membersLoading ? (
-                    <LoadingSpinner />
-                  ) : (
-                    <ul className="space-y-2 max-h-56 overflow-y-auto">
-                      {(members ?? []).map((m) => (
-                        <li
-                          key={m.user_id}
-                          className="flex items-center justify-between gap-2 text-sm"
-                        >
-                          <span className="truncate">
-                            {m.display_name || m.email}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMember.mutate(m.user_id)}
-                          >
-                            {t('groups.removeMember')}
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  <div className="min-h-0 flex-1 overflow-y-auto p-2">
+                    {membersLoading ? (
+                      <div className="flex justify-center py-8">
+                        <LoadingSpinner />
+                      </div>
+                    ) : !members?.length ? (
+                      <div className="flex h-full flex-col items-center justify-center gap-1 text-center">
+                        <p className="text-sm text-muted-foreground">{t('groups.noMembers')}</p>
+                      </div>
+                    ) : (
+                      <ul>
+                        {members.map((m) => {
+                          const label = m.display_name || m.email
+                          return (
+                            <li key={m.user_id} className="group flex items-center gap-3 rounded-[var(--control-radius)] px-2 py-2 hover:bg-muted/50">
+                              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-foreground">
+                                {initials(label)}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium">{m.display_name || m.email}</span>
+                                {m.display_name && m.email && (
+                                  <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
+                                )}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`${t('groups.removeMember')} ${label}`}
+                                className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                                onClick={() => removeMember.mutate(m.user_id)}
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
 
-                  <div className="flex gap-2 pt-2 border-t">
-                    <Select
-                      value={memberUserId || undefined}
-                      onValueChange={setMemberUserId}
-                    >
-                      <SelectTrigger>
+                  <div className="flex gap-2 border-t border-border px-4 py-3">
+                    <Select value={memberUserId || undefined} onValueChange={setMemberUserId}>
+                      <SelectTrigger className="flex-1">
                         <SelectValue placeholder={t('groups.selectUser')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -191,23 +219,47 @@ export default function GroupsPage() {
                       </SelectContent>
                     </Select>
                     <Button
+                      variant="outline"
                       onClick={() => {
                         if (!memberUserId) return
-                        addMember.mutate(memberUserId, {
-                          onSuccess: () => setMemberUserId(''),
-                        })
+                        addMember.mutate(memberUserId, { onSuccess: () => setMemberUserId('') })
                       }}
                       disabled={!memberUserId || addMember.isPending}
                     >
                       {t('groups.addMember')}
                     </Button>
                   </div>
-                </div>
+                </>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </PageFrame>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('groups.create')}</DialogTitle>
+            <DialogDescription>{t('groups.description')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="group-name">{t('groups.name')}</Label>
+              <Input id="group-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('groups.namePlaceholder')} autoFocus />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="group-desc">{t('groups.descriptionLabel')}</Label>
+              <Input id="group-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleCreate} disabled={!name.trim() || createGroup.isPending}>
+              {createGroup.isPending ? t('common.saving') : t('common.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!groupToDelete}

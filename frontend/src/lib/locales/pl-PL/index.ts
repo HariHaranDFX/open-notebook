@@ -286,13 +286,17 @@ export const plPL = {
     revokeConfirmDescription: "Spowoduje to usunięcie bezpośredniego uprawnienia {{role}}. Dostęp poprzez grupę, powiązany notatnik lub inne uprawnienie może nadal obowiązywać.",
   },
   groups: {
+    groupCount: "Grupy: {{count}}",
+    memberCount: "Członkowie: {{count}}",
+    noMembers: "Brak członków",
+    selectGroupHint: "Wybierz grupę, aby zobaczyć jej członków",
     title: "Grupy",
     description: "Zarządzaj grupami do udostępniania",
     create: "Nowa grupa",
     name: "Nazwa",
     namePlaceholder: "Nazwa grupy",
     descriptionLabel: "Opis",
-    members: "Członkowie",
+
     addMember: "Dodaj",
     removeMember: "Usuń",
     noGroups: "Brak grup",

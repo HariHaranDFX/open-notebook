@@ -286,13 +286,17 @@ export const caES = {
     revokeConfirmDescription: "Això elimina la seva concessió directa com a {{role}}. Encara pot tenir accés mitjançant un grup, un quadern vinculat o una altra concessió.",
   },
   groups: {
+    groupCount: "{{count}} grups",
+    memberCount: "{{count}} membres",
+    noMembers: "Encara no hi ha membres",
+    selectGroupHint: "Selecciona un grup per veure'n els membres",
     title: "Grups",
     description: "Gestiona grups per compartir",
     create: "Grup nou",
     name: "Nom",
     namePlaceholder: "Nom del grup",
     descriptionLabel: "Descripció",
-    members: "Membres",
+
     addMember: "Afegeix",
     removeMember: "Treu",
     noGroups: "Encara no hi ha grups",

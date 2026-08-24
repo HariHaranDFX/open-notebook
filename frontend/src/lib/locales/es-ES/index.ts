@@ -286,13 +286,17 @@ export const esES = {
     revokeConfirmDescription: "Esto elimina su concesión directa como {{role}}. Es posible que aún tenga acceso a través de un grupo, un cuaderno vinculado u otra concesión.",
   },
   groups: {
+    groupCount: "{{count}} grupos",
+    memberCount: "{{count}} miembros",
+    noMembers: "Aún no hay miembros",
+    selectGroupHint: "Selecciona un grupo para ver sus miembros",
     title: "Grupos",
     description: "Gestionar grupos para compartir",
     create: "Nuevo grupo",
     name: "Nombre",
     namePlaceholder: "Nombre del grupo",
     descriptionLabel: "Descripción",
-    members: "Miembros",
+
     addMember: "Añadir",
     removeMember: "Quitar",
     noGroups: "Aún no hay grupos",

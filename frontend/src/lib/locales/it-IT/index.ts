@@ -286,13 +286,17 @@ export const itIT = {
     revokeConfirmDescription: "Questo rimuove la concessione diretta come {{role}}. Potrebbe comunque avere accesso tramite un gruppo, un quaderno collegato o un'altra concessione.",
   },
   groups: {
+    groupCount: "{{count}} gruppi",
+    memberCount: "{{count}} membri",
+    noMembers: "Ancora nessun membro",
+    selectGroupHint: "Seleziona un gruppo per vederne i membri",
     title: "Gruppi",
     description: "Gestisci i gruppi per la condivisione",
     create: "Nuovo gruppo",
     name: "Nome",
     namePlaceholder: "Nome gruppo",
     descriptionLabel: "Descrizione",
-    members: "Membri",
+
     addMember: "Aggiungi",
     removeMember: "Rimuovi",
     noGroups: "Nessun gruppo",

@@ -286,13 +286,17 @@ export const frFR = {
     revokeConfirmDescription: "Cela supprime son partage direct en tant que {{role}}. Un accès via un groupe, un carnet lié ou un autre partage peut subsister.",
   },
   groups: {
+    groupCount: "{{count}} groupes",
+    memberCount: "{{count}} membres",
+    noMembers: "Aucun membre pour l'instant",
+    selectGroupHint: "Sélectionnez un groupe pour voir ses membres",
     title: "Groupes",
     description: "Gérer les groupes de partage",
     create: "Nouveau groupe",
     name: "Nom",
     namePlaceholder: "Nom du groupe",
     descriptionLabel: "Description",
-    members: "Membres",
+
     addMember: "Ajouter",
     removeMember: "Retirer",
     noGroups: "Aucun groupe",

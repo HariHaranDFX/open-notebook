@@ -289,13 +289,17 @@ export const deDE = {
     revokeConfirmDescription: "Dies entfernt die direkte Freigabe als {{role}}. Zugriff über eine Gruppe, ein verknüpftes Notebook oder eine andere Freigabe kann weiterhin bestehen.",
   },
   groups: {
+    groupCount: "{{count}} Gruppen",
+    memberCount: "{{count}} Mitglieder",
+    noMembers: "Noch keine Mitglieder",
+    selectGroupHint: "Wähle eine Gruppe, um ihre Mitglieder zu sehen",
     title: "Gruppen",
     description: "Gruppen für Freigaben verwalten",
     create: "Neue Gruppe",
     name: "Name",
     namePlaceholder: "Gruppenname",
     descriptionLabel: "Beschreibung",
-    members: "Mitglieder",
+
     addMember: "Hinzufügen",
     removeMember: "Entfernen",
     noGroups: "Noch keine Gruppen",

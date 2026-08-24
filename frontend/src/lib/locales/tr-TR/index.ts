@@ -286,13 +286,17 @@ export const trTR = {
     revokeConfirmDescription: "Bu, doğrudan {{role}} yetkisini kaldırır. Bir grup, bağlı bir defter veya başka bir yetki üzerinden erişim devam edebilir.",
   },
   groups: {
+    groupCount: "{{count}} grup",
+    memberCount: "{{count}} üye",
+    noMembers: "Henüz üye yok",
+    selectGroupHint: "Üyelerini görmek için bir grup seçin",
     title: "Gruplar",
     description: "Paylaşım gruplarını yönet",
     create: "Yeni grup",
     name: "Ad",
     namePlaceholder: "Grup adı",
     descriptionLabel: "Açıklama",
-    members: "Üyeler",
+
     addMember: "Ekle",
     removeMember: "Kaldır",
     noGroups: "Henüz grup yok",

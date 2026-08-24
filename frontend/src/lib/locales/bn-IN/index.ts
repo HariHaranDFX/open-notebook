@@ -286,13 +286,17 @@ export const bnIN = {
     revokeConfirmDescription: "এটি তাদের সরাসরি {{role}} অনুমতি সরিয়ে দেবে। একটি গ্রুপ, লিঙ্ক করা নোটবুক বা অন্য অনুমতির মাধ্যমে তাদের অ্যাক্সেস এখনও থাকতে পারে।",
   },
   groups: {
+    groupCount: "{{count}} টি গ্রুপ",
+    memberCount: "{{count}} জন সদস্য",
+    noMembers: "এখনও কোনো সদস্য নেই",
+    selectGroupHint: "সদস্যদের দেখতে একটি গ্রুপ নির্বাচন করুন",
     title: "গ্রুপ",
     description: "শেয়ারিংয়ের জন্য গ্রুপ পরিচালনা",
     create: "নতুন গ্রুপ",
     name: "নাম",
     namePlaceholder: "গ্রুপের নাম",
     descriptionLabel: "বিবরণ",
-    members: "সদস্য",
+
     addMember: "যোগ",
     removeMember: "সরান",
     noGroups: "এখনও কোনো গ্রুপ নেই",

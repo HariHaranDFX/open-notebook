@@ -284,13 +284,17 @@ export const enUS = {
     revokeConfirmDescription: "This removes their direct {{role}} grant. They may still have access through a group, a linked notebook, or another grant.",
   },
   groups: {
+    groupCount: "{{count}} groups",
+    memberCount: "{{count}} members",
+    noMembers: "No members yet",
+    selectGroupHint: "Select a group to see its members",
     title: "Groups",
     description: "Manage groups for sharing",
     create: "New group",
     name: "Name",
     namePlaceholder: "Group name",
     descriptionLabel: "Description",
-    members: "Members",
+
     addMember: "Add",
     removeMember: "Remove",
     noGroups: "No groups yet",
