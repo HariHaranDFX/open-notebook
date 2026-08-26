@@ -13,6 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
@@ -533,21 +541,21 @@ export function AddSourceDialog({
   const currentStepValid = isStepValid(currentStep)
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>{t('sources.addNew')}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <SheetHeader className="gap-1 px-6 py-2.5">
+          <SheetTitle>{t('sources.addNew')}</SheetTitle>
+          <SheetDescription>
             {t('sources.processDescription')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 min-w-0 flex-1 flex-col">
           <WizardContainer
             currentStep={currentStep}
             steps={WIZARD_STEPS}
             onStepClick={handleStepClick}
-            className="border-0"
+            className="h-auto min-h-0 flex-1 rounded-none border-0"
           >
             {currentStep === 1 && (
               <SourceTypeStep
@@ -585,7 +593,7 @@ export function AddSourceDialog({
           </WizardContainer>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted">
+          <SheetFooter className="items-center justify-between border-t border-border px-6 py-2 sm:justify-between">
             <Button 
               type="button" 
               variant="outline" 
@@ -617,18 +625,19 @@ export function AddSourceDialog({
                 </Button>
               )}
 
-              {/* Show Done button on all steps, styled as primary */}
-              <Button
-                type="submit"
-                disabled={!currentStepValid || createSource.isPending}
-                className="min-w-[120px]"
-              >
-                {createSource.isPending ? t('common.adding') : t('common.done')}
-              </Button>
+              {currentStep === 3 && (
+                <Button
+                  type="submit"
+                  disabled={!currentStepValid || createSource.isPending}
+                  className="min-w-[120px]"
+                >
+                  {createSource.isPending ? t('common.adding') : t('common.done')}
+                </Button>
+              )}
             </div>
-          </div>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

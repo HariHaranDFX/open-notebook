@@ -13,12 +13,13 @@ import {
 } from '@/lib/hooks/use-podcasts'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -151,16 +152,16 @@ export function EpisodeProfileFormDialog({
   const isEdit = mode === 'edit'
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full max-w-[calc(100vw-1.5rem)] overflow-y-auto p-6 sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>
             {isEdit ? t('podcasts.editEpisodeProfile') : t('podcasts.createEpisodeProfile')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {t('podcasts.episodeProfileFormDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         {speakerProfiles.length === 0 ? (
           <Alert className="bg-amber-50 text-amber-900 border-amber-200">
@@ -377,7 +378,7 @@ export function EpisodeProfileFormDialog({
             ) : null}
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <SheetFooter className="border-t border-border pt-3">
             <Button
               type="button"
               variant="outline"
@@ -392,9 +393,9 @@ export function EpisodeProfileFormDialog({
                   ? t('common.saveChanges')
                   : t('podcasts.createProfile')}
             </Button>
-          </div>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

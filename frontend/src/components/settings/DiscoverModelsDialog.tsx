@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Plus, Loader2, AlertCircle } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDiscoverModels, useRegisterModels } from '@/lib/hooks/use-credentials'
@@ -155,16 +155,16 @@ export function DiscoverModelsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] grid-rows-[auto_1fr_auto]">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="grid w-full max-w-[calc(100vw-1.5rem)] grid-rows-[auto_1fr_auto] gap-4 p-6 sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>
             {t('models.discoverModels')} - {providerInfo?.display_name || credential.provider}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {credential.name}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="min-h-0 overflow-y-auto">
         {discoverModels.isPending ? (
@@ -262,7 +262,7 @@ export function DiscoverModelsDialog({
         )}
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
@@ -273,8 +273,8 @@ export function DiscoverModelsDialog({
             {registerModels.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {t('common.add')} ({totalSelected})
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

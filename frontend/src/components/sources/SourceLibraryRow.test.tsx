@@ -15,7 +15,9 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
-  DropdownMenuItem: ({ children }: { children: React.ReactNode }) => <button role="menuitem">{children}</button>,
+  DropdownMenuItem: ({ children, variant }: { children: React.ReactNode; variant?: string }) => (
+    <button role="menuitem" data-variant={variant ?? 'default'}>{children}</button>
+  ),
 }))
 vi.mock('@/lib/hooks/use-translation', () => ({
   useTranslation: () => ({
@@ -78,7 +80,7 @@ describe('SourceLibraryRow', () => {
     expect(screen.queryByText('2 insights')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Actions' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Share' })).toBeVisible()
-    expect(screen.getByRole('menuitem', { name: 'Delete source' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Delete source' })).toHaveAttribute('data-variant', 'destructive')
   })
 
   it.each([

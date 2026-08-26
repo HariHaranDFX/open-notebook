@@ -151,7 +151,7 @@ export function ResearchWorkbench({
   }
 
   return (
-    <div data-testid="workbench-desktop" className="flex h-full min-h-0 w-full overflow-hidden border border-border bg-background">
+    <div data-testid="workbench-desktop" className="flex h-full min-h-0 w-full overflow-hidden border-y border-r border-border bg-background">
       <div
         className={cn('min-w-0 overflow-hidden', collapsed ? 'flex-1' : 'shrink-0')}
         style={collapsed ? undefined : { width }}

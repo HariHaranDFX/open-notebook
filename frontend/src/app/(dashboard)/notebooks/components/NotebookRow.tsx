@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { ShareSheet } from '@/components/sharing/ShareSheet'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,6 +46,7 @@ interface NotebookRowProps {
 export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
   const { t, language } = useTranslation()
   const { isAdmin } = useAuth()
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const updateNotebook = useUpdateNotebook()
@@ -171,7 +173,7 @@ export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
                 </DropdownMenuItem>
               )}
               {canEdit && (
-                <DropdownMenuItem onClick={handleArchiveToggle}>
+                <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
                   {notebook.archived ? <ArchiveRestore /> : <Archive />}
                   {notebook.archived ? t('notebooks.unarchive') : t('notebooks.archive')}
                 </DropdownMenuItem>
@@ -190,6 +192,19 @@ export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
         )}
       </article>
 
+      <ConfirmDialog
+        open={showArchiveDialog}
+        onOpenChange={setShowArchiveDialog}
+        title={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmTitle'
+          : 'notebooks.archiveConfirmTitle')}
+        description={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmDescription'
+          : 'notebooks.archiveConfirmDescription', { name: notebook.name })}
+        confirmText={t(notebook.archived ? 'notebooks.unarchive' : 'notebooks.archive')}
+        onConfirm={handleArchiveToggle}
+        isLoading={updateNotebook.isPending}
+      />
       <NotebookDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

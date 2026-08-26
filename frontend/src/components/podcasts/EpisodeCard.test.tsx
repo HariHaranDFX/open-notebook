@@ -40,7 +40,10 @@ describe('EpisodeCard row', () => {
     )
 
     const link = screen.getByRole('link', { name: 'Test Episode' })
+    const title = screen.getByText('Test Episode')
     expect(link).toHaveAttribute('href', `/podcasts/${encodeURIComponent('episode:1')}`)
+    expect(title).toHaveClass('group-hover:text-primary')
+    expect(title).not.toHaveClass('group-hover:underline')
     expect(screen.getByText(/default/)).toBeInTheDocument()
   })
 

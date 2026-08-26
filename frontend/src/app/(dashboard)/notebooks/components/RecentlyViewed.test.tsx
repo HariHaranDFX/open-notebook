@@ -61,6 +61,7 @@ describe('RecentlyViewed', () => {
       'truncate',
       'font-semibold',
       'leading-snug',
+      'group-hover:text-primary',
     )
     const recentCard = screen.getByRole('link', { name: /Research notebook/ })
     expect(recentCard).toHaveClass('p-3')
@@ -115,6 +116,7 @@ describe('RecentlyViewed', () => {
     expect(await screen.findByTestId('recently-viewed-collection')).toHaveClass('border')
     expect(screen.getByTestId('recently-viewed-collection')).not.toHaveClass('border-y')
     const recentRow = screen.getByRole('link', { name: /Research notebook/ })
+    expect(screen.getByText('Research notebook')).toHaveClass('group-hover:text-primary')
     const typeLabel = screen.getByText('notebooks.recentlyViewedNotebook')
     const metadata = typeLabel.parentElement
     expect(recentRow).toHaveClass(

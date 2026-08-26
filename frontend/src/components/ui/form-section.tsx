@@ -9,6 +9,7 @@ interface FormSectionProps {
   description?: string
   children: ReactNode
   className?: string
+  contentClassName?: string
   htmlFor?: string
 }
 
@@ -17,10 +18,11 @@ export function FormSection({
   description,
   children,
   className,
+  contentClassName,
   htmlFor
 }: FormSectionProps) {
   return (
-    <div className={cn("mb-6 last:mb-0", className)}>
+    <div data-slot="form-section" className={cn("mb-6 last:mb-0", className)}>
       <div className="mb-4">
         {htmlFor ? (
           <Label htmlFor={htmlFor} className="text-base font-medium block mb-1">
@@ -37,7 +39,7 @@ export function FormSection({
           </p>
         )}
       </div>
-      <div className="space-y-3">
+      <div data-slot="form-section-content" className={cn("space-y-3", contentClassName)}>
         {children}
       </div>
     </div>

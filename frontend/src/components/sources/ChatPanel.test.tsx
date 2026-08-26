@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -11,6 +11,10 @@ vi.mock('@/lib/hooks/use-modal-manager', () => ({
 // Keep the message-content deps light for this composer-focused test.
 vi.mock('@/components/sources/MessageActions', () => ({
   MessageActions: () => null,
+}))
+
+vi.mock('@/components/sources/SessionManager', () => ({
+  SessionManager: () => <div>Session list</div>,
 }))
 
 describe('ChatPanel composer', () => {
@@ -47,6 +51,11 @@ describe('ChatPanel composer', () => {
       'border-border-strong',
       'bg-card',
     )
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.sessions' }))
+    const sessionsSheet = screen.getByRole('dialog', { name: 'chat.sessionsTitle' })
+    expect(sessionsSheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(within(sessionsSheet).getByRole('button', { name: 'common.close' })).toBeVisible()
   })
 
   it('sends the typed message and clears the input on send-button click', () => {

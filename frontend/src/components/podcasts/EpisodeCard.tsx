@@ -45,7 +45,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying, ro
       />
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-medium text-foreground group-hover:underline">
+          <span className="truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
             {episode.name}
           </span>
           <StatusBadge status={episode.job_status} />

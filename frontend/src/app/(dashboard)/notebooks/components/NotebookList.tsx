@@ -51,12 +51,11 @@ export function NotebookList({
           <h2 id={`${contentId}-title`}>
             <Button
               variant="ghost"
-              className="h-9 justify-start px-2 text-lg font-semibold"
+              className="h-9 justify-start !px-0 text-lg font-semibold"
               onClick={() => setIsExpanded(value => !value)}
               aria-expanded={isExpanded}
               aria-controls={contentId}
             >
-              {isExpanded ? <ChevronDown /> : <ChevronRight />}
               {title}
               <Badge
                 variant="secondary"
@@ -64,6 +63,7 @@ export function NotebookList({
               >
                 {count}
               </Badge>
+              {isExpanded ? <ChevronDown /> : <ChevronRight />}
             </Button>
           </h2>
         ) : (

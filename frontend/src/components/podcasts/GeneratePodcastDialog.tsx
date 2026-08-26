@@ -15,12 +15,13 @@ import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -472,21 +473,21 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const isSubmitting = generatePodcast.isPending || isBuildingContext
 
   return (
-    <Dialog open={open} onOpenChange={(value) => {
+    <Sheet open={open} onOpenChange={(value) => {
       onOpenChange(value)
       if (!value) {
         resetState()
       }
     }}>
-      <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>{t('podcasts.generateEpisode')}</DialogTitle>
-          <DialogDescription>
+      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1080px]">
+        <SheetHeader className="border-b border-border px-6 py-3 pr-14">
+          <SheetTitle>{t('podcasts.generateEpisode')}</SheetTitle>
+          <SheetDescription>
             {t('podcasts.generateEpisodeDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="grid gap-6 md:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]">
+        <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]">
           <ContentSelectionPanel
             notebooks={notebooks}
             isLoading={notebooksQuery.isLoading}
@@ -579,27 +580,22 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-                className="w-full"
-              >
-                {t('common.cancel')}
-              </Button>
-            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter className="border-t border-border px-6 py-3">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

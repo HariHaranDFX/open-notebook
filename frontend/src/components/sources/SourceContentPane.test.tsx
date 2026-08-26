@@ -38,6 +38,30 @@ function renderContent() {
   )
 }
 
+function renderDetails(detailsSource = source) {
+  return render(
+    <SourceContentPane
+      source={detailsSource}
+      sourceId={detailsSource.id}
+      section="details"
+      detailsVariant="sheet"
+      showDetailsHeader={false}
+      externalHref={detailsSource.asset?.url ?? null}
+      youTubeVideoId="abcdefghijk"
+      copied={false}
+      isEmbedding={false}
+      isDownloadingFile={false}
+      fileAvailable={null}
+      canEdit={false}
+      onEmbedContent={vi.fn()}
+      onCopyUrl={vi.fn()}
+      onOpenExternal={vi.fn()}
+      onDownloadFile={vi.fn()}
+      onRefresh={vi.fn()}
+    />,
+  )
+}
+
 describe('SourceContentPane', () => {
   it('keeps YouTube media fluid inside a bounded reading surface', () => {
     renderContent()
@@ -64,5 +88,34 @@ describe('SourceContentPane', () => {
       'max-w-[75ch]',
       'overflow-x-hidden',
     )
+  })
+
+  it('uses a flat, compact inspector hierarchy for sheet details', () => {
+    const { container } = renderDetails()
+
+    const inspector = container.querySelector('[data-slot="source-details-inspector"]')
+    const summary = container.querySelector('[data-slot="source-details-summary"]')
+    const resourceIcon = summary?.querySelector('[data-testid="resource-type-icon"]')
+
+    expect(inspector).toBeInTheDocument()
+    expect(inspector?.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
+    expect(summary).toContainElement(screen.getByText('Responsive research source'))
+    expect(resourceIcon).toHaveAttribute('data-resource-kind', 'link')
+    expect(resourceIcon).toHaveClass(
+      'rounded-[var(--control-radius)]',
+      'border',
+      'border-border',
+    )
+    expect(screen.getByText('sources.type.link').closest('[data-slot="badge"]')).toBeInTheDocument()
+    expect(screen.getByText('common.source')).toBeInTheDocument()
+    expect(screen.getByText('sources.metadata')).toBeInTheDocument()
+    expect(screen.queryByText('sources.details')).not.toBeInTheDocument()
+    expect(screen.queryByText('sources.embedded')).not.toBeInTheDocument()
+  })
+
+  it('uses the control radius for the not-embedded banner', () => {
+    renderDetails({ ...source, embedded: false })
+
+    expect(screen.getByRole('alert')).toHaveClass('rounded-[var(--control-radius)]')
   })
 })

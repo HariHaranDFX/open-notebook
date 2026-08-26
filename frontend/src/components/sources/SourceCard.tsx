@@ -13,9 +13,6 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import {
-  FileText,
-  ExternalLink,
-  Upload,
   MoreVertical,
   Trash2,
   RefreshCw,
@@ -30,6 +27,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import type { TFunction } from 'i18next'
 import { cn } from '@/lib/utils'
 import { ContextSelector } from '@/components/common/ContextSelector'
+import { getSourceResourceKind, ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import type { ContextMode } from '@/lib/types/notebook-context'
 
 interface SourceCardProps {
@@ -45,12 +43,6 @@ interface SourceCardProps {
   contextMode?: ContextMode
   onContextModeChange?: (mode: ContextMode) => void
 }
-
-const SOURCE_TYPE_ICONS = {
-  link: ExternalLink,
-  upload: Upload,
-  text: FileText,
-} as const
 
 const getStatusConfig = (t: TFunction) => ({
   new: {
@@ -182,7 +174,7 @@ function SourceCardImpl({
   const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
   const sourceType = getSourceType(source)
-  const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
+  const resourceKind = getSourceResourceKind(source.asset)
   
    const title = source.title || t('sources.untitledSource')
 
@@ -236,7 +228,7 @@ function SourceCardImpl({
               className="flex min-w-0 flex-nowrap items-center gap-2"
             >
               <Badge variant="secondary" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
-                <SourceTypeIcon className="h-3 w-3" />
+                <ResourceTypeIcon kind={resourceKind} className="size-4" />
                 {sourceType === 'link' ? t('sources.addUrl') : sourceType === 'upload' ? t('sources.uploadFile') : t('sources.enterText')}
               </Badge>
 
@@ -349,7 +341,7 @@ function SourceCardImpl({
             </div>
 
             <div className="flex items-center gap-1 text-gray-500">
-              <SourceTypeIcon className="h-3 w-3" />
+              <ResourceTypeIcon kind={resourceKind} className="size-4" />
               <span className="text-xs capitalize">{t('common.source')}</span>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SourceDetailContent } from './SourceDetailContent'
@@ -221,7 +221,7 @@ describe('SourceDetailContent', () => {
 
     const title = await screen.findByText('Grounded source')
     const backButton = screen.getByRole('button', {
-      name: 'workbench.backToSources',
+      name: 'common.back',
     })
     const shareButton = screen.getByRole('button', { name: 'sharing.share' })
     const headerLayout = title.closest('[data-slot="detail-header-layout"]')
@@ -272,5 +272,87 @@ describe('SourceDetailContent', () => {
     expect(title.closest('header')).not.toHaveClass('border-b')
     expect(sourceDetail).toHaveClass('min-h-0', 'min-w-0', 'flex-1', 'overflow-hidden')
     expect(actionsButton).toHaveClass('border-border-strong', 'bg-card')
+  })
+
+  it('uses one-pixel menu dividers and the shared destructive delete treatment', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:menu',
+      title: 'Grounded source',
+      access_role: 'owner',
+      asset: { file_path: '/uploads/source.pdf' },
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+    renderContent()
+
+    const actionsButton = await screen.findByRole('button', { name: 'common.actions' })
+    fireEvent.keyDown(actionsButton, { key: 'Enter' })
+
+    const deleteItem = await screen.findByRole('menuitem', { name: 'sources.deleteSource' })
+    const menu = deleteItem.closest('[data-slot="dropdown-menu-content"]')
+    const dividers = menu?.querySelectorAll('[data-slot="dropdown-menu-separator"]') ?? []
+    expect(deleteItem).toHaveAttribute('data-variant', 'destructive')
+    expect(dividers).toHaveLength(2)
+    for (const divider of dividers) {
+      expect(divider).toHaveClass('h-0', 'border-t', 'border-border')
+      expect(divider).not.toHaveClass('h-px', 'bg-border')
+    }
+  })
+
+  it('opens workspace source details in a full-height right sheet', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:details',
+      title: 'Grounded source',
+      access_role: 'owner',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SourceDetailContent
+          sourceId="source:details"
+          renderWorkspace={({ content }) => content}
+        />
+      </QueryClientProvider>,
+    )
+
+    const actionsButton = await screen.findByRole('button', { name: 'common.actions' })
+    fireEvent.keyDown(actionsButton, { key: 'Enter' })
+    const detailsAction = await screen.findByRole('menuitem', { name: 'sources.details' })
+    fireEvent.click(detailsAction)
+
+    const detailsSheet = await screen.findByRole('dialog', { name: 'sources.details' })
+    expect(detailsSheet).toHaveClass(
+      'inset-y-0',
+      'right-0',
+      'h-dvh',
+      'data-[state=open]:slide-in-from-right',
+    )
+    expect(detailsSheet.querySelector('[data-slot="sheet-header"]')).toBeInTheDocument()
+    expect(detailsSheet.querySelector('[data-slot="sheet-footer"]')).toBeInTheDocument()
+    expect(detailsSheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(within(detailsSheet).getAllByText('sources.details')).toHaveLength(1)
+    expect(within(detailsSheet).getByText('sources.notEmbedded')).toBeInTheDocument()
+    expect(within(detailsSheet).getByText('Grounded source')).toBeInTheDocument()
+    expect(detailsSheet.querySelector('[data-slot="sheet-header"]')).toHaveClass(
+      'flex-row',
+      'items-center',
+      'justify-between',
+      'py-4',
+    )
+    expect(detailsSheet.querySelector('[data-slot="sheet-footer"]')).toHaveClass(
+      'sm:justify-start',
+    )
   })
 })

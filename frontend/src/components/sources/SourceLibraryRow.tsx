@@ -251,7 +251,7 @@ export function SourceLibraryRow({
               {canDelete && (
                 <DropdownMenuItem
                   onClick={() => onDelete(source)}
-                  className="text-destructive focus:text-destructive"
+                  variant="destructive"
                 >
                   <Trash2 />
                   {t('sources.deleteSource')}

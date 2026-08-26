@@ -720,6 +720,11 @@ async def create_source(
                 logger.error(f"File upload failed: {e}")
                 raise HTTPException(status_code=400, detail="File upload failed")
 
+        if source_data.type == "upload" and not source_data.title:
+            upload_name = upload_file.filename if upload_file else source_data.file_path
+            if upload_name:
+                source_data.title = Path(upload_name).name
+
         # Prepare content_state for processing (type validation + SSRF/LFI guards)
         content_state = await _build_content_state(source_data, file_path)
 

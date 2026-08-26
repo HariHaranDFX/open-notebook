@@ -60,8 +60,8 @@ const extensionKinds: Record<string, ResourceKind> = {
 
 const resourceVisuals = {
   notebook: { icon: BookOpen, className: 'text-[var(--resource-notebook)]' },
-  source: { icon: FileText, className: 'text-provenance' },
-  link: { icon: ExternalLink, className: 'text-provenance' },
+  source: { icon: FileText, className: 'text-[var(--resource-document)]' },
+  link: { icon: ExternalLink, className: 'text-[var(--resource-link)]' },
   text: { icon: AlignLeft, className: 'text-[var(--resource-text)]' },
   document: { icon: FileText, className: 'text-[var(--resource-document)]' },
   spreadsheet: { icon: FileSpreadsheet, className: 'text-[var(--resource-spreadsheet)]' },
@@ -100,7 +100,7 @@ export function ResourceTypeIcon({ kind, className }: ResourceTypeIconProps) {
         className,
       )}
     >
-      <Icon className="size-4" />
+      <Icon className="size-4" strokeWidth={2.25} />
     </span>
   )
 }

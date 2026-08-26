@@ -18,6 +18,7 @@ import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import {
@@ -35,6 +36,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
   const { t, language } = useTranslation()
   const dfLocale = getDateLocale(language)
   const { isAdmin } = useAuth()
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
 
@@ -149,7 +151,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {canEdit && (
-                    <DropdownMenuItem onClick={handleArchiveToggle}>
+                    <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
                       {notebook.archived ? <ArchiveRestore /> : <Archive />}
                       {notebook.archived
                         ? t('notebooks.unarchive')
@@ -193,6 +195,19 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
         </div>
       </DetailHeader>
 
+      <ConfirmDialog
+        open={showArchiveDialog}
+        onOpenChange={setShowArchiveDialog}
+        title={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmTitle'
+          : 'notebooks.archiveConfirmTitle')}
+        description={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmDescription'
+          : 'notebooks.archiveConfirmDescription', { name: notebook.name })}
+        confirmText={t(notebook.archived ? 'notebooks.unarchive' : 'notebooks.archive')}
+        onConfirm={handleArchiveToggle}
+        isLoading={updateNotebook.isPending}
+      />
       <NotebookDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

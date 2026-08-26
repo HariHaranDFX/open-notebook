@@ -14,6 +14,7 @@ import {
 
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { EmptyState } from '@/components/common/EmptyState'
+import { getSourceResourceKind, ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,9 @@ interface SourceContentPaneProps {
   isDownloadingFile: boolean
   fileAvailable: boolean | null
   canEdit: boolean
+  showDetailsHeader?: boolean
+  detailsVariant?: 'default' | 'sheet'
+  notebookActionsContainer?: Element | null
   onEmbedContent: () => void
   onCopyUrl: () => void
   onOpenExternal: () => void
@@ -58,6 +62,9 @@ export function SourceContentPane({
   isDownloadingFile,
   fileAvailable,
   canEdit,
+  showDetailsHeader = true,
+  detailsVariant = 'default',
+  notebookActionsContainer,
   onEmbedContent,
   onCopyUrl,
   onOpenExternal,
@@ -127,61 +134,105 @@ export function SourceContentPane({
     )
   }
 
-  return (
-    <div className="space-y-6">
-      <Card className="gap-0 rounded-none border-0 py-0 shadow-none">
-        <CardHeader className="border-b border-border px-4 py-4">
-          <CardTitle>{t('sources.details')}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 px-4 py-4">
-          {!source.embedded && (
-            <Alert>
-              <AlertCircle className="size-4" />
-              <AlertTitle>{t('sources.notEmbeddedAlert')}</AlertTitle>
-              <AlertDescription>
-                {t('sources.notEmbeddedDesc')}
-                {canEdit && (
-                  <div className="mt-3">
-                    <Button onClick={onEmbedContent} disabled={isEmbedding} size="sm">
-                      <Database className="mr-2 size-4" />
-                      {isEmbedding ? t('sources.embedding') : t('sources.embedContent')}
-                    </Button>
-                  </div>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
+  const isSheetDetails = detailsVariant === 'sheet'
+  const sourceType = source.asset?.url
+    ? t('sources.type.link')
+    : source.asset?.file_path
+      ? t('sources.type.file')
+      : t('sources.type.text')
+  const hasSourceDetails = Boolean(
+    source.asset?.url || source.asset?.file_path || source.topics?.length,
+  )
 
-          <div className="space-y-4">
-            {source.asset?.url && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold">{t('common.url')}</h3>
-                <div className="flex items-center gap-2">
-                  <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 text-sm">
-                    {source.asset.url}
-                  </code>
-                  <Button size="icon" variant="outline" onClick={onCopyUrl}>
-                    <span className="sr-only">{t('common.copyToClipboard')}</span>
-                    {copied ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={onOpenExternal}
-                    disabled={!externalHref}
-                  >
-                    <span className="sr-only">{t('sources.viewSource')}</span>
-                    <ExternalLink className="size-4" />
+  return (
+    <div
+      data-slot="source-details-inspector"
+      className={isSheetDetails ? 'space-y-0' : 'px-4'}
+    >
+      {showDetailsHeader && (
+        <div className="border-b border-border py-4">
+          <h2 className="font-semibold">{t('sources.details')}</h2>
+        </div>
+      )}
+
+      {isSheetDetails && (
+        <div
+          data-slot="source-details-summary"
+          className="flex min-w-0 items-center gap-3 border-b border-border pb-5"
+        >
+          <ResourceTypeIcon
+            kind={getSourceResourceKind(source.asset)}
+            className="size-10 rounded-[var(--control-radius)] border border-border bg-muted"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">
+              {source.title || t('sources.untitledSource')}
+            </p>
+            <Badge variant="secondary" className="mt-1 text-xs font-normal">
+              {sourceType}
+            </Badge>
+          </div>
+        </div>
+      )}
+
+      {!source.embedded && (
+        <div className="border-b border-border py-5">
+          <Alert className="rounded-[var(--control-radius)]">
+            <AlertCircle className="size-4" />
+            <AlertTitle>{t('sources.notEmbeddedAlert')}</AlertTitle>
+            <AlertDescription>
+              {t('sources.notEmbeddedDesc')}
+              {canEdit && (
+                <div className="mt-3">
+                  <Button onClick={onEmbedContent} disabled={isEmbedding} size="sm">
+                    <Database className="mr-2 size-4" />
+                    {isEmbedding ? t('sources.embedding') : t('sources.embedContent')}
                   </Button>
                 </div>
-              </div>
-            )}
+              )}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
-            {source.asset?.file_path && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold">{t('sources.uploadedFile')}</h3>
+      {hasSourceDetails && (
+        <section className="space-y-4 border-b border-border py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('common.source')}
+          </h3>
+
+          {source.asset?.url && (
+            <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-center">
+              <p className="text-sm font-medium text-muted-foreground">{t('common.url')}</p>
+              <div className="flex min-w-0 items-center gap-2">
+                <code className="min-w-0 flex-1 truncate bg-muted px-2 py-1.5 text-sm">
+                  {source.asset.url}
+                </code>
+                <Button size="icon" variant="outline" onClick={onCopyUrl}>
+                  <span className="sr-only">{t('common.copyToClipboard')}</span>
+                  {copied ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={onOpenExternal}
+                  disabled={!externalHref}
+                >
+                  <span className="sr-only">{t('sources.viewSource')}</span>
+                  <ExternalLink className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {source.asset?.file_path && (
+            <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
+              <p className="pt-2 text-sm font-medium text-muted-foreground">
+                {t('sources.uploadedFile')}
+              </p>
+              <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className="max-w-full break-all rounded bg-muted px-2 py-1 text-sm">
+                  <code className="min-w-0 flex-1 break-all bg-muted px-2 py-1.5 text-sm">
                     {source.asset.file_path}
                   </code>
                   <Button
@@ -204,66 +255,72 @@ export function SourceContentPane({
                   </p>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {source.topics && source.topics.length > 0 && (
-              <div>
-                <h3 className="mb-2 text-sm font-semibold">{t('sources.topics')}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {source.topics.map(topic => (
-                    <Badge key={topic} variant="outline">{topic}</Badge>
-                  ))}
-                </div>
+          {source.topics && source.topics.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
+              <p className="pt-1 text-sm font-medium text-muted-foreground">
+                {t('sources.topics')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {source.topics.map(topic => (
+                  <Badge key={topic} variant="outline">{topic}</Badge>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </section>
+      )}
 
+      <section className="space-y-4 border-b border-border py-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('sources.metadata')}
+          </h3>
+          {!isSheetDetails && (
+            <Badge variant={source.embedded ? 'default' : 'secondary'} className="text-xs">
+              {source.embedded ? t('sources.embedded') : t('sources.notEmbedded')}
+            </Badge>
+          )}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{t('sources.metadata')}</h3>
-              <div className="flex items-center gap-2">
-                <Database className="size-3.5 text-muted-foreground" />
-                <Badge variant={source.embedded ? 'default' : 'secondary'} className="text-xs">
-                  {source.embedded ? t('sources.embedded') : t('sources.notEmbedded')}
-                </Badge>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{t('common.created_label')}</p>
-                <p className="text-sm">
-                  {formatDistanceToNow(new Date(source.created), {
-                    addSuffix: true,
-                    locale: getDateLocale(language),
-                  })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(source.created).toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{t('common.updated_label')}</p>
-                <p className="text-sm">
-                  {formatDistanceToNow(new Date(source.updated), {
-                    addSuffix: true,
-                    locale: getDateLocale(language),
-                  })}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(source.updated).toLocaleString()}
-                </p>
-              </div>
-            </div>
+            <p className="text-xs font-medium text-muted-foreground">{t('common.created_label')}</p>
+            <p className="text-sm">
+              {formatDistanceToNow(new Date(source.created), {
+                addSuffix: true,
+                locale: getDateLocale(language),
+              })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {new Date(source.created).toLocaleString()}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{t('common.updated_label')}</p>
+            <p className="text-sm">
+              {formatDistanceToNow(new Date(source.updated), {
+                addSuffix: true,
+                locale: getDateLocale(language),
+              })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {new Date(source.updated).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </section>
 
       {canEdit && (
-        <NotebookAssociations
-          sourceId={sourceId}
-          currentNotebookIds={source.notebooks || []}
-          onSave={onRefresh}
-        />
+        <div className="pt-5">
+          <NotebookAssociations
+            sourceId={sourceId}
+            currentNotebookIds={source.notebooks || []}
+            onSave={onRefresh}
+            actionsContainer={notebookActionsContainer}
+          />
+        </div>
       )}
     </div>
   )

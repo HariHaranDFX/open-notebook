@@ -110,7 +110,7 @@ export function RecentlyViewed({ viewMode, limit = 12 }: RecentlyViewedProps) {
                     kind={item.type === 'notebook' ? 'notebook' : 'source'}
                   />
                   <span
-                    className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug"
+                    className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary"
                   >
                     {item.title}
                   </span>

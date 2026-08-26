@@ -54,7 +54,7 @@ export function SourceInsightsPane({
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 px-4 py-4">
         {canEdit && (
-          <div className="border bg-muted/30 p-4">
+          <div className="rounded-[var(--control-radius)] border bg-muted/30 p-4">
             <Label htmlFor="transformation-select" className="mb-3 flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="size-4" />
               {t('sources.generateNewInsight')}
@@ -119,7 +119,10 @@ export function SourceInsightsPane({
         ) : (
           <div className="space-y-3">
             {insights.map(insight => (
-              <article key={insight.id} className="border bg-background p-4">
+              <article
+                key={insight.id}
+                className="rounded-[var(--control-radius)] border bg-background p-4"
+              >
                 <Badge variant="outline" className="text-xs uppercase">
                   {insight.insight_type}
                 </Badge>
@@ -135,10 +138,10 @@ export function SourceInsightsPane({
                       size="icon-sm"
                       variant="outline"
                       onClick={() => onDeleteInsight(insight.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                       <span className="sr-only">{t('common.delete')}</span>
-                      <Trash2 className="size-4" />
+                      <Trash2 />
                     </Button>
                   )}
                 </div>

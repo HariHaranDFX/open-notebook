@@ -36,7 +36,10 @@ describe('ResearchWorkbench', () => {
       <ResearchWorkbench workspaceKey="notebook:one" panes={panes} chat={<p>Chat body</p>} />,
     )
 
-    expect(screen.getByTestId('workbench-desktop')).toBeInTheDocument()
+    const workbench = screen.getByTestId('workbench-desktop')
+    expect(workbench).toBeInTheDocument()
+    expect(workbench).toHaveClass('border-y', 'border-r', 'border-border')
+    expect(workbench).not.toHaveClass('border', 'border-l')
     expect(screen.getAllByRole('tab')).toHaveLength(2)
     expect(screen.getByText('Sources body')).toBeVisible()
     expect(screen.queryByText('Notes body')).not.toBeInTheDocument()

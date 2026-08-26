@@ -127,6 +127,7 @@ describe('AppSidebar', () => {
     renderSidebar()
 
     expect(document.querySelector('[data-slot="sidebar"]')).toHaveAttribute('data-state', 'expanded')
+    expect(screen.getByRole('menuitem', { name: 'common.source' }).closest('[data-side]')).toHaveAttribute('data-side', 'bottom')
     expect(screen.getByRole('navigation')).toHaveClass('px-2', 'py-3')
     const collapseButton = screen.getByRole('button', {
       name: 'common.collapseNavigation',

@@ -8,6 +8,31 @@ vi.mock('@/lib/hooks/use-sources', () => ({
 }))
 
 describe('SourceCard', () => {
+  it('uses the shared colored file-family icon while keeping status separate from the title', () => {
+    render(
+      <SourceCard
+        source={{
+          id: 'source:budget',
+          title: 'budget.xlsx',
+          asset: { file_path: '/uploads/budget.xlsx' },
+          embedded: false,
+          embedded_chunks: 0,
+          insights_count: 0,
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-02T00:00:00Z',
+          status: 'failed',
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'budget.xlsx' })).toBeInTheDocument()
+    expect(screen.getByText('sources.statusFailed')).toBeInTheDocument()
+    const icons = screen.getAllByTestId('resource-type-icon')
+    expect(icons).not.toHaveLength(0)
+    expect(icons[0]).toHaveAttribute('data-resource-kind', 'spreadsheet')
+    expect(icons[0]).toHaveClass('text-[var(--resource-spreadsheet)]')
+  })
+
   it('keeps source context at the lower-left and primary badges on one line', () => {
     render(
       <SourceCard

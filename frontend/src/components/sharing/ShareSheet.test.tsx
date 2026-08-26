@@ -214,6 +214,17 @@ describe('ShareSheet', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('omits the header close icon while keeping the footer dismissal action', () => {
+    renderSheet()
+
+    const sheet = screen.getByRole('dialog', { name: 'Share' })
+    const header = sheet.querySelector('[data-slot="sheet-header"]')
+    expect(sheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(header).toHaveClass('gap-1', 'py-2.5')
+    expect(header).not.toHaveClass('gap-2', 'py-3', 'pr-14')
+    expect(within(sheet).getByRole('button', { name: 'Done' })).toBeVisible()
+  })
+
   it('shows the current access role and origin for inherited group access', () => {
     renderSheet({}, { role: 'editor', origin: 'group', origin_label: 'Engineering' })
 
@@ -308,7 +319,12 @@ describe('ShareSheet', () => {
     renderSheet()
 
     const addSection = screen.getByTestId('share-sheet-add')
+    const [principalTypeSelect, principalSelect] = within(addSection).getAllByRole('combobox')
+    const principalRow = screen.getByTestId('share-sheet-principal-row')
     expect(within(addSection).getAllByRole('combobox')).toHaveLength(3)
+    expect(principalTypeSelect.parentElement).toBe(principalRow)
+    expect(principalSelect.parentElement).toBe(principalRow)
+    expect(principalRow).toHaveClass('flex', 'gap-2')
     expect(within(addSection).getByRole('option', { name: 'Group' })).toBeInTheDocument()
   })
 
@@ -391,6 +407,23 @@ describe('ShareSheet', () => {
     const confirmButton = screen.getByRole('button', { name: 'Revoke' })
     expect(confirmButton).toBeDisabled()
     expect(within(confirmButton).getByTestId('loading-spinner')).toBeInTheDocument()
+  })
+
+  it('places Cancel on the left and Done on the right of the footer', () => {
+    const onOpenChange = vi.fn()
+
+    renderSheet({ onOpenChange })
+
+    const sheet = screen.getByRole('dialog', { name: 'Share' })
+    const footer = sheet.querySelector('[data-slot="sheet-footer"]')
+    expect(footer).toHaveClass('flex-row', 'justify-between')
+
+    const cancelButton = within(footer as HTMLElement).getByRole('button', { name: 'Cancel' })
+    const doneButton = within(footer as HTMLElement).getByRole('button', { name: 'Done' })
+    expect(cancelButton.nextElementSibling).toBe(doneButton)
+
+    fireEvent.click(cancelButton)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it('blocks the Sheet from closing while a grant mutation is in flight', () => {

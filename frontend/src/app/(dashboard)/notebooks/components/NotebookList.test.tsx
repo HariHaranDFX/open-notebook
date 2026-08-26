@@ -17,6 +17,7 @@ vi.mock('@/lib/hooks/use-translation', () => ({
     language: 'en',
     t: (key: string) => ({
       'common.actions': 'Actions',
+      'common.cancel': 'Cancel',
       'common.contentUnavailable.errorDescription': 'Please try again.',
       'common.contentUnavailable.errorTitle': 'Unable to load content',
       'common.loading': 'Loading',
@@ -24,12 +25,24 @@ vi.mock('@/lib/hooks/use-translation', () => ({
       'common.updated': 'Updated',
       'common.retry': 'Retry',
       'navigation.sources': 'Sources',
+      'notebooks.archive': 'Archive',
+      'notebooks.archiveConfirmTitle': 'Archive notebook?',
+      'notebooks.archiveConfirmDescription': 'Move this notebook to Archived Notebooks?',
+      'notebooks.unarchive': 'Unarchive',
+      'notebooks.unarchiveConfirmTitle': 'Unarchive notebook?',
+      'notebooks.unarchiveConfirmDescription': 'Move this notebook back to Active Notebooks?',
       'sharing.owner': 'Owner',
       'sharing.viewer': 'Viewer',
     })[key] ?? key,
   }),
 }))
 vi.mock('@/components/sharing/ShareSheet', () => ({ ShareSheet: () => null }))
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
+  DropdownMenuItem: (props: React.ComponentProps<'button'>) => <button role="menuitem" {...props} />,
+}))
 vi.mock('./NotebookDeleteDialog', () => ({ NotebookDeleteDialog: () => null }))
 
 function notebook(overrides: Partial<NotebookResponse> = {}): NotebookResponse {
@@ -144,6 +157,50 @@ describe('NotebookList', () => {
     expect(screen.getByRole('button', { name: 'Actions' })).not.toHaveClass('opacity-0')
   })
 
+  it('requires confirmation before archiving a notebook', async () => {
+    render(<NotebookList notebooks={[notebook()]} isLoading={false} title="Active notebooks" />)
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Archive' }))
+
+    expect(mutate).not.toHaveBeenCalled()
+    expect(screen.getByRole('alertdialog')).toBeVisible()
+    expect(screen.getByText('Archive notebook?')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(mutate).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Archive' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+
+    expect(mutate).toHaveBeenCalledOnce()
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'notebook:research',
+      data: { archived: true },
+    })
+  })
+
+  it('requires confirmation before unarchiving a notebook', () => {
+    render(
+      <NotebookList
+        notebooks={[notebook({ archived: true })]}
+        isLoading={false}
+        title="Archived notebooks"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Unarchive' }))
+
+    expect(mutate).not.toHaveBeenCalled()
+    expect(screen.getByText('Unarchive notebook?')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unarchive' }))
+
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'notebook:research',
+      data: { archived: false },
+    })
+  })
+
   it('keeps the notebook icon aligned with a one-line truncated title', () => {
     render(<NotebookList notebooks={[notebook()]} isLoading={false} title="Active notebooks" />)
 
@@ -168,6 +225,25 @@ describe('NotebookList', () => {
     render(<NotebookList notebooks={[notebook()]} isLoading={false} title="Active notebooks" />)
 
     expect(screen.getByText('1')).toHaveAttribute('data-slot', 'badge')
+  })
+
+  it('positions the archived disclosure arrow after the count like recently viewed', () => {
+    render(
+      <NotebookList
+        notebooks={[notebook({ archived: true })]}
+        isLoading={false}
+        title="Archived Notebooks"
+        collapsible
+      />,
+    )
+
+    const disclosure = screen.getByRole('button', { name: /Archived Notebooks/ })
+    const count = screen.getByText('1')
+    const chevron = disclosure.querySelector('.lucide-chevron-right')
+
+    expect(disclosure).toHaveClass('!px-0')
+    expect(chevron?.previousElementSibling).toBe(count)
+    expect(disclosure.lastElementChild).toBe(chevron)
   })
 
   it('bounds list view with a complete border', () => {

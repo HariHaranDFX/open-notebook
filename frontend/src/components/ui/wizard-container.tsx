@@ -1,6 +1,7 @@
 "use client"
 
 import { ReactNode } from "react"
+import { CheckIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface WizardStep {
@@ -23,21 +24,24 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
   onStepClick?: (step: number) => void
 }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted">
+    <div
+      data-slot="wizard-steps"
+      className="flex items-center justify-between border-b border-border bg-muted px-4 py-3 sm:px-6"
+    >
       {steps.map((step, index) => {
         const isCompleted = currentStep > step.number
         const isCurrent = currentStep === step.number
         const isClickable = step.number <= currentStep && onStepClick
         
         return (
-          <div key={step.number} className="flex items-center flex-1">
+          <div key={step.number} className="flex min-w-0 flex-1 items-center">
             <div 
-              className={cn('flex items-center', isClickable && 'cursor-pointer')}
+              className={cn('flex min-w-0 items-center gap-2', isClickable && 'cursor-pointer')}
               onClick={isClickable ? () => onStepClick(step.number) : undefined}
             >
               <div
                 className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-colors',
+                  'flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-medium tabular-nums transition-colors',
                   isCompleted 
                     ? 'bg-primary border-primary text-primary-foreground' 
                     : isCurrent 
@@ -45,17 +49,17 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
                       : 'border-border text-muted-foreground bg-card'
                 )}
               >
-                {isCompleted ? "✓" : step.number}
+                {isCompleted ? <CheckIcon aria-hidden="true" className="size-4" /> : step.number}
               </div>
-              <div className="ml-3 min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className={cn(
-                  'text-sm font-medium',
+                  'truncate text-sm font-medium leading-5',
                   isCurrent ? 'text-foreground' : 'text-muted-foreground'
                 )}>
                   {step.title}
                 </p>
                 <p className={cn(
-                  'text-xs',
+                  'hidden truncate text-xs leading-4 sm:block',
                   isCurrent ? 'text-muted-foreground' : 'text-muted-foreground/80'
                 )}>
                   {step.description}
@@ -65,7 +69,7 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
             {index < steps.length - 1 && (
               <div 
                 className={cn(
-                  'flex-1 border-t-2 mx-4 transition-colors',
+                  'mx-3 flex-1 border-t-2 transition-colors',
                   isCompleted ? 'border-primary' : 'border-border/60'
                 )} 
               />

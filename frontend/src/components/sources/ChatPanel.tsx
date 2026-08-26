@@ -6,7 +6,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { ArrowUp, Bot, User, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
@@ -115,7 +121,7 @@ export function ChatPanel({
             </span>
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
-            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
+            <Sheet open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
                 variant="outline"
                 size="sm"
@@ -126,22 +132,31 @@ export function ChatPanel({
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">{t('chat.sessions')}</span>
               </Button>
-              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">{t('chat.sessionsTitle')}</DialogTitle>
-                <SessionManager
-                  sessions={sessions}
-                  currentSessionId={currentSessionId ?? null}
-                  onCreateSession={(title) => onCreateSession?.(title)}
-                  onSelectSession={(sessionId) => {
-                    onSelectSession(sessionId)
-                    setSessionManagerOpen(false)
-                  }}
-                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
-                  loadingSessions={loadingSessions}
-                />
-              </DialogContent>
-            </Dialog>
+              <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-[420px]">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>{t('chat.sessionsTitle')}</SheetTitle>
+                </SheetHeader>
+                <div className="min-h-0 flex-1">
+                  <SessionManager
+                    sessions={sessions}
+                    currentSessionId={currentSessionId ?? null}
+                    onCreateSession={(title) => onCreateSession?.(title)}
+                    onSelectSession={(sessionId) => {
+                      onSelectSession(sessionId)
+                      setSessionManagerOpen(false)
+                    }}
+                    onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+                    onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+                    loadingSessions={loadingSessions}
+                  />
+                </div>
+                <SheetFooter className="border-t border-border px-4 py-3">
+                  <Button variant="outline" onClick={() => setSessionManagerOpen(false)}>
+                    {t('common.close')}
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           )}
         </div>
       </CardHeader>

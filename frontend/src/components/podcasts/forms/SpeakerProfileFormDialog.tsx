@@ -13,12 +13,13 @@ import {
   useUpdateSpeakerProfile,
 } from '@/lib/hooks/use-podcasts'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -153,16 +154,16 @@ export function SpeakerProfileFormDialog({
   const isEdit = mode === 'edit'
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full max-w-[calc(100vw-1.5rem)] overflow-y-auto p-6 sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>
             {isEdit ? t('podcasts.editSpeakerProfile') : t('podcasts.createSpeakerProfile')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {t('podcasts.speakerProfileFormDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
@@ -336,7 +337,7 @@ export function SpeakerProfileFormDialog({
             ) : null}
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <SheetFooter className="border-t border-border pt-3">
             <Button
               type="button"
               variant="outline"
@@ -351,9 +352,9 @@ export function SpeakerProfileFormDialog({
                   ? t('common.saveChanges')
                   : t('podcasts.createProfile')}
             </Button>
-          </div>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

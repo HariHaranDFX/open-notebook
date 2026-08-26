@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -37,11 +38,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import {
   Link as LinkIcon,
   Upload,
@@ -130,6 +132,7 @@ function SourceDetailContentInner({
   const [deletingInsight, setDeletingInsight] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
+  const [detailsFooterActions, setDetailsFooterActions] = useState<HTMLDivElement | null>(null)
 
   // A 404 means the source was deleted (e.g. a dangling chat/ask reference) —
   // handled by the shared "content no longer exists" state. The global query
@@ -421,6 +424,8 @@ function SourceDetailContentInner({
   }
 
   const canEdit = canEditContent(source.access_role)
+  const canDelete = canDeleteSource(source.access_role)
+  const hasPrimaryMenuActions = Boolean(renderWorkspace || source.asset?.file_path)
   const contentPane = (
     <SourceContentPane
       source={source}
@@ -466,6 +471,9 @@ function SourceDetailContentInner({
       isDownloadingFile={isDownloadingFile}
       fileAvailable={fileAvailable}
       canEdit={canEdit}
+      showDetailsHeader={!renderWorkspace}
+      detailsVariant={renderWorkspace ? 'sheet' : 'default'}
+      notebookActionsContainer={renderWorkspace ? detailsFooterActions : undefined}
       onEmbedContent={() => void handleEmbedContent()}
       onCopyUrl={handleCopyUrl}
       onOpenExternal={handleOpenExternal}
@@ -521,10 +529,10 @@ function SourceDetailContentInner({
                 variant="outline"
                 size="sm"
                 onClick={onClose}
-                aria-label={t('workbench.backToSources')}
+                aria-label={t('common.back')}
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden md:inline">{t('workbench.backToSources')}</span>
+                <span className="hidden md:inline">{t('common.back')}</span>
               </Button>
             )}
 
@@ -552,47 +560,52 @@ function SourceDetailContentInner({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {renderWorkspace && (
-                  <DropdownMenuItem onClick={() => setShowDetailsDialog(true)}>
-                    <AlignLeft className="mr-2 h-4 w-4" />
-                    {t('sources.details')}
-                  </DropdownMenuItem>
+                {hasPrimaryMenuActions && (
+                  <DropdownMenuGroup>
+                    {renderWorkspace && (
+                      <DropdownMenuItem onClick={() => setShowDetailsDialog(true)}>
+                        <AlignLeft className="mr-2 h-4 w-4" />
+                        {t('sources.details')}
+                      </DropdownMenuItem>
+                    )}
+                    {source.asset?.file_path && (
+                      <DropdownMenuItem
+                        onClick={handleDownloadFile}
+                        disabled={isDownloadingFile || fileAvailable === false}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        {fileAvailable === false
+                          ? t('sources.fileUnavailable')
+                          : isDownloadingFile
+                            ? t('sources.preparing')
+                            : t('sources.downloadFile')}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuGroup>
                 )}
-                {source.asset?.file_path && (
+                {canEdit && (
                   <>
-                    <DropdownMenuItem
-                      onClick={handleDownloadFile}
-                      disabled={isDownloadingFile || fileAvailable === false}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {fileAvailable === false
-                        ? t('sources.fileUnavailable')
-                        : isDownloadingFile
-                          ? t('sources.preparing')
-                          : t('sources.downloadFile')}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    {hasPrimaryMenuActions && <DropdownMenuSeparator />}
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        onClick={handleEmbedContent}
+                        disabled={isEmbedding || source.embedded}
+                      >
+                        <Database className="mr-2 h-4 w-4" />
+                        {isEmbedding ? t('sources.embedding') : source.embedded ? t('sources.alreadyEmbedded') : t('sources.embedContent')}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
                   </>
                 )}
-                {canEditContent(source.access_role) && (
-                  <DropdownMenuItem
-                    onClick={handleEmbedContent}
-                    disabled={isEmbedding || source.embedded}
-                  >
-                    <Database className="mr-2 h-4 w-4" />
-                    {isEmbedding ? t('sources.embedding') : source.embedded ? t('sources.alreadyEmbedded') : t('sources.embedContent')}
-                  </DropdownMenuItem>
-                )}
-                {canDeleteSource(source.access_role) && (
+                {canDelete && (
                   <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={handleDelete}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {t('sources.deleteSource')}
-                    </DropdownMenuItem>
+                    {(hasPrimaryMenuActions || canEdit) && <DropdownMenuSeparator />}
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {t('sources.deleteSource')}
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
                   </>
                 )}
               </DropdownMenuContent>
@@ -650,14 +663,25 @@ function SourceDetailContentInner({
       </div>
 
       {renderWorkspace && (
-        <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t('sources.details')}</DialogTitle>
-            </DialogHeader>
-            {detailsPane}
-          </DialogContent>
-        </Dialog>
+        <Sheet open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+          <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 p-0 sm:max-w-2xl">
+            <SheetHeader className="flex-row items-center justify-between gap-4 border-b border-border px-6 py-4">
+              <SheetTitle>{t('sources.details')}</SheetTitle>
+              <Badge variant={source.embedded ? 'default' : 'secondary'} className="text-xs">
+                {source.embedded ? t('sources.embedded') : t('sources.notEmbedded')}
+              </Badge>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              {detailsPane}
+            </div>
+            <SheetFooter className="flex-row items-center border-t border-border px-6 py-3 sm:justify-start">
+              <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+                {t('common.close')}
+              </Button>
+              <div ref={setDetailsFooterActions} className="ml-auto flex items-center gap-2" />
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       )}
 
       <SourceInsightDialog

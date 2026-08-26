@@ -9,6 +9,8 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
+  SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
 import {
@@ -133,10 +135,17 @@ export function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent className="w-[min(320px,calc(100vw-24px))] border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
-          <SheetTitle className="sr-only">{t('navigation.nav')}</SheetTitle>
-          <SheetDescription className="sr-only">{t('navigation.nav')}</SheetDescription>
-          <div className="flex h-full w-full flex-col">{children}</div>
+        <SheetContent className="flex w-[min(320px,calc(100vw-24px))] flex-col border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
+          <SheetHeader className="sr-only">
+            <SheetTitle>{t('navigation.nav')}</SheetTitle>
+            <SheetDescription>{t('navigation.nav')}</SheetDescription>
+          </SheetHeader>
+          <div className="flex min-h-0 w-full flex-1 flex-col">{children}</div>
+          <SheetFooter className="border-t border-sidebar-border p-2">
+            <Button variant="ghost" onClick={() => setOpenMobile(false)}>
+              {t('common.closeNavigation')}
+            </Button>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
     )

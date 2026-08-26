@@ -262,7 +262,7 @@ export function AppSidebar() {
                 </Tooltip>
                 <DropdownMenuContent
                   align={isMobile ? 'start' : 'end'}
-                  side={isMobile ? 'bottom' : 'right'}
+                  side="bottom"
                   className="w-48"
                 >
                   <DropdownMenuGroup>

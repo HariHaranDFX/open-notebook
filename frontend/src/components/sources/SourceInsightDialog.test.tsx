@@ -144,4 +144,47 @@ describe('SourceInsightDialog', () => {
     expect(screen.getByText('Fetched insight content')).toBeInTheDocument()
     expect(screen.queryByTestId('content-unavailable')).not.toBeInTheDocument()
   })
+
+  it('uses an edge-to-edge divided layout with a centered title, pill, and left Cancel action', () => {
+    mockUseInsight.mockReturnValue(
+      asResult({
+        data: {
+          id: 'insight-1',
+          source_id: 'source:1',
+          insight_type: 'summary',
+          content: 'Fetched insight content',
+          created: null,
+          updated: null,
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+      })
+    )
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+        onDelete={vi.fn()}
+      />
+    )
+
+    const sheet = screen.getByRole('dialog', { name: 'sources.sourceInsight' })
+    const header = sheet.querySelector('[data-slot="sheet-header"]')
+    const headerRow = screen.getByTestId('source-insight-header-row')
+    const footer = sheet.querySelector('[data-slot="sheet-footer"]')
+    const cancel = within(footer as HTMLElement).getByRole('button', { name: 'common.cancel' })
+    const deleteButton = within(footer as HTMLElement).getByRole('button', { name: 'common.delete' })
+
+    expect(sheet).toHaveClass('gap-0', 'p-0')
+    expect(sheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(within(sheet).queryByText('sources.viewSource')).not.toBeInTheDocument()
+    expect(header).toHaveClass('border-b', 'border-border')
+    expect(headerRow).toHaveClass('items-center', 'justify-between')
+    expect(within(headerRow).getByText('summary')).toBeVisible()
+    expect(footer).toHaveClass('flex-row', 'justify-between', 'border-t', 'border-border', 'px-6')
+    expect(cancel.nextElementSibling).toBe(deleteButton)
+  })
 })

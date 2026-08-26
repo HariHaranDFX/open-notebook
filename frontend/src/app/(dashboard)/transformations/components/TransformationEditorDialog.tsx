@@ -4,7 +4,14 @@ import { useEffect, useId, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -147,14 +154,16 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
   const isSaving = transformation ? updateTransformation.isPending : createTransformation.isPending
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-4xl w-full max-h-[90vh] overflow-hidden p-0">
-        <DialogTitle className="sr-only">
-          {isEditing ? t('common.edit') : t('transformations.createNew')}
-        </DialogTitle>
-        <DialogDescription className="sr-only">
-           {isEditing ? t('common.editTransformation') : t('transformations.createNew')}
-        </DialogDescription>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-4xl">
+        <SheetHeader className="border-b border-border px-6 py-3 pr-14">
+          <SheetTitle>
+            {isEditing ? t('common.editTransformation') : t('transformations.createNew')}
+          </SheetTitle>
+          <SheetDescription>
+            {isEditing ? t('common.edit') : t('transformations.createNew')}
+          </SheetDescription>
+        </SheetHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
@@ -304,7 +313,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
             </>
           )}
 
-          <div className="border-t px-6 py-4 flex justify-end gap-2">
+          <SheetFooter className="border-t border-border px-6 py-3">
              <Button type="button" variant="outline" onClick={handleClose}>
                {t('common.cancel')}
              </Button>
@@ -315,9 +324,9 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                     ? t('common.editTransformation')
                     : t('transformations.createNew')}
               </Button>
-          </div>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

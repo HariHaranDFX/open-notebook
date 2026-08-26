@@ -4,13 +4,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Search, Link2, LoaderIcon, FileText, Link as LinkIcon, Upload } from 'lucide-react'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -181,17 +181,17 @@ export function AddExistingSourceDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-4 p-6 sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5" />
             {t('sources.addExistingTitle')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {t('sources.addExistingDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Search Input */}
@@ -209,7 +209,7 @@ export function AddExistingSourceDialog({
           </div>
 
           {/* Source List */}
-          <ScrollArea className="h-[400px] rounded-[var(--surface-radius)] border">
+          <ScrollArea className="min-h-0 flex-1 rounded-[var(--surface-radius)] border">
             {isSearching && filteredSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
                 <LoaderIcon className="h-12 w-12 mb-2 animate-spin" />
@@ -279,7 +279,7 @@ export function AddExistingSourceDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <SheetFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -300,8 +300,8 @@ export function AddExistingSourceDialog({
               <>{t('common.addSelected')}</>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

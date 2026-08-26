@@ -1,10 +1,12 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NotebookHeader } from './NotebookHeader'
 
+const mutate = vi.fn()
+
 vi.mock('@/lib/hooks/use-notebooks', () => ({
-  useUpdateNotebook: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
+  useUpdateNotebook: () => ({ mutate, mutateAsync: vi.fn() }),
 }))
 
 vi.mock('@/lib/hooks/use-auth', () => ({
@@ -19,7 +21,16 @@ vi.mock('@/components/sharing/ShareSheet', () => ({
   ShareSheet: () => null,
 }))
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
+  DropdownMenuItem: (props: React.ComponentProps<'button'>) => <button role="menuitem" {...props} />,
+}))
+
 describe('NotebookHeader', () => {
+  beforeEach(() => mutate.mockReset())
+
   it('keeps the notebook return action inside the notebook header', () => {
     const onBack = vi.fn()
 
@@ -107,5 +118,36 @@ describe('NotebookHeader', () => {
     const actionsButton = screen.getByRole('button', { name: 'common.actions' })
     expect(actionsButton.querySelector('svg')).toHaveClass('lucide-ellipsis-vertical')
     expect(actionsButton).toHaveClass('border-border-strong', 'bg-card')
+  })
+
+  it('requires confirmation before changing the notebook archive state', () => {
+    render(
+      <NotebookHeader
+        notebook={{
+          id: 'notebook:research',
+          name: 'Research notebook',
+          description: 'Evidence and notes',
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-02T00:00:00Z',
+          archived: false,
+          access_role: 'owner',
+          source_count: 1,
+          note_count: 2,
+        }}
+        onBack={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'notebooks.archive' }))
+
+    expect(mutate).not.toHaveBeenCalled()
+    expect(screen.getByText('notebooks.archiveConfirmTitle')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'notebooks.archive' }))
+
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'notebook:research',
+      data: { archived: true },
+    })
   })
 })
