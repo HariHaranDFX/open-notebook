@@ -1,3 +1,24 @@
+# WP3 app-redesign UI polish (post-WP3-06, user-requested) — Progress Ledger
+
+Branch: codex/wp3-app-redesign. On top of the reviewed WP3-00..06 packages; NOT pushed (main is PR-only). Interactive UI/UX polish; each change = one reviewable commit, verified green (targeted tests + 14-locale parity + lint + build) before committing. Live a11y/visual sweep still owed → WP3-07 (in-app browser is behind Entra login; verification here is tests/lint/build only).
+
+Arc (2026-08-24 → 2026-08-25):
+- d7f4120 — Settings became a MODAL (SettingsDialog + use-settings-dialog); Models/Groups stay standalone pages.
+- 254fdf9 — app-wide modal pointer-events bug fixed via shadcn-documented `modal={false}` on the shared dropdown-menu wrapper (live-verified).
+- 5cef6f7, e87a7bb — close-X kept clear of content/header actions; standardized dialog button spacing; squared the share Sheet.
+- f361e49, f319ac9 — Settings General/Advanced redesigned (row-based SettingRow, `?` help popovers, maintenance block, Preferences = Appearance+Language); normal-case rail/Docling labels.
+- 0d84b05 — Groups → two-pane manager (list + members detail, create dialog, ⋯ delete, empty states); +4 i18n ×14, removed orphaned groups.members; new page.test.tsx (8 tests).
+- 6fbd233 — Groups + Settings modal responsive (stack < md / < sm).
+- 0e0ec29 → f3c19f2 — header divider bleed + tighter top space, then REVERTED per user (headers back to standard inset; Groups back to contained). Kept only the equal-height h-14 pane headers (e9fa53e).
+- 126954c — button-consistency tidy: CredentialItem hover icons keyboard-accessible; removed redundant size restatements (AskWorkspace); dropped redundant h-9 (RecentlyViewed).
+- a13aac2, 73c8842 — Groups counts (header, row, detail) → secondary count pills (match insights badge).
+- 2177543 — Models page (settings/api-keys) redesigned: DefaultModelSelectors → labelled row list (Core/Advanced); CredentialItem actions → Test + ⋯ menu; Providers search + Configured/All filter + "N more available"; +4 i18n ×14; updated page.test.tsx.
+- 14fddce — removed redundant clear-X on optional default-model rows (None clears); Providers search/filter equal height (h-9). HEAD.
+
+Deviation recorded: auto-assign stays in the missing-required alert (recovery action; not always-visible → avoids overwriting user picks).
+
+---
+
 # WP3-06 Administration, Authentication, and Sharing — SDD Progress Ledger
 
 Branch: codex/wp3-app-redesign
@@ -46,8 +67,18 @@ Started: 2026-08-23
 - Task 4: One administration hierarchy (nested settings) — COMPLETE (commit b0c433a, review clean)
 - Task 5: Sharing as an explicit permission Sheet — COMPLETE (commit 51ec82d, review clean after 1 fix)
   Important fix: pending-close protection (brief Step 1) was skipped by impl; added guard + test (re-review ✅).
-- Task 6: Login + global recovery redesign — TODO
-- Task 7: Visual verification (live sweep deferred to WP3-07) — TODO
+- Task 6: Login + global recovery redesign — COMPLETE (commit f84b0f7, review clean after 1 fix)
+  Interrupted mid-work by usage limit; finished in place (partial tree was coherent + security removals done).
+  Important fix: 403 read-only ContentUnavailable variant was built but unwired — wired 3 viewers
+  (SourceDetailContent/SourceInsightDialog/NoteEditorDialog) via isForbiddenError + tests (re-review ✅).
+- Task 7: Visual verification — automated gates green per task; live browser a11y/visual sweep DEFERRED to WP3-07
+  (human/live-app gate, same posture as WP3-04/05). No separate commit (per-task commits satisfy it).
+
+## PACKAGE COMPLETE (implementation + per-task reviews + final whole-package review). NOT pushed; no PR (main protected; user: stop for human review).
+Commits (8): fba63aa (docs) · 9c20265 (T1) · f3493cd (T2) · 091c003 (T3) · 6954842 (T3 test-fix) · b0c433a (T4) · 51ec82d (T5, fix amended) · f84b0f7 (T6, 2 fixes amended). Final HEAD: f84b0f7.
+Final review (opus, 5e52da4..f84b0f7): READY TO MERGE — 0 Critical, 0 Important. Central invariant verified: authorization unchanged everywhere; new resolvers provably equal to enforcement helpers; UI gates now match backend (no over-permit); no diagnostic leakage; 14-locale parity; no new deps; Task 2→3 seam wired end-to-end; 403 variant reachable.
+Verification at HEAD: frontend 468/468 (83 files) + lint 0 err + build clean; backend targeted 72 passed.
+Deferred to WP3-07 (per plan): live browser a11y/visual sweep (200% zoom, reduced motion, light/dark, keyboard on running app). Also fold auth-store.ts:192 raw "Network error: {message}" branch into the fixed-safe-copy treatment.
 
 ## Minor findings (final whole-branch review triage)
 - T1 (sources.py:693-699,741-747): 404→403 block from assert_can_edit_source_or_403 duplicated verbatim in update_source + retry_source_processing (~7 lines, inlined to avoid a 2nd query). Candidate `_require_editor(summary)` helper.
@@ -59,6 +90,8 @@ Started: 2026-08-23
 - T5 (ShareSheet revoke confirm): names resource by TYPE ("Notebook"/"Source"), not title — ShareSheetProps carries no name; defensible, but thread a title if product wants literal naming.
 - T5: stale showShareDialog/setShowShareDialog state names left in 4 callers post-rename (cosmetic, no functional ShareDialog ref remains).
 - T5: 13 non-English locales for the 4 new sharing keys are AI-authored (not native-reviewed) — standing pre-launch item.
+- T6 (LoginForm.test.tsx:66-68): getConfig "must-not-be-called" mock guard is now inert (LoginForm no longer imports @/lib/config); harmless soft-guard.
+- T6: all new-key non-English locales AI-authored (standing pre-launch native-review item, same as T5).
 
 ---
 
