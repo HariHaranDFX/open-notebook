@@ -240,6 +240,41 @@ describe('SourceDetailContent', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('gives the editable source title a clear edit affordance and styled input', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:editable-title',
+      title: 'Grounded source',
+      access_role: 'owner',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+
+    renderContent()
+
+    const editButton = await screen.findByRole('button', { name: 'Grounded source' })
+    expect(editButton).toHaveClass(
+      'rounded-[var(--control-radius)]',
+      'border-transparent',
+      'hover:border-border',
+    )
+    expect(editButton.querySelector('.lucide-pencil')).not.toBeInTheDocument()
+
+    fireEvent.click(editButton)
+    expect(screen.getByDisplayValue('Grounded source')).toHaveClass(
+      'h-8',
+      'rounded-[var(--control-radius)]',
+      'border-border-strong',
+      'bg-card',
+      'text-base',
+    )
+    expect(screen.getByDisplayValue('Grounded source')).not.toHaveClass('h-9', 'text-lg')
+  })
+
   it('uses an undivided workspace header with an outlined actions button', async () => {
     mockSourcesGet.mockResolvedValue({
       id: 'source:header',

@@ -170,21 +170,34 @@ export function NotebookAssociations({
                   <div
                     key={notebook.id}
                     data-slot="notebook-association-row"
-                    className={`flex items-start gap-3 border-b border-border px-4 py-3 transition-colors last:border-b-0 ${
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    aria-label={notebook.name}
+                    tabIndex={0}
+                    onClick={() => handleToggleNotebook(notebook.id)}
+                    onKeyDown={(event) => {
+                      if (event.key !== ' ' && event.key !== 'Enter') return
+                      event.preventDefault()
+                      handleToggleNotebook(notebook.id)
+                    }}
+                    className={`flex cursor-pointer items-start gap-3 border-b border-border px-4 py-3 outline-none transition-colors last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
                       isSelected ? 'bg-accent' : 'hover:bg-accent/50'
                     }`}
                   >
                     <Checkbox
                       checked={isSelected}
-                      onCheckedChange={() => handleToggleNotebook(notebook.id)}
-                      aria-label={notebook.name}
-                      className="mt-0.5"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="pointer-events-none mt-0.5"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className={`break-words text-sm font-semibold leading-5 ${
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h4
+                          title={notebook.name}
+                          className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${
                           isSelected ? 'text-primary' : 'text-foreground'
-                        }`}>
+                        }`}
+                        >
                           {notebook.name}
                         </h4>
                         {isCurrentlyLinked && !hasChanges && (
@@ -192,7 +205,10 @@ export function NotebookAssociations({
                         )}
                       </div>
                       {notebook.description && (
-                        <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        <p
+                          title={notebook.description}
+                          className="truncate text-xs leading-5 text-muted-foreground"
+                        >
                           {notebook.description}
                         </p>
                       )}

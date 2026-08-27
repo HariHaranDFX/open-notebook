@@ -44,7 +44,10 @@ describe('NotebookAssociations', () => {
     const section = screen.getByText('sources.manageNotebooks').closest(
       '[data-slot="notebook-associations"]',
     )
+    const heading = screen.getByText('sources.manageNotebooks')
+    const description = screen.getByText('sources.manageNotebooksDesc')
     const notebookList = section?.querySelector('[data-slot="scroll-area"]')
+    const notebookViewport = notebookList?.querySelector('[data-slot="scroll-area-viewport"]')
     const notebookTitle = screen.getByText('Research collection with a descriptive notebook title')
     const notebookDescription = screen.getByText(
       'A detailed notebook description that remains readable in the list.',
@@ -52,6 +55,11 @@ describe('NotebookAssociations', () => {
     const notebookRow = notebookTitle.closest('[data-slot="notebook-association-row"]')
 
     expect(section).toContainElement(notebookTitle)
+    expect(heading.parentElement).toHaveClass('min-w-0')
+    expect(heading.parentElement).not.toHaveClass('flex', 'items-center')
+    expect(heading.parentElement).toContainElement(description)
+    expect(description).toHaveClass('mt-1')
+    expect(description).not.toHaveClass('truncate')
     expect(section?.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
     expect(section).toHaveClass(
       'rounded-[var(--control-radius)]',
@@ -59,10 +67,28 @@ describe('NotebookAssociations', () => {
     )
     expect(notebookList).toBeInTheDocument()
     expect(notebookList).toHaveClass('h-[min(20rem,40dvh)]')
+    expect(notebookViewport).toHaveClass('[&>div]:!block')
     expect(notebookRow).not.toHaveClass('rounded-[var(--surface-radius)]', 'border')
-    expect(notebookTitle).toHaveClass('font-semibold', 'break-words')
-    expect(notebookTitle).not.toHaveClass('truncate')
-    expect(notebookDescription).toHaveClass('line-clamp-2')
+    expect(notebookRow).toHaveAttribute('role', 'checkbox')
+    expect(notebookRow).toHaveAttribute('tabindex', '0')
+    expect(notebookTitle.parentElement).toHaveClass('flex', 'min-w-0')
+    expect(notebookTitle).toHaveClass('min-w-0', 'flex-1', 'truncate', 'font-semibold')
+    expect(notebookTitle).not.toHaveClass('break-words')
+    expect(notebookTitle).toHaveAttribute(
+      'title',
+      'Research collection with a descriptive notebook title',
+    )
+    expect(notebookDescription).toHaveClass('truncate', 'text-muted-foreground')
+    expect(notebookDescription).not.toHaveClass('line-clamp-2')
+    expect(notebookDescription).toHaveAttribute(
+      'title',
+      'A detailed notebook description that remains readable in the list.',
+    )
+
+    fireEvent.click(notebookRow!)
+    expect(notebookRow).toHaveAttribute('aria-checked', 'true')
+    fireEvent.keyDown(notebookRow!, { key: ' ' })
+    expect(notebookRow).toHaveAttribute('aria-checked', 'false')
   })
 
   it('places pending notebook actions in the supplied sheet footer', () => {

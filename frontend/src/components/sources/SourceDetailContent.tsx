@@ -500,8 +500,8 @@ function SourceDetailContentInner({
               <InlineEdit
                 value={source.title || ''}
                 onSave={handleUpdateTitle}
-                className="truncate font-serif text-lg font-semibold leading-tight"
-                inputClassName="font-serif text-lg font-semibold leading-tight"
+                className="rounded-[var(--control-radius)] border border-transparent font-serif text-lg font-semibold leading-tight hover:border-border hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                inputClassName="h-8 rounded-[var(--control-radius)] border-border-strong bg-card px-2 font-serif text-base font-semibold leading-normal focus:ring-ring"
                 placeholder={t('sources.titlePlaceholder')}
                 emptyText={t('sources.untitledSource')}
               />
