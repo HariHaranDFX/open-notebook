@@ -25,7 +25,9 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
-  DropdownMenuItem: (props: React.ComponentProps<'button'>) => <button role="menuitem" {...props} />,
+  DropdownMenuItem: ({ variant, ...props }: React.ComponentProps<'button'> & { variant?: string }) => (
+    <button role="menuitem" data-variant={variant ?? 'default'} {...props} />
+  ),
 }))
 
 describe('NotebookHeader', () => {
@@ -58,6 +60,8 @@ describe('NotebookHeader', () => {
     const headerLayout = title.closest('[data-slot="detail-header-layout"]')
 
     expect(backButton.closest('header')).toContainElement(title)
+    expect(backButton).toHaveTextContent('common.back')
+    expect(backButton).not.toHaveTextContent('workbench.backToNotebooks')
     expect(headerLayout).toContainElement(screen.getByText('Evidence and notes'))
     expect(headerLayout).toHaveClass(
       'grid',
@@ -97,6 +101,36 @@ describe('NotebookHeader', () => {
     expect(backButton.className).toBe(shareButton.className)
   })
 
+  it('uses compact title and description controls while editing', () => {
+    render(
+      <NotebookHeader
+        notebook={{
+          id: 'notebook:research',
+          name: 'Research notebook',
+          description: 'Evidence and notes',
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-02T00:00:00Z',
+          archived: false,
+          access_role: 'owner',
+          source_count: 1,
+          note_count: 2,
+        }}
+        onBack={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Research notebook' }))
+    const titleInput = document.getElementById('notebook-name')
+    expect(titleInput).toHaveClass('h-9', 'text-lg')
+
+    fireEvent.keyDown(titleInput!, { key: 'Escape' })
+    fireEvent.click(screen.getByRole('button', { name: 'Evidence and notes' }))
+    expect(document.getElementById('notebook-description')).toHaveClass(
+      'min-h-10',
+      'text-sm',
+    )
+  })
+
   it('uses the vertical overflow icon for notebook actions', () => {
     render(
       <NotebookHeader
@@ -118,6 +152,10 @@ describe('NotebookHeader', () => {
     const actionsButton = screen.getByRole('button', { name: 'common.actions' })
     expect(actionsButton.querySelector('svg')).toHaveClass('lucide-ellipsis-vertical')
     expect(actionsButton).toHaveClass('border-border-strong', 'bg-card')
+    expect(screen.getByRole('menuitem', { name: 'common.delete' })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    )
   })
 
   it('requires confirmation before changing the notebook archive state', () => {

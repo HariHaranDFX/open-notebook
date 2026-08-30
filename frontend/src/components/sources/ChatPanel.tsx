@@ -150,7 +150,7 @@ export function ChatPanel({
                     loadingSessions={loadingSessions}
                   />
                 </div>
-                <SheetFooter className="border-t border-border px-4 py-3">
+                <SheetFooter className="flex-row justify-start border-t border-border px-4 py-2 sm:justify-start">
                   <Button variant="outline" onClick={() => setSessionManagerOpen(false)}>
                     {t('common.close')}
                   </Button>

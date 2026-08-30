@@ -41,7 +41,9 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
-  DropdownMenuItem: (props: React.ComponentProps<'button'>) => <button role="menuitem" {...props} />,
+  DropdownMenuItem: ({ variant, ...props }: React.ComponentProps<'button'> & { variant?: string }) => (
+    <button role="menuitem" data-variant={variant ?? 'default'} {...props} />
+  ),
 }))
 vi.mock('./NotebookDeleteDialog', () => ({ NotebookDeleteDialog: () => null }))
 
@@ -177,6 +179,15 @@ describe('NotebookList', () => {
       id: 'notebook:research',
       data: { archived: true },
     })
+  })
+
+  it('uses the sign-out destructive style for notebook deletion', () => {
+    render(<NotebookList notebooks={[notebook()]} isLoading={false} title="Active notebooks" />)
+
+    expect(screen.getByRole('menuitem', { name: 'common.delete' })).toHaveAttribute(
+      'data-variant',
+      'destructive',
+    )
   })
 
   it('requires confirmation before unarchiving a notebook', () => {

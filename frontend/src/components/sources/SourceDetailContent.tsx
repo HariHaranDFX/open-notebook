@@ -471,7 +471,7 @@ function SourceDetailContentInner({
       isDownloadingFile={isDownloadingFile}
       fileAvailable={fileAvailable}
       canEdit={canEdit}
-      showDetailsHeader={!renderWorkspace}
+      showDetailsHeader={false}
       detailsVariant={renderWorkspace ? 'sheet' : 'default'}
       notebookActionsContainer={renderWorkspace ? detailsFooterActions : undefined}
       onEmbedContent={() => void handleEmbedContent()}
@@ -489,7 +489,7 @@ function SourceDetailContentInner({
         : 'flex h-full min-h-0 min-w-0 flex-col'}
     >
       <DetailHeader
-        className={renderWorkspace ? 'border-b-0 px-4 pb-3 pt-3 sm:px-6 lg:pt-4' : 'px-4 sm:px-6'}
+        className={renderWorkspace ? 'border-b-0 px-4 pb-3 pt-3 sm:px-6 lg:pt-4' : 'px-4 pt-3 sm:px-6'}
       >
         <div
           data-slot="detail-header-layout"
@@ -638,7 +638,7 @@ function SourceDetailContentInner({
 
       <div className={renderWorkspace ? 'flex min-h-0 flex-1 overflow-hidden' : 'flex-1 overflow-y-auto px-2'}>
         {renderWorkspace ? renderWorkspace({ content: contentPane, insights: insightsPane, details: detailsPane, insightCount: insights.length }) : (
-          <Tabs defaultValue="content" className="w-full">
+          <Tabs defaultValue="content" className="w-full pt-2">
           <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
             <TabsTrigger value="content">{t('sources.content')}</TabsTrigger>
             <TabsTrigger value="insights">
@@ -647,15 +647,15 @@ function SourceDetailContentInner({
             <TabsTrigger value="details">{t('sources.details')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="content" className="mt-6">
+          <TabsContent value="content" className="mt-2">
             {contentPane}
           </TabsContent>
 
-          <TabsContent value="insights" className="mt-6">
+          <TabsContent value="insights" className="mt-2">
             {insightsPane}
           </TabsContent>
 
-          <TabsContent value="details" className="mt-6">
+          <TabsContent value="details" className="mt-2">
             {detailsPane}
           </TabsContent>
           </Tabs>

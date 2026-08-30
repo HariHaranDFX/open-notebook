@@ -89,7 +89,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
                   value={notebook.name}
                   onSave={handleUpdateName}
                   className="font-serif text-[1.375rem] font-semibold leading-tight"
-                  inputClassName="font-serif text-[1.375rem] font-semibold leading-tight"
+                  inputClassName="h-9 font-serif text-lg font-semibold leading-tight"
                   placeholder={t('notebooks.namePlaceholder')}
                 />
               ) : (
@@ -103,7 +103,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
                 value={notebook.description || ''}
                 onSave={handleUpdateDescription}
                 className="text-sm leading-5 text-muted-foreground"
-                inputClassName="text-sm leading-5 text-muted-foreground"
+                inputClassName="min-h-10 text-sm leading-5 text-muted-foreground"
                 placeholder={t('notebooks.addDescription')}
                 multiline
                 emptyText={t('notebooks.addDescription')}
@@ -124,7 +124,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
               aria-label={t('workbench.backToNotebooks')}
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden md:inline">{t('workbench.backToNotebooks')}</span>
+              <span className="hidden md:inline">{t('common.back')}</span>
             </Button>
             {canShare && (
               <Button
@@ -161,7 +161,7 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
                   {canDelete && (
                     <DropdownMenuItem
                       onClick={() => setShowDeleteDialog(true)}
-                      className="text-destructive focus:text-destructive"
+                      variant="destructive"
                     >
                       <Trash2 />
                       {t('common.delete')}

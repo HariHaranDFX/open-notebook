@@ -135,11 +135,11 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className={cn(
+      <SheetContent showCloseButton={false} className={cn(
           "flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-3xl",
           isEditorFullscreen && "!max-w-screen !max-h-screen border-none w-screen h-screen"
       )}>
-        <SheetHeader className="border-b border-border px-6 py-3 pr-14">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
           <SheetTitle>
             {isEditing ? t('sources.editNote') : t('sources.createNote')}
           </SheetTitle>
@@ -156,7 +156,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             </div>
           ) : (
             <>
-              <div className="border-b px-6 py-4">
+              <div className="border-b px-6 py-3">
                 <InlineEdit
                   id="note-title"
                   name="title"
@@ -164,8 +164,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   onSave={(value) => setValue('title', value || '')}
                   placeholder={t('sources.addTitle')}
                   emptyText={t('sources.untitledNote')}
-                  className="text-xl font-semibold"
-                  inputClassName="text-xl font-semibold"
+                  className="flex h-8 items-center py-1 text-base font-semibold leading-5"
+                  inputClassName="h-8 py-1 text-base font-semibold leading-5"
                 />
               </div>
 
@@ -198,7 +198,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             </>
           )}
 
-          <SheetFooter className="border-t border-border px-6 py-3">
+          <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-2 sm:justify-between">
             <Button type="button" variant="outline" onClick={handleClose}>
               {t('common.cancel')}
             </Button>

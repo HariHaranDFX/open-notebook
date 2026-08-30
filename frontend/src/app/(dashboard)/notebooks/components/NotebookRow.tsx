@@ -181,7 +181,7 @@ export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
               {canDelete && (
                 <DropdownMenuItem
                   onClick={() => setShowDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive"
+                  variant="destructive"
                 >
                   <Trash2 />
                   {t('common.delete')}

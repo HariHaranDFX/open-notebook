@@ -202,6 +202,60 @@ describe('SourceDetailContent', () => {
     expect(screen.queryByText('sources.manageNotebooks')).not.toBeInTheDocument()
   })
 
+  it('uses compact vertical spacing around the source sheet tabs', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:spacing',
+      title: 'Grounded source',
+      access_role: 'viewer',
+      asset: null,
+      embedded: false,
+      embedded_chunks: 0,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+
+    renderContent()
+
+    const title = await screen.findByText('Grounded source')
+    const tabList = screen.getByRole('tablist')
+    const activePanel = screen.getByRole('tabpanel')
+
+    expect(title.closest('header')).toHaveClass('pt-3')
+    expect(tabList.closest('[data-slot="tabs"]')).toHaveClass('pt-2')
+    expect(activePanel).toHaveClass('mt-2')
+  })
+
+  it('omits the redundant heading and divider inside the Details tab', async () => {
+    mockSourcesGet.mockResolvedValue({
+      id: 'source:details-tab',
+      title: 'Grounded source',
+      access_role: 'viewer',
+      asset: null,
+      embedded: true,
+      embedded_chunks: 1,
+      insights_count: 0,
+      created: '2026-01-01T00:00:00Z',
+      updated: '2026-01-01T00:00:00Z',
+      full_text: 'Visible evidence',
+    })
+
+    renderContent()
+
+    const detailsTab = await screen.findByRole('tab', { name: 'sources.details' })
+    fireEvent.mouseDown(detailsTab, { button: 0, ctrlKey: false })
+    const inspector = screen.getByText('sources.metadata').closest(
+      '[data-slot="source-details-inspector"]',
+    )
+
+    expect(inspector).not.toBeNull()
+    expect(within(inspector as HTMLElement).queryByRole('heading', {
+      name: 'sources.details',
+    })).not.toBeInTheDocument()
+    expect(screen.getAllByText('sources.details')).toHaveLength(1)
+  })
+
   it('keeps the source return action inside the source header', async () => {
     mockSourcesGet.mockResolvedValue({
       id: 'source:header',

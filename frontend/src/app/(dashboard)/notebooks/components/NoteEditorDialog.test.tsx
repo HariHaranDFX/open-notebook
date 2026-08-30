@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoteEditorDialog } from './NoteEditorDialog'
@@ -134,5 +134,57 @@ describe('NoteEditorDialog', () => {
     expect(screen.getByTestId('markdown-editor')).toBeInTheDocument()
     expect(screen.getByText('sources.saveNote')).toBeInTheDocument()
     expect(screen.queryByTestId('content-unavailable')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    {
+      mode: 'edit',
+      note: { id: 'note-1', title: 'My note', content: 'Note body' },
+      heading: 'sources.editNote',
+      title: 'My note',
+      action: 'sources.saveNote',
+    },
+    {
+      mode: 'create',
+      note: undefined,
+      heading: 'sources.createNote',
+      title: 'sources.untitledNote',
+      action: 'sources.createNoteBtn',
+    },
+  ])('uses the compact, close-free sheet layout in $mode mode', ({ note, heading, title, action }) => {
+    mockUseNote.mockReturnValue(
+      asResult({
+        data: note
+          ? {
+              ...note,
+              note_type: 'human',
+              created: '2026-01-01T00:00:00Z',
+              updated: '2026-01-01T00:00:00Z',
+            } as UseNoteResult['data']
+          : undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+      })
+    )
+
+    renderDialog({ note, notebookId: 'notebook-1' })
+
+    const dialog = screen.getByRole('dialog', { name: heading })
+    const header = dialog.querySelector('[data-slot="sheet-header"]')
+    const cancelButton = within(dialog).getByRole('button', { name: 'common.cancel' })
+    const footer = cancelButton.closest('[data-slot="sheet-footer"]')
+    const titleButton = within(dialog).getByRole('button', { name: title })
+
+    expect(dialog.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(header).toHaveClass('gap-1', 'border-b', 'py-3')
+    expect(footer).toHaveClass('flex-row', 'justify-between', 'sm:justify-between')
+    expect(cancelButton.nextElementSibling).toBe(
+      within(dialog).getByRole('button', { name: action })
+    )
+    expect(titleButton).toHaveClass('h-8', 'text-base')
+
+    fireEvent.click(titleButton)
+    expect(document.getElementById('note-title')).toHaveClass('h-8', 'text-base')
   })
 })

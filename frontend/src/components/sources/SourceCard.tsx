@@ -255,7 +255,7 @@ function SourceCardImpl({
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end">
               {showRemoveFromNotebook && (
                 <>
                   <DropdownMenuItem
@@ -309,9 +309,9 @@ function SourceCardImpl({
                   handleDelete()
                 }}
                 disabled={!onDelete}
-                className="text-red-600 focus:text-red-600"
+                variant="destructive"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 />
                 {t('sources.deleteSource')}
               </DropdownMenuItem>
             </DropdownMenuContent>

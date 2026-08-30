@@ -7,6 +7,20 @@ vi.mock('@/lib/hooks/use-sources', () => ({
   useSourceStatus: () => ({ data: undefined, isLoading: false }),
 }))
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div role="menu" data-slot="dropdown-menu-content" className={`min-w-[8rem] ${className}`}>
+      {children}
+    </div>
+  ),
+  DropdownMenuItem: ({ variant, ...props }: React.ComponentProps<'button'> & { variant?: string }) => (
+    <button role="menuitem" data-variant={variant ?? 'default'} {...props} />
+  ),
+  DropdownMenuSeparator: () => <hr />,
+}))
+
 describe('SourceCard', () => {
   it('uses the shared colored file-family icon while keeping status separate from the title', () => {
     render(
@@ -73,5 +87,30 @@ describe('SourceCard', () => {
     expect(primaryBadges).toContainElement(screen.getByText('sources.insightsCount').closest('[data-slot="badge"]'))
     expect(footer).toHaveClass('mt-3', 'justify-start')
     expect(footer).toContainElement(within(card).getByRole('combobox', { name: 'common.contextModes.sourceLabel' }))
+  })
+
+  it('uses a compact menu and the sign-out destructive style for deletion', () => {
+    render(
+      <SourceCard
+        source={{
+          id: 'source:research',
+          title: 'Research source',
+          asset: null,
+          embedded: true,
+          embedded_chunks: 1,
+          insights_count: 0,
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-02T00:00:00Z',
+          status: 'completed',
+        }}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    const deleteItem = screen.getByRole('menuitem', { name: 'sources.deleteSource' })
+    const menu = deleteItem.closest('[data-slot="dropdown-menu-content"]')
+    expect(deleteItem).toHaveAttribute('data-variant', 'destructive')
+    expect(menu).toHaveClass('min-w-[8rem]')
+    expect(menu).not.toHaveClass('w-48')
   })
 })

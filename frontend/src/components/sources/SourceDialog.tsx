@@ -47,7 +47,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col p-0 sm:max-w-5xl">
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col p-0 sm:max-w-3xl">
         <SheetHeader className="sr-only">
           <SheetTitle>{t('sources.detailsTitle')}</SheetTitle>
         </SheetHeader>
@@ -58,7 +58,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
           />
         </div>
 
-        <SheetFooter className="border-t border-border px-6 py-3">
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
           <Button type="button" variant="outline" onClick={handleClose}>
             {t('common.close')}
           </Button>

@@ -22,6 +22,18 @@ vi.mock('@/components/sources/SourceCard', () => ({ SourceCard: () => null }))
 vi.mock('@/components/sources/AddSourceDialog', () => ({ AddSourceDialog: () => null }))
 vi.mock('@/components/sources/AddExistingSourceDialog', () => ({ AddExistingSourceDialog: () => null }))
 vi.mock('./NoteEditorDialog', () => ({ NoteEditorDialog: () => null }))
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div role="menu" data-slot="dropdown-menu-content" className={`min-w-[8rem] ${className}`}>
+      {children}
+    </div>
+  ),
+  DropdownMenuItem: ({ variant, ...props }: React.ComponentProps<'button'> & { variant?: string }) => (
+    <button role="menuitem" data-variant={variant ?? 'default'} {...props} />
+  ),
+}))
 
 describe('notebook pane toolbars', () => {
   it('uses compact Add source and outlined Context actions without chevrons', () => {
@@ -100,5 +112,29 @@ describe('notebook pane toolbars', () => {
     expect(footer).toHaveClass('justify-between')
     expect(footer).toContainElement(within(noteCard).getByRole('combobox', { name: 'common.contextModes.noteLabel' }))
     expect(footer.querySelector('time')).toHaveClass('ml-auto', 'text-right')
+  })
+
+  it('uses a compact note menu and the sign-out destructive style for deletion', () => {
+    render(
+      <NotesColumn
+        notebookId="notebook:research"
+        isLoading={false}
+        accessRole="owner"
+        notes={[{
+          id: 'note:thought',
+          title: 'Thought',
+          content: 'Grounded note',
+          note_type: 'human',
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-01T00:00:00Z',
+        }]}
+      />,
+    )
+
+    const deleteItem = screen.getByRole('menuitem', { name: 'notebooks.deleteNote' })
+    const menu = deleteItem.closest('[data-slot="dropdown-menu-content"]')
+    expect(deleteItem).toHaveAttribute('data-variant', 'destructive')
+    expect(menu).toHaveClass('min-w-[8rem]')
+    expect(menu).not.toHaveClass('w-48')
   })
 })

@@ -182,8 +182,11 @@ export function AddExistingSourceDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-4 p-6 sm:max-w-2xl">
-        <SheetHeader>
+      <SheetContent
+        showCloseButton={false}
+        className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+      >
+        <SheetHeader className="gap-1 border-b border-border px-6 py-2.5">
           <SheetTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5" />
             {t('sources.addExistingTitle')}
@@ -193,7 +196,7 @@ export function AddExistingSourceDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -279,7 +282,7 @@ export function AddExistingSourceDialog({
           )}
         </div>
 
-        <SheetFooter>
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-2 sm:justify-between">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

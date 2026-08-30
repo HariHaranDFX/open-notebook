@@ -54,8 +54,12 @@ describe('ChatPanel composer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'chat.sessions' }))
     const sessionsSheet = screen.getByRole('dialog', { name: 'chat.sessionsTitle' })
+    const closeButton = within(sessionsSheet).getByRole('button', { name: 'common.close' })
+    const footer = closeButton.closest('[data-slot="sheet-footer"]')
+
     expect(sessionsSheet.querySelector('.lucide-x')).not.toBeInTheDocument()
-    expect(within(sessionsSheet).getByRole('button', { name: 'common.close' })).toBeVisible()
+    expect(closeButton).toBeVisible()
+    expect(footer).toHaveClass('flex-row', 'justify-start', 'sm:justify-start')
   })
 
   it('sends the typed message and clears the input on send-button click', () => {
