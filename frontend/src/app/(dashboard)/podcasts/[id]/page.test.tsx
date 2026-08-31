@@ -26,13 +26,17 @@ vi.mock('@/lib/hooks/use-podcasts', () => ({
 vi.mock('@/components/podcasts/EpisodeDetail', () => ({
   EpisodeDetail: ({
     episode,
+    onBack,
     onDelete,
   }: {
     episode: { id: string; name: string }
+    onBack: () => void
     onDelete: (id: string) => void
   }) => (
     <div>
+      <h1>{episode.name}</h1>
       <p>Episode detail for {episode.name}</p>
+      <button type="button" onClick={onBack}>go-back</button>
       <button type="button" onClick={() => onDelete(episode.id)}>
         confirm-delete
       </button>
@@ -78,6 +82,18 @@ describe('EpisodeDetailPage', () => {
 
     expect(screen.getByText('My Episode')).toBeInTheDocument()
     expect(screen.getByText('Episode detail for My Episode')).toBeInTheDocument()
+  })
+
+  it('keeps the back action inside the redesigned episode header', () => {
+    episodeHook.mockReturnValue({
+      data: { id: 'episode:1', name: 'My Episode' },
+      isLoading: false,
+    })
+
+    render(<EpisodeDetailPage />)
+    screen.getByText('go-back').click()
+
+    expect(push).toHaveBeenCalledWith('/podcasts')
   })
 
   it('navigates back to the podcasts list after a successful delete', async () => {

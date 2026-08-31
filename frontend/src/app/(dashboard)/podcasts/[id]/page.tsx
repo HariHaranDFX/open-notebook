@@ -7,7 +7,6 @@ import { ArrowLeft } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { PageFrame } from '@/components/layout/PageFrame'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EpisodeDetail } from '@/components/podcasts/EpisodeDetail'
 import { Button } from '@/components/ui/button'
@@ -75,20 +74,11 @@ export default function EpisodeDetailPage() {
 
   return (
     <AppShell>
-      <PageFrame>
-        <PageHeader
-          title={episode.name}
-          eyebrow={t('podcasts.listTitle')}
-          secondaryActions={
-            <Button variant="outline" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4" />
-              {t('common.back')}
-            </Button>
-          }
-        />
+      <PageFrame className="space-y-0">
         <EpisodeDetail
           episode={episode}
           role={episode.access_role}
+          onBack={handleBack}
           onDelete={handleDelete}
           deleting={deleteEpisode.isPending}
           onRetry={handleRetry}

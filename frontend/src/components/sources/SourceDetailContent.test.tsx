@@ -202,7 +202,7 @@ describe('SourceDetailContent', () => {
     expect(screen.queryByText('sources.manageNotebooks')).not.toBeInTheDocument()
   })
 
-  it('uses compact vertical spacing around the source sheet tabs', async () => {
+  it('keeps compact vertical spacing fixed around the source sheet tabs', async () => {
     mockSourcesGet.mockResolvedValue({
       id: 'source:spacing',
       title: 'Grounded source',
@@ -224,6 +224,7 @@ describe('SourceDetailContent', () => {
 
     expect(title.closest('header')).toHaveClass('pt-3')
     expect(tabList.closest('[data-slot="tabs"]')).toHaveClass('pt-2')
+    expect(tabList).toHaveClass('sticky', 'top-2')
     expect(activePanel).toHaveClass('mt-2')
   })
 
@@ -254,6 +255,7 @@ describe('SourceDetailContent', () => {
       name: 'sources.details',
     })).not.toBeInTheDocument()
     expect(screen.getAllByText('sources.details')).toHaveLength(1)
+    expect(screen.getByRole('tabpanel')).toHaveClass('pb-4')
   })
 
   it('keeps the source return action inside the source header', async () => {

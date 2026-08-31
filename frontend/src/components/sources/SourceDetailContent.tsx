@@ -639,7 +639,7 @@ function SourceDetailContentInner({
       <div className={renderWorkspace ? 'flex min-h-0 flex-1 overflow-hidden' : 'flex-1 overflow-y-auto px-2'}>
         {renderWorkspace ? renderWorkspace({ content: contentPane, insights: insightsPane, details: detailsPane, insightCount: insights.length }) : (
           <Tabs defaultValue="content" className="w-full pt-2">
-          <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
+          <TabsList className="sticky top-2 z-10 grid w-full grid-cols-3">
             <TabsTrigger value="content">{t('sources.content')}</TabsTrigger>
             <TabsTrigger value="insights">
               {t('common.insights')} {insights.length > 0 && `(${insights.length})`}
@@ -655,7 +655,7 @@ function SourceDetailContentInner({
             {insightsPane}
           </TabsContent>
 
-          <TabsContent value="details" className="mt-2">
+          <TabsContent value="details" className="mt-2 pb-4">
             {detailsPane}
           </TabsContent>
           </Tabs>

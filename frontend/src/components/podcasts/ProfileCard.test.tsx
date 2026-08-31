@@ -46,6 +46,17 @@ describe('ProfileCard', () => {
     expect(props.onEdit).toHaveBeenCalledTimes(1)
   })
 
+  it('uses the shared destructive menu style for Delete', async () => {
+    render(<ProfileCard {...baseProps()} />)
+
+    const actions = screen.getByRole('button', { name: 'common.actions' })
+    actions.focus()
+    fireEvent.keyDown(actions, { key: 'Enter', code: 'Enter' })
+
+    expect(await screen.findByRole('menuitem', { name: 'podcasts.delete' }))
+      .toHaveAttribute('data-variant', 'destructive')
+  })
+
   it('renders body children', () => {
     render(
       <ProfileCard {...baseProps()}>

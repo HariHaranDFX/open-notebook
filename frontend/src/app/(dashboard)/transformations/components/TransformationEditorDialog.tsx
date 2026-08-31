@@ -155,16 +155,20 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-4xl">
-        <SheetHeader className="border-b border-border px-6 py-3 pr-14">
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
           <SheetTitle>
-            {isEditing ? t('common.editTransformation') : t('transformations.createNew')}
+            {isEditing
+              ? t('common.editTransformation')
+              : t('transformations.createTransformation')}
           </SheetTitle>
           <SheetDescription>
-            {isEditing ? t('common.edit') : t('transformations.createNew')}
+            {isEditing
+              ? t('transformations.editSheetDescription')
+              : t('transformations.createSheetDescription')}
           </SheetDescription>
         </SheetHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
@@ -313,9 +317,9 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
             </>
           )}
 
-          <SheetFooter className="border-t border-border px-6 py-3">
+          <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
              <Button type="button" variant="outline" onClick={handleClose}>
-               {t('common.cancel')}
+               {t('common.close')}
              </Button>
               <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
                 {isSaving

@@ -111,7 +111,7 @@ export function ProfileCard({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <AlertDialogTrigger asChild>
-                  <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem variant="destructive">
                     <Trash2 className="h-4 w-4" />
                     {t('podcasts.delete')}
                   </DropdownMenuItem>

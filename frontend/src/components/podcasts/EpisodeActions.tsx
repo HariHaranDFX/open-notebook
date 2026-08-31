@@ -66,10 +66,15 @@ const getSTATUS_META = (t: TFunction): Record<
   },
 })
 
-export function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
+export function StatusBadge({
+  status,
+  showCompleted = false,
+}: {
+  status?: EpisodeStatus | null
+  showCompleted?: boolean
+}) {
   const { t } = useTranslation()
-  // Don't show badge for completed episodes
-  if (status === 'completed') {
+  if (status === 'completed' && !showCompleted) {
     return null
   }
 

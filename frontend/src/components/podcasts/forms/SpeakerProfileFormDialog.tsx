@@ -155,8 +155,8 @@ export function SpeakerProfileFormDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-[calc(100vw-1.5rem)] overflow-y-auto p-6 sm:max-w-2xl">
-        <SheetHeader>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <SheetHeader className="border-b border-border px-6 py-4">
           <SheetTitle>
             {isEdit ? t('podcasts.editSpeakerProfile') : t('podcasts.createSpeakerProfile')}
           </SheetTitle>
@@ -165,7 +165,8 @@ export function SpeakerProfileFormDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">{t('podcasts.profileName')} *</Label>
@@ -336,8 +337,9 @@ export function SpeakerProfileFormDialog({
               <p className="text-xs text-red-600">{speakersArrayError}</p>
             ) : null}
           </div>
+          </div>
 
-          <SheetFooter className="border-t border-border pt-3">
+          <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
             <Button
               type="button"
               variant="outline"
