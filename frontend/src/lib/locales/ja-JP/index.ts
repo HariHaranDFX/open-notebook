@@ -163,7 +163,6 @@ export const jaJP = {
     content: "コンテンツ",
     insights: "インサイト",
     backToNotebooks: "ノートブックに戻る",
-    backToSources: "ソースに戻る",
     collapseChat: "チャットを折りたたむ",
     expandChat: "チャットを展開",
   },

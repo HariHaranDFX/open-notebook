@@ -163,7 +163,6 @@ export const zhCN = {
     content: "内容",
     insights: "见解",
     backToNotebooks: "返回笔记本",
-    backToSources: "返回来源",
     collapseChat: "收起聊天",
     expandChat: "展开聊天",
   },

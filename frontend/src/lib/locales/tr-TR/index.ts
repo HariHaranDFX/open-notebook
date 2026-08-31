@@ -163,7 +163,6 @@ export const trTR = {
     content: "İçerik",
     insights: "İçgörüler",
     backToNotebooks: "Not defterlerine dön",
-    backToSources: "Kaynaklara dön",
     collapseChat: "Sohbeti daralt",
     expandChat: "Sohbeti genişlet",
   },

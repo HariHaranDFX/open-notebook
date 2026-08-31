@@ -166,7 +166,6 @@ export const deDE = {
     content: "Inhalt",
     insights: "Insights",
     backToNotebooks: "Zurück zu Notizbüchern",
-    backToSources: "Zurück zu Quellen",
     collapseChat: "Chat einklappen",
     expandChat: "Chat erweitern",
   },

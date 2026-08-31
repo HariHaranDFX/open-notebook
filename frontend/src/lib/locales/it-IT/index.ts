@@ -163,7 +163,6 @@ export const itIT = {
     content: "Contenuto",
     insights: "Approfondimenti",
     backToNotebooks: "Torna ai taccuini",
-    backToSources: "Torna alle fonti",
     collapseChat: "Comprimi chat",
     expandChat: "Espandi chat",
   },

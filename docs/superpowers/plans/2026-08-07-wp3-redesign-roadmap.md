@@ -33,9 +33,9 @@
 3. [x] [WP3-01B: Deployment-level white-label branding](2026-08-07-wp3-01b-branding.md) — Complete and approved
 4. [x] [WP3-02: Collection libraries](2026-08-07-wp3-02-collection-libraries.md) — Complete and approved
 5. [x] [WP3-03: Research workbench](2026-08-07-wp3-03-research-workbench.md) — Complete and approved
-6. [ ] [WP3-04: Ask and Search](2026-08-07-wp3-04-ask-search.md)
-7. [ ] [WP3-05: Output studios](2026-08-07-wp3-05-output-studios.md)
-8. [ ] [WP3-06: Administration, authentication, and sharing](2026-08-07-wp3-06-admin-auth-sharing.md)
+6. [x] [WP3-04: Ask and Search](2026-08-07-wp3-04-ask-search.md) — Complete and approved
+7. [x] [WP3-05: Output studios](2026-08-07-wp3-05-output-studios.md) — Complete and approved
+8. [x] [WP3-06: Administration, authentication, and sharing](2026-08-07-wp3-06-admin-auth-sharing.md) — Complete and approved
 9. [ ] [WP3-07: Hardening and release verification](2026-08-07-wp3-07-hardening.md)
 
 Do not execute packages out of order. WP3-01 establishes tokens and structural interfaces consumed by every route plan. WP3-01B adds deployment identity without allowing customer configuration to override semantic, provenance, or focus meaning. WP3-03 establishes the workbench and resource-preview interfaces consumed by Ask/Search. WP3-06 consumes WP2b sharing types and may add access-origin metadata without weakening existing authorization.
@@ -48,6 +48,7 @@ These issues were discovered while testing the running WP3 application. They are
 2. [ ] [Notebook–source documentation truth](2026-08-13-notebook-source-documentation-truth.md) — remove the stale one-notebook-per-source and re-upload guidance, then document reuse, unlinking, and global deletion accurately.
 3. [ ] [Ingestion runtime capabilities](2026-08-13-ingestion-runtime-capabilities.md) — require a complete FFmpeg/FFprobe runtime for advertised media support, gate images on optional Docling, and remove unsupported ZIP/TAR/GZ from the picker.
 4. [ ] [Long-context handling](2026-08-13-long-context-handling.md) — add model-aware context budgeting, warnings, and recovery without silently dropping selected evidence.
+5. [ ] [Podcast notebook origin](2026-09-01-podcast-notebook-origin.md) — expose a linked episode's notebook identity in the detail response and show a notebook/standalone pill in the single-podcast header without changing inherited authorization.
 
 ## Shared Interfaces
 

@@ -220,8 +220,8 @@ describe('ShareSheet', () => {
     const sheet = screen.getByRole('dialog', { name: 'Share' })
     const header = sheet.querySelector('[data-slot="sheet-header"]')
     expect(sheet.querySelector('.lucide-x')).not.toBeInTheDocument()
-    expect(header).toHaveClass('gap-1', 'py-2.5')
-    expect(header).not.toHaveClass('gap-2', 'py-3', 'pr-14')
+    expect(header).toHaveClass('gap-0', 'py-3')
+    expect(header).not.toHaveClass('gap-2', 'pr-14')
     expect(within(sheet).getByRole('button', { name: 'Done' })).toBeVisible()
   })
 

@@ -163,7 +163,6 @@ export const caES = {
     content: "Contingut",
     insights: "Anàlisis",
     backToNotebooks: "Tornar als quaderns",
-    backToSources: "Tornar a les fonts",
     collapseChat: "Redueix el xat",
     expandChat: "Amplia el xat",
   },

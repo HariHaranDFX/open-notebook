@@ -4,6 +4,8 @@
 
 **Goal:** Unify administration under one local hierarchy, redesign login/global recovery states, and make WP2b roles, sharing origin, and destructive scope explicit without weakening authorization.
 
+**Status:** Complete and approved.
+
 **Architecture:** Add one nested settings layout and local navigation, preserve old `/advanced` as a redirect, restyle existing settings/provider/group components, and convert sharing to the foundation Sheet. Add optional access-origin metadata to existing notebook/source responses while retaining `access_role` for compatibility. Additionally, stamp the podcast episode response with its notebook-inherited `access_role` and pass it into the existing `EpisodeActions` `role` seam, so podcast retry/delete gating is reflected in the UI — reusing the ownership helpers that already enforce it, with no authorization change.
 
 **Tech Stack:** FastAPI/Pydantic, existing WP2b ownership helpers, Next.js nested layouts, Sheet, TanStack Query, Vitest, pytest.
@@ -48,23 +50,23 @@ class AccessSummary(BaseModel):
 
 Notebook/source response models retain `access_role` and add `access_summary: Optional[AccessSummary] = None`.
 
-- [ ] **Step 1: Write failing origin tests**
+- [x] **Step 1: Write failing origin tests**
 
 Cover owner, direct user grant, group grant with group name, source access inherited from notebook, open/auth-off mode, higher role beating preferred origin, and equal role preferring direct over group over notebook. Assert existing assert/edit/delete helpers return the same role/status as before.
 
-- [ ] **Step 2: Implement one summary resolver**
+- [x] **Step 2: Implement one summary resolver**
 
 Refactor internal grant lookup to retain role plus origin metadata, then derive the existing effective role from the summary. Do not duplicate access queries in routers. Redact labels to the group name or linked notebook name only; never expose user IDs as labels.
 
-- [ ] **Step 3: Populate responses additively**
+- [x] **Step 3: Populate responses additively**
 
 Set both `access_role=summary.role` and `access_summary=summary` in notebook/source list/detail responses. Open mode uses owner role with open origin so current clients keep full access.
 
-- [ ] **Step 4: Update frontend types/helpers**
+- [x] **Step 4: Update frontend types/helpers**
 
 Add `AccessOrigin` and `AccessSummary`. Keep existing permission helpers; add `describeAccess(summary, t)` only for presentation and test every origin.
 
-- [ ] **Step 5: Verify backend/frontend permission behavior**
+- [x] **Step 5: Verify backend/frontend permission behavior**
 
 Run:
 
@@ -95,7 +97,7 @@ async def effective_role_for_episode(episode, request: Request) -> Optional[Acce
 
 `PodcastEpisodeResponse` gains `access_role: Optional[AccessRole] = None`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_podcast_access_role.py`, reusing the harness in `tests/test_ownership_notes_chat_podcasts.py`:
 
@@ -197,12 +199,12 @@ def test_notebook_viewer_delete_still_403(mock_get, mock_query, monkeypatch):
     assert response.status_code == 403
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `uv run pytest tests/test_podcast_access_role.py -q`
 Expected: FAIL — the response JSON has no `access_role` key (the owner/viewer/editor assertions raise `KeyError`).
 
-- [ ] **Step 3: Add the resolver to `api/ownership.py`**
+- [x] **Step 3: Add the resolver to `api/ownership.py`**
 
 Mirror `filter_episodes_by_access` exactly so the response and the enforcement agree by construction:
 
@@ -234,7 +236,7 @@ async def effective_role_for_episode(
     )
 ```
 
-- [ ] **Step 4: Carry it on the response in `api/routers/podcasts.py`**
+- [x] **Step 4: Carry it on the response in `api/routers/podcasts.py`**
 
 Extend the `api.ownership` import (podcasts.py:9) to include `AccessRole` and `effective_role_for_episode`. Add the field to the model (podcasts.py:147):
 
@@ -253,12 +255,12 @@ In `list_podcast_episodes`, inside the existing `for episode in episodes:` loop,
 
 In `get_podcast_episode`, add the same keyword to the `PodcastEpisodeResponse(...)` returned at podcasts.py:341.
 
-- [ ] **Step 5: Run tests, verify pass + no enforcement regression**
+- [x] **Step 5: Run tests, verify pass + no enforcement regression**
 
 Run: `uv run pytest tests/test_podcast_access_role.py tests/test_ownership_notes_chat_podcasts.py -q`
 Expected: PASS. `test_notebook_viewer_delete_still_403` proves authorization is unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add api/ownership.py api/routers/podcasts.py tests/test_podcast_access_role.py
@@ -281,7 +283,7 @@ git commit -m "feat(podcasts): expose notebook-inherited access role on episodes
 - Consumes: `PodcastEpisodeResponse.access_role` (Task 2); the `role?: AccessRole | null` props on `EpisodeCard` (EpisodeCard.tsx:19) and `EpisodeDetail` (EpisodeDetail.tsx:24); `AccessRole` (`frontend/src/lib/utils/access-role.ts`)
 - Produces: none
 
-- [ ] **Step 1: Write the failing wiring tests**
+- [x] **Step 1: Write the failing wiring tests**
 
 Append to `frontend/src/components/podcasts/EpisodesTab.test.tsx` (reusing its `makeEpisode` / `mockEpisodes` helpers; translation keys render as literal strings under the global mock):
 
@@ -309,12 +311,12 @@ Append to `frontend/src/components/podcasts/EpisodesTab.test.tsx` (reusing its `
   })
 ```
 
-- [ ] **Step 2: Run, verify fail**
+- [x] **Step 2: Run, verify fail**
 
 Run (in `frontend/`): `npm run test -- src/components/podcasts/EpisodesTab.test.tsx`
 Expected: FAIL — the viewer row still renders `podcasts.retry` / `podcasts.delete` (role not wired), and `tsc` rejects `access_role` on `makeEpisode` until the type is added.
 
-- [ ] **Step 3: Add `access_role` to the type**
+- [x] **Step 3: Add `access_role` to the type**
 
 In `frontend/src/lib/types/podcasts.ts`, add the import near the top:
 
@@ -329,7 +331,7 @@ and inside `export interface PodcastEpisode { … }` (podcasts.ts:78):
   access_role?: AccessRole | null
 ```
 
-- [ ] **Step 4: Pass the role at both call sites**
+- [x] **Step 4: Pass the role at both call sites**
 
 In `EpisodesTab.tsx`, on the `<EpisodeCard>` rendered at line 178, add the prop:
 
@@ -339,7 +341,7 @@ In `EpisodesTab.tsx`, on the `<EpisodeCard>` rendered at line 178, add the prop:
 
 In `podcasts/[id]/page.tsx`, on the `<EpisodeDetail>` rendered at line 89, add the same `role={episode.access_role}`.
 
-- [ ] **Step 5: Run tests + static gates**
+- [x] **Step 5: Run tests + static gates**
 
 Run (in `frontend/`):
 
@@ -351,7 +353,7 @@ npm run build
 
 Expected: all pass (build confirms the type/`TranslationShape` parity is intact).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add frontend/src/lib/types/podcasts.ts frontend/src/components/podcasts/EpisodesTab.tsx "frontend/src/app/(dashboard)/podcasts/[id]/page.tsx" frontend/src/components/podcasts/EpisodesTab.test.tsx
@@ -377,15 +379,15 @@ git commit -m "feat(podcasts): gate episode retry/delete on inherited access rol
 - Produces admin navigation items for General, Models and credentials, Groups, and Advanced.
 - Consumes AppShell/PageFrame/PageHeader.
 
-- [ ] **Step 1: Write failing navigation tests**
+- [x] **Step 1: Write failing navigation tests**
 
 Assert all four labeled links, active state for nested paths, AdminOnly wrapping, mobile subnavigation control, and `/advanced` redirect target `/settings/advanced`.
 
-- [ ] **Step 2: Add the nested layout**
+- [x] **Step 2: Add the nested layout**
 
 The settings layout renders AppShell → AdminOnly → responsive AdminNav + page content. Remove duplicate AppShell/AdminOnly wrappers from child pages. Desktop uses a compact local rail/list; phone uses a labeled Select or Sheet.
 
-- [ ] **Step 3: Preserve the old route**
+- [x] **Step 3: Preserve the old route**
 
 `frontend/src/app/(dashboard)/advanced/page.tsx` becomes:
 
@@ -399,11 +401,11 @@ export default function AdvancedRedirect() {
 
 Move the two advanced components to shared settings components and import them from the new page.
 
-- [ ] **Step 4: Apply page scaffolding and save boundaries**
+- [x] **Step 4: Apply page scaffolding and save boundaries**
 
 Use PageHeader on each page. General Settings keeps its single save action visible at the form boundary; API Keys separates encryption warning, defaults, providers, and help; Advanced separates system info from destructive rebuild; Groups separates create, group selection, membership, and deletion.
 
-- [ ] **Step 5: Verify admin hierarchy**
+- [x] **Step 5: Verify admin hierarchy**
 
 Run AdminNav, SettingsForm, API keys, ProviderSection, groups, navigation, and locale tests. Expected: pass.
 
@@ -430,19 +432,19 @@ interface ShareSheetProps {
 }
 ```
 
-- [ ] **Step 1: Write failing permission tests**
+- [x] **Step 1: Write failing permission tests**
 
 Assert current access summary, owner effect, direct user/group grants, viewer/editor labels, add/update/revoke states, admin group option, owner user-only behavior, no rendering without manage permission, and unsaved/pending close protection.
 
-- [ ] **Step 2: Convert Dialog to Sheet**
+- [x] **Step 2: Convert Dialog to Sheet**
 
 Use the existing grant hooks and mutations. Render current role/origin first, then grant rows, then add-access controls. Label inherited group/notebook access distinctly from direct grants. Disable duplicate mutation while pending and keep errors inline beside the failed operation.
 
-- [ ] **Step 3: Make revocation scope explicit**
+- [x] **Step 3: Make revocation scope explicit**
 
 Revoke copy names the principal and resource and states that other direct/group/notebook access can still apply. Do not promise total loss of access when another grant may remain.
 
-- [ ] **Step 4: Verify sharing and locale parity**
+- [x] **Step 4: Verify sharing and locale parity**
 
 Run ShareSheet, access-role, notebook/source caller, and locale tests. Expected: pass.
 
@@ -461,29 +463,29 @@ Run ShareSheet, access-role, notebook/source caller, and locale tests. Expected:
 - Preserves password/Entra auth and `redirectAfterLogin`.
 - Produces safe setup, connection, 401 restore, 403 read-only, and 404 return presentation.
 
-- [ ] **Step 1: Write login/recovery tests**
+- [x] **Step 1: Write login/recovery tests**
 
 Assert visible password label, password show/hide, password and Entra paths, intended destination restore, connection retry, no rendered API/frontend URL, no console instruction, and keyboard focus on the first actionable control after an error.
 
-- [ ] **Step 2: Remove diagnostic leakage from login**
+- [x] **Step 2: Remove diagnostic leakage from login**
 
 Delete `getConfig` loading and the API/frontend URL block. Keep safe product version only if already available without a network diagnostic request; otherwise omit it. Add a visible password label and native autocomplete.
 
-- [ ] **Step 3: Apply the gateway visual world**
+- [x] **Step 3: Apply the gateway visual world**
 
 Use canvas/surface/border tokens, restrained product identity, one sign-in action, and no marketing hero. Restyle global overlays with exact cause + recovery, polite/alert live regions, and preserved destination/context.
 
-- [ ] **Step 4: Verify global states**
+- [x] **Step 4: Verify global states**
 
 Run login, auth-store, ContentUnavailable, config route, locale tests, lint, and build. Expected: all pass.
 
 ### Task 7: Visual verification and commit
 
-- [ ] **Step 1: Inspect admin/auth/sharing states**
+- [x] **Step 1: Inspect admin/auth/sharing states**
 
 At all required widths/themes, verify admin subnavigation, long provider/group names, sticky save, read-only viewer, editor/owner differences, inherited access, podcast episode rows as a viewer (no Retry/Delete) vs editor/owner (both present) on both the studio list and the `/podcasts/[id]` detail page, ShareSheet focus/close, password/Entra, connection failure, 403, 404, reduced motion, and 200% zoom.
 
-- [ ] **Step 2: Commit backend metadata**
+- [x] **Step 2: Commit backend metadata**
 
 The podcast episode role (Tasks 2–3) is already committed on its own; this commit covers the Task 1 notebook/source `access_summary` work only.
 
@@ -492,7 +494,7 @@ git add api tests frontend/src/lib/types frontend/src/lib/utils
 git commit -m "feat(sharing): expose effective access origin"
 ```
 
-- [ ] **Step 3: Commit administration and gateway redesign**
+- [x] **Step 3: Commit administration and gateway redesign**
 
 ```powershell
 git add frontend/src

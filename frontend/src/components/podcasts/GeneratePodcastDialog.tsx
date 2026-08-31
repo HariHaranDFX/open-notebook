@@ -52,6 +52,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const [episodeProfileId, setEpisodeProfileId] = useState<string>('')
   const [episodeName, setEpisodeName] = useState('')
   const [instructions, setInstructions] = useState('')
+  const selectAllNotebookIdsRef = useRef(new Set<string>())
 
   const [isBuildingContext, setIsBuildingContext] = useState(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
@@ -77,7 +78,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       queryFn: () => sourcesApi.list({ notebook_id: notebook.id }),
       enabled:
         open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        (expandedNotebooks.includes(notebook.id) ||
+          selectAllNotebookIdsRef.current.has(notebook.id) ||
+          hasSelections(selections[notebook.id])),
     })),
   })
 
@@ -87,7 +90,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       queryFn: () => notesApi.list({ notebook_id: notebook.id }),
       enabled:
         open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        (expandedNotebooks.includes(notebook.id) ||
+          selectAllNotebookIdsRef.current.has(notebook.id) ||
+          hasSelections(selections[notebook.id])),
     })),
   })
 
@@ -136,7 +141,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     return `${sourceIds}::${noteIds}`
   }, [sourcesQueries, notesQueries])
 
-  // Initialise selection defaults when content loads
+  // Loading an expanded notebook must not select it. Apply defaults only when
+  // the notebook checkbox was explicitly selected before its content loaded.
   // Using dataKey instead of sourcesQueries/notesQueries to prevent running on every render
   useEffect(() => {
     if (!open) {
@@ -150,6 +156,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       notebooks.forEach((notebook, index) => {
         const sources = sourcesQueries[index]?.data
         const notes = notesQueries[index]?.data
+        const selectLoadedContent = selectAllNotebookIdsRef.current.has(notebook.id)
 
         if (!sources && !notes) {
           return
@@ -164,7 +171,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           const currentSources = next[notebook.id].sources
           sources.forEach((source) => {
             if (!(source.id in currentSources)) {
-              currentSources[source.id] = getSourceDefaultMode(source)
+              currentSources[source.id] = selectLoadedContent
+                ? getSourceDefaultMode(source)
+                : 'off'
               changed = true
             }
           })
@@ -174,7 +183,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           const currentNotes = next[notebook.id].notes
           notes.forEach((note) => {
             if (!(note.id in currentNotes)) {
-              currentNotes[note.id] = 'full'
+              currentNotes[note.id] = selectLoadedContent ? 'full' : 'off'
               changed = true
             }
           })
@@ -187,6 +196,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   }, [open, notebooks, dataKey])
 
   const resetState = useCallback(() => {
+    selectAllNotebookIdsRef.current.clear()
     setExpandedNotebooks([])
     setSelections({})
     setEpisodeProfileId('')
@@ -283,6 +293,13 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       const shouldCheck = checked === 'indeterminate' ? true : checked
       const sources = sourcesByNotebook[notebookId] ?? []
       const notes = notesByNotebook[notebookId] ?? []
+
+      if (shouldCheck) {
+        selectAllNotebookIdsRef.current.add(notebookId)
+      } else {
+        selectAllNotebookIdsRef.current.delete(notebookId)
+      }
+
       setSelections((prev) => {
         if (shouldCheck) {
           const nextSources: Record<string, SourceMode> = {}
@@ -479,15 +496,15 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         resetState()
       }
     }}>
-      <SheetContent className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1080px]">
-        <SheetHeader className="border-b border-border px-6 py-3 pr-14">
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1080px]">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
           <SheetTitle>{t('podcasts.generateEpisode')}</SheetTitle>
           <SheetDescription>
             {t('podcasts.generateEpisodeDesc')}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]">
+        <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_1fr] md:overflow-hidden xl:grid-cols-[3fr_1fr]">
           <ContentSelectionPanel
             notebooks={notebooks}
             isLoading={notebooksQuery.isLoading}
@@ -505,7 +522,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
             onNoteToggle={handleNoteToggle}
           />
 
-          <div className="space-y-6">
+          <div className="min-h-0 space-y-6 md:overflow-y-auto">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t('podcasts.episodeSettings')}
@@ -582,7 +599,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
           </div>
         </div>
-        <SheetFooter className="border-t border-border px-6 py-3">
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

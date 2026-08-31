@@ -163,7 +163,6 @@ export const esES = {
     content: "Contenido",
     insights: "Análisis",
     backToNotebooks: "Volver a cuadernos",
-    backToSources: "Volver a fuentes",
     collapseChat: "Contraer chat",
     expandChat: "Expandir chat",
   },

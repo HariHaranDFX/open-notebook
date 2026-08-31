@@ -163,7 +163,6 @@ export const frFR = {
     content: "Contenu",
     insights: "Analyses",
     backToNotebooks: "Retour aux carnets",
-    backToSources: "Retour aux sources",
     collapseChat: "Réduire le chat",
     expandChat: "Développer le chat",
   },

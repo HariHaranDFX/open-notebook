@@ -163,7 +163,6 @@ export const plPL = {
     content: "Treść",
     insights: "Wglądy",
     backToNotebooks: "Wróć do notatników",
-    backToSources: "Wróć do źródeł",
     collapseChat: "Zwiń czat",
     expandChat: "Rozwiń czat",
   },

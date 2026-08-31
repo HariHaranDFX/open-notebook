@@ -71,7 +71,7 @@ vi.mock('./SourceDetailContent', () => ({
       {showBackButton && (
         <header>
           <button type="button" onClick={onClose}>
-            workbench.backToSources
+            common.back
           </button>
         </header>
       )}
@@ -161,7 +161,7 @@ describe('SourceWorkspace', () => {
       'sm:px-6',
       'lg:px-8',
     )
-    fireEvent.click(screen.getByRole('button', { name: 'workbench.backToSources' }))
+    fireEvent.click(screen.getByRole('button', { name: 'common.back' }))
     expect(push).toHaveBeenCalledWith('/sources?view=list')
     expect(clearReturnTo).toHaveBeenCalledTimes(1)
   })

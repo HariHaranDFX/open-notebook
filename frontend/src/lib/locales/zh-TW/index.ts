@@ -163,7 +163,6 @@ export const zhTW = {
     content: "內容",
     insights: "見解",
     backToNotebooks: "返回筆記本",
-    backToSources: "返回來源",
     collapseChat: "收合聊天",
     expandChat: "展開聊天",
   },

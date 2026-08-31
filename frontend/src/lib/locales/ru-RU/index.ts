@@ -163,7 +163,6 @@ export const ruRU = {
     content: "Содержимое",
     insights: "Инсайты",
     backToNotebooks: "Вернуться к блокнотам",
-    backToSources: "Вернуться к источникам",
     collapseChat: "Свернуть чат",
     expandChat: "Развернуть чат",
   },

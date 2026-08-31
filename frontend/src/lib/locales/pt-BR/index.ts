@@ -163,7 +163,6 @@ export const ptBR = {
     content: "Conteúdo",
     insights: "Insights",
     backToNotebooks: "Voltar aos cadernos",
-    backToSources: "Voltar às fontes",
     collapseChat: "Recolher chat",
     expandChat: "Expandir chat",
   },

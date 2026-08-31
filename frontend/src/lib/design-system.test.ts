@@ -29,12 +29,12 @@ describe('WP3 design tokens', () => {
   })
 
   it('defines accessible light and dark resource icon colors', () => {
-    expect(css).toContain('--resource-notebook: #5B4B8A')
-    expect(css).toContain('--resource-spreadsheet: #356B62')
-    expect(css).toContain('--resource-media: #5F5489')
-    expect(css).toContain('--resource-notebook: #C4B5E6')
-    expect(css).toContain('--resource-spreadsheet: #86CFBE')
-    expect(css).toContain('--resource-media: #C4B9ED')
+    expect(css).toContain('--resource-notebook: #4C3488')
+    expect(css).toContain('--resource-spreadsheet: #1F6B57')
+    expect(css).toContain('--resource-media: #5844A1')
+    expect(css).toContain('--resource-notebook: #CDBBFF')
+    expect(css).toContain('--resource-spreadsheet: #76E0C1')
+    expect(css).toContain('--resource-media: #C8B7FF')
     expect(css).not.toContain('--resource-notebook-surface')
   })
 

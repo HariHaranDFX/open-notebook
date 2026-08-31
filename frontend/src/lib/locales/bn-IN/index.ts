@@ -163,7 +163,6 @@ export const bnIN = {
     content: "বিষয়বস্তু",
     insights: "অন্তর্দৃষ্টি",
     backToNotebooks: "নোটবুকে ফিরে যান",
-    backToSources: "উৎসে ফিরে যান",
     collapseChat: "চ্যাট সংকুচিত করুন",
     expandChat: "চ্যাট প্রসারিত করুন",
   },

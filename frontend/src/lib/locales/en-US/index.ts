@@ -161,7 +161,6 @@ export const enUS = {
     content: "Content",
     insights: "Insights",
     backToNotebooks: "Back to notebooks",
-    backToSources: "Back to sources",
     collapseChat: "Collapse chat",
     expandChat: "Expand chat",
   },
