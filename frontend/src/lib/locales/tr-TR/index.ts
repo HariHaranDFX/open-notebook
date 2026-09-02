@@ -234,6 +234,8 @@ export const trTR = {
     signInWithMicrosoft: "Microsoft ile Giriş Yap",
     showPassword: "Şifreyi göster",
     hidePassword: "Şifreyi gizle",
+    invalidPassword: "Geçersiz parola. Lütfen tekrar deneyin.",
+    authenticationFailed: "Kimlik doğrulama başarısız oldu. Lütfen tekrar deneyin.",
   },
   navigation: {
     collect: "Topla",
@@ -1067,6 +1069,11 @@ export const trTR = {
     apiKeyEditHint: "Mevcut API anahtarını korumak için boş bırakın",
     decryptionError: "Şifre Çözme Hatası",
     decryptionErrorDescription: "Bu kimlik bilgisinin API anahtarı çözülemedi. Şifreleme anahtarı değişmiş olabilir. Bu kimlik bilgisini silin ve doğru anahtarla yeniden oluşturun.",
+    linkedModels: "Bu kimlik bilgisine bağlı {{count}} model var.",
+    migrateModelsTo: "Modelleri şuraya taşı",
+    selectCredential: "Kimlik bilgisi seç",
+    migrateAndDelete: "Taşı ve sil",
+    deleteWithModels: "Modellerle birlikte sil",
   },
   setupBanner: {
     encryptionRequired: "Şifreleme anahtarı yapılandırılmadı",

@@ -18,6 +18,7 @@ import { useTheme } from '@/lib/stores/theme-store'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Monitor, Sun, Moon, ChevronDown, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 const THEME_OPTIONS = [
   { value: 'system', icon: Monitor },
@@ -128,7 +129,7 @@ export function SettingsForm() {
       <Alert variant="destructive">
         <AlertTitle>{t('settings.loadFailed')}</AlertTitle>
         <AlertDescription>
-          {error instanceof Error ? error.message : t('common.error')}
+          {getApiErrorMessage(error, (key) => t(key), 'common.refreshPage')}
         </AlertDescription>
       </Alert>
     )

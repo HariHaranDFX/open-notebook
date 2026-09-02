@@ -234,6 +234,8 @@ export const frFR = {
     signInWithMicrosoft: "Se connecter avec Microsoft",
     showPassword: "Afficher le mot de passe",
     hidePassword: "Masquer le mot de passe",
+    invalidPassword: "Mot de passe incorrect. Réessayez.",
+    authenticationFailed: "Échec de l'authentification. Réessayez.",
   },
   navigation: {
     collect: "Collecter",
@@ -1067,6 +1069,11 @@ export const frFR = {
     apiKeyEditHint: "Laissez vide pour conserver la clé API existante",
     decryptionError: "Erreur de déchiffrement",
     decryptionErrorDescription: "La clé API de cette configuration n'a pas pu être déchiffrée. La clé de chiffrement a peut-être changé. Supprimez cette configuration et recréez-la avec la bonne clé.",
+    linkedModels: "Cette configuration possède {{count}} modèle(s) associé(s).",
+    migrateModelsTo: "Migrer les modèles vers",
+    selectCredential: "Sélectionner une configuration",
+    migrateAndDelete: "Migrer et supprimer",
+    deleteWithModels: "Supprimer avec les modèles",
   },
   setupBanner: {
     encryptionRequired: "Clé de chiffrement non configurée",

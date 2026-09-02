@@ -15,6 +15,7 @@ import { embeddingApi } from '@/lib/api/embedding'
 import type { RebuildEmbeddingsRequest, RebuildStatusResponse } from '@/lib/api/embedding'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 export function RebuildEmbeddings() {
   const { t } = useTranslation()
@@ -180,7 +181,7 @@ export function RebuildEmbeddings() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {t('advanced.rebuild.failed')}: {(rebuildMutation.error as Error)?.message || t('common.error')}
+                    {t('advanced.rebuild.failed')}: {getApiErrorMessage(rebuildMutation.error, t)}
                   </AlertDescription>
                 </Alert>
               )}
@@ -239,7 +240,7 @@ export function RebuildEmbeddings() {
               {status.error_message && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{status.error_message}</AlertDescription>
+                  <AlertDescription>{t('advanced.rebuild.failed')}</AlertDescription>
                 </Alert>
               )}
 

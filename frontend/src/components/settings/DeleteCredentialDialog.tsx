@@ -75,13 +75,13 @@ export function DeleteCredentialDialog({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              This credential has {credential.model_count} linked model(s).
+              {t('apiKeys.linkedModels', { count: credential.model_count })}
               {otherCredentials.length > 0 && (
                 <div className="mt-2">
-                  <Label>Migrate models to:</Label>
+                  <Label>{t('apiKeys.migrateModelsTo')}</Label>
                   <Select value={migrateToId} onValueChange={setMigrateToId}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select credential" />
+                      <SelectValue placeholder={t('apiKeys.selectCredential')} />
                     </SelectTrigger>
                     <SelectContent>
                       {otherCredentials.map(c => (
@@ -102,7 +102,7 @@ export function DeleteCredentialDialog({
           {credential.model_count > 0 && migrateToId && (
             <Button onClick={handleMigrate} disabled={deleteCredential.isPending}>
               {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Migrate & Delete
+              {t('apiKeys.migrateAndDelete')}
             </Button>
           )}
           <Button
@@ -111,7 +111,7 @@ export function DeleteCredentialDialog({
             disabled={deleteCredential.isPending}
           >
             {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {credential.model_count > 0 ? 'Delete with Models' : t('common.delete')}
+            {credential.model_count > 0 ? t('apiKeys.deleteWithModels') : t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

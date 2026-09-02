@@ -232,6 +232,8 @@ export const enUS = {
     signInWithMicrosoft: "Sign in with Microsoft",
     showPassword: "Show password",
     hidePassword: "Hide password",
+    invalidPassword: "Invalid password. Please try again.",
+    authenticationFailed: "Authentication failed. Please try again.",
   },
   navigation: {
     collect: "Collect",
@@ -1066,6 +1068,11 @@ export const enUS = {
     apiKeyEditHint: "Leave blank to keep the existing API key",
     decryptionError: "Decryption Error",
     decryptionErrorDescription: "This credential's API key could not be decrypted. The encryption key may have changed. Delete this credential and re-create it with the correct key.",
+    linkedModels: "This credential has {{count}} linked model(s).",
+    migrateModelsTo: "Migrate models to",
+    selectCredential: "Select credential",
+    migrateAndDelete: "Migrate and delete",
+    deleteWithModels: "Delete with models",
   },
   setupBanner: {
     encryptionRequired: "Encryption key not configured",

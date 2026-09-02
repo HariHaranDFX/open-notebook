@@ -215,7 +215,7 @@ function SourceCardImpl({
   return (
     <Card
       className={cn(
-        'group relative cursor-pointer border border-border/60 py-0 transition-all duration-200 hover:shadow-md dark:border-border/40',
+        'group relative cursor-pointer border border-border/60 py-0 transition-colors duration-200 dark:border-border/40',
         className
       )}
       onClick={handleCardClick}

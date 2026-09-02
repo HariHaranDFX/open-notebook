@@ -158,12 +158,11 @@ export function useAsk(): UseAskResult {
         return
       }
 
-      const errorMessage = err.message || 'An unexpected error occurred'
       console.error('Ask error:', error)
-      update(prev => ({ ...prev, isStreaming: false, error: errorMessage }))
+      update(prev => ({ ...prev, isStreaming: false, error: t('apiErrors.askFailed') }))
       if (mountedRef.current && controllerRef.current === controller) {
         toast.error(t('apiErrors.askFailed'), {
-          description: getApiErrorMessage(errorMessage, (key) => t(key)),
+          description: getApiErrorMessage(error, (key) => t(key), 'apiErrors.askFailed'),
         })
       }
     }

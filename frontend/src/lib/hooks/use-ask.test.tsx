@@ -69,7 +69,7 @@ describe('useAsk', () => {
       await result.current.sendAsk('q', models)
     })
 
-    expect(result.current.error).toBe('boom')
+    expect(result.current.error).toBe('apiErrors.askFailed')
     expect(result.current.isStreaming).toBe(false)
     expect(result.current.cancelled).toBe(false)
     expect(toast.error).toHaveBeenCalled()
@@ -92,9 +92,9 @@ describe('useAsk', () => {
   })
 
   it('retry re-runs the last question and models', async () => {
-    vi.mocked(searchApi.askKnowledgeBase).mockResolvedValue(
-      streamFrom(['data: {"type":"complete"}\n'])
-    )
+    vi.mocked(searchApi.askKnowledgeBase)
+      .mockResolvedValueOnce(streamFrom(['data: {"type":"complete"}\n']))
+      .mockResolvedValueOnce(streamFrom(['data: {"type":"complete"}\n']))
     const { result } = renderHook(() => useAsk())
 
     await act(async () => {

@@ -234,6 +234,8 @@ export const bnIN = {
     signInWithMicrosoft: "Microsoft দিয়ে সাইন ইন করুন",
     showPassword: "পাসওয়ার্ড দেখান",
     hidePassword: "পাসওয়ার্ড লুকান",
+    invalidPassword: "পাসওয়ার্ড সঠিক নয়। আবার চেষ্টা করুন।",
+    authenticationFailed: "প্রমাণীকরণ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
   },
   navigation: {
     collect: "সংগ্রহ",
@@ -1068,6 +1070,11 @@ export const bnIN = {
     apiKeyEditHint: "বিদ্যমান API কী রাখতে খালি রাখুন",
     decryptionError: "ডিক্রিপশন ত্রুটি",
     decryptionErrorDescription: "এই শংসাপত্রের API কী ডিক্রিপ্ট করা যায়নি। এনক্রিপশন কী পরিবর্তন হয়ে থাকতে পারে। এই শংসাপত্রটি মুছে সঠিক কী দিয়ে পুনরায় তৈরি করুন।",
+    linkedModels: "এই পরিচয়পত্রের সাথে {{count}}টি মডেল যুক্ত আছে।",
+    migrateModelsTo: "মডেল স্থানান্তর করুন",
+    selectCredential: "পরিচয়পত্র নির্বাচন করুন",
+    migrateAndDelete: "স্থানান্তর করে মুছুন",
+    deleteWithModels: "মডেলসহ মুছুন",
   },
   setupBanner: {
     encryptionRequired: "এনক্রিপশন কী কনফিগার করা হয়নি",

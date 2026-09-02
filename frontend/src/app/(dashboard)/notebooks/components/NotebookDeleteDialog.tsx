@@ -17,6 +17,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useNotebookDeletePreview, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
 import { useRouter } from 'next/navigation'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 interface NotebookDeleteDialogProps {
   open: boolean
@@ -83,7 +84,7 @@ export function NotebookDeleteDialog({
             </div>
           ) : previewError ? (
             <div className="text-sm text-destructive">
-              {t('common.error')}: {previewError.message || 'Failed to load preview'}
+              {t('common.error')}: {getApiErrorMessage(previewError, t)}
             </div>
           ) : preview ? (
             <>

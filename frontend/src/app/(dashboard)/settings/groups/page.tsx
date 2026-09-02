@@ -194,7 +194,7 @@ export default function GroupsPage() {
                                 variant="ghost"
                                 size="icon"
                                 aria-label={`${t('groups.removeMember')} ${label}`}
-                                className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                                className="shrink-0 text-muted-foreground hover:text-destructive"
                                 onClick={() => removeMember.mutate(m.user_id)}
                               >
                                 <X className="size-4" />

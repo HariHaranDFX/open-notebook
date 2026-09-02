@@ -234,6 +234,8 @@ export const ptBR = {
     signInWithMicrosoft: "Entrar com a Microsoft",
     showPassword: "Mostrar senha",
     hidePassword: "Ocultar senha",
+    invalidPassword: "Senha inválida. Tente novamente.",
+    authenticationFailed: "Falha na autenticação. Tente novamente.",
   },
   navigation: {
     collect: "Coletar",
@@ -1067,6 +1069,11 @@ export const ptBR = {
     apiKeyEditHint: "Deixe em branco para manter a chave de API existente",
     decryptionError: "Erro de Descriptografia",
     decryptionErrorDescription: "A chave de API desta credencial não pôde ser descriptografada. A chave de criptografia pode ter sido alterada. Exclua esta credencial e recrie-a com a chave correta.",
+    linkedModels: "Esta credencial tem {{count}} modelo(s) vinculado(s).",
+    migrateModelsTo: "Migrar modelos para",
+    selectCredential: "Selecionar credencial",
+    migrateAndDelete: "Migrar e excluir",
+    deleteWithModels: "Excluir com os modelos",
   },
   setupBanner: {
     encryptionRequired: "Chave de criptografia não configurada",

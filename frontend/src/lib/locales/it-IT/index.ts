@@ -234,6 +234,8 @@ export const itIT = {
     signInWithMicrosoft: "Accedi con Microsoft",
     showPassword: "Mostra password",
     hidePassword: "Nascondi password",
+    invalidPassword: "Password non valida. Riprova.",
+    authenticationFailed: "Autenticazione non riuscita. Riprova.",
   },
   navigation: {
     collect: "Raccogli",
@@ -1067,6 +1069,11 @@ export const itIT = {
     apiKeyEditHint: "Lascia vuoto per mantenere la chiave API esistente",
     decryptionError: "Errore di decrittazione",
     decryptionErrorDescription: "La chiave API di questa credenziale non può essere decrittata. La chiave di crittografia potrebbe essere cambiata. Elimina questa credenziale e ricreala con la chiave corretta.",
+    linkedModels: "Questa credenziale ha {{count}} modello/i collegato/i.",
+    migrateModelsTo: "Migra i modelli a",
+    selectCredential: "Seleziona credenziale",
+    migrateAndDelete: "Migra ed elimina",
+    deleteWithModels: "Elimina con i modelli",
   },
   setupBanner: {
     encryptionRequired: "Chiave di crittografia non configurata",

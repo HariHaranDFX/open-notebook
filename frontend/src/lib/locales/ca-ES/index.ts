@@ -234,6 +234,8 @@ export const caES = {
     signInWithMicrosoft: "Inicia la sessió amb Microsoft",
     showPassword: "Mostra la contrasenya",
     hidePassword: "Amaga la contrasenya",
+    invalidPassword: "Contrasenya incorrecta. Torna-ho a provar.",
+    authenticationFailed: "L'autenticació ha fallat. Torna-ho a provar.",
   },
   navigation: {
     collect: "Recull",
@@ -1067,6 +1069,11 @@ export const caES = {
     apiKeyEditHint: "Deixa-ho en blanc per conservar la clau de l'API existent",
     decryptionError: "Error de desencriptació",
     decryptionErrorDescription: "No s'ha pogut desencriptar la clau de l'API d'aquesta credencial. La clau d'encriptació pot haver canviat. Suprimeix aquesta credencial i torna-la a crear amb la clau correcta.",
+    linkedModels: "Aquesta credencial té {{count}} model(s) enllaçat(s).",
+    migrateModelsTo: "Migra els models a",
+    selectCredential: "Selecciona una credencial",
+    migrateAndDelete: "Migra i suprimeix",
+    deleteWithModels: "Suprimeix amb els models",
   },
   setupBanner: {
     encryptionRequired: "Clau de xifratge no configurada",

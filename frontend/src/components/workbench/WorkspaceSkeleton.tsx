@@ -1,3 +1,7 @@
+'use client'
+
+import { useTranslation } from '@/lib/hooks/use-translation'
+
 interface WorkspaceSkeletonProps {
   kind: 'notebook' | 'source'
 }
@@ -5,10 +9,12 @@ interface WorkspaceSkeletonProps {
 const bar = 'rounded-[var(--surface-radius)] bg-muted'
 
 export function WorkspaceSkeleton({ kind }: WorkspaceSkeletonProps) {
+  const { t } = useTranslation()
+
   return (
     <div
       role="status"
-      aria-label="Loading workspace"
+      aria-label={t('common.loading')}
       className="flex min-h-0 flex-1 flex-col animate-pulse"
     >
       <div className="px-4 pt-3 lg:px-6 lg:pt-4">
@@ -68,7 +74,7 @@ export function WorkspaceSkeleton({ kind }: WorkspaceSkeletonProps) {
           </div>
         </div>
       </div>
-      <span className="sr-only">Loading workspace</span>
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   )
 }

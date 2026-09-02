@@ -237,6 +237,8 @@ export const deDE = {
     signInWithMicrosoft: "Mit Microsoft anmelden",
     showPassword: "Passwort anzeigen",
     hidePassword: "Passwort verbergen",
+    invalidPassword: "Ungültiges Passwort. Bitte erneut versuchen.",
+    authenticationFailed: "Authentifizierung fehlgeschlagen. Bitte erneut versuchen.",
   },
   navigation: {
     collect: "Sammeln",
@@ -1070,6 +1072,11 @@ export const deDE = {
     apiKeyEditHint: "Leer lassen, um den vorhandenen API-Schlüssel beizubehalten",
     decryptionError: "Entschlüsselungsfehler",
     decryptionErrorDescription: "Der API-Schlüssel dieser Zugangsdaten konnte nicht entschlüsselt werden. Möglicherweise hat sich der Verschlüsselungsschlüssel geändert. Lösche diese Zugangsdaten und erstelle sie mit dem richtigen Schlüssel neu.",
+    linkedModels: "Mit diesen Zugangsdaten sind {{count}} Modell(e) verknüpft.",
+    migrateModelsTo: "Modelle migrieren zu",
+    selectCredential: "Zugangsdaten auswählen",
+    migrateAndDelete: "Migrieren und löschen",
+    deleteWithModels: "Mit Modellen löschen",
   },
   setupBanner: {
     encryptionRequired: "Verschlüsselungsschlüssel nicht konfiguriert",

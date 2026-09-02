@@ -234,6 +234,8 @@ export const esES = {
     signInWithMicrosoft: "Iniciar sesión con Microsoft",
     showPassword: "Mostrar contraseña",
     hidePassword: "Ocultar contraseña",
+    invalidPassword: "Contraseña incorrecta. Inténtalo de nuevo.",
+    authenticationFailed: "La autenticación ha fallado. Inténtalo de nuevo.",
   },
   navigation: {
     collect: "Recopilar",
@@ -1068,6 +1070,11 @@ export const esES = {
     apiKeyEditHint: "Deja en blanco para mantener la clave API existente",
     decryptionError: "Error de desencriptación",
     decryptionErrorDescription: "La clave API de esta credencial no pudo ser desencriptada. La clave de encriptación puede haber cambiado. Elimina esta credencial y créala de nuevo con la clave correcta.",
+    linkedModels: "Esta credencial tiene {{count}} modelo(s) vinculado(s).",
+    migrateModelsTo: "Migrar modelos a",
+    selectCredential: "Seleccionar credencial",
+    migrateAndDelete: "Migrar y eliminar",
+    deleteWithModels: "Eliminar con los modelos",
   },
   setupBanner: {
     encryptionRequired: "Clave de encriptación no configurada",

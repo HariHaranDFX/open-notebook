@@ -171,6 +171,15 @@ export function AppSidebar() {
     if (target === 'podcast') openPodcastDialog()
   }
 
+  const handleOpenSettings = () => {
+    closeMobileSidebar()
+    if (isMobile) {
+      requestAnimationFrame(() => openSettings('general'))
+      return
+    }
+    openSettings('general')
+  }
+
   const isLanguageActive = (code: string) => {
     if (code === 'zh-CN') {
       return language === 'zh' || language === 'zh-CN' || language?.startsWith('zh-Hans')
@@ -197,17 +206,19 @@ export function AppSidebar() {
                   aria-expanded={false}
                   aria-keyshortcuts="Control+B Meta+B"
                 >
+                  {/* The logo/icon swap preserves a single brand-sized target;
+                      coarse pointers keep the action icon visible via globals.css. */}
                   <BrandLogo
                     priority
                     size={32}
-                    className="transition-opacity duration-[var(--motion-standard)] group-hover:opacity-0 group-focus-visible:opacity-0"
+                    className="sidebar-collapsed-logo transition-opacity duration-[var(--motion-standard)] group-hover:opacity-0 group-focus-visible:opacity-0"
                   />
-                  <PanelLeftOpen className="absolute size-5 opacity-0 transition-opacity duration-[var(--motion-standard)] group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  <PanelLeftOpen className="sidebar-collapsed-expand absolute size-5 opacity-0 transition-opacity duration-[var(--motion-standard)] group-hover:opacity-100 group-focus-visible:opacity-100" />
                 </SidebarTrigger>
               </TooltipTrigger>
               <TooltipContent side="right" className="flex items-center gap-2">
                 <span>{toggleLabel}</span>
-                <kbd className="font-mono text-[10px] opacity-75">{shortcut}</kbd>
+                <kbd className="font-mono text-xs opacity-75">{shortcut}</kbd>
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -228,7 +239,7 @@ export function AppSidebar() {
                   </TooltipTrigger>
                   <TooltipContent side="right" className="flex items-center gap-2">
                     <span>{toggleLabel}</span>
-                    <kbd className="font-mono text-[10px] opacity-75">{shortcut}</kbd>
+                    <kbd className="font-mono text-xs opacity-75">{shortcut}</kbd>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -327,7 +338,7 @@ export function AppSidebar() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2 font-medium text-sidebar-accent-foreground">
                     <span>{t('common.quickActions')}</span>
-                    <kbd className="pointer-events-none inline-flex h-5 shrink-0 select-none items-center rounded-[var(--surface-radius)] border border-sidebar-border bg-sidebar px-1.5 font-mono text-[10px] font-medium text-sidebar-foreground">
+                    <kbd className="pointer-events-none inline-flex h-5 shrink-0 select-none items-center rounded-[var(--surface-radius)] border border-sidebar-border bg-sidebar px-1.5 font-mono text-xs font-medium text-sidebar-foreground">
                       {isMac ? '⌘K' : 'Ctrl+K'}
                     </kbd>
                   </div>
@@ -390,12 +401,7 @@ export function AppSidebar() {
 
                 <DropdownMenuGroup>
                   {isAdmin && (
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        closeMobileSidebar()
-                        openSettings('general')
-                      }}
-                    >
+                    <DropdownMenuItem onSelect={handleOpenSettings}>
                       <Settings />
                       {t('navigation.settings')}
                     </DropdownMenuItem>

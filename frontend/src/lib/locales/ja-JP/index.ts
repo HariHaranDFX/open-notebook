@@ -234,6 +234,8 @@ export const jaJP = {
     signInWithMicrosoft: "Microsoftでサインイン",
     showPassword: "パスワードを表示",
     hidePassword: "パスワードを非表示",
+    invalidPassword: "パスワードが正しくありません。もう一度お試しください。",
+    authenticationFailed: "認証に失敗しました。もう一度お試しください。",
   },
   navigation: {
     collect: "収集",
@@ -1067,6 +1069,11 @@ export const jaJP = {
     apiKeyEditHint: "既存のAPIキーを維持するには空白のままにしてください",
     decryptionError: "復号エラー",
     decryptionErrorDescription: "この認証情報のAPIキーを復号できませんでした。暗号化キーが変更された可能性があります。この認証情報を削除し、正しいキーで再作成してください。",
+    linkedModels: "この認証情報には{{count}}件のモデルが関連付けられています。",
+    migrateModelsTo: "モデルの移行先",
+    selectCredential: "認証情報を選択",
+    migrateAndDelete: "移行して削除",
+    deleteWithModels: "モデルと一緒に削除",
   },
   setupBanner: {
     encryptionRequired: "暗号化キーが設定されていません",

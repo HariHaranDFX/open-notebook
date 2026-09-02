@@ -150,7 +150,7 @@ export function LoginForm() {
               <div className="flex items-start gap-2 rounded-[var(--surface-radius)] bg-error-surface p-3 text-sm text-error">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                 <div className="flex-1">
-                  {error || t('auth.connectErrorHint')}
+                  {error ? t(error) : t('auth.connectErrorHint')}
                 </div>
               </div>
 
@@ -256,7 +256,7 @@ export function LoginForm() {
                 className="flex items-center gap-2 rounded-[var(--surface-radius)] bg-error-surface p-2 text-sm text-error"
               >
                 <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {error}
+                {t(error)}
               </div>
             )}
 

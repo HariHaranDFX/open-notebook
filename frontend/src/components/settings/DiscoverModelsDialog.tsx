@@ -20,6 +20,7 @@ import { useDiscoverModels, useRegisterModels } from '@/lib/hooks/use-credential
 import { Credential, DiscoveredModel } from '@/lib/api/credentials'
 import { useProviders } from '@/lib/hooks/use-providers'
 import { getTypeIcon, getTypeLabel } from '@/lib/providers'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 interface DiscoverModelsDialogProps {
   open: boolean
@@ -68,8 +69,7 @@ export function DiscoverModelsDialog({
         },
         onError: (error: unknown) => {
           setHasDiscovered(true)
-          const msg = error instanceof Error ? error.message : String(error)
-          setDiscoveryError(msg)
+          setDiscoveryError(getApiErrorMessage(error, (key) => t(key), 'apiKeys.syncFailed'))
         },
       })
     }

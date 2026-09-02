@@ -234,6 +234,8 @@ export const ruRU = {
     signInWithMicrosoft: "Войти через Microsoft",
     showPassword: "Показать пароль",
     hidePassword: "Скрыть пароль",
+    invalidPassword: "Неверный пароль. Повторите попытку.",
+    authenticationFailed: "Не удалось выполнить аутентификацию. Повторите попытку.",
   },
   navigation: {
     collect: "Собрать",
@@ -1067,6 +1069,11 @@ export const ruRU = {
     apiKeyEditHint: "Оставьте пустым, чтобы сохранить текущий API-ключ",
     decryptionError: "Ошибка расшифровки",
     decryptionErrorDescription: "API-ключ этих учётных данных не удалось расшифровать. Возможно, ключ шифрования был изменён. Удалите эти учётные данные и создайте заново с правильным ключом.",
+    linkedModels: "С этими учётными данными связано моделей: {{count}}.",
+    migrateModelsTo: "Перенести модели в",
+    selectCredential: "Выберите учётные данные",
+    migrateAndDelete: "Перенести и удалить",
+    deleteWithModels: "Удалить вместе с моделями",
   },
   setupBanner: {
     encryptionRequired: "Ключ шифрования не настроен",

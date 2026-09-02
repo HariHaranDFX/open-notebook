@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 import { ContentSelectionPanel } from './ContentSelectionPanel'
 import {
@@ -469,7 +470,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       console.error('Failed to generate podcast', error)
       toast({
         title: t('podcasts.generationFailed'),
-        description: error instanceof Error ? error.message : t('common.refreshPage'),
+        description: getApiErrorMessage(error, (key) => t(key), 'common.refreshPage'),
         variant: 'destructive',
       })
     } finally {

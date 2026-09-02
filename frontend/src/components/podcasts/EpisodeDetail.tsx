@@ -323,7 +323,7 @@ export function EpisodeDetail({
                       {segment.description ?? t('podcasts.noDescription')}
                     </p>
                   </div>
-                  {segment.size ? <Badge variant="outline" className="w-fit text-[10px] uppercase tracking-wide">{segment.size}</Badge> : null}
+                  {segment.size ? <Badge variant="outline" className="w-fit text-xs uppercase tracking-wide">{segment.size}</Badge> : null}
                 </article>
               ))}
             </div>

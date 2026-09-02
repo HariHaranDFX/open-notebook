@@ -74,7 +74,7 @@ function ReferencePreview({
   return (
     <div className="max-w-[260px] p-2.5 text-left">
       {showType && (
-        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <Icon className={cn('h-3 w-3', iconClass)} aria-hidden="true" />
           {t(labelKey)}
         </div>
@@ -161,7 +161,7 @@ const ReferenceChip = memo(function ReferenceChip({
             e.stopPropagation()
             onReferenceClick(reference.type, reference.id)
           }}
-          className="inline-flex h-[22px] items-center gap-1.5 rounded-[var(--pill-radius)] border border-border bg-secondary/60 pl-2 pr-2.5 text-[11px] font-medium text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          className="inline-flex h-6 items-center gap-1.5 rounded-[var(--pill-radius)] border border-border bg-secondary/60 pl-2 pr-2.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <Icon className={cn('h-3 w-3 shrink-0', iconClass)} aria-hidden="true" />
           <span className="tabular-nums text-muted-foreground">{reference.number}</span>
@@ -237,11 +237,11 @@ const ReferenceGroupPill = memo(function ReferenceGroupPill({
               go(-1)
             }
           }}
-          className="inline-flex h-[22px] items-center gap-1.5 rounded-[var(--pill-radius)] border border-border bg-secondary/60 pl-2 pr-1.5 text-[11px] font-medium text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          className="inline-flex h-6 items-center gap-1.5 rounded-[var(--pill-radius)] border border-border bg-secondary/60 pl-2 pr-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <Icon className={cn('h-3 w-3 shrink-0', iconClass)} aria-hidden="true" />
           <span>{typeLabel}</span>
-          <span className="rounded-full bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+          <span className="rounded-full bg-muted px-1.5 text-xs font-semibold tabular-nums text-muted-foreground">
             {count}
           </span>
         </button>
@@ -256,7 +256,7 @@ const ReferenceGroupPill = memo(function ReferenceGroupPill({
         className="w-64 overflow-hidden p-0"
       >
         <div className="flex items-center justify-between gap-2 border-b border-border px-2.5 py-1.5">
-          <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <Icon className={cn('h-3 w-3', iconClass)} aria-hidden="true" />
             {typeLabel}
           </span>
@@ -270,7 +270,7 @@ const ReferenceGroupPill = memo(function ReferenceGroupPill({
             >
               <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <span className="min-w-[2.5rem] text-center text-[10px] tabular-nums text-muted-foreground">
+            <span className="min-w-[2.5rem] text-center text-xs tabular-nums text-muted-foreground">
               {index + 1} / {count}
             </span>
             <button
@@ -322,7 +322,7 @@ export function ChatReferences({
       aria-label={t('common.references')}
       className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/60 pt-2.5"
     >
-      <span className="mr-0.5 inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="mr-0.5 inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         <Quote className="h-3 w-3" aria-hidden="true" />
         {references.length} {t('common.references')}
       </span>

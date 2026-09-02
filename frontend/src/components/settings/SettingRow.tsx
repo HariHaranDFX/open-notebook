@@ -85,7 +85,7 @@ export function SettingRow({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 border-t border-border/40 py-3.5',
+        'flex flex-col items-stretch gap-4 border-t border-border/40 py-3.5 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between',
         className
       )}
     >
@@ -100,7 +100,7 @@ export function SettingRow({
           <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">{description}</p>
         )}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="w-full shrink-0 min-[480px]:w-auto">{children}</div>
     </div>
   )
 }

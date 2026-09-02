@@ -234,6 +234,8 @@ export const zhCN = {
     signInWithMicrosoft: "使用 Microsoft 账户登录",
     showPassword: "显示密码",
     hidePassword: "隐藏密码",
+    invalidPassword: "密码无效，请重试。",
+    authenticationFailed: "身份验证失败，请重试。",
   },
   navigation: {
     collect: "采集",
@@ -1067,6 +1069,11 @@ export const zhCN = {
     apiKeyEditHint: "留空以保留现有 API 密钥",
     decryptionError: "解密错误",
     decryptionErrorDescription: "此凭证的 API 密钥无法解密。加密密钥可能已更改。请删除此凭证并使用正确的密钥重新创建。",
+    linkedModels: "此凭证关联了 {{count}} 个模型。",
+    migrateModelsTo: "将模型迁移到",
+    selectCredential: "选择凭证",
+    migrateAndDelete: "迁移并删除",
+    deleteWithModels: "连同模型一起删除",
   },
   setupBanner: {
     encryptionRequired: "未配置加密密钥",

@@ -234,6 +234,8 @@ export const plPL = {
     signInWithMicrosoft: "Zaloguj się przez Microsoft",
     showPassword: "Pokaż hasło",
     hidePassword: "Ukryj hasło",
+    invalidPassword: "Nieprawidłowe hasło. Spróbuj ponownie.",
+    authenticationFailed: "Uwierzytelnianie nie powiodło się. Spróbuj ponownie.",
   },
   navigation: {
     collect: "Zbieraj",
@@ -1067,6 +1069,11 @@ export const plPL = {
     apiKeyEditHint: "Pozostaw puste, aby zachować istniejący klucz API",
     decryptionError: "Błąd odszyfrowywania",
     decryptionErrorDescription: "Nie udało się odszyfrować klucza API tego poświadczenia. Klucz szyfrowania mógł ulec zmianie. Usuń to poświadczenie i utwórz je ponownie z prawidłowym kluczem.",
+    linkedModels: "Te dane logowania mają {{count}} połączonych modeli.",
+    migrateModelsTo: "Przenieś modele do",
+    selectCredential: "Wybierz dane logowania",
+    migrateAndDelete: "Przenieś i usuń",
+    deleteWithModels: "Usuń wraz z modelami",
   },
   setupBanner: {
     encryptionRequired: "Klucz szyfrowania nie został skonfigurowany",

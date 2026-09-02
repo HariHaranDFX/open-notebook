@@ -353,7 +353,14 @@ describe('ShareSheet', () => {
 
   it('shows an inline error next to the add controls when creating a grant fails', () => {
     mockUseCreateGrant.mockReturnValue(
-      mutationStub({ isError: true, error: new Error('Email domain not allowed') })
+      mutationStub({
+        isError: true,
+        error: {
+          isAxiosError: true,
+          message: 'Request failed with status code 422',
+          response: { status: 422, data: { detail: 'Email domain not allowed' } },
+        },
+      })
     )
 
     renderSheet()
@@ -380,7 +387,11 @@ describe('ShareSheet', () => {
     mockUseUpdateGrant.mockReturnValue(
       mutationStub({
         isError: true,
-        error: new Error('Role change rejected'),
+        error: {
+          isAxiosError: true,
+          message: 'Request failed with status code 409',
+          response: { status: 409, data: { detail: 'Role change rejected' } },
+        },
         variables: { grantId: userGrant.id, role: 'editor' },
       })
     )

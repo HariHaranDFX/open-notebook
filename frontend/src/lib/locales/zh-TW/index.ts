@@ -234,6 +234,8 @@ export const zhTW = {
     signInWithMicrosoft: "使用 Microsoft 帳戶登入",
     showPassword: "顯示密碼",
     hidePassword: "隱藏密碼",
+    invalidPassword: "密碼無效，請再試一次。",
+    authenticationFailed: "驗證失敗，請再試一次。",
   },
   navigation: {
     collect: "採集",
@@ -1067,6 +1069,11 @@ export const zhTW = {
     apiKeyEditHint: "留空以保留現有 API 金鑰",
     decryptionError: "解密錯誤",
     decryptionErrorDescription: "此憑證的 API 金鑰無法解密。加密金鑰可能已變更。請刪除此憑證並使用正確的金鑰重新建立。",
+    linkedModels: "此憑證連結了 {{count}} 個模型。",
+    migrateModelsTo: "將模型移轉到",
+    selectCredential: "選擇憑證",
+    migrateAndDelete: "移轉並刪除",
+    deleteWithModels: "連同模型一起刪除",
   },
   setupBanner: {
     encryptionRequired: "未設定加密金鑰",

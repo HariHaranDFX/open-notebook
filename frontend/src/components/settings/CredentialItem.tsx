@@ -94,7 +94,7 @@ export function CredentialItem({
                 <Badge
                   key={mod}
                   variant="secondary"
-                  className={`text-[10px] gap-0.5 px-1 py-0 ${activeTypes.has(mod) ? getTypeColor(mod) : TYPE_COLOR_INACTIVE}`}
+                  className={`gap-0.5 px-1 py-0 text-xs ${activeTypes.has(mod) ? getTypeColor(mod) : TYPE_COLOR_INACTIVE}`}
                 >
                   {getTypeIcon(mod)}
                   <span className="hidden sm:inline">{getTypeLabel(mod)}</span>
@@ -102,9 +102,9 @@ export function CredentialItem({
               ))}
             </div>
             {credential.has_api_key && (
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-xs">
                 <Key className="h-2.5 w-2.5 mr-0.5" />
-                Key
+                {t('apiKeys.apiKey')}
               </Badge>
             )}
           </div>
@@ -167,7 +167,7 @@ export function CredentialItem({
                 <div key={type} className="flex items-start gap-1.5">
                   <Badge
                     variant="outline"
-                    className={`text-[10px] gap-0.5 px-1 py-0 shrink-0 mt-0.5 ${getTypeColor(type)}`}
+                    className={`mt-0.5 shrink-0 gap-0.5 px-1 py-0 text-xs ${getTypeColor(type)}`}
                   >
                     {getTypeIcon(type)}
                     {getTypeLabel(type)}
@@ -185,7 +185,7 @@ export function CredentialItem({
                           {defaultSlot && <span className="ml-0.5 opacity-75">({defaultSlot})</span>}
                           <button
                             type="button"
-                            className="ml-0.5 rounded-sm opacity-0 transition-opacity group-hover/model:opacity-60 hover:!opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="ml-0.5 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => testModel(model.id, model.name)}
                             disabled={isModelTestPending && testingModelId === model.id}
                             title={t('models.testModel')}
@@ -197,7 +197,7 @@ export function CredentialItem({
                           </button>
                           <button
                             type="button"
-                            className="rounded-sm opacity-0 transition-opacity group-hover/model:opacity-60 hover:!opacity-100 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="rounded-sm opacity-70 transition-opacity hover:text-destructive hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => deleteModel.mutate(model.id)}
                             title={t('models.deleteModel')}
                           >

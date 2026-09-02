@@ -343,6 +343,14 @@
     min-width: 44px;
     min-height: 44px;
   }
+
+  .sidebar-collapsed-logo {
+    opacity: 0;
+  }
+
+  .sidebar-collapsed-expand {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -68,4 +68,22 @@ describe('getApiErrorMessage permission mapping', () => {
       'apiErrors.adminRequired'
     )
   })
+
+  it('does not disclose a raw client exception', () => {
+    expect(getApiErrorMessage(new Error('C:\\server\\private\\trace.txt'), t)).toBe(
+      't:apiErrors.genericError'
+    )
+  })
+
+  it('does not disclose a server error detail', () => {
+    expect(getApiErrorMessage(axiosError(500, '/srv/open-notebook/secret.py:42'), t)).toBe(
+      't:apiErrors.genericError'
+    )
+  })
+
+  it('keeps an actionable validation detail', () => {
+    expect(getApiErrorMessage(axiosError(422, 'Name is required'), t)).toBe(
+      'Name is required'
+    )
+  })
 })
