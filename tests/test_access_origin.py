@@ -54,6 +54,7 @@ class TestAccessSummaryForNotebookOrigins:
             summary = await access_summary_for_notebook(
                 "user:a", "notebook:1", _request_with_user()
             )
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "owner"
         assert summary.origin_label is None
@@ -65,6 +66,7 @@ class TestAccessSummaryForNotebookOrigins:
         summary = await access_summary_for_notebook(
             "user:owner", "notebook:1", _request_with_user(None)
         )
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "open"
         assert summary.origin_label is None
@@ -75,6 +77,7 @@ class TestAccessSummaryForNotebookOrigins:
         summary = await access_summary_for_notebook(
             "user:owner", "notebook:1", _request_with_user(None)
         )
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "open"
 
@@ -92,6 +95,7 @@ class TestAccessSummaryForNotebookOrigins:
             "user:owner", "notebook:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "viewer"
         assert summary.origin == "direct"
         assert summary.origin_label is None
@@ -125,6 +129,7 @@ class TestAccessSummaryForNotebookOrigins:
             "user:owner", "notebook:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "group"
         assert summary.origin_label == "Engineering"
@@ -166,6 +171,7 @@ class TestAccessSummaryForNotebookOrigins:
             "user:owner", "notebook:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "direct"
         assert summary.origin_label is None
@@ -206,6 +212,7 @@ class TestAccessSummaryForNotebookOrigins:
             "user:owner", "notebook:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "group"
         assert summary.origin_label == "Engineering"
@@ -219,6 +226,7 @@ class TestAccessSummaryForSourceOrigins:
             summary = await access_summary_for_source(
                 "user:a", "source:1", _request_with_user()
             )
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "owner"
         mock_query.assert_not_awaited()
@@ -229,6 +237,7 @@ class TestAccessSummaryForSourceOrigins:
         summary = await access_summary_for_source(
             "user:owner", "source:1", _request_with_user(None)
         )
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "open"
 
@@ -259,6 +268,7 @@ class TestAccessSummaryForSourceOrigins:
             "user:owner", "source:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "viewer"
         assert summary.origin == "direct"
 
@@ -299,6 +309,7 @@ class TestAccessSummaryForSourceOrigins:
             "user:owner-of-source", "source:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "notebook"
         assert summary.origin_label == "Research"
@@ -331,6 +342,7 @@ class TestAccessSummaryForSourceOrigins:
             "user:someone-else", "source:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "notebook"
         assert summary.origin_label == "Research"
@@ -394,6 +406,7 @@ class TestAccessSummaryForSourceOrigins:
             "user:owner", "source:1", _request_with_user()
         )
 
+        assert summary is not None
         assert summary.role == "editor"
         assert summary.origin == "direct"
 
@@ -415,6 +428,7 @@ class TestRoleParityWithExistingAuthorizationHelpers:
         old_role = await effective_role_for_notebook("user:a", "notebook:1", request)
         summary = await access_summary_for_notebook("user:a", "notebook:1", request)
 
+        assert summary is not None
         assert summary.role == old_role == "owner"
         old_view_role = await assert_can_view_notebook_or_404(
             "user:a", "notebook:1", request, "Notebook not found"
@@ -443,6 +457,7 @@ class TestRoleParityWithExistingAuthorizationHelpers:
         summary = await access_summary_for_notebook(
             "user:owner", "notebook:1", request
         )
+        assert summary is not None
         assert summary.role == old_role == "viewer"
 
         view_role = await assert_can_view_notebook_or_404(
@@ -506,6 +521,7 @@ class TestRoleParityWithExistingAuthorizationHelpers:
 
         old_role = await effective_role_for_source("user:owner", "source:1", request)
         summary = await access_summary_for_source("user:owner", "source:1", request)
+        assert summary is not None
         assert summary.role == old_role == "editor"
 
         view_role = await assert_can_view_source_or_404(
@@ -528,5 +544,6 @@ class TestRoleParityWithExistingAuthorizationHelpers:
             "user:owner", "notebook:1", request
         )
         assert old_role == "owner"
+        assert summary is not None
         assert summary.role == "owner"
         assert summary.origin == "open"
