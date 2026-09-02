@@ -1,9 +1,34 @@
 ---
 name: Open Notebook
 description: An evidence-first research workbench for collecting sources, developing thought, and synthesizing with visible provenance.
+colors:
+  light:
+    canvas: "#F1F4F7"
+    surface: "#FDFEFE"
+    ink: "#172433"
+    muted_ink: "#536272"
+    border: "#8595A3"
+    action: "#275E91"
+    focus: "#AD7620"
+  dark:
+    canvas: "#101820"
+    surface: "#17222C"
+    ink: "#EAF0F4"
+    muted_ink: "#A8B5BF"
+    border: "#677988"
+    action: "#74A9D6"
+    focus: "#EFB65B"
+typography:
+  operational: "Source Sans 3"
+  research: "Source Serif 4"
+  minimum_metadata_px: 12
+rounded:
+  surface_px: 4
+  control_px: 5
+  overlay_px: 10
+  pill_px: 999
+spacing_px: [4, 8, 12, 16, 24, 32, 48]
 ---
-
-<!-- SEED: approved before WP3 implementation. The implementation must be checked against this contract, then this document must be refreshed only where verified code requires a deliberate, approved correction. -->
 
 # Design System: Open Notebook
 
@@ -50,7 +75,7 @@ The palette is **Survey Blue**: cool, restrained, and instrument-like. Neutral s
 | Raised surface | `#E5EBF0` | Selected groups, toolbars, secondary panels, and tonal separation. |
 | Ink | `#172433` | Primary text, high-emphasis icons, and essential structure. |
 | Muted ink | `#536272` | Secondary text and supporting metadata; never use where contrast becomes marginal. |
-| Border | `#B8C3CD` | Standard dividers, field outlines, pane boundaries, and row separators. |
+| Border | `#8595A3` | Standard dividers, field outlines, pane boundaries, and row separators. |
 | Strong border | `#8595A3` | Resizers, emphasized boundaries, and high-clarity control states. |
 | Action | `#275E91` | Primary actions, active controls, links, and intentional interaction emphasis. |
 | On action | `#FFFFFF` | Text and icons on the Action color. |

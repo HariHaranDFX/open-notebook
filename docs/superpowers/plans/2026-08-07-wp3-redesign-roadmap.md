@@ -36,7 +36,7 @@
 6. [x] [WP3-04: Ask and Search](2026-08-07-wp3-04-ask-search.md) — Complete and approved
 7. [x] [WP3-05: Output studios](2026-08-07-wp3-05-output-studios.md) — Complete and approved
 8. [x] [WP3-06: Administration, authentication, and sharing](2026-08-07-wp3-06-admin-auth-sharing.md) — Complete and approved
-9. [ ] [WP3-07: Hardening and release verification](2026-08-07-wp3-07-hardening.md)
+9. [ ] [WP3-07: Hardening and release verification](2026-08-07-wp3-07-hardening.md) — Automated gates and final documentation complete; live mutation/device matrix and human release approval remain
 
 Do not execute packages out of order. WP3-01 establishes tokens and structural interfaces consumed by every route plan. WP3-01B adds deployment identity without allowing customer configuration to override semantic, provenance, or focus meaning. WP3-03 establishes the workbench and resource-preview interfaces consumed by Ask/Search. WP3-06 consumes WP2b sharing types and may add access-origin metadata without weakening existing authorization.
 
@@ -49,6 +49,7 @@ These issues were discovered while testing the running WP3 application. They are
 3. [ ] [Ingestion runtime capabilities](2026-08-13-ingestion-runtime-capabilities.md) — require a complete FFmpeg/FFprobe runtime for advertised media support, gate images on optional Docling, and remove unsupported ZIP/TAR/GZ from the picker.
 4. [ ] [Long-context handling](2026-08-13-long-context-handling.md) — add model-aware context budgeting, warnings, and recovery without silently dropping selected evidence.
 5. [ ] [Podcast notebook origin](2026-09-01-podcast-notebook-origin.md) — expose a linked episode's notebook identity in the detail response and show a notebook/standalone pill in the single-podcast header without changing inherited authorization.
+6. [ ] [Original file retention governance](2026-09-01-original-file-retention-governance.md) — replace ambiguous auto-delete behavior with an admin policy, per-upload snapshots, post-success deletion, path-private source metadata, exact-original downloads, and permission-aware cleanup.
 
 ## Shared Interfaces
 

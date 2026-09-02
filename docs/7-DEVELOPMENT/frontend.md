@@ -13,10 +13,20 @@ Pages (src/app/, App Router) → Feature components (src/components/) → Hooks 
 - **Pages** — route endpoints. Router groups `(auth)` / `(dashboard)` organize routes without affecting URLs. Pages call hooks and render components.
 - **Components** — feature folders (`source/`, `notebooks/`, `podcasts/`, …) own page-level state (loading, error); `components/ui/` are stateless Radix UI wrappers styled with Tailwind + CVA.
 - **Hooks** (`src/lib/hooks/`) — TanStack Query wrappers. Query hooks return `{ data, isLoading, error, refetch }`; mutation hooks invalidate caches and toast. Complex hooks (`useNotebookChat`, `useAsk`) add session management, context building, SSE streaming.
-- **Stores** (`src/lib/stores/`) — Zustand for auth and modal state; `persist` middleware syncs to localStorage (auth token under `auth-storage`).
+- **Stores** (`src/lib/stores/`) — Zustand for authentication, library display preferences, theme, navigation, and per-workspace pane state. Persisted stores use distinct localStorage keys; authentication uses `auth-storage`.
 - **API modules** (`src/lib/api/`) — namespaced typed clients (`sourcesApi.list()`, …) over a single axios instance with auth/FormData/401 interceptors.
 
-Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → ThemeProvider → QueryProvider → I18nProvider → ConnectionGuard → Toaster.
+Provider tree in `app/layout.tsx` (outermost → innermost): BrandProvider → ErrorBoundary → ThemeProvider → QueryProvider → I18nProvider → ConnectionGuard, with Toaster inside the guard. The authenticated dashboard layout adds CreateDialogsProvider → SettingsDialogProvider, followed by the URL-backed ModalProvider and CommandPalette.
+
+## Route families and administration
+
+- **Authentication:** `/login` renders the password or Entra entry surface from runtime auth status.
+- **Libraries:** `/notebooks` and `/sources` use `AppShell`, `PageFrame`, `PageHeader`, and the shared library toolbar.
+- **Research workspaces:** `/notebooks/[id]` and `/sources/[id]` compose feature panes through `ResearchWorkbench`; `/search` switches between Ask and Search without discarding query state.
+- **Output studios:** `/podcasts`, `/podcasts/[id]`, and `/transformations` keep library, editor, playback, and playground concerns in their feature folders.
+- **Administration:** `/settings/api-keys` and `/settings/groups` are admin-only routes nested under the settings layout. General settings and Advanced tools are sections of the global `SettingsDialog`, opened from the account menu or command palette; they are intentionally not duplicate pages.
+
+The root route and authenticated dashboard root redirect to `/notebooks`. Route groups organize source files only and do not change public URLs. See [FRONTEND_MAP.md](../FRONTEND_MAP.md) for the page-to-component and data-flow map.
 
 ## WP3 design foundation and shell
 
@@ -32,6 +42,14 @@ Provider tree in `app/layout.tsx` (outermost → innermost): ErrorBoundary → T
 `PageFrame` is the outer container for migrated routes. It owns the page's single vertical scroller, responsive gutters, and one of the shared `full`, `content`, or `reading` width constraints. Do not wrap an existing page-level scroller inside it; remove the old scroller as part of that route's migration. `PageHeader` standardizes eyebrow, title, description, subordinate actions, and the view's one primary action while allowing actions to wrap on narrow screens.
 
 The shell and primitives deliberately reuse the current Radix, Tailwind, theme, and routing foundations. Do not add another theme provider, navigation registry, UI framework, or page-builder abstraction. Customer branding must not remap provenance, focus, or semantic-state meaning.
+
+`BrandProvider` receives the startup-validated configuration from `lib/brand-config.ts`. The root layout derives metadata, logo/favicon identity, and contrast-safe light/dark action variables from the same immutable object. Invalid paths, unsafe URLs, malformed JSON, or action colors below the required contrast fail startup instead of producing a partially branded UI.
+
+## Workbench and URL state
+
+`ResearchWorkbench` is the shared notebook/source/Ask container. At desktop widths it presents a persisted, resizable research pane beside collapsible chat. Below the desktop breakpoint it serializes the same capabilities into Chat and Panel tabs. `workbench-store.ts` persists the active pane, left-pane width, collapsed chat state, and compact view per `workspaceKey`; feature data remains in TanStack Query rather than being duplicated in Zustand.
+
+Evidence previews use URL state. `use-resource-preview.ts` owns `?preview=<type>&previewId=<id>` for source, note, and source-insight previews while preserving unrelated query parameters. The dashboard `ModalProvider` separately owns the established `?modal=<type>&id=<id>` editing/detail flows. Use the URL when browser back, deep linking, or return-state preservation matters; use local component state only for ephemeral presentation.
 
 ## Flow walkthrough: notebook chat
 
@@ -57,4 +75,8 @@ The token is validated by an actual API call (`/notebooks`), not JWT decoding, w
 
 ## Error handling
 
-`getApiErrorMessage()` (`lib/utils/error-handler.ts`) tries an i18n mapping first, then falls back to the backend's descriptive message — which the backend error-classification system already makes user-friendly (see [architecture.md](architecture.md)). Mutations surface errors as toasts; an app-level ErrorBoundary catches render errors.
+`getApiErrorMessage()` (`lib/utils/error-handler.ts`) prefers an i18n mapping. It may retain an actionable, classified 4xx detail, but hides statusless/network failures and 5xx details behind a safe translated fallback. Mutations surface those messages as toasts; the app-level ErrorBoundary catches render errors without exposing stack or infrastructure details.
+
+## Theme, language, and accessibility state
+
+`ThemeProvider` applies the persisted `light`, `dark`, or `system` choice to the document root. `I18nProvider` waits until client mount to avoid hydration mismatch, shows the language-loading overlay, and synchronizes the active locale to `<html lang>`. `AppShell` provides the first-page skip link, one `#main-content` landmark, route-change focus, and the same navigation hierarchy as a desktop sidebar or mobile drawer.
