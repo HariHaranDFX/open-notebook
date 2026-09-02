@@ -15,6 +15,7 @@ export type SourceSortField = 'type' | 'title' | 'created' | 'updated' | 'insigh
 export const sourcesApi = {
   list: async (params?: {
     notebook_id?: string
+    query?: string
     limit?: number
     offset?: number
     sort_by?: SourceSortField

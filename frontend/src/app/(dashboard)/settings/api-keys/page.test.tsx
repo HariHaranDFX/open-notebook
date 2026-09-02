@@ -1,14 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ApiKeysPage from './page'
 import { ProviderInfo } from '@/lib/api/providers'
 import { Credential } from '@/lib/api/credentials'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
-
-vi.mock('@/components/layout/AppShell', () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
 
 vi.mock('@/components/settings', () => ({
   MigrationBanner: () => null,
@@ -75,20 +71,33 @@ describe('ApiKeysPage', () => {
     })
   })
 
-  it('renders one section per provider from GET /api/providers', () => {
+  it('renders one section per provider under the All filter', () => {
     render(<ApiKeysPage />)
+    // The default view shows only configured providers; reveal all.
+    fireEvent.click(screen.getByText('apiKeys.showAll'))
     const sections = screen.getAllByTestId('provider-section')
     expect(sections.map(s => s.textContent)).toEqual(['OpenAI', 'Anthropic'])
   })
 
-  it('sorts configured providers first, keeping backend order otherwise', () => {
+  it('sorts configured providers first under the All filter', () => {
+    mockUseCredentials.mockReturnValue({
+      data: [anthropicCredential],
+      isLoading: false,
+    })
+    render(<ApiKeysPage />)
+    fireEvent.click(screen.getByText('apiKeys.showAll'))
+    const sections = screen.getAllByTestId('provider-section')
+    expect(sections.map(s => s.textContent)).toEqual(['Anthropic', 'OpenAI'])
+  })
+
+  it('shows only configured providers by default', () => {
     mockUseCredentials.mockReturnValue({
       data: [anthropicCredential],
       isLoading: false,
     })
     render(<ApiKeysPage />)
     const sections = screen.getAllByTestId('provider-section')
-    expect(sections.map(s => s.textContent)).toEqual(['Anthropic', 'OpenAI'])
+    expect(sections.map(s => s.textContent)).toEqual(['Anthropic'])
   })
 
   it('shows a loading state while the provider list loads', () => {

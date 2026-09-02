@@ -7,19 +7,20 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Plus, Loader2, AlertCircle } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDiscoverModels, useRegisterModels } from '@/lib/hooks/use-credentials'
 import { Credential, DiscoveredModel } from '@/lib/api/credentials'
 import { useProviders } from '@/lib/hooks/use-providers'
 import { getTypeIcon, getTypeLabel } from '@/lib/providers'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 interface DiscoverModelsDialogProps {
   open: boolean
@@ -68,8 +69,7 @@ export function DiscoverModelsDialog({
         },
         onError: (error: unknown) => {
           setHasDiscovered(true)
-          const msg = error instanceof Error ? error.message : String(error)
-          setDiscoveryError(msg)
+          setDiscoveryError(getApiErrorMessage(error, (key) => t(key), 'apiKeys.syncFailed'))
         },
       })
     }
@@ -155,18 +155,18 @@ export function DiscoverModelsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] grid-rows-[auto_1fr_auto]">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
+          <SheetTitle>
             {t('models.discoverModels')} - {providerInfo?.display_name || credential.provider}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {credential.name}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="min-h-0 overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4">
         {discoverModels.isPending ? (
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
@@ -177,7 +177,7 @@ export function DiscoverModelsDialog({
             <AlertDescription>{discoveryError}</AlertDescription>
           </Alert>
         ) : (
-          <div className="space-y-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
             {/* Model type selector */}
             <div className="space-y-2">
               <Label>{t('models.modelType')}</Label>
@@ -202,6 +202,7 @@ export function DiscoverModelsDialog({
             {/* Search input */}
             <input
               type="text"
+              aria-label={t('models.searchOrAddModel')}
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm placeholder:text-muted-foreground"
               placeholder={t('models.searchOrAddModel')}
               value={searchQuery}
@@ -219,7 +220,7 @@ export function DiscoverModelsDialog({
             )}
 
             {/* Model list */}
-            <div className="space-y-1">
+            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
               {filteredModels.map((model) => (
                 <label
                   key={model.name}
@@ -262,9 +263,9 @@ export function DiscoverModelsDialog({
         )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.close')}
           </Button>
           <Button
             onClick={handleRegister}
@@ -273,8 +274,8 @@ export function DiscoverModelsDialog({
             {registerModels.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {t('common.add')} ({totalSelected})
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

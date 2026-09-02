@@ -4,13 +4,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Search, Link2, LoaderIcon, FileText, Link as LinkIcon, Upload } from 'lucide-react'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -181,23 +181,27 @@ export function AddExistingSourceDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        showCloseButton={false}
+        className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+      >
+        <SheetHeader className="gap-1 border-b border-border px-6 py-2.5">
+          <SheetTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5" />
             {t('sources.addExistingTitle')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {t('sources.addExistingDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-hidden px-6 py-4">
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              aria-label={t('sources.searchPlaceholder')}
               placeholder={t('sources.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -209,7 +213,7 @@ export function AddExistingSourceDialog({
           </div>
 
           {/* Source List */}
-          <ScrollArea className="h-[400px] border rounded-md">
+          <ScrollArea className="min-h-0 flex-1 rounded-[var(--surface-radius)] border">
             {isSearching && filteredSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
                 <LoaderIcon className="h-12 w-12 mb-2 animate-spin" />
@@ -229,7 +233,7 @@ export function AddExistingSourceDialog({
                   return (
                     <div
                       key={source.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors min-w-0 ${
+                      className={`flex min-w-0 items-start gap-3 rounded-[var(--surface-radius)] border p-3 transition-colors ${
                         isSelected ? 'bg-accent border-accent-foreground/20' : 'hover:bg-accent/50'
                       }`}
                     >
@@ -279,7 +283,7 @@ export function AddExistingSourceDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-2 sm:justify-between">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -300,8 +304,8 @@ export function AddExistingSourceDialog({
               <>{t('common.addSelected')}</>
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

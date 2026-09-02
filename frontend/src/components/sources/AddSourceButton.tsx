@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { AddSourceDialog } from './AddSourceDialog'
 
 interface AddSourceButtonProps {
@@ -20,6 +21,7 @@ export function AddSourceButton({
   className,
   iconOnly = false
 }: AddSourceButtonProps) {
+  const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
@@ -29,9 +31,10 @@ export function AddSourceButton({
         variant={variant}
         size={size}
         className={className}
+        aria-label={iconOnly ? t('sources.add') : undefined}
       >
-        <PlusIcon className={iconOnly ? "h-4 w-4" : "h-4 w-4 mr-2"} />
-        {!iconOnly && "Add Source"}
+        <PlusIcon className="h-4 w-4" />
+        {!iconOnly && t('sources.add')}
       </Button>
 
       <AddSourceDialog

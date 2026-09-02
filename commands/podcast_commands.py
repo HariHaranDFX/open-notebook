@@ -55,6 +55,8 @@ class PodcastGenerationInput(CommandInput):
     # mode.
     user_id: Optional[str] = None
     client_id: Optional[str] = None
+    # Notebook the episode was generated from (WP2b ACL inheritance).
+    notebook_id: Optional[str] = None
 
 
 class PodcastGenerationOutput(CommandOutput):
@@ -274,6 +276,7 @@ async def generate_podcast_command(
             outline=None,
             user_id=input_data.user_id,
             client_id=input_data.client_id,
+            notebook_id=input_data.notebook_id,
         )
         await episode.save()
 

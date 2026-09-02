@@ -3,19 +3,50 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Switch } from '@/components/ui/switch'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { SettingsSection, SettingRow } from '@/components/settings/SettingRow'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useTheme } from '@/lib/stores/theme-store'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Monitor, Sun, Moon, ChevronDown, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
+
+const THEME_OPTIONS = [
+  { value: 'system', icon: Monitor },
+  { value: 'light', icon: Sun },
+  { value: 'dark', icon: Moon },
+] as const
+
+const LANGUAGE_OPTIONS = [
+  ['en-US', 'common.english'],
+  ['ca-ES', 'common.catalan'],
+  ['zh-CN', 'common.chinese'],
+  ['zh-TW', 'common.traditionalChinese'],
+  ['pt-BR', 'common.portuguese'],
+  ['ja-JP', 'common.japanese'],
+  ['fr-FR', 'common.french'],
+  ['ru-RU', 'common.russian'],
+  ['bn-IN', 'common.bengali'],
+  ['es-ES', 'common.spanish'],
+  ['de-DE', 'common.german'],
+  ['pl-PL', 'common.polish'],
+  ['tr-TR', 'common.turkish'],
+] as const
+
+function isLanguageActive(code: string, language?: string) {
+  if (code === 'zh-CN') return language === 'zh' || language === 'zh-CN' || Boolean(language?.startsWith('zh-Hans'))
+  if (code === 'zh-TW') return language === 'zh-TW' || Boolean(language?.startsWith('zh-Hant'))
+  return language === code || Boolean(language?.startsWith(code.split('-')[0]))
+}
 
 const settingsSchema = z.object({
   default_content_processing_engine_doc: z.enum(['auto', 'docling', 'simple']).optional(),
@@ -29,8 +60,12 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>
 
+const SELECT_WIDTH = 'w-[200px]'
+
 export function SettingsForm() {
-  const { t } = useTranslation()
+  const { t, language, setLanguage } = useTranslation()
+  const { theme, setTheme } = useTheme()
+  const activeLangLabel = LANGUAGE_OPTIONS.find(([code]) => isLanguageActive(code, language))?.[1] ?? 'common.english'
   const { data: settings, isLoading, error } = useSettings()
   const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
@@ -42,20 +77,13 @@ export function SettingsForm() {
   // engine the backend couldn't verify.
   const doclingAvailable = capabilities?.docling_available ?? !capabilitiesError
   const crawl4aiAvailable = capabilities?.crawl4ai_available ?? !capabilitiesError
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    doc: false,
-    url: false,
-    embedding: false,
-    files: false
-  })
   const [hasResetForm, setHasResetForm] = useState(false)
-  
-  
+
   const {
     control,
     handleSubmit,
     reset,
-    formState: { isDirty }
+    formState: { isDirty },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
@@ -66,17 +94,12 @@ export function SettingsForm() {
       docling_ocr: undefined,
       docling_formulas: undefined,
       docling_vision: undefined,
-    }
+    },
   })
-
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
-  }
 
   useEffect(() => {
     if (settings && settings.default_content_processing_engine_doc && !hasResetForm) {
-      const formData = {
+      reset({
         default_content_processing_engine_doc: settings.default_content_processing_engine_doc as 'auto' | 'docling' | 'simple',
         default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'crawl4ai' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
@@ -84,8 +107,7 @@ export function SettingsForm() {
         docling_ocr: settings.docling_ocr ?? true,
         docling_formulas: settings.docling_formulas ?? false,
         docling_vision: settings.docling_vision ?? false,
-      }
-      reset(formData)
+      })
       setHasResetForm(true)
     }
   }, [hasResetForm, reset, settings])
@@ -107,253 +129,185 @@ export function SettingsForm() {
       <Alert variant="destructive">
         <AlertTitle>{t('settings.loadFailed')}</AlertTitle>
         <AlertDescription>
-          {error instanceof Error ? error.message : t('common.error')}
+          {getApiErrorMessage(error, (key) => t(key), 'common.refreshPage')}
         </AlertDescription>
       </Alert>
     )
   }
 
+  const doclingToggle = (
+    name: 'docling_ocr' | 'docling_formulas' | 'docling_vision',
+    label: string,
+    help: string,
+    defaultChecked: boolean
+  ) => (
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <Label htmlFor={name} className="text-sm font-medium">{label}</Label>
+        <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">{help}</p>
+      </div>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <Switch
+            id={name}
+            aria-label={label}
+            checked={field.value ?? defaultChecked}
+            onCheckedChange={field.onChange}
+            disabled={isLoading || !doclingAvailable}
+          />
+        )}
+      />
+    </div>
+  )
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.contentProcessing')}</CardTitle>
-          <CardDescription>
-            {t('settings.contentProcessingDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <Label htmlFor="doc_engine">{t('settings.docEngine')}</Label>
-            <Controller
-              name="default_content_processing_engine_doc"
-              control={control}
-              render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    name={field.name}
-                    value={field.value || ''}
-                    onValueChange={field.onChange}
-                    disabled={field.disabled || isLoading}
-                  >
-                      <SelectTrigger id="doc_engine" className="w-full">
-                        <SelectValue placeholder={t('settings.docEnginePlaceholder')} />
-                      </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
-                      <SelectItem value="docling" disabled={!doclingAvailable}>{t('settings.docling')}</SelectItem>
-                      <SelectItem value="simple">{t('settings.simple')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-              )}
-            />
-            {!doclingAvailable && (
-              <p className="text-sm text-muted-foreground">{t('settings.enableDoclingHint')}</p>
-            )}
-            <Collapsible open={expandedSections.doc} onOpenChange={() => toggleSection('doc')}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.doc ? 'rotate-180' : ''}`} />
-                {t('settings.helpMeChoose')}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t('settings.docHelp')}</p>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Controller
-                name="docling_ocr"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="docling_ocr"
-                    checked={field.value ?? true}
-                    onCheckedChange={field.onChange}
-                    disabled={field.disabled || isLoading || !doclingAvailable}
-                  />
-                )}
-              />
-              <Label htmlFor="docling_ocr">{t('settings.ocrEnabled')}</Label>
-            </div>
-            <p className="text-sm text-muted-foreground">{t('settings.ocrHelp')}</p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Controller
-                name="docling_formulas"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="docling_formulas"
-                    checked={field.value ?? false}
-                    onCheckedChange={field.onChange}
-                    disabled={field.disabled || isLoading || !doclingAvailable}
-                  />
-                )}
-              />
-              <Label htmlFor="docling_formulas">{t('settings.formulasEnabled')}</Label>
-            </div>
-            <p className="text-sm text-muted-foreground">{t('settings.formulasHelp')}</p>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Controller
-                name="docling_vision"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="docling_vision"
-                    checked={field.value ?? false}
-                    onCheckedChange={field.onChange}
-                    disabled={field.disabled || isLoading || !doclingAvailable}
-                  />
-                )}
-              />
-              <Label htmlFor="docling_vision">{t('settings.visionEnabled')}</Label>
-            </div>
-            <p className="text-sm text-muted-foreground">{t('settings.visionHelp')}</p>
-          </div>
-
-          <div className="space-y-3">
-            <Label htmlFor="url_engine">{t('settings.urlEngine')}</Label>
-            <Controller
-              name="default_content_processing_engine_url"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  key={field.value}
-                  name={field.name}
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                  disabled={field.disabled || isLoading}
-                >
-                  <SelectTrigger id="url_engine" className="w-full">
-                    <SelectValue placeholder={t('settings.urlEnginePlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
-                    <SelectItem value="firecrawl">{t('settings.firecrawl')}</SelectItem>
-                    <SelectItem value="jina">{t('settings.jina')}</SelectItem>
-                    <SelectItem value="crawl4ai" disabled={!crawl4aiAvailable}>{t('settings.crawl4ai')}</SelectItem>
-                    <SelectItem value="simple">{t('settings.simple')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {!crawl4aiAvailable && (
-              <p className="text-sm text-muted-foreground">{t('settings.enableCrawl4aiHint')}</p>
-            )}
-             <Collapsible open={expandedSections.url} onOpenChange={() => toggleSection('url')}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.url ? 'rotate-180' : ''}`} />
-                {t('settings.helpMeChoose')}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t('settings.urlHelp')}</p>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </CardContent>
-      </Card>
-
-       <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.embeddingAndSearch')}</CardTitle>
-          <CardDescription>
-            {t('settings.embeddingAndSearchDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-           <div className="space-y-3">
-            <Label htmlFor="embedding">{t('settings.defaultEmbeddingOption')}</Label>
-            <Controller
-              name="default_embedding_option"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  key={field.value}
-                  name={field.name}
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                  disabled={field.disabled || isLoading}
-                >
-                  <SelectTrigger id="embedding" className="w-full">
-                    <SelectValue placeholder={t('settings.embeddingOptionPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ask">{t('settings.ask')}</SelectItem>
-                    <SelectItem value="always">{t('settings.always')}</SelectItem>
-                    <SelectItem value="never">{t('settings.never')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-             <Collapsible open={expandedSections.embedding} onOpenChange={() => toggleSection('embedding')}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.embedding ? 'rotate-180' : ''}`} />
-                {t('settings.helpMeChoose')}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t('settings.embeddingHelp')}</p>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </CardContent>
-      </Card>
-
-       <Card>
-        <CardHeader>
-          <CardTitle>{t('settings.fileManagement')}</CardTitle>
-          <CardDescription>
-            {t('settings.fileManagementDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-           <div className="space-y-3">
-            <Label htmlFor="auto_delete">{t('settings.autoDeleteFiles')}</Label>
-            <Controller
-              name="auto_delete_files"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  key={field.value}
-                  name={field.name}
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                  disabled={field.disabled || isLoading}
-                >
-                  <SelectTrigger id="auto_delete" className="w-full">
-                    <SelectValue placeholder={t('settings.autoDeletePlaceholder')} />
-                  </SelectTrigger>
-                   <SelectContent>
-                    <SelectItem value="yes">{t('common.yes')}</SelectItem>
-                    <SelectItem value="no">{t('common.no')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-             <Collapsible open={expandedSections.files} onOpenChange={() => toggleSection('files')}>
-              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.files ? 'rotate-180' : ''}`} />
-                {t('settings.helpMeChoose')}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t('settings.filesHelp')}</p>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-         <Button 
-          type="submit" 
-          disabled={!isDirty || updateSettings.isPending}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <SettingsSection title={t('settings.contentProcessing')} description={t('settings.contentProcessingDesc')}>
+        <SettingRow
+          label={t('settings.docEngine')}
+          htmlFor="doc_engine"
+          help={t('settings.docHelp')}
+          description={!doclingAvailable ? t('settings.enableDoclingHint') : undefined}
         >
+          <Controller
+            name="default_content_processing_engine_doc"
+            control={control}
+            render={({ field }) => (
+              <Select key={field.value} name={field.name} value={field.value || ''} onValueChange={field.onChange} disabled={field.disabled || isLoading}>
+                <SelectTrigger id="doc_engine" className={SELECT_WIDTH}>
+                  <SelectValue placeholder={t('settings.docEnginePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
+                  <SelectItem value="docling" disabled={!doclingAvailable}>{t('settings.docling')}</SelectItem>
+                  <SelectItem value="simple">{t('settings.simple')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingRow>
+
+        <div className="border-t border-border/40 py-3.5">
+          <p className="mb-3 text-xs font-medium text-muted-foreground">{t('settings.docling')}</p>
+          <div className="space-y-3.5">
+            {doclingToggle('docling_ocr', t('settings.ocrEnabled'), t('settings.ocrHelp'), true)}
+            {doclingToggle('docling_formulas', t('settings.formulasEnabled'), t('settings.formulasHelp'), false)}
+            {doclingToggle('docling_vision', t('settings.visionEnabled'), t('settings.visionHelp'), false)}
+          </div>
+        </div>
+
+        <SettingRow
+          label={t('settings.urlEngine')}
+          htmlFor="url_engine"
+          help={t('settings.urlHelp')}
+          description={!crawl4aiAvailable ? t('settings.enableCrawl4aiHint') : undefined}
+        >
+          <Controller
+            name="default_content_processing_engine_url"
+            control={control}
+            render={({ field }) => (
+              <Select key={field.value} name={field.name} value={field.value || ''} onValueChange={field.onChange} disabled={field.disabled || isLoading}>
+                <SelectTrigger id="url_engine" className={SELECT_WIDTH}>
+                  <SelectValue placeholder={t('settings.urlEnginePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
+                  <SelectItem value="firecrawl">{t('settings.firecrawl')}</SelectItem>
+                  <SelectItem value="jina">{t('settings.jina')}</SelectItem>
+                  <SelectItem value="crawl4ai" disabled={!crawl4aiAvailable}>{t('settings.crawl4ai')}</SelectItem>
+                  <SelectItem value="simple">{t('settings.simple')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title={t('settings.embeddingAndSearch')} description={t('settings.embeddingAndSearchDesc')}>
+        <SettingRow label={t('settings.defaultEmbeddingOption')} htmlFor="embedding" help={t('settings.embeddingHelp')}>
+          <Controller
+            name="default_embedding_option"
+            control={control}
+            render={({ field }) => (
+              <Select key={field.value} name={field.name} value={field.value || ''} onValueChange={field.onChange} disabled={field.disabled || isLoading}>
+                <SelectTrigger id="embedding" className={SELECT_WIDTH}>
+                  <SelectValue placeholder={t('settings.embeddingOptionPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ask">{t('settings.ask')}</SelectItem>
+                  <SelectItem value="always">{t('settings.always')}</SelectItem>
+                  <SelectItem value="never">{t('settings.never')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title={t('settings.fileManagement')} description={t('settings.fileManagementDesc')}>
+        <SettingRow label={t('settings.autoDeleteFiles')} htmlFor="auto_delete" help={t('settings.filesHelp')}>
+          <Controller
+            name="auto_delete_files"
+            control={control}
+            render={({ field }) => (
+              <Switch
+                id="auto_delete"
+                checked={field.value === 'yes'}
+                onCheckedChange={(checked) => field.onChange(checked ? 'yes' : 'no')}
+                disabled={field.disabled || isLoading}
+              />
+            )}
+          />
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection title={t('common.preferences')}>
+        <SettingRow label={t('common.appearance')}>
+          <div className="inline-flex items-center gap-0.5 rounded-[var(--control-radius)] border border-border p-0.5">
+            {THEME_OPTIONS.map(({ value, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTheme(value)}
+                aria-label={t(`common.${value}`)}
+                aria-pressed={theme === value}
+                className={cn(
+                  'flex size-7 items-center justify-center rounded-[3px] transition-colors',
+                  theme === value ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Icon className="size-4" />
+              </button>
+            ))}
+          </div>
+        </SettingRow>
+        <SettingRow label={t('common.language')}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-1.5 rounded-[var(--control-radius)] border border-border px-3 text-sm text-foreground transition-colors hover:bg-accent"
+              >
+                {t(activeLangLabel)}
+                <ChevronDown className="size-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
+              {LANGUAGE_OPTIONS.map(([code, label]) => (
+                <DropdownMenuItem key={code} onSelect={() => setLanguage(code)}>
+                  {t(label)}
+                  {isLanguageActive(code, language) && <Check className="ml-auto size-4" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SettingRow>
+      </SettingsSection>
+
+      <div className="flex justify-end border-t border-border/40 pt-4">
+        <Button type="submit" disabled={!isDirty || updateSettings.isPending}>
           {updateSettings.isPending ? t('common.saving') : t('common.save')}
         </Button>
       </div>

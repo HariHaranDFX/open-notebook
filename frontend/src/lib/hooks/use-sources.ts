@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
-import { sourcesApi } from '@/lib/api/sources'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { sourcesApi, type SourceSortField } from '@/lib/api/sources'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -14,6 +14,13 @@ import {
 } from '@/lib/types/api'
 
 const NOTEBOOK_SOURCES_PAGE_SIZE = 30
+const SOURCE_LIBRARY_PAGE_SIZE = 30
+
+export interface SourceLibraryParams {
+  query: string
+  sortBy: SourceSortField
+  sortOrder: 'asc' | 'desc'
+}
 
 export function useSources(notebookId?: string) {
   return useQuery({
@@ -76,11 +83,51 @@ export function useNotebookSources(notebookId: string) {
   }
 }
 
-export function useSource(id: string) {
+export function useSourceLibrary(params: SourceLibraryParams) {
+  const query = useInfiniteQuery({
+    queryKey: QUERY_KEYS.sourceLibrary(params),
+    queryFn: async ({ pageParam = 0 }) => {
+      const sources = await sourcesApi.list({
+        query: params.query,
+        sort_by: params.sortBy,
+        sort_order: params.sortOrder,
+        limit: SOURCE_LIBRARY_PAGE_SIZE,
+        offset: pageParam,
+      })
+      return {
+        sources,
+        nextOffset: sources.length === SOURCE_LIBRARY_PAGE_SIZE
+          ? pageParam + sources.length
+          : undefined,
+      }
+    },
+    initialPageParam: 0,
+    getNextPageParam: lastPage => lastPage.nextOffset,
+  })
+
+  const sources = useMemo(
+    () => query.data?.pages.flatMap(page => page.sources) ?? [],
+    [query.data?.pages],
+  )
+
+  return {
+    sources,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    refetch: query.refetch,
+    error: query.error,
+    isFetchNextPageError: query.isFetchNextPageError,
+    isRefetchError: query.isRefetchError,
+  }
+}
+
+export function useSource(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEYS.source(id),
     queryFn: () => sourcesApi.get(id),
-    enabled: !!id,
+    enabled: !!id && (options?.enabled ?? true),
     staleTime: 30 * 1000, // 30 seconds - shorter stale time for more responsive updates
     refetchOnWindowFocus: true, // Refetch when user comes back to the tab
   })
@@ -231,8 +278,10 @@ export function useFileUpload() {
   })
 }
 
-export function useSourceStatus(sourceId: string, enabled = true) {
-  return useQuery({
+export function useSourceStatus(sourceId: string, enabled = true, initialStatus?: string) {
+  const queryClient = useQueryClient()
+  const previousStatus = useRef(initialStatus)
+  const query = useQuery({
     queryKey: ['sources', sourceId, 'status'],
     queryFn: () => sourcesApi.status(sourceId),
     enabled: !!sourceId && enabled,
@@ -256,6 +305,25 @@ export function useSourceStatus(sourceId: string, enabled = true) {
       return failureCount < 3
     },
   })
+
+  useEffect(() => {
+    const currentStatus = query.data?.status
+    if (currentStatus === undefined) return
+
+    const previous = previousStatus.current
+    previousStatus.current = currentStatus
+
+    const wasProcessing = previous === 'new' || previous === 'queued' || previous === 'running'
+    const isTerminal = currentStatus !== 'new'
+      && currentStatus !== 'queued'
+      && currentStatus !== 'running'
+
+    if (wasProcessing && isTerminal) {
+      queryClient.invalidateQueries({ queryKey: ['sources'] })
+    }
+  }, [query.data?.status, queryClient])
+
+  return query
 }
 
 export function useRetrySource() {

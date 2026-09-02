@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -103,29 +103,32 @@ export function SessionManager({
 
   return (
     <>
-      <Card className="h-full flex flex-col">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              {t('chat.sessions')}
-            </span>
+      <Card className="flex h-full flex-col gap-0 rounded-none border-0 py-0">
+        <CardHeader className="grid-rows-1 items-center border-b border-border px-4 py-3 [.border-b]:pb-3">
+          <CardTitle className="flex items-center gap-1">
+            <MessageSquare className="size-5" />
+            {t('chat.sessions')}
+          </CardTitle>
+          <CardAction className="row-span-1 row-start-1 self-center">
             <Button
-              size="sm"
+              size="icon-sm"
               variant="outline"
+              aria-label={t('common.create')}
               onClick={() => setIsCreating(true)}
             >
-              <Plus className="h-4 w-4" />
+              <Plus />
             </Button>
-          </CardTitle>
+          </CardAction>
         </CardHeader>
         <CardContent className="flex-1 p-0 min-h-0">
           <ScrollArea className="h-full px-4">
+            <div className="flex min-h-full flex-col py-4" data-testid="session-scroll-content">
             {isCreating && (
-              <div className="p-3 border rounded-lg mb-3">
+              <div className="mb-3 rounded-[var(--surface-radius)] border p-3">
                 <Input
                   value={newSessionTitle}
                   onChange={(e) => setNewSessionTitle(e.target.value)}
+                  aria-label={t('chat.sessionTitlePlaceholder')}
                   placeholder={t('chat.sessionTitlePlaceholder')}
                   className="mb-2"
                   autoFocus
@@ -162,11 +165,11 @@ export function SessionManager({
                 <p className="text-xs mt-2">{t('chat.createToStart')}</p>
               </div>
             ) : (
-              <div className="space-y-2 pb-4">
+              <div className="flex flex-col gap-2">
                 {sessions.map((session) => (
                   <div
                     key={session.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`cursor-pointer rounded-[var(--surface-radius)] border p-3 transition-colors ${
                       currentSessionId === session.id
                         ? 'bg-primary/10 border-primary'
                         : 'hover:bg-muted'
@@ -177,6 +180,7 @@ export function SessionManager({
                       <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                         <Input
                           value={editTitle}
+                          aria-label={t('chat.sessionTitlePlaceholder')}
                           onChange={(e) => setEditTitle(e.target.value)}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') handleSaveEdit()
@@ -185,12 +189,13 @@ export function SessionManager({
                           autoFocus
                         />
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit}>
+                          <Button size="sm" aria-label={t('common.save')} onClick={handleSaveEdit}>
                             <Check className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            aria-label={t('common.cancel')}
                             onClick={handleCancelEdit}
                           >
                             <X className="h-3 w-3" />
@@ -205,20 +210,22 @@ export function SessionManager({
                           </h4>
                           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                             <Button
-                              size="sm"
+                              size="icon-sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="text-primary hover:bg-primary/10 hover:text-primary"
+                              aria-label={t('common.edit')}
                               onClick={() => handleStartEdit(session)}
                             >
-                              <Edit2 className="h-3 w-3" />
+                              <Edit2 />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon-sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              aria-label={t('common.delete')}
                               onClick={() => setDeleteConfirmId(session.id)}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 />
                             </Button>
                           </div>
                         </div>
@@ -245,6 +252,7 @@ export function SessionManager({
                 ))}
               </div>
             )}
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>

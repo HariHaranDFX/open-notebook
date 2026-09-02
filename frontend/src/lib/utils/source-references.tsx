@@ -324,34 +324,28 @@ export function createReferenceLinkComponent(
   return ReferenceLinkComponent
 }
 
+export interface CompactReferences {
+  markdown: string
+  references: ReferenceData[]
+}
+
 /**
- * Convert references in text to compact numbered format with reference list
+ * Build compact chat references from answer text.
  *
- * This function transforms verbose inline references like [source:abc123] into
- * compact numbered citations [1], [2], etc., and appends a "References:" section
- * at the bottom of the message with the full reference details.
- *
- * Algorithm:
- * 1. Parse all references using parseSourceReferences()
- * 2. Build a reference map to deduplicate and assign numbers
- * 3. Replace inline references with numbered citations
- * 4. Append reference list at the bottom
- *
- * @param text - Original text with references
- * @param referencesLabel - Locales label for "References" title (default: "References")
- * @returns Text with numbered citations and reference list appended
+ * Replaces inline references like [source:abc] with numbered citation links
+ * ([1](#ref-source-abc)) and returns the deduplicated, numbered references as
+ * data so the UI can render them as chips instead of an appended text block.
  *
  * @example
- * Input: "See [source:abc] and [note:xyz]. Also [source:abc] again."
- * Output: "See [1] and [2]. Also [1] again.\n\nReferences:\n[1] - [source:abc]\n[2] - [note:xyz]"
+ * buildCompactReferences('See [source:abc] and [note:xyz]. Also [source:abc].')
+ * // markdown:    'See [1](#ref-source-abc) and [2](#ref-note-xyz). Also [1](#ref-source-abc).'
+ * // references:  [{ number:1, type:'source', id:'abc' }, { number:2, type:'note', id:'xyz' }]
  */
-export function convertReferencesToCompactMarkdown(text: string, referencesLabel: string = 'References'): string {
-  // Step 1: Parse all references using existing function
+export function buildCompactReferences(text: string): CompactReferences {
   const references = parseSourceReferences(text)
 
-  // Step 2: If no references found, return original text
   if (references.length === 0) {
-    return text
+    return { markdown: text, references: [] }
   }
 
   // Step 3: Build reference map (deduplicate and assign numbers)
@@ -405,81 +399,59 @@ export function convertReferencesToCompactMarkdown(text: string, referencesLabel
     result = result.substring(0, replaceStart) + citationLink + result.substring(replaceEnd)
   }
 
-  // Step 5: Build reference list
-  const refListLines: string[] = [`\n\n${referencesLabel}:`]
-
-  // Iterate through reference map in insertion order (Map preserves order)
-  for (const [, refData] of referenceMap) {
-    const refListItem = `[${refData.number}] - [${refData.type}:${refData.id}](#ref-${refData.type}-${refData.id})`
-    refListLines.push(refListItem)
-  }
-
-  // Step 6: Append reference list to result
-  result = result + refListLines.join('\n')
-
-  return result
+  return { markdown: result, references: Array.from(referenceMap.values()) }
 }
 
 /**
- * Create a custom link component for ReactMarkdown that handles compact reference links
+ * Parse a reference link href (`#ref-{type}-{id}`) back into its type and id.
+ * Returns null for any non-reference link.
  *
- * This component handles two types of reference links:
- * 1. Numbered citations in text: [1](#ref-source-abc123)
- * 2. Reference list items: [source:abc123](#ref-source-abc123)
- *
- * Both use the same href format: #ref-{type}-{id}
- * The component extracts the type and id from the href and triggers the click handler.
- *
- * @param onReferenceClick - Callback for when a reference link is clicked
- * @returns React component for rendering links in ReactMarkdown
- *
- * @example
- * const LinkComponent = createCompactReferenceLinkComponent((type, id) => openModal(type, id))
- * <ReactMarkdown components={{ a: LinkComponent }}>...</ReactMarkdown>
+ * The first dash separates type from id; `source_insight` keeps its underscore,
+ * so splitting on the first dash is safe for every reference type.
  */
-export function createCompactReferenceLinkComponent(
-  onReferenceClick: (type: ReferenceType, id: string) => void
-) {
-  const CompactReferenceLinkComponent = ({
-    href,
-    children,
-    ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
-    href?: string
-    children?: React.ReactNode
-  }) => {
-    // Check if this is a reference link (starts with #ref-)
-    if (href?.startsWith('#ref-')) {
-      // Parse: #ref-source-abc123 → type=source, id=abc123
-      const parts = href.substring(5).split('-') // Remove '#ref-'
-      const type = parts[0] as ReferenceType
-      const id = parts.slice(1).join('-') // Rejoin in case ID has dashes
+export function parseReferenceHref(href: string): { type: ReferenceType; id: string } | null {
+  if (!href.startsWith('#ref-')) return null
+  const rest = href.slice(5)
+  const dash = rest.indexOf('-')
+  if (dash <= 0) return null
+  return { type: rest.slice(0, dash) as ReferenceType, id: rest.slice(dash + 1) }
+}
 
-      return (
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onReferenceClick(type, id)
-          }}
-          className="text-primary hover:underline cursor-pointer inline font-medium"
-          type="button"
-        >
-          {children}
-        </button>
-      )
+/**
+ * Build the full SurrealDB record id (`table:id`) the API needs from a parsed
+ * reference. The reference type is the table name (`source`, `note`,
+ * `source_insight`) and ids arrive bare from the answer text, so a bare id is
+ * qualified with its type — mirroring the guard the source/note/insight dialogs
+ * apply before fetching. `ObjectModel.get` resolves records by this prefixed id.
+ */
+export function toReferenceRecordId(type: ReferenceType, id: string): string {
+  return id.includes(':') ? id : `${type}:${id}`
+}
+
+export interface ReferenceGroup {
+  type: ReferenceType
+  members: ReferenceData[]
+}
+
+/**
+ * Group references by type for the compact footer. Types keep their first-seen
+ * order, and members keep their ascending citation number (references arrive in
+ * number order). The UI collapses a group into a counted pill only when it has
+ * two or more members; a lone reference stays a direct single chip.
+ */
+export function groupReferences(references: ReferenceData[]): ReferenceGroup[] {
+  const groups: ReferenceGroup[] = []
+  const byType = new Map<ReferenceType, ReferenceGroup>()
+  for (const reference of references) {
+    let group = byType.get(reference.type)
+    if (!group) {
+      group = { type: reference.type, members: [] }
+      byType.set(reference.type, group)
+      groups.push(group)
     }
-
-    // Regular link - open in new tab
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline">
-        {children}
-      </a>
-    )
+    group.members.push(reference)
   }
-
-  CompactReferenceLinkComponent.displayName = 'CompactReferenceLinkComponent'
-  return CompactReferenceLinkComponent
+  return groups
 }
 
 /**

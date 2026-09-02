@@ -34,14 +34,7 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
 
       // Check if database is offline
       if (config.dbStatus === 'offline') {
-        const dbError: ConnectionError = {
-          type: 'database-offline',
-          details: {
-            message: 'Database is offline', // Fallback message, UI will translate
-            attemptedUrl: config.apiUrl,
-          },
-        }
-        setError(dbError)
+        setError({ type: 'database-offline' })
         isCheckingRef.current = false
         setIsChecking(false)
         return
@@ -51,25 +44,11 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
       setError(null)
       isCheckingRef.current = false
       setIsChecking(false)
-    } catch (err) {
-      // API is unreachable
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-      const attemptedUrl =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/api/config`
-          : undefined
-
-      const apiError: ConnectionError = {
-        type: 'api-unreachable',
-        details: {
-          message: 'Unable to connect to API', // Fallback message
-          technicalMessage: errorMessage,
-          stack: err instanceof Error ? err.stack : undefined,
-          attemptedUrl,
-        },
-      }
-      
-      setError(apiError)
+    } catch {
+      // API is unreachable. Deliberately not capturing the underlying error's
+      // message/stack/URL here — the overlay never renders diagnostics, so
+      // there is nothing to keep in state for it to leak.
+      setError({ type: 'api-unreachable' })
       isCheckingRef.current = false
       setIsChecking(false)
     }
@@ -83,6 +62,17 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
   // Add keyboard shortcut for retry (R key)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Never let a bare-key shortcut fire while the user is typing.
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return
+      }
       if (error && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault()
         checkConnection()

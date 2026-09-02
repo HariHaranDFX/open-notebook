@@ -1,0 +1,7 @@
+{
+  "appName": "Open Notebook",
+  "logoUrl": "/logo.svg",
+  "faviconUrl": "/logo.svg",
+  "actionLight": "#275E91",
+  "actionDark": "#74A9D6"
+}

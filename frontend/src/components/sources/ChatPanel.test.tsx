@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ChatPanel } from './ChatPanel'
 
@@ -13,6 +13,10 @@ vi.mock('@/components/sources/MessageActions', () => ({
   MessageActions: () => null,
 }))
 
+vi.mock('@/components/sources/SessionManager', () => ({
+  SessionManager: () => <div>Session list</div>,
+}))
+
 describe('ChatPanel composer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -21,6 +25,42 @@ describe('ChatPanel composer', () => {
   })
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement
+
+  it('uses the same flat, edge-aligned surface as the other workbench panes', () => {
+    render(
+      <ChatPanel
+        title="Synthesis"
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+        onCreateSession={vi.fn()}
+        onSelectSession={vi.fn()}
+        onDeleteSession={vi.fn()}
+      />
+    )
+
+    const card = screen.getByText('Synthesis').closest('[data-slot="card"]')
+    const header = screen.getByText('Synthesis').closest('[data-slot="card-header"]')
+    const headerRow = screen.getByText('Synthesis').closest('[data-slot="card-title"]')?.parentElement
+
+    expect(card).toHaveClass('gap-0', 'rounded-none', 'border-0', 'py-0')
+    expect(header).toHaveClass('flex', 'h-12', 'items-center', 'border-b', 'bg-card', 'pl-4', 'pr-12', 'py-0')
+    expect(headerRow).toHaveClass('h-full', 'w-full', 'flex-nowrap', 'items-center')
+    expect(screen.getByRole('button', { name: 'chat.sessions' })).toHaveClass(
+      'border-border-strong',
+      'bg-card',
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.sessions' }))
+    const sessionsSheet = screen.getByRole('dialog', { name: 'chat.sessionsTitle' })
+    const closeButton = within(sessionsSheet).getByRole('button', { name: 'common.close' })
+    const footer = closeButton.closest('[data-slot="sheet-footer"]')
+
+    expect(sessionsSheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(closeButton).toBeVisible()
+    expect(footer).toHaveClass('flex-row', 'justify-start', 'sm:justify-start')
+  })
 
   it('sends the typed message and clears the input on send-button click', () => {
     const onSendMessage = vi.fn()
@@ -42,6 +82,22 @@ describe('ChatPanel composer', () => {
     expect(onSendMessage).toHaveBeenCalledTimes(1)
     expect(onSendMessage).toHaveBeenCalledWith('hello world', undefined)
     expect(textarea.value).toBe('')
+  })
+
+  it('uses an upward arrow for the shared send action', () => {
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={vi.fn()}
+      />
+    )
+
+    const sendButton = screen.getByRole('button')
+
+    expect(sendButton.querySelector('.lucide-arrow-up')).toBeInTheDocument()
+    expect(sendButton.querySelector('.lucide-send')).not.toBeInTheDocument()
   })
 
   it('sends on Cmd+Enter on macOS', () => {

@@ -13,12 +13,13 @@ import {
 } from '@/lib/hooks/use-podcasts'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -151,27 +152,28 @@ export function EpisodeProfileFormDialog({
   const isEdit = mode === 'edit'
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <SheetHeader className="border-b border-border px-6 py-4">
+          <SheetTitle>
             {isEdit ? t('podcasts.editEpisodeProfile') : t('podcasts.createEpisodeProfile')}
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             {t('podcasts.episodeProfileFormDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        {speakerProfiles.length === 0 ? (
-          <Alert className="bg-amber-50 text-amber-900 border-amber-200">
-            <AlertTitle>{t('podcasts.noSpeakerProfilesAvailable')}</AlertTitle>
-            <AlertDescription>
-              {t('podcasts.noSpeakerProfilesDesc')}
-            </AlertDescription>
-          </Alert>
-        ) : null}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
+            {speakerProfiles.length === 0 ? (
+              <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+                <AlertTitle>{t('podcasts.noSpeakerProfilesAvailable')}</AlertTitle>
+                <AlertDescription>
+                  {t('podcasts.noSpeakerProfilesDesc')}
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">{t('podcasts.profileName')} *</Label>
@@ -376,8 +378,9 @@ export function EpisodeProfileFormDialog({
               </p>
             ) : null}
           </div>
+          </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
             <Button
               type="button"
               variant="outline"
@@ -392,9 +395,9 @@ export function EpisodeProfileFormDialog({
                   ? t('common.saveChanges')
                   : t('podcasts.createProfile')}
             </Button>
-          </div>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

@@ -251,6 +251,10 @@ class PodcastEpisode(ObjectModel):
         default=None, description="Owner of the episode (WP2 ownership)"
     )
     client_id: Optional[str] = Field(default=None, description="Owner's client id")
+    notebook_id: Optional[str] = Field(
+        default=None,
+        description="Notebook this episode was generated from (WP2b ACL inherit)",
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -333,9 +337,9 @@ class PodcastEpisode(ObjectModel):
         return value
 
     def _prepare_save_data(self) -> dict:
-        """Ensure command/user_id are RecordID format for the database.
+        """Ensure command/user_id/notebook_id are RecordID format for the database.
 
-        Both fields stay plain str on the model (see Notebook._prepare_save_data
+        These fields stay plain str on the model (see Notebook._prepare_save_data
         for why) and are only coerced here, at the save boundary.
         """
         data = super()._prepare_save_data()
@@ -344,5 +348,7 @@ class PodcastEpisode(ObjectModel):
             data["command"] = ensure_record_id(data["command"])
         if data.get("user_id") is not None:
             data["user_id"] = ensure_record_id(data["user_id"])
+        if data.get("notebook_id") is not None:
+            data["notebook_id"] = ensure_record_id(data["notebook_id"])
 
         return data

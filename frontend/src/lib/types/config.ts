@@ -24,14 +24,13 @@ export interface AppConfig {
 }
 
 /**
- * Connection error state
+ * Connection error state.
+ *
+ * Deliberately carries no diagnostic payload (no attempted URL, technical
+ * message, or stack trace) — the overlay renders fixed, translated copy
+ * keyed only on `type`, so nothing environment-specific ever reaches the
+ * user-facing gateway.
  */
 export interface ConnectionError {
   type: "api-unreachable" | "database-offline"
-  details?: {
-    message?: string
-    technicalMessage?: string
-    stack?: string
-    attemptedUrl?: string
-  }
 }

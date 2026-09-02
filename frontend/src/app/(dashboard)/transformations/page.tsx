@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
+import { PageFrame } from '@/components/layout/PageFrame'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DefaultPromptEditor } from './components/DefaultPromptEditor'
@@ -13,42 +16,74 @@ import { Transformation } from '@/lib/types/transformations'
 import { Wand2, Play, RefreshCw } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
+type TransformationView = 'library' | 'playground'
+
+function isTransformationView(value: string | null): value is TransformationView {
+  return value === 'library' || value === 'playground'
+}
+
 export default function TransformationsPage() {
   const { t } = useTranslation()
   const { isAdmin } = useAuth()
-  const [activeTab, setActiveTab] = useState('transformations')
-  const [selectedTransformation, setSelectedTransformation] = useState<Transformation | undefined>()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
   const { data: transformations, isLoading, refetch } = useTransformations()
 
-  const handlePlayground = (transformation: Transformation) => {
-    setSelectedTransformation(transformation)
-    setActiveTab('playground')
-  }
+  // View and selection are derived from the URL — the single source of
+  // truth (no shadow useState mirroring either one).
+  const rawView = searchParams?.get('view') ?? null
+  const view: TransformationView = isTransformationView(rawView) ? rawView : 'library'
+  const selectedTransformationId = searchParams?.get('transformation') || undefined
+
+  const setView = useCallback(
+    (next: string) => {
+      const params = new URLSearchParams(searchParams?.toString() || '')
+      params.set('view', next)
+      if (next === 'library') {
+        params.delete('transformation')
+      }
+      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    },
+    [searchParams, router, pathname]
+  )
+
+  const handlePlayground = useCallback(
+    (transformation: Transformation) => {
+      const params = new URLSearchParams(searchParams?.toString() || '')
+      params.set('view', 'playground')
+      params.set('transformation', transformation.id)
+      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    },
+    [searchParams, router, pathname]
+  )
+
+  const handleBackToLibrary = useCallback(() => {
+    const params = new URLSearchParams(searchParams?.toString() || '')
+    params.set('view', 'library')
+    params.delete('transformation')
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [searchParams, router, pathname])
 
   return (
     <AppShell>
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold">{t('transformations.title')}</h1>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                <RefreshCw className="h-4 w-4" />
+      <PageFrame>
+        <PageHeader
+          title={t('transformations.title')}
+          description={t('transformations.desc')}
+          secondaryActions={
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" />
+              {t('common.refresh')}
             </Button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="max-w-5xl">
-          <p className="text-muted-foreground">
-            {t('transformations.desc')}
-          </p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={view} onValueChange={setView} className="space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('transformations.workspace')}</p>
             <TabsList aria-label={t('common.accessibility.transformationViews')} className="w-full max-w-xl">
-              <TabsTrigger value="transformations" className="flex items-center gap-2">
+              <TabsTrigger value="library" className="flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />
                 {t('transformations.title')}
               </TabsTrigger>
@@ -58,25 +93,25 @@ export default function TransformationsPage() {
               </TabsTrigger>
             </TabsList>
           </div>
-          
-          <TabsContent value="transformations" className="space-y-6">
+
+          <TabsContent value="library" className="space-y-6">
             {isAdmin && <DefaultPromptEditor />}
-            <TransformationsList 
-              transformations={transformations} 
+            <TransformationsList
+              transformations={transformations}
               isLoading={isLoading}
               onPlayground={handlePlayground}
             />
           </TabsContent>
-          
+
           <TabsContent value="playground">
-            <TransformationPlayground 
+            <TransformationPlayground
               transformations={transformations}
-              selectedTransformation={selectedTransformation}
+              selectedTransformationId={selectedTransformationId}
+              onBackToLibrary={handleBackToLibrary}
             />
           </TabsContent>
         </Tabs>
-        </div>
-      </div>
+      </PageFrame>
     </AppShell>
   )
 }

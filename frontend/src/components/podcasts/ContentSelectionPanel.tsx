@@ -66,8 +66,8 @@ export function ContentSelectionPanel({
   ] as const
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex min-h-0 w-full min-w-0 flex-col gap-4 md:h-full">
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t('podcasts.content')}
@@ -93,7 +93,7 @@ export function ContentSelectionPanel({
         </div>
       </div>
 
-      <div className="rounded-lg border bg-muted/30">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col rounded-[var(--surface-radius)] border bg-muted/30">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('podcasts.loadingNotebooks')}
@@ -103,7 +103,7 @@ export function ContentSelectionPanel({
             {t('podcasts.noNotebooksFoundInPodcasts')}
           </div>
         ) : (
-          <ScrollArea className="h-[60vh]">
+          <ScrollArea className="min-h-[20rem] w-full flex-1 md:min-h-0">
             <Accordion
               type="multiple"
               value={expandedNotebooks}
@@ -123,8 +123,8 @@ export function ContentSelectionPanel({
                   summary.sources + summary.notes < totalItems
 
                 return (
-                  <AccordionItem key={notebook.id} value={notebook.id}>
-                    <div className="flex items-start gap-3 px-4 pt-3">
+                  <AccordionItem key={notebook.id} value={notebook.id} className="w-full">
+                    <div className="flex w-full min-w-0 items-center gap-3 px-4 py-3">
                       <Checkbox
                         id={`notebook-toggle-${notebook.id}`}
                         checked={isIndeterminate ? 'indeterminate' : notebookChecked}
@@ -141,13 +141,13 @@ export function ContentSelectionPanel({
                         }}
                         onClick={(event) => event.stopPropagation()}
                       />
-                      <AccordionTrigger className="flex-1 px-0 py-0 hover:no-underline">
+                      <AccordionTrigger className="min-w-0 w-full flex-1 gap-2 px-0 py-0 hover:no-underline">
                         <Label
                           htmlFor={`notebook-toggle-${notebook.id}`}
-                          className="flex w-full items-center justify-between gap-3 pointer-events-none"
+                          className="pointer-events-none flex min-w-0 flex-1 items-center justify-between gap-3"
                         >
-                          <div className="text-left">
-                            <p className="font-medium text-sm text-foreground">
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="truncate text-sm font-medium text-foreground">
                               {notebook.name}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -156,7 +156,7 @@ export function ContentSelectionPanel({
                                 : t('podcasts.noContentSelected')}
                             </p>
                           </div>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="shrink-0 text-xs">
                             {sources.length} {t('podcasts.sources')} · {notes.length} {t('podcasts.notes')}
                           </Badge>
                         </Label>
@@ -164,6 +164,8 @@ export function ContentSelectionPanel({
                     </div>
                     <AccordionContent>
                       <div className="space-y-4 px-4 pb-4">
+                        <Separator />
+
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -184,7 +186,7 @@ export function ContentSelectionPanel({
                                 return (
                                   <div
                                     key={source.id}
-                                    className="flex items-center gap-3 rounded border bg-background px-3 py-2"
+                                    className="flex items-center gap-3 rounded-[var(--surface-radius)] border bg-background px-3 py-2"
                                   >
                                     <Checkbox
                                       id={`source-selection-${source.id}`}
@@ -263,7 +265,7 @@ export function ContentSelectionPanel({
                                 return (
                                   <div
                                     key={note.id}
-                                    className="flex items-center gap-3 rounded border bg-background px-3 py-2"
+                                    className="flex items-center gap-3 rounded-[var(--surface-radius)] border bg-background px-3 py-2"
                                   >
                                     <Checkbox
                                       id={`note-selection-${note.id}`}
@@ -284,10 +286,11 @@ export function ContentSelectionPanel({
                                         {note.title || t('podcasts.untitledNote')}
                                       </span>
                                       <span className="text-xs text-muted-foreground">
-                                        {t('common.updated')}{' '}
-                                        {new Date(note.updated).toLocaleString(
-                                          language.startsWith('zh') ? language : 'en-US'
-                                        )}
+                                        {t('common.updated', {
+                                          time: new Date(note.updated).toLocaleString(
+                                            language.startsWith('zh') ? language : 'en-US'
+                                          ),
+                                        })}
                                       </span>
                                     </Label>
                                   </div>

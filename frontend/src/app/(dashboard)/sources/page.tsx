@@ -1,455 +1,276 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { sourcesApi, type SourceSortField } from '@/lib/api/sources'
-import { SourceListResponse } from '@/lib/types/api'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { useState } from 'react'
+import { useDebounce } from 'use-debounce'
+import {
+  AlertTriangle,
+  FileText,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react'
+
 import { EmptyState } from '@/components/common/EmptyState'
-import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
+import { LibraryToolbar } from '@/components/common/LibraryToolbar'
+import { AppShell } from '@/components/layout/AppShell'
+import { PageFrame } from '@/components/layout/PageFrame'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { AddSourceButton } from '@/components/sources/AddSourceButton'
+import { SourceLibraryRow } from '@/components/sources/SourceLibraryRow'
 import { Button } from '@/components/ui/button'
+import type { SourceSortField } from '@/lib/api/sources'
+import {
+  useDeleteSource,
+  useRetrySource,
+  useSourceLibrary,
+} from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getDateLocale } from '@/lib/utils/date-locale'
+import { useLibraryView } from '@/lib/stores/library-view-store'
+import type { SourceListResponse } from '@/lib/types/api'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+
+const sortOptions: Array<{ value: SourceSortField; label: string }> = [
+  { value: 'updated', label: 'common.updated_label' },
+  { value: 'title', label: 'common.title' },
+  { value: 'created', label: 'common.created_label' },
+  { value: 'type', label: 'common.type' },
+  { value: 'insights_count', label: 'sources.insights' },
+  { value: 'embedded', label: 'sources.embedded' },
+]
+
+function SourceLibrarySkeleton({
+  label,
+  viewMode,
+}: {
+  label: string
+  viewMode: 'list' | 'card'
+}) {
+  return (
+    <div
+      className={cn(
+        viewMode === 'card'
+          ? 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3'
+          : 'overflow-hidden rounded-[var(--surface-radius)] border border-border',
+      )}
+      aria-busy="true"
+    >
+      <span className="sr-only" role="status">{label}</span>
+      <div aria-hidden="true" className="contents">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            data-testid="source-library-skeleton"
+            className={cn(
+              'grid animate-pulse bg-card',
+              viewMode === 'card'
+                ? 'grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] gap-3 rounded-[var(--surface-radius)] border border-border p-3'
+                : 'grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1.5 border-b border-border px-2 py-2 last:border-b-0 sm:px-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-3',
+            )}
+          >
+            <div data-testid="source-skeleton-title" className="col-start-1 row-start-1 min-w-0">
+              {viewMode === 'card' && (
+                <div data-testid="source-skeleton-state" className="flex flex-wrap items-center gap-2">
+                  <div className="h-5 w-20 rounded-[var(--pill-radius)] bg-muted" />
+                  <div className="h-5 w-16 rounded-[var(--pill-radius)] bg-muted" />
+                </div>
+              )}
+              <div className={cn('flex min-w-0 items-center gap-1', viewMode === 'card' && 'mt-3')}>
+                <div className="size-7 shrink-0 rounded-[var(--control-radius)] bg-muted" />
+                <div className="h-4 w-1/2 min-w-24 rounded-sm bg-muted" />
+              </div>
+              <div data-testid="source-skeleton-description" className="mt-0.5 pl-8">
+                <div className="h-3 w-3/5 rounded-sm bg-muted" />
+              </div>
+            </div>
+
+            <div
+              data-testid="source-skeleton-metadata"
+              className={cn(
+                'flex min-w-0 flex-wrap items-center gap-2',
+                viewMode === 'card'
+                  ? 'col-span-2 row-start-2 self-end border-t border-border pt-3'
+                  : 'col-span-2 row-start-2 pl-8 md:col-span-1 md:row-start-auto md:justify-end md:pl-0',
+              )}
+            >
+              <div className="h-5 w-12 rounded-[var(--pill-radius)] bg-muted" />
+              <div className="h-5 w-14 rounded-[var(--pill-radius)] bg-muted" />
+              {viewMode === 'list' && (
+                <>
+                  <div className="h-5 w-20 rounded-[var(--pill-radius)] bg-muted" />
+                  <div className="h-5 w-16 rounded-[var(--pill-radius)] bg-muted" />
+                </>
+              )}
+              <div className="h-5 w-9 rounded-[var(--pill-radius)] bg-muted" />
+              <div className="ml-auto h-3 w-20 rounded-sm bg-muted" />
+            </div>
+
+            <div
+              data-testid="source-skeleton-action"
+              className={cn(
+                'col-start-2 row-start-1 size-9 self-start justify-self-end rounded-[var(--control-radius)] bg-muted',
+                viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
+              )}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function SourcesPage() {
-  const { t, language } = useTranslation()
-  const failedToLoadMessage = t('sources.failedToLoad')
-  const [sources, setSources] = useState<SourceListResponse[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const { t } = useTranslation()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch] = useDebounce(searchTerm, 300)
   const [sortBy, setSortBy] = useState<SourceSortField>('updated')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
-    open: false,
-    source: null
+  const { viewMode, setViewMode } = useLibraryView('sources')
+  const [sourceToDelete, setSourceToDelete] = useState<SourceListResponse | null>(null)
+  const normalizedQuery = debouncedSearch.trim()
+  const {
+    sources,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+    error,
+    isFetchNextPageError,
+    isRefetchError,
+  } = useSourceLibrary({
+    query: normalizedQuery,
+    sortBy,
+    sortOrder,
   })
-  const router = useRouter()
-  const tableRef = useRef<HTMLTableElement>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const offsetRef = useRef(0)
-  const loadingMoreRef = useRef(false)
-  const hasMoreRef = useRef(true)
-  const PAGE_SIZE = 30
+  const deleteSource = useDeleteSource()
+  const retrySource = useRetrySource()
 
-  const fetchSources = useCallback(async (reset = false) => {
-    try {
-      // Check flags before proceeding
-      if (!reset && (loadingMoreRef.current || !hasMoreRef.current)) {
-        return
-      }
-
-      if (reset) {
-        setLoading(true)
-        offsetRef.current = 0
-        setSources([])
-        hasMoreRef.current = true
-      } else {
-        loadingMoreRef.current = true
-        setLoadingMore(true)
-      }
-
-      const data = await sourcesApi.list({
-        limit: PAGE_SIZE,
-        offset: offsetRef.current,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      })
-
-      if (reset) {
-        setSources(data)
-      } else {
-        setSources(prev => [...prev, ...data])
-      }
-
-      // Check if we have more data
-      const hasMoreData = data.length === PAGE_SIZE
-      hasMoreRef.current = hasMoreData
-      offsetRef.current += data.length
-    } catch (err) {
-      console.error('Failed to fetch sources:', err)
-      setError(failedToLoadMessage)
-      toast.error(failedToLoadMessage)
-    } finally {
-      setLoading(false)
-      setLoadingMore(false)
-      loadingMoreRef.current = false
-    }
-  }, [sortBy, sortOrder, failedToLoadMessage])
-
-  // Initial load and when sort changes
-  useEffect(() => {
-    fetchSources(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy, sortOrder])
-
-  useEffect(() => {
-    // Focus the table when component mounts or sources change
-    if (sources.length > 0 && tableRef.current) {
-      tableRef.current.focus()
-    }
-  }, [sources])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (sources.length === 0) return
-
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedIndex((prev) => {
-            const newIndex = Math.min(prev + 1, sources.length - 1)
-            // Scroll to keep selected row visible
-            setTimeout(() => scrollToSelectedRow(newIndex), 0)
-            return newIndex
-          })
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedIndex((prev) => {
-            const newIndex = Math.max(prev - 1, 0)
-            // Scroll to keep selected row visible
-            setTimeout(() => scrollToSelectedRow(newIndex), 0)
-            return newIndex
-          })
-          break
-        case 'Enter':
-          e.preventDefault()
-          if (sources[selectedIndex]) {
-            router.push(`/sources/${sources[selectedIndex].id}`)
-          }
-          break
-        case 'Home':
-          e.preventDefault()
-          setSelectedIndex(0)
-          setTimeout(() => scrollToSelectedRow(0), 0)
-          break
-        case 'End':
-          e.preventDefault()
-          const lastIndex = sources.length - 1
-          setSelectedIndex(lastIndex)
-          setTimeout(() => scrollToSelectedRow(lastIndex), 0)
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sources, selectedIndex, router])
-
-  const scrollToSelectedRow = (index: number) => {
-    const scrollContainer = scrollContainerRef.current
-    if (!scrollContainer) return
-
-    // Find the selected row element
-    const rows = scrollContainer.querySelectorAll('tbody tr')
-    const selectedRow = rows[index] as HTMLElement
-    if (!selectedRow) return
-
-    const containerRect = scrollContainer.getBoundingClientRect()
-    const rowRect = selectedRow.getBoundingClientRect()
-
-    // Check if row is above visible area
-    if (rowRect.top < containerRect.top) {
-      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-    // Check if row is below visible area
-    else if (rowRect.bottom > containerRect.bottom) {
-      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'end' })
-    }
-  }
-
-  // Set up scroll listener after sources are loaded
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current
-    if (!scrollContainer) return
-
-    let scrollTimeout: NodeJS.Timeout | null = null
-
-    const handleScroll = () => {
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
-      }
-
-      scrollTimeout = setTimeout(() => {
-        if (!scrollContainerRef.current) return
-
-        const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-        // Load more when within 200px of the bottom
-        if (distanceFromBottom < 200 && !loadingMoreRef.current && hasMoreRef.current) {
-          fetchSources(false)
-        }
-      }, 100)
-    }
-
-    scrollContainer.addEventListener('scroll', handleScroll)
-    handleScroll() // Check on mount
-
-    return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll)
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout)
-      }
-    }
-  }, [fetchSources, sources.length])
-
-  const toggleSort = (field: SourceSortField) => {
-    setSelectedIndex(0)
-    if (sortBy === field) {
-      // Toggle order if clicking the same field
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
-    } else {
-      // Switch to new field with default desc order
-      setSortBy(field)
-      setSortOrder('desc')
-    }
-  }
-
-  const renderSortableHeader = (
-    field: SourceSortField,
-    label: string,
-    align: 'left' | 'center' = 'left'
-  ) => {
-    const active = sortBy === field
-    const SortIcon = active ? (sortOrder === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
-
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => toggleSort(field)}
-        className={cn(
-          "h-8 px-2 hover:bg-muted",
-          align === 'center' && "mx-auto"
-        )}
-      >
-        {label}
-        <SortIcon className={cn(
-          "ml-2 h-3 w-3",
-          active ? 'opacity-100' : 'opacity-30'
-        )} />
-      </Button>
-    )
-  }
-
-  const getSourceIcon = (source: SourceListResponse) => {
-    if (source.asset?.url) return <LinkIcon className="h-4 w-4" />
-    if (source.asset?.file_path) return <Upload className="h-4 w-4" />
-    return <AlignLeft className="h-4 w-4" />
-  }
-
-  const getSourceType = (source: SourceListResponse) => {
-    if (source.asset?.url) return t('sources.type.link')
-    if (source.asset?.file_path) return t('sources.type.file')
-    return t('sources.type.text')
-  }
-
-  const handleRowClick = useCallback((index: number, sourceId: string) => {
-    setSelectedIndex(index)
-    router.push(`/sources/${sourceId}`)
-  }, [router])
-
-  const handleDeleteClick = useCallback((e: React.MouseEvent, source: SourceListResponse) => {
-    e.stopPropagation() // Prevent row click
-    setDeleteDialog({ open: true, source })
-  }, [])
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteDialog.source) return
-
-    try {
-      await sourcesApi.delete(deleteDialog.source.id)
-      toast.success(t('sources.deleteSuccess'))
-      // Remove the deleted source from the list
-      setSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
-      setDeleteDialog({ open: false, source: null })
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      console.error('Failed to delete source:', error)
-      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message)))
-    }
-  }
-
-  if (loading) {
-    return (
-      <AppShell>
-        <div className="flex h-full items-center justify-center">
-          <LoadingSpinner />
-        </div>
-      </AppShell>
-    )
-  }
-
-  if (error) {
-    return (
-      <AppShell>
-        <div className="flex h-full items-center justify-center">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </AppShell>
-    )
-  }
-
-  if (sources.length === 0) {
-    return (
-      <AppShell>
-        <EmptyState
-          icon={FileText}
-          title={t('sources.noSourcesYet')}
-          description={t('sources.allSourcesDescShort')}
-        />
-      </AppShell>
-    )
+  const handleDeleteConfirm = () => {
+    if (!sourceToDelete) return
+    deleteSource.mutate(sourceToDelete.id, {
+      onSuccess: () => setSourceToDelete(null),
+    })
   }
 
   return (
     <AppShell>
-      <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
-        <div className="mb-6 flex-shrink-0">
-          <h1 className="text-3xl font-bold">{t('sources.allSources')}</h1>
-          <p className="mt-2 text-muted-foreground">
-            {t('sources.allSourcesDesc')}
-          </p>
-        </div>
+      <PageFrame className="space-y-4 py-4 sm:py-4">
+        <PageHeader
+          title={t('sources.title')}
+          description={t('sources.allSourcesDesc')}
+          secondaryActions={(
+            <Button variant="outline" onClick={() => void refetch()}>
+              <RefreshCw />
+              {t('common.refresh')}
+            </Button>
+          )}
+          primaryAction={<AddSourceButton />}
+        />
 
-        <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
-          <table
-            ref={tableRef}
-            tabIndex={0}
-            className="w-full min-w-[920px] outline-none table-fixed"
+        <LibraryToolbar
+          id="source-library"
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchLabel={t('sources.librarySearchLabel')}
+          searchPlaceholder={t('sources.librarySearchPlaceholder')}
+          sortValue={sortBy}
+          onSortChange={value => setSortBy(value as SourceSortField)}
+          sortLabel={t('sources.sortLabel')}
+          sortOptions={sortOptions.map(option => ({
+            value: option.value,
+            label: t(option.label),
+          }))}
+          sortDirection={sortOrder}
+          onSortDirectionChange={setSortOrder}
+          sortDirectionLabel={t('sources.sortDirection')}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          viewModeLabel={t('common.viewMode')}
+          listLabel={t('common.listView')}
+          cardLabel={t('common.cardView')}
+        />
+
+        {isLoading ? (
+          <SourceLibrarySkeleton label={t('common.loading')} viewMode={viewMode} />
+        ) : error && sources.length === 0 ? (
+          <EmptyState
+            icon={AlertTriangle}
+            title={t('sources.failedToLoad')}
+            description={t('common.contentUnavailable.errorDescription')}
+            action={(
+              <Button variant="outline" onClick={() => void refetch()}>
+                <RefreshCw />
+                {t('common.retry')}
+              </Button>
+            )}
+          />
+        ) : sources.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title={normalizedQuery ? t('common.noMatches') : t('sources.noSourcesYet')}
+            description={normalizedQuery ? t('common.tryDifferentSearch') : t('sources.allSourcesDescShort')}
+            action={!normalizedQuery ? <AddSourceButton variant="outline" /> : undefined}
+          />
+        ) : (
+          <div
+            data-view-mode={viewMode}
+            className={cn(
+              viewMode === 'card'
+                ? 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3'
+                : 'overflow-hidden rounded-[var(--surface-radius)] border border-border',
+            )}
           >
-            <colgroup>
-              <col className="w-[120px]" />
-              <col className="w-auto" />
-              <col className="w-[140px]" />
-              <col className="w-[140px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-            </colgroup>
-            <thead className="sticky top-0 bg-background z-10">
-              <tr className="border-b bg-muted/50">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                  {renderSortableHeader('type', t('common.type'))}
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                  {renderSortableHeader('title', t('common.title'))}
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
-                  {renderSortableHeader('created', t('common.created_label'))}
-                </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
-                  {renderSortableHeader('updated', t('common.updated_label'))}
-                </th>
-                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden md:table-cell">
-                  {renderSortableHeader('insights_count', t('sources.insights'), 'center')}
-                </th>
-                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden lg:table-cell">
-                  {renderSortableHeader('embedded', t('sources.embedded'), 'center')}
-                </th>
-                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
-                  {t('common.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sources.map((source, index) => (
-                <tr
-                  key={source.id}
-                  onClick={() => handleRowClick(index, source.id)}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  className={cn(
-                    "border-b transition-colors cursor-pointer",
-                    selectedIndex === index
-                      ? "bg-accent"
-                      : "hover:bg-muted/50"
-                  )}
-                >
-                  <td className="h-12 px-4">
-                    <div className="flex items-center gap-2">
-                      {getSourceIcon(source)}
-                      <Badge variant="secondary" className="text-xs">
-                        {getSourceType(source)}
-                      </Badge>
-                    </div>
-                  </td>
-                  <td className="h-12 px-4">
-                    <div className="flex flex-col overflow-hidden">
-                      <span className="font-medium truncate">
-                        {source.title || t('sources.untitledSource')}
-                      </span>
-                      {source.asset?.url && (
-                        <span className="text-xs text-muted-foreground truncate">
-                          {source.asset.url}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
-                    {formatDistanceToNow(new Date(source.created), { 
-                      addSuffix: true,
-                      locale: getDateLocale(language)
-                    })}
-                  </td>
-                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
-                    {formatDistanceToNow(new Date(source.updated), {
-                      addSuffix: true,
-                      locale: getDateLocale(language)
-                    })}
-                  </td>
-                  <td className="h-12 px-4 text-center hidden md:table-cell">
-                    <span className="text-sm font-medium">{source.insights_count || 0}</span>
-                  </td>
-                  <td className="h-12 px-4 text-center hidden lg:table-cell">
-                    <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
-                      {source.embedded ? t('sources.yes') : t('sources.no')}
-                    </Badge>
-                  </td>
-                  <td className="h-12 px-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => handleDeleteClick(e, source)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {loadingMore && (
-                <tr>
-                  <td colSpan={7} className="h-16 text-center">
-                    <div className="flex items-center justify-center">
-                      <LoadingSpinner />
-                      <span className="ml-2 text-muted-foreground">{t('sources.loadingMore')}</span>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            {sources.map(source => (
+              <SourceLibraryRow
+                key={source.id}
+                source={source}
+                onDelete={setSourceToDelete}
+                onRetry={sourceId => retrySource.mutate(sourceId)}
+                isRetrying={retrySource.isPending && retrySource.variables === source.id}
+                viewMode={viewMode}
+              />
+            ))}
+          </div>
+        )}
+
+        {sources.length > 0 && (isFetchNextPageError || isRefetchError) && (
+          <div className="flex flex-col gap-3 border border-warning/40 bg-warning-surface p-4 text-warning sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <p>{t('common.contentUnavailable.errorDescription')}</p>
+            <Button
+              variant="outline"
+              onClick={() => void (isFetchNextPageError ? fetchNextPage() : refetch())}
+            >
+              <RefreshCw />
+              {t('common.retry')}
+            </Button>
+          </div>
+        )}
+
+        {hasNextPage && (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              onClick={() => void fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage && <Loader2 className="animate-spin" />}
+              {t('sources.loadMore')}
+            </Button>
+          </div>
+        )}
+      </PageFrame>
 
       <ConfirmDialog
-        open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ open, source: deleteDialog.source })}
+        open={sourceToDelete !== null}
+        onOpenChange={open => !open && setSourceToDelete(null)}
         title={t('sources.delete')}
-        description={t('sources.deleteConfirmWithTitle', { title: deleteDialog.source?.title || t('sources.untitledSource') })}
+        description={t('sources.deleteConfirmWithTitle', {
+          title: sourceToDelete?.title || t('sources.untitledSource'),
+        })}
         confirmText={t('common.delete')}
         confirmVariant="destructive"
         onConfirm={handleDeleteConfirm}
+        isLoading={deleteSource.isPending}
       />
     </AppShell>
   )

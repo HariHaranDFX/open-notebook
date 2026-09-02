@@ -161,6 +161,7 @@ export function useAutoAssignDefaults() {
 }
 
 export function useTestModel() {
+  const { t } = useTranslation()
   const [testResult, setTestResult] = useState<ModelTestResult | null>(null)
   const [testedModelName, setTestedModelName] = useState('')
   const [testingModelId, setTestingModelId] = useState<string | null>(null)
@@ -172,8 +173,10 @@ export function useTestModel() {
       setTestingModelId(null)
     },
     onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : String(error)
-      setTestResult({ success: false, message: msg })
+      setTestResult({
+        success: false,
+        message: getApiErrorMessage(error, (key) => t(key), 'apiKeys.testFailed'),
+      })
       setTestingModelId(null)
     },
   })

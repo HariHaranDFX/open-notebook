@@ -1,141 +1,223 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { NotebookResponse } from '@/lib/types/api'
-import { Button } from '@/components/ui/button'
+import {
+  Archive,
+  ArchiveRestore,
+  FileText,
+  MoreVertical,
+  Share2,
+  StickyNote,
+  Trash2,
+} from 'lucide-react'
+
+import { ShareSheet } from '@/components/sharing/ShareSheet'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
-import { NotebookDeleteDialog } from './NotebookDeleteDialog'
-import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getDateLocale } from '@/lib/utils/date-locale'
+import type { NotebookResponse } from '@/lib/types/api'
+import {
+  canDeleteNotebook,
+  canEditContent,
+  canManageAcl,
+} from '@/lib/utils/access-role'
+import type { LibraryViewMode } from '@/lib/stores/library-view-store'
+import { cn } from '@/lib/utils'
+import { getNotebookSectionHref } from '@/lib/utils/notebook-section'
+import { formatCompactRelativeTime } from '@/lib/utils/relative-time'
+import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 
 interface NotebookRowProps {
   notebook: NotebookResponse
+  viewMode?: LibraryViewMode
 }
 
-export function NotebookRow({ notebook }: NotebookRowProps) {
+export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
   const { t, language } = useTranslation()
+  const { isAdmin } = useAuth()
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const router = useRouter()
+  const [showShareDialog, setShowShareDialog] = useState(false)
   const updateNotebook = useUpdateNotebook()
+  const role = notebook.access_role
+  const canEdit = canEditContent(role)
+  const canDelete = canDeleteNotebook(role)
+  const canShare = canManageAcl(role, isAdmin)
+  const hasActions = canEdit || canDelete || canShare
+  const identityBadges = (
+    <>
+      {notebook.archived && (
+        <Badge variant="secondary">{t('notebooks.archived')}</Badge>
+      )}
+      {role && (
+        <Badge variant="outline">{t(`sharing.${role}`)}</Badge>
+      )}
+    </>
+  )
 
-  const handleArchiveToggle = (e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleArchiveToggle = () => {
     updateNotebook.mutate({
       id: notebook.id,
-      data: { archived: !notebook.archived }
+      data: { archived: !notebook.archived },
     })
-  }
-
-  const handleRowClick = () => {
-    router.push(`/notebooks/${encodeURIComponent(notebook.id)}`)
   }
 
   return (
     <>
-      {/* The row is mouse-clickable for convenience, but the notebook name is
-          the accessible primary action (a real link) for keyboard/screen-reader
-          users — avoiding nested interactive (button-in-button) semantics. */}
-      <div
-        className="group flex items-center gap-4 rounded-lg border bg-card px-4 py-3 card-hover"
-        onClick={handleRowClick}
-        style={{ cursor: 'pointer' }}
+      <article
+        data-view-mode={viewMode}
+        className={cn(
+          'group relative grid min-w-0 bg-card transition-colors duration-[var(--motion-standard)] hover:bg-secondary/60',
+          viewMode === 'card'
+            ? 'grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] gap-3 rounded-[var(--surface-radius)] border border-border p-3'
+            : 'grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1.5 border-b border-border px-2 py-2 last:border-b-0 sm:px-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center md:gap-3',
+        )}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+        <div className="col-start-1 row-start-1 min-w-0">
+          <div className="flex min-w-0 items-center gap-1">
+            <ResourceTypeIcon kind="notebook" />
             <Link
               href={`/notebooks/${encodeURIComponent(notebook.id)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="font-medium truncate rounded-sm outline-none group-hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+              title={notebook.name}
+              className="min-w-0 flex-1 truncate rounded-sm font-semibold leading-snug text-foreground outline-none transition-colors after:absolute after:inset-0 after:rounded-[var(--surface-radius)] after:content-[''] group-hover:text-primary focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-background"
             >
               {notebook.name}
             </Link>
-            {notebook.archived && (
-              <Badge variant="secondary">
-                {t('notebooks.archived')}
-              </Badge>
-            )}
           </div>
           {notebook.description && (
-            <p className="text-sm text-muted-foreground truncate">
+            <p title={notebook.description} className="mt-0.5 max-w-3xl truncate pl-8 text-sm text-muted-foreground">
               {notebook.description}
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
-            <FileText className="h-3 w-3" />
-            <span>{notebook.source_count}</span>
-          </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
-            <StickyNote className="h-3 w-3" />
-            <span>{notebook.note_count}</span>
-          </Badge>
-        </div>
-
-        <div className="hidden sm:block w-40 shrink-0 text-right text-xs text-muted-foreground">
-          {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), {
-            addSuffix: true,
-            locale: getDateLocale(language)
-          }) })}
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              aria-label={t('common.actions')}
-              variant="ghost"
-              size="sm"
-              className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity shrink-0"
-              onClick={(e) => e.stopPropagation()}
+        <div
+          data-testid={viewMode === 'card' ? 'notebook-card-metadata' : undefined}
+          className={cn(
+            'flex flex-wrap items-center gap-y-1.5 text-sm text-muted-foreground',
+            viewMode === 'card'
+              ? 'col-span-2 row-start-2 self-end gap-x-4 border-t border-border pt-3'
+              : 'col-span-2 row-start-2 gap-x-2 pl-8 md:col-span-1 md:row-start-auto md:gap-x-4 md:pl-0',
+          )}
+        >
+          {identityBadges}
+          <Badge
+            asChild
+            variant="outline"
+            className="relative z-10 gap-1 px-2 text-muted-foreground tabular-nums hover:border-primary/60 hover:text-primary"
+          >
+            <Link
+              href={getNotebookSectionHref(notebook.id, 'sources')}
+              aria-label={`${t('navigation.sources')}: ${notebook.source_count}`}
+              title={t('navigation.sources')}
             >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onClick={handleArchiveToggle}>
-              {notebook.archived ? (
-                <>
-                  <ArchiveRestore className="h-4 w-4 mr-2" />
-                  {t('notebooks.unarchive')}
-                </>
-              ) : (
-                <>
-                  <Archive className="h-4 w-4 mr-2" />
-                  {t('notebooks.archive')}
-                </>
+              <FileText />
+              <span>{notebook.source_count}</span>
+            </Link>
+          </Badge>
+          <Badge
+            asChild
+            variant="outline"
+            className="relative z-10 gap-1 px-2 text-muted-foreground tabular-nums hover:border-primary/60 hover:text-primary"
+          >
+            <Link
+              href={getNotebookSectionHref(notebook.id, 'notes')}
+              aria-label={`${t('common.notes')}: ${notebook.note_count}`}
+              title={t('common.notes')}
+            >
+              <StickyNote />
+              <span>{notebook.note_count}</span>
+            </Link>
+          </Badge>
+          <time
+            dateTime={notebook.updated}
+            title={notebook.updated}
+            className={cn('ml-auto text-xs', viewMode === 'card' && 'self-end')}
+          >
+            {formatCompactRelativeTime(notebook.updated, language)}
+          </time>
+        </div>
+
+        {hasActions && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-label={t('common.actions')}
+                variant="ghost"
+                size="icon-sm"
+                className={cn(
+                  'relative z-10 justify-self-end',
+                  'col-start-2 row-start-1 self-start',
+                  viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
+                )}
+              >
+                <MoreVertical />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canShare && (
+                <DropdownMenuItem onClick={() => setShowShareDialog(true)}>
+                  <Share2 />
+                  {t('sharing.share')}
+                </DropdownMenuItem>
               )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowDeleteDialog(true)
-              }}
-              className="text-red-600"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t('common.delete')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              {canEdit && (
+                <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>
+                  {notebook.archived ? <ArchiveRestore /> : <Archive />}
+                  {notebook.archived ? t('notebooks.unarchive') : t('notebooks.archive')}
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteDialog(true)}
+                  variant="destructive"
+                >
+                  <Trash2 />
+                  {t('common.delete')}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </article>
 
+      <ConfirmDialog
+        open={showArchiveDialog}
+        onOpenChange={setShowArchiveDialog}
+        title={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmTitle'
+          : 'notebooks.archiveConfirmTitle')}
+        description={t(notebook.archived
+          ? 'notebooks.unarchiveConfirmDescription'
+          : 'notebooks.archiveConfirmDescription', { name: notebook.name })}
+        confirmText={t(notebook.archived ? 'notebooks.unarchive' : 'notebooks.archive')}
+        onConfirm={handleArchiveToggle}
+        isLoading={updateNotebook.isPending}
+      />
       <NotebookDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         notebookId={notebook.id}
         notebookName={notebook.name}
+      />
+      <ShareSheet
+        resourceType="notebook"
+        resourceId={notebook.id}
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        canManage={canShare}
+        accessSummary={notebook.access_summary}
       />
     </>
   )

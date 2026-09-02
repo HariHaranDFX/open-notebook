@@ -21,6 +21,20 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Deployment Branding
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `BRAND_CONFIG_PATH` | No | Checked-in development brand | Absolute path to a trusted deployment brand JSON file. The frontend validates and caches it at process startup. |
+
+For Docker Compose, mount the selected file read-only at `/app/config/brand.json`
+and set `BRAND_CONFIG_PATH=/app/config/brand.json`. For a local host process, use
+an absolute host path. Changes require a frontend process restart; they never
+require a frontend rebuild. See [Deployment Branding](../BRANDING.md) for the
+schema, asset mounts, validation rules, switching procedure, and rollback.
+
+---
+
 ## Authentication
 
 | Variable | Required? | Default | Description |

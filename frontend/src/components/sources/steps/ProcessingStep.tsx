@@ -45,10 +45,12 @@ export function ProcessingStep({
   }))
 
   return (
-    <div className="space-y-8">
+    <div data-slot="processing-step" className="flex h-full min-h-0 flex-col gap-8">
       <FormSection
         title={`${t('navigation.transformations')} (${t('common.optional')})`}
         description={t('sources.processDescription')}
+        className="mb-0 flex min-h-0 flex-1 flex-col"
+        contentClassName="flex min-h-0 flex-1 flex-col"
       >
         <CheckboxList
           items={transformationItems}
@@ -56,12 +58,14 @@ export function ProcessingStep({
           onToggle={onToggleTransformation}
           loading={loading}
           emptyMessage={t('common.noMatches')}
+          fill
         />
       </FormSection>
 
       <FormSection
         title={t('navigation.settings')}
         description={t('sources.processDescription')}
+        className="mb-0 shrink-0"
       >
         <div className="space-y-4">
           {settings?.default_embedding_option === 'ask' && (

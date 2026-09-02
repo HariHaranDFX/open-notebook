@@ -6,11 +6,11 @@ import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react'
 import { useDeletePodcastEpisode, usePodcastEpisodes, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
 import { EpisodeCard } from '@/components/podcasts/EpisodeCard'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 import type { TFunction } from 'i18next'
 
 const getSTATUS_ORDER = (t: TFunction): Array<{
@@ -40,12 +40,28 @@ const getSTATUS_ORDER = (t: TFunction): Array<{
   },
 ]
 
-function SummaryBadge({ label, value }: { label: string; value: number }) {
+function StatChip({
+  label,
+  value,
+  dotClass,
+  alert,
+}: {
+  label: string
+  value: number
+  dotClass?: string
+  alert?: boolean
+}) {
   return (
-    <Badge variant="outline" className="font-medium">
-      <span className="text-muted-foreground mr-1.5">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </Badge>
+    <div
+      className={cn(
+        'inline-flex items-center gap-2 rounded-[var(--surface-radius)] border bg-card px-3 py-1.5',
+        alert && value > 0 && 'border-destructive/40 bg-destructive/5'
+      )}
+    >
+      {dotClass ? <span className={cn('h-2 w-2 rounded-full', dotClass)} /> : null}
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold tabular-nums text-foreground">{value}</span>
+    </div>
   )
 }
 
@@ -100,21 +116,21 @@ export function EpisodesTab() {
             disabled={isFetching}
           >
             {isFetching ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <RefreshCcw className="mr-2 h-4 w-4" />
+              <RefreshCcw className="h-4 w-4" />
             )}
             {t('common.refresh')}
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <SummaryBadge label={t('podcasts.total')} value={statusCounts.total} />
-        <SummaryBadge label={t('podcasts.processingLabel')} value={statusCounts.running} />
-        <SummaryBadge label={t('podcasts.completedLabel')} value={statusCounts.completed} />
-        <SummaryBadge label={t('podcasts.failedLabel')} value={statusCounts.failed} />
-        <SummaryBadge label={t('podcasts.pendingLabel')} value={statusCounts.pending} />
+      <div className="flex flex-wrap items-center gap-2">
+        <StatChip label={t('podcasts.total')} value={statusCounts.total} />
+        <StatChip label={t('podcasts.processingLabel')} value={statusCounts.running} dotClass="bg-amber-500" />
+        <StatChip label={t('podcasts.pendingLabel')} value={statusCounts.pending} dotClass="bg-sky-500" />
+        <StatChip label={t('podcasts.completedLabel')} value={statusCounts.completed} dotClass="bg-emerald-500" />
+        <StatChip label={t('podcasts.failedLabel')} value={statusCounts.failed} dotClass="bg-red-500" alert />
       </div>
 
       {isError ? (
@@ -128,14 +144,14 @@ export function EpisodesTab() {
       ) : null}
 
       {isLoading ? (
-        <div className="flex items-center gap-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-[var(--surface-radius)] border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           {t('podcasts.loadingEpisodes')}
         </div>
       ) : null}
 
       {emptyState ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center">
+        <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-10 text-center">
           <p className="text-sm text-muted-foreground">
             {t('podcasts.noEpisodesYet')}
           </p>
@@ -157,11 +173,12 @@ export function EpisodesTab() {
               ) : null}
             </div>
             <Separator />
-            <div className="space-y-4">
+            <div className="space-y-2">
               {data.map((episode) => (
                 <EpisodeCard
                   key={episode.id}
                   episode={episode}
+                  role={episode.access_role}
                   onDelete={handleDelete}
                   deleting={deleteEpisode.isPending}
                   onRetry={handleRetry}

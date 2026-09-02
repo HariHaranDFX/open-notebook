@@ -14,7 +14,14 @@ import {
   Check,
   X,
   Bot,
+  MoreHorizontal,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDeleteModel, useTestModel } from '@/lib/hooks/use-models'
 import { useCredential, useTestCredential } from '@/lib/hooks/use-credentials'
@@ -78,7 +85,7 @@ export function CredentialItem({
 
   return (
     <>
-      <div className="border rounded-lg p-3 space-y-2">
+      <div className="space-y-2 rounded-[var(--surface-radius)] border p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-medium truncate">{credential.name}</span>
@@ -87,7 +94,7 @@ export function CredentialItem({
                 <Badge
                   key={mod}
                   variant="secondary"
-                  className={`text-[10px] gap-0.5 px-1 py-0 ${activeTypes.has(mod) ? getTypeColor(mod) : TYPE_COLOR_INACTIVE}`}
+                  className={`gap-0.5 px-1 py-0 text-xs ${activeTypes.has(mod) ? getTypeColor(mod) : TYPE_COLOR_INACTIVE}`}
                 >
                   {getTypeIcon(mod)}
                   <span className="hidden sm:inline">{getTypeLabel(mod)}</span>
@@ -95,47 +102,48 @@ export function CredentialItem({
               ))}
             </div>
             {credential.has_api_key && (
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-xs">
                 <Key className="h-2.5 w-2.5 mr-0.5" />
-                Key
+                {t('apiKeys.apiKey')}
               </Badge>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {testResult && (
               testResult.success
                 ? <Check className="h-4 w-4 text-emerald-500" />
                 : <X className="h-4 w-4 text-destructive" />
             )}
             <Button
-              variant="ghost" size="sm"
+              variant="outline" size="sm"
               onClick={() => testCredential(credential.id)}
               disabled={isTestPending || !!credential.decryption_error}
               title={t('apiKeys.testConnection')}
             >
               {isTestPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
-              <span className="hidden sm:inline text-xs">Test</span>
+              <span className="hidden sm:inline">{t('apiKeys.test')}</span>
             </Button>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setDiscoverOpen(true)}
-              disabled={!!credential.decryption_error}
-              title={t('apiKeys.syncModels')}
-            >
-              <Bot className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs">Models</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} disabled={!!credential.decryption_error} title={t('common.edit')}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost" size="sm"
-              onClick={() => setDeleteOpen(true)}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              title={t('common.delete')}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={t('common.actions')}>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setDiscoverOpen(true)} disabled={!!credential.decryption_error}>
+                  <Bot className="h-4 w-4" />
+                  {t('apiKeys.syncModels')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditOpen(true)} disabled={!!credential.decryption_error}>
+                  <Edit className="h-4 w-4" />
+                  {t('common.edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+                  <Trash2 className="h-4 w-4" />
+                  {t('common.delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -159,7 +167,7 @@ export function CredentialItem({
                 <div key={type} className="flex items-start gap-1.5">
                   <Badge
                     variant="outline"
-                    className={`text-[10px] gap-0.5 px-1 py-0 shrink-0 mt-0.5 ${getTypeColor(type)}`}
+                    className={`mt-0.5 shrink-0 gap-0.5 px-1 py-0 text-xs ${getTypeColor(type)}`}
                   >
                     {getTypeIcon(type)}
                     {getTypeLabel(type)}
@@ -176,7 +184,8 @@ export function CredentialItem({
                           {model.name}
                           {defaultSlot && <span className="ml-0.5 opacity-75">({defaultSlot})</span>}
                           <button
-                            className="ml-0.5 opacity-0 group-hover/model:opacity-60 hover:!opacity-100 transition-opacity"
+                            type="button"
+                            className="ml-0.5 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => testModel(model.id, model.name)}
                             disabled={isModelTestPending && testingModelId === model.id}
                             title={t('models.testModel')}
@@ -187,7 +196,8 @@ export function CredentialItem({
                             }
                           </button>
                           <button
-                            className="opacity-0 group-hover/model:opacity-60 hover:!opacity-100 hover:text-destructive transition-opacity"
+                            type="button"
+                            className="rounded-sm opacity-70 transition-opacity hover:text-destructive hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onClick={() => deleteModel.mutate(model.id)}
                             title={t('models.deleteModel')}
                           >

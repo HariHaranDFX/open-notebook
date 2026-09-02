@@ -41,18 +41,15 @@ vi.mock('../lib/hooks/use-translation', () => {
 // Mock @/lib/hooks/use-auth
 vi.mock('@/lib/hooks/use-auth', () => ({
   useAuth: vi.fn(() => ({
-    user: { id: '1', email: 'test@example.com' },
+    user: {
+      id: '1',
+      email: 'test@example.com',
+      displayName: 'Test Researcher',
+      role: 'admin',
+    },
     logout: vi.fn(),
     isLoading: false,
     isAdmin: true,
-  })),
-}))
-
-// Mock @/lib/stores/sidebar-store
-vi.mock('@/lib/stores/sidebar-store', () => ({
-  useSidebarStore: vi.fn(() => ({
-    isCollapsed: false,
-    toggleCollapse: vi.fn(),
   })),
 }))
 
@@ -62,5 +59,12 @@ vi.mock('@/lib/hooks/use-create-dialogs', () => ({
     openSourceDialog: vi.fn(),
     openNotebookDialog: vi.fn(),
     openPodcastDialog: vi.fn(),
+  })),
+}))
+
+// Mock @/lib/hooks/use-settings-dialog
+vi.mock('@/lib/hooks/use-settings-dialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    openSettings: vi.fn(),
   })),
 }))

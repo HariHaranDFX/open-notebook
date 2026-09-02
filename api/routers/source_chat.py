@@ -9,7 +9,10 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from api.ownership import assert_owner_or_404
+from api.ownership import (
+    assert_can_edit_source_or_403,
+    assert_can_view_source_or_404,
+)
 from api.routers._chat_shared import (
     ChatMessage,
     SuccessResponse,
@@ -91,10 +94,11 @@ async def create_source_chat_session(
 ):
     """Create a new chat session for a source."""
     try:
-        # Verify source exists (normalizes the ID and 404s if missing) and is
-        # owned by the current user.
+        # Viewer+ may create source chat sessions
         full_source_id, source = await get_source_or_404(source_id)
-        assert_owner_or_404(source.user_id, http_request, "Source not found")
+        await assert_can_view_source_or_404(
+            source.user_id, full_source_id, http_request, "Source not found"
+        )
 
         # Create new session with model_override support
         session = ChatSession(
@@ -136,10 +140,11 @@ async def get_source_chat_sessions(
 ):
     """Get all chat sessions for a source."""
     try:
-        # Verify source exists (normalizes the ID and 404s if missing) and is
-        # owned by the current user.
+        # Viewer+ may list source chat sessions
         full_source_id, source = await get_source_or_404(source_id)
-        assert_owner_or_404(source.user_id, request, "Source not found")
+        await assert_can_view_source_or_404(
+            source.user_id, full_source_id, request, "Source not found"
+        )
 
         # Get sessions that refer to this source - first get relations, then sessions
         relations = await repo_query(
@@ -203,12 +208,13 @@ async def get_source_chat_session(
 ):
     """Get a specific source chat session with its messages."""
     try:
-        # Verify source + session exist and are related (404s otherwise), and
-        # that the current user owns the source.
+        # Viewer+ may read source chat sessions
         _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
-        assert_owner_or_404(source.user_id, request, "Source or session not found")
+        await assert_can_view_source_or_404(
+            source.user_id, _full_source_id, request, "Source or session not found"
+        )
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -271,13 +277,12 @@ async def update_source_chat_session(
 ):
     """Update source chat session title and/or model override."""
     try:
-        # Verify source + session exist and are related (404s otherwise), and
-        # that the current user owns the source.
+        # Viewer+ may update session title/model (chat UX, not content mutation)
         _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
-        assert_owner_or_404(
-            source.user_id, http_request, "Source or session not found"
+        await assert_can_view_source_or_404(
+            source.user_id, _full_source_id, http_request, "Source or session not found"
         )
 
         # Update session fields
@@ -323,12 +328,13 @@ async def delete_source_chat_session(
 ):
     """Delete a source chat session."""
     try:
-        # Verify source + session exist and are related (404s otherwise), and
-        # that the current user owns the source.
+        # Deleting a source chat session requires editor+
         _full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
-        assert_owner_or_404(source.user_id, request, "Source or session not found")
+        await assert_can_edit_source_or_403(
+            source.user_id, _full_source_id, request, "Source or session not found"
+        )
 
         await session.delete()
 
@@ -432,13 +438,12 @@ async def send_message_to_source_chat(
 ):
     """Send a message to source chat session with SSE streaming response."""
     try:
-        # Verify source + session exist and are related (404s otherwise), and
-        # that the current user owns the source.
+        # Viewer+ may send chat messages
         full_source_id, source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
-        assert_owner_or_404(
-            source.user_id, http_request, "Source or session not found"
+        await assert_can_view_source_or_404(
+            source.user_id, full_source_id, http_request, "Source or session not found"
         )
 
         if not request.message:

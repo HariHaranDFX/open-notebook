@@ -9,6 +9,7 @@ without a live SurrealDB.
 from typing import Optional
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
@@ -41,6 +42,13 @@ class _StubAuthProvider:
 
     def auth_enabled(self) -> bool:
         return self._enabled
+
+
+@pytest.fixture(autouse=True)
+def _isolate_grant_queries():
+    with patch("api.ownership.repo_query", new_callable=AsyncMock) as mock_query:
+        mock_query.return_value = []
+        yield
 
 
 def _client(monkeypatch, *, auth_enabled: bool, user: Optional[AuthenticatedUser]) -> TestClient:
@@ -84,12 +92,40 @@ def _episode(episode_id="episode:1", user_id=None, client_id=None):
     return ep
 
 
+def _note_access_query_side_effect(
+    *,
+    owned_note_ids: Optional[set[str]] = None,
+    notebook_owner: str = "user:a",
+):
+    """Mock api.ownership.repo_query for grant-aware note asserts.
+
+    assert_note_owner_or_404 / assert_note_editable_or_403 query artifact →
+    notebook. Owned notes link to a notebook owned by ``notebook_owner``.
+    """
+    owned = owned_note_ids if owned_note_ids is not None else {"note:1"}
+
+    async def _side_effect(query, params=None):
+        params = params or {}
+        if "FROM artifact" in query:
+            note_id = str(params.get("note_id", ""))
+            for oid in owned:
+                short = oid.split(":", 1)[-1]
+                if oid in note_id or short in note_id:
+                    return [{"notebook_id": "notebook:1"}]
+            return []
+        if "FROM notebook" in query:
+            return [{"user_id": notebook_owner}]
+        return []
+
+    return _side_effect
+
+
 class TestNoteGetOwnership:
     @patch("api.ownership.repo_query", new_callable=AsyncMock)
     @patch("api.routers.notes.Note.get", new_callable=AsyncMock)
     def test_owner_can_get_own_note(self, mock_get, mock_query, monkeypatch):
         mock_get.return_value = _note()
-        mock_query.return_value = [{"in": "note:1"}]  # owned via notebook
+        mock_query.side_effect = _note_access_query_side_effect()
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         response = client.get("/api/notes/note:1")
@@ -166,7 +202,7 @@ class TestNoteUpdateDeleteOwnership:
     @patch("api.routers.notes.Note.get", new_callable=AsyncMock)
     def test_owner_can_delete(self, mock_get, mock_delete, mock_query, monkeypatch):
         mock_get.return_value = _note()
-        mock_query.return_value = [{"in": "note:1"}]
+        mock_query.side_effect = _note_access_query_side_effect()
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         response = client.delete("/api/notes/note:1")
@@ -186,7 +222,9 @@ class TestNoteListOwnership:
             _note("note:theirs", title="Theirs"),
         ]
         # Only note:mine resolves to a notebook USER_A owns.
-        mock_query.return_value = [{"id": "note:mine"}]
+        mock_query.side_effect = _note_access_query_side_effect(
+            owned_note_ids={"note:mine"}
+        )
         client = _client(monkeypatch, auth_enabled=True, user=USER_A)
 
         response = client.get("/api/notes")

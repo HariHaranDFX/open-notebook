@@ -6,8 +6,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { ArrowUp, Bot, User, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import {
   SourceChatMessage,
@@ -18,7 +24,9 @@ import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/sources/SessionManager'
 import { MessageActions } from '@/components/sources/MessageActions'
-import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
+import { EmptyState } from '@/components/common/EmptyState'
+import { buildCompactReferences } from '@/lib/utils/source-references'
+import { ChatReferences, createReferenceCitationComponent } from '@/components/sources/ChatReferences'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -103,80 +111,90 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <Card className="flex h-full flex-1 flex-col gap-0 overflow-hidden rounded-none border-0 py-0">
+      <CardHeader className="flex h-12 flex-shrink-0 items-center border-b border-border bg-card py-0 pl-4 pr-12 [.border-b]:pb-0">
+        <div className="flex h-full w-full min-w-0 flex-nowrap items-center gap-2">
+          <CardTitle className="flex min-w-0 flex-1 items-center gap-2">
             <Bot className="h-5 w-5" />
-            {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
+            <span className="truncate">
+              {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
+            </span>
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
-            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
+            <Sheet open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="gap-2"
+                className="ml-auto gap-2"
                 onClick={() => setSessionManagerOpen(true)}
                 disabled={loadingSessions}
               >
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">{t('chat.sessions')}</span>
               </Button>
-              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">{t('chat.sessionsTitle')}</DialogTitle>
-                <SessionManager
-                  sessions={sessions}
-                  currentSessionId={currentSessionId ?? null}
-                  onCreateSession={(title) => onCreateSession?.(title)}
-                  onSelectSession={(sessionId) => {
-                    onSelectSession(sessionId)
-                    setSessionManagerOpen(false)
-                  }}
-                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
-                  loadingSessions={loadingSessions}
-                />
-              </DialogContent>
-            </Dialog>
+              <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-[420px]">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>{t('chat.sessionsTitle')}</SheetTitle>
+                </SheetHeader>
+                <div className="min-h-0 flex-1">
+                  <SessionManager
+                    sessions={sessions}
+                    currentSessionId={currentSessionId ?? null}
+                    onCreateSession={(title) => onCreateSession?.(title)}
+                    onSelectSession={(sessionId) => {
+                      onSelectSession(sessionId)
+                      setSessionManagerOpen(false)
+                    }}
+                    onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+                    onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+                    loadingSessions={loadingSessions}
+                  />
+                </div>
+                <SheetFooter className="flex-row justify-start border-t border-border px-4 py-2 sm:justify-start">
+                  <Button variant="outline" onClick={() => setSessionManagerOpen(false)}>
+                    {t('common.close')}
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
           )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 py-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">
-                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
-                </p>
-                <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
-              </div>
-            ) : (
-              messages.map((message) => (
+        {messages.length === 0 && !isStreaming ? (
+          <EmptyState
+            className="flex-1"
+            icon={Bot}
+            title={t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
+            description={t('chat.askQuestions')}
+          />
+        ) : (
+          <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
+            <div className="space-y-4 py-4">
+              {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
                   message={message}
                   notebookId={notebookId}
                   onReferenceClick={handleReferenceClick}
                 />
-              ))
-            )}
-            {isStreaming && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
+              ))}
+              {isStreaming && (
+                <div className="flex gap-3 justify-start">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div className="rounded-lg px-4 py-2 bg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   </div>
                 </div>
-                <div className="rounded-lg px-4 py-2 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        )}
 
         {/* Context Indicators */}
         {contextIndicators && (
@@ -271,42 +289,46 @@ function ChatComposer({
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
-    <div className="flex-shrink-0 p-4 space-y-3 border-t">
-      {/* Model selector */}
-      {onModelChange && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-          <ModelSelector
-            currentModel={modelOverride}
-            onModelChange={onModelChange}
-            disabled={isStreaming}
-          />
-        </div>
-      )}
-
-      <div className="flex gap-2 items-end min-w-0">
-        <Textarea
-          id={chatInputId}
-          name="chat-message"
-          autoComplete="off"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-          disabled={isStreaming}
-          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
-          rows={1}
-        />
+    // Full-width composer (no enclosing box), matching the Ask/Search composer:
+    // the message field spans the panel, with the model control on the left of a
+    // footer and the send button on the right.
+    <div className="flex-shrink-0 space-y-2 border-t p-4">
+      <Textarea
+        id={chatInputId}
+        name="chat-message"
+        aria-label={t('chat.sendPlaceholder')}
+        autoComplete="off"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
+        disabled={isStreaming}
+        className="max-h-[160px] min-h-[44px] w-full resize-none"
+        rows={1}
+      />
+      <div className="flex items-center justify-between gap-2">
+        {onModelChange ? (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0 text-xs text-muted-foreground">{t('chat.model')}</span>
+            <ModelSelector
+              currentModel={modelOverride}
+              onModelChange={onModelChange}
+              disabled={isStreaming}
+            />
+          </div>
+        ) : (
+          <span />
+        )}
         <Button
           onClick={handleSend}
           disabled={!input.trim() || isStreaming}
           size="icon"
-          className="h-[40px] w-[40px] flex-shrink-0"
+          className="size-8 flex-shrink-0"
         >
           {isStreaming ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Send className="h-4 w-4" />
+            <ArrowUp className="h-4 w-4" />
           )}
         </Button>
       </div>
@@ -383,18 +405,17 @@ function AIMessageContent({
   content: string
   onReferenceClick: (type: string, id: string) => void
 }) {
-  const { t } = useTranslation()
-  // Convert references to compact markdown with numbered citations
-  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content, t('common.references'))
-
-  // Create custom link component for compact references
-  const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
+  // Inline references become numbered citation pills; the deduped list renders
+  // as compact chips beneath the answer instead of an appended text block.
+  const { markdown, references } = buildCompactReferences(content)
+  const LinkComponent = createReferenceCitationComponent(onReferenceClick)
 
   return (
-    <MarkdownRenderer components={{
-      a: LinkComponent
-    }}>
-      {markdownWithCompactRefs}
-    </MarkdownRenderer>
+    <>
+      <MarkdownRenderer components={{ a: LinkComponent }}>
+        {markdown}
+      </MarkdownRenderer>
+      <ChatReferences references={references} onReferenceClick={onReferenceClick} />
+    </>
   )
 }

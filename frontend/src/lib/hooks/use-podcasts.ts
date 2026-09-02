@@ -88,6 +88,14 @@ export function usePodcastEpisodes(options?: { autoRefresh?: boolean }) {
   }
 }
 
+export function usePodcastEpisode(episodeId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.podcastEpisode(episodeId),
+    queryFn: () => podcastsApi.getEpisode(episodeId),
+    enabled: !!episodeId,
+  })
+}
+
 export function useRetryPodcastEpisode() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -95,8 +103,9 @@ export function useRetryPodcastEpisode() {
 
   return useMutation({
     mutationFn: (episodeId: string) => podcastsApi.retryEpisode(episodeId),
-    onSuccess: async () => {
+    onSuccess: async (_data, episodeId) => {
       await queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisode(episodeId) })
       toast({
         title: t('podcasts.retryStarted'),
         description: t('podcasts.retryStartedDesc'),

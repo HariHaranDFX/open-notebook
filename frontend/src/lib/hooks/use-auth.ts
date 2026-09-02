@@ -20,6 +20,7 @@ export function useAuth() {
     authRequired,
     provider,
     role,
+    user,
   } = useAuthStore()
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export function useAuth() {
     isLoading: isLoading || bootstrapping,
     isAdmin,
     role,
+    user,
     error,
     login: handleLogin,
     logout: handleLogout

@@ -171,8 +171,10 @@ class TestFileUploadIngestion:
         body = response.json()
         assert body["status"] == "new"
         assert body["command_id"] == "command:job2"
+        assert body["title"] == "document.pdf"
 
         # The stored path is persisted on the asset before queueing.
+        assert saved_sources[0].title == "document.pdf"
         assert saved_sources[0].asset.file_path == str(stored)
 
         submitted = mock_submit.await_args.args

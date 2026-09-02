@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import apiClient, { setEntraAuthMode } from '@/lib/api/client'
 import { getApiUrl } from '@/lib/config'
-import type { AuthProvider, UserRole } from '@/lib/types/auth'
+import type { AuthProvider, AuthUser, UserRole } from '@/lib/types/auth'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -16,6 +16,7 @@ interface AuthState {
   authRequired: boolean | null
   provider: AuthProvider
   role: UserRole | null
+  user: AuthUser | null
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (password: string) => Promise<boolean>
@@ -35,6 +36,24 @@ function roleFromMe(data: unknown): UserRole {
   return 'user'
 }
 
+function userFromMe(data: unknown): AuthUser | null {
+  if (!data || typeof data !== 'object') return null
+
+  const user = data as Record<string, unknown>
+  if (
+    typeof user.id !== 'string' ||
+    typeof user.email !== 'string' ||
+    typeof user.display_name !== 'string'
+  ) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    role: user.role === 'admin' ? 'admin' : 'user',
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -48,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
       authRequired: null,
       provider: 'password',
       role: null,
+      user: null,
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
@@ -62,12 +82,17 @@ export const useAuthStore = create<AuthState>()(
           const required = response.data.auth_enabled || false
           const provider: AuthProvider = response.data.provider === 'entra' ? 'entra' : 'password'
           setEntraAuthMode(provider === 'entra')
-          // When auth is required, mark checking immediately so the dashboard
-          // does not redirect to /login before checkAuth() finishes (/auth/me).
+          // Keep the bootstrap gate open only when there is a session to
+          // validate. A fresh password login has no token, so leaving this
+          // true would disable the password form indefinitely when duplicate
+          // status checks resolve out of order.
+          const shouldCheckSession = required && (
+            provider === 'entra' || Boolean(get().token)
+          )
           set({
             authRequired: required,
             provider,
-            isCheckingAuth: required,
+            isCheckingAuth: shouldCheckSession,
           })
 
           // If auth is not required, mark as authenticated
@@ -77,6 +102,12 @@ export const useAuthStore = create<AuthState>()(
               token: 'not-required',
               isCheckingAuth: false,
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
           }
 
@@ -87,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
           // If it's a network error, set a more helpful error message
           if (axios.isAxiosError(error) && !error.response) {
             set({
-              error: 'Unable to connect to server. Please check if the API is running.',
+              error: 'auth.connectErrorHint',
               authRequired: null,  // Don't assume auth is required if we can't connect
               isCheckingAuth: false,
             })
@@ -126,18 +157,20 @@ export const useAuthStore = create<AuthState>()(
               error: null,
               // Password provider always elevates to admin (see api/auth/password.py).
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
             return true
           } else {
-            let errorMessage = 'Authentication failed'
+            let errorMessage = 'auth.authenticationFailed'
             if (response.status === 401) {
-              errorMessage = 'Invalid password. Please try again.'
+              errorMessage = 'auth.invalidPassword'
             } else if (response.status === 403) {
-              errorMessage = 'Access denied. Please check your credentials.'
-            } else if (response.status >= 500) {
-              errorMessage = 'Server error. Please try again later.'
-            } else {
-              errorMessage = `Authentication failed (${response.status})`
+              errorMessage = 'apiErrors.forbidden'
             }
             
             set({ 
@@ -146,19 +179,16 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               role: null,
+              user: null,
             })
             return false
           }
         } catch (error) {
           console.error('Network error during auth:', error)
-          let errorMessage = 'Authentication failed'
+          let errorMessage = 'auth.authenticationFailed'
           
           if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            errorMessage = 'Unable to connect to server. Please check if the API is running.'
-          } else if (error instanceof Error) {
-            errorMessage = `Network error: ${error.message}`
-          } else {
-            errorMessage = 'An unexpected error occurred during authentication'
+            errorMessage = 'auth.connectErrorHint'
           }
           
           set({ 
@@ -167,6 +197,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             token: null,
             role: null,
+            user: null,
           })
           return false
         }
@@ -191,6 +222,7 @@ export const useAuthStore = create<AuthState>()(
             lastAuthCheck: null,
             isCheckingAuth: false,
             role: null,
+            user: null,
           })
           if (typeof window !== 'undefined') {
             window.location.href = '/login'
@@ -204,6 +236,7 @@ export const useAuthStore = create<AuthState>()(
           error: null,
           lastAuthCheck: null,
           role: null,
+          user: null,
         })
       },
       
@@ -223,11 +256,13 @@ export const useAuthStore = create<AuthState>()(
             // Cookie-session check: apiClient sends the session cookie via
             // withCredentials, no bearer token involved.
             const response = await apiClient.get('/auth/me')
+            const user = userFromMe(response.data)
             set({
               isAuthenticated: true,
               lastAuthCheck: now,
               isCheckingAuth: false,
               role: roleFromMe(response.data),
+              user,
             })
             return true
           } catch (error) {
@@ -237,6 +272,7 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: null,
               isCheckingAuth: false,
               role: null,
+              user: null,
             })
             return false
           }
@@ -276,6 +312,12 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: now,
               isCheckingAuth: false,
               role: 'admin',
+              user: {
+                id: 'local',
+                email: 'local@dev',
+                displayName: 'Local Admin',
+                role: 'admin',
+              },
             })
             return true
           } else {
@@ -285,6 +327,7 @@ export const useAuthStore = create<AuthState>()(
               lastAuthCheck: null,
               isCheckingAuth: false,
               role: null,
+              user: null,
             })
             return false
           }
@@ -296,6 +339,7 @@ export const useAuthStore = create<AuthState>()(
             lastAuthCheck: null,
             isCheckingAuth: false,
             role: null,
+            user: null,
           })
           return false
         }

@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { LoaderIcon, BookOpen, Check } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -14,12 +15,14 @@ interface NotebookAssociationsProps {
   sourceId: string
   currentNotebookIds: string[]
   onSave?: () => void
+  actionsContainer?: Element | null
 }
 
 export function NotebookAssociations({
   sourceId,
   currentNotebookIds,
   onSave,
+  actionsContainer,
 }: NotebookAssociationsProps) {
   const { t } = useTranslation()
   const [selectedNotebookIds, setSelectedNotebookIds] = useState<string[]>(currentNotebookIds)
@@ -104,81 +107,97 @@ export function NotebookAssociations({
     setSelectedNotebookIds(currentNotebookIds)
   }
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            {t('sources.manageNotebooks')}
-          </CardTitle>
-          <CardDescription>
-            {t('sources.manageNotebooksDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <LoaderIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!notebooks || notebooks.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            {t('sources.manageNotebooks')}
-          </CardTitle>
-          <CardDescription>
-            {t('sources.manageNotebooksDesc')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">{t('sources.noNotebooksAvailable')}</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const activeNotebooks = notebooks?.filter(notebook => !notebook.archived) ?? []
+  const pendingActions = hasChanges && (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleCancel}
+        disabled={isSaving}
+      >
+        {t('common.cancel')}
+      </Button>
+      <Button size="sm" onClick={handleSave} disabled={isSaving}>
+        {isSaving ? (
+          <>
+            <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
+            {t('common.saving')}...
+          </>
+        ) : (
+          t('common.saveChanges')
+        )}
+      </Button>
+    </div>
+  )
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5" />
-          {t('sources.manageNotebooks')}
-        </CardTitle>
-        <CardDescription>
-          {t('sources.manageNotebooksDesc')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <ScrollArea className="h-[300px] border rounded-md p-4">
-          <div className="space-y-3">
-            {notebooks
-              .filter(nb => !nb.archived)
-              .map((notebook) => {
+    <section
+      data-slot="notebook-associations"
+      className="overflow-hidden rounded-[var(--control-radius)] border border-border bg-card text-card-foreground"
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-2 text-base font-semibold">
+            <BookOpen className="size-4 text-primary" />
+            {t('sources.manageNotebooks')}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t('sources.manageNotebooksDesc')}
+          </p>
+        </div>
+        <Badge variant="secondary" className="min-w-7 tabular-nums">
+          {selectedNotebookIds.length}
+        </Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : activeNotebooks.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-muted-foreground">
+          {t('sources.noNotebooksAvailable')}
+        </p>
+      ) : (
+        <ScrollArea className="h-[min(20rem,40dvh)]">
+          <div className="flex flex-col">
+            {activeNotebooks.map((notebook) => {
                 const isSelected = selectedNotebookIds.includes(notebook.id)
                 const isCurrentlyLinked = currentNotebookIds.includes(notebook.id)
 
                 return (
                   <div
                     key={notebook.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                      isSelected ? 'bg-accent border-accent-foreground/20' : 'hover:bg-accent/50'
+                    data-slot="notebook-association-row"
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    aria-label={notebook.name}
+                    tabIndex={0}
+                    onClick={() => handleToggleNotebook(notebook.id)}
+                    onKeyDown={(event) => {
+                      if (event.key !== ' ' && event.key !== 'Enter') return
+                      event.preventDefault()
+                      handleToggleNotebook(notebook.id)
+                    }}
+                    className={`flex cursor-pointer items-start gap-3 border-b border-border px-4 py-3 outline-none transition-colors last:border-b-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                      isSelected ? 'bg-accent' : 'hover:bg-accent/50'
                     }`}
                   >
                     <Checkbox
                       checked={isSelected}
-                      onCheckedChange={() => handleToggleNotebook(notebook.id)}
-                      className="mt-0.5"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="pointer-events-none mt-0.5"
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-sm truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h4
+                          title={notebook.name}
+                          className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${
+                          isSelected ? 'text-primary' : 'text-foreground'
+                        }`}
+                        >
                           {notebook.name}
                         </h4>
                         {isCurrentlyLinked && !hasChanges && (
@@ -186,7 +205,10 @@ export function NotebookAssociations({
                         )}
                       </div>
                       {notebook.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-1">
+                        <p
+                          title={notebook.description}
+                          className="truncate text-xs leading-5 text-muted-foreground"
+                        >
                           {notebook.description}
                         </p>
                       )}
@@ -196,34 +218,14 @@ export function NotebookAssociations({
               })}
           </div>
         </ScrollArea>
+      )}
 
-        {hasChanges && (
-          <div className="flex items-center justify-end gap-2 pt-2 border-t">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-                  {t('common.saving')}...
-                </>
-              ) : (
-                t('common.saveChanges')
-              )}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {pendingActions && !actionsContainer && (
+        <div className="flex justify-end border-t border-border px-4 py-3">
+          {pendingActions}
+        </div>
+      )}
+      {pendingActions && actionsContainer && createPortal(pendingActions, actionsContainer)}
+    </section>
   )
 }

@@ -25,6 +25,11 @@ const networkError = Object.assign(new Error('Network Error'), {
   response: undefined,
 })
 
+const forbiddenError = Object.assign(new Error('Request failed with status code 403'), {
+  isAxiosError: true,
+  response: { status: 403 },
+})
+
 type UseInsightResult = ReturnType<typeof useInsight>
 
 const asResult = (value: Partial<UseInsightResult>) => value as UseInsightResult
@@ -73,6 +78,26 @@ describe('SourceInsightDialog', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('shows the read-only forbidden state when the insight returns 403', () => {
+    mockUseInsight.mockReturnValue(
+      asResult({ data: undefined, isLoading: false, isError: true, error: forbiddenError })
+    )
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+      />
+    )
+
+    expect(screen.getByText('common.contentUnavailable.forbiddenTitle')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenDescription')).toBeInTheDocument()
+    expect(
+      screen.queryByText('common.contentUnavailable.errorTitle')
+    ).not.toBeInTheDocument()
+  })
+
   it('closes the dialog from the not-found state close button', () => {
     mockUseInsight.mockReturnValue(
       asResult({ data: undefined, isLoading: false, isError: true, error: notFoundError })
@@ -118,5 +143,48 @@ describe('SourceInsightDialog', () => {
 
     expect(screen.getByText('Fetched insight content')).toBeInTheDocument()
     expect(screen.queryByTestId('content-unavailable')).not.toBeInTheDocument()
+  })
+
+  it('uses an edge-to-edge divided layout with a centered title, pill, and left Close action', () => {
+    mockUseInsight.mockReturnValue(
+      asResult({
+        data: {
+          id: 'insight-1',
+          source_id: 'source:1',
+          insight_type: 'summary',
+          content: 'Fetched insight content',
+          created: null,
+          updated: null,
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+      })
+    )
+
+    render(
+      <SourceInsightDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        insight={{ id: 'insight-1', insight_type: '', content: '' }}
+        onDelete={vi.fn()}
+      />
+    )
+
+    const sheet = screen.getByRole('dialog', { name: 'sources.sourceInsight' })
+    const header = sheet.querySelector('[data-slot="sheet-header"]')
+    const headerRow = screen.getByTestId('source-insight-header-row')
+    const footer = sheet.querySelector('[data-slot="sheet-footer"]')
+    const close = within(footer as HTMLElement).getByRole('button', { name: 'common.close' })
+    const deleteButton = within(footer as HTMLElement).getByRole('button', { name: 'common.delete' })
+
+    expect(sheet).toHaveClass('gap-0', 'p-0')
+    expect(sheet.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(within(sheet).queryByText('sources.viewSource')).not.toBeInTheDocument()
+    expect(header).toHaveClass('border-b', 'border-border')
+    expect(headerRow).toHaveClass('items-center', 'justify-between')
+    expect(within(headerRow).getByText('summary')).toBeVisible()
+    expect(footer).toHaveClass('flex-row', 'justify-between', 'border-t', 'border-border', 'px-6')
+    expect(close.nextElementSibling).toBe(deleteButton)
   })
 })

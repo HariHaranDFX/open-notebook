@@ -53,8 +53,18 @@ services:
       # (default 5). Set to 1 for sequential processing on single-GPU / local
       # LLM setups to avoid overloading the model with parallel requests.
       # - OPEN_NOTEBOOK_WORKER_MAX_TASKS=1
+
+      # OPTIONAL: deployment branding. Uncomment together with the matching
+      # read-only config mount below; see docs/BRANDING.md. The selected file is
+      # read once when the frontend process starts.
+      # - BRAND_CONFIG_PATH=/app/config/brand.json
     volumes:
       - ./notebook_data:/app/data
+      # OPTIONAL: select one trusted brand document without rebuilding the image.
+      # - ./config/brand.example-client.json:/app/config/brand.json:ro
+      # OPTIONAL: required only for root-relative /brand/... asset URLs.
+      # HTTPS-hosted logos and favicons do not need this mount.
+      # - ./brand-assets:/app/frontend/public/brand:ro
     depends_on:
       - surrealdb
     restart: always

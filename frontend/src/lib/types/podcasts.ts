@@ -1,3 +1,5 @@
+import type { AccessRole } from '@/lib/utils/access-role'
+
 export type EpisodeStatus =
   | 'running'
   | 'processing'
@@ -88,6 +90,8 @@ export interface PodcastEpisode {
   created?: string | null
   job_status?: EpisodeStatus | null
   error_message?: string | null
+  /** Notebook-inherited effective role (WP3-06); absent = open mode = full access. */
+  access_role?: AccessRole | null
 }
 
 export interface PodcastGenerationRequest {

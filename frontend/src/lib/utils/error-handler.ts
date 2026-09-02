@@ -11,6 +11,14 @@ export function isNotFoundError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 404
 }
 
+/**
+ * Returns true when the error is an HTTP 403 response, i.e. the user is
+ * authenticated but not permitted to see the requested item.
+ */
+export function isForbiddenError(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 403
+}
+
 function responseStatus(error: unknown): number | undefined {
   return isAxiosError(error) ? error.response?.status : undefined
 }
@@ -94,22 +102,27 @@ export function getApiErrorMessage(
   fallbackKey?: string
 ): string {
   const message = formatApiError(errorOrMessage)
+  const status = responseStatus(errorOrMessage)
+  const fallback = () => fallbackKey ? t(fallbackKey) : t("apiErrors.genericError")
   if (!message) {
-    if (responseStatus(errorOrMessage) === 403) {
+    if (status === 403) {
       return t(fallbackKey || "apiErrors.forbidden")
     }
-    return fallbackKey ? t(fallbackKey) : t("apiErrors.genericError")
+    return fallback()
   }
 
   const key = mappedKey(message)
   if (key) return t(key)
 
-  if (responseStatus(errorOrMessage) === 403) {
+  if (status === 403) {
     return t(fallbackKey || "apiErrors.forbidden")
   }
 
-  // No mapping: return backend message directly (backend is responsible for making it user-friendly)
-  return message
+  // Unmapped 4xx details are actionable validation feedback. Client/network
+  // exceptions and 5xx details can contain paths or stack fragments.
+  return status !== undefined && status >= 400 && status < 500
+    ? message
+    : fallback()
 }
 
 /**

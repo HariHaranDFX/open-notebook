@@ -15,17 +15,19 @@ import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 import { ContentSelectionPanel } from './ContentSelectionPanel'
 import {
@@ -51,6 +53,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const [episodeProfileId, setEpisodeProfileId] = useState<string>('')
   const [episodeName, setEpisodeName] = useState('')
   const [instructions, setInstructions] = useState('')
+  const selectAllNotebookIdsRef = useRef(new Set<string>())
 
   const [isBuildingContext, setIsBuildingContext] = useState(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
@@ -76,7 +79,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       queryFn: () => sourcesApi.list({ notebook_id: notebook.id }),
       enabled:
         open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        (expandedNotebooks.includes(notebook.id) ||
+          selectAllNotebookIdsRef.current.has(notebook.id) ||
+          hasSelections(selections[notebook.id])),
     })),
   })
 
@@ -86,7 +91,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       queryFn: () => notesApi.list({ notebook_id: notebook.id }),
       enabled:
         open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        (expandedNotebooks.includes(notebook.id) ||
+          selectAllNotebookIdsRef.current.has(notebook.id) ||
+          hasSelections(selections[notebook.id])),
     })),
   })
 
@@ -135,7 +142,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     return `${sourceIds}::${noteIds}`
   }, [sourcesQueries, notesQueries])
 
-  // Initialise selection defaults when content loads
+  // Loading an expanded notebook must not select it. Apply defaults only when
+  // the notebook checkbox was explicitly selected before its content loaded.
   // Using dataKey instead of sourcesQueries/notesQueries to prevent running on every render
   useEffect(() => {
     if (!open) {
@@ -149,6 +157,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       notebooks.forEach((notebook, index) => {
         const sources = sourcesQueries[index]?.data
         const notes = notesQueries[index]?.data
+        const selectLoadedContent = selectAllNotebookIdsRef.current.has(notebook.id)
 
         if (!sources && !notes) {
           return
@@ -163,7 +172,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           const currentSources = next[notebook.id].sources
           sources.forEach((source) => {
             if (!(source.id in currentSources)) {
-              currentSources[source.id] = getSourceDefaultMode(source)
+              currentSources[source.id] = selectLoadedContent
+                ? getSourceDefaultMode(source)
+                : 'off'
               changed = true
             }
           })
@@ -173,7 +184,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           const currentNotes = next[notebook.id].notes
           notes.forEach((note) => {
             if (!(note.id in currentNotes)) {
-              currentNotes[note.id] = 'full'
+              currentNotes[note.id] = selectLoadedContent ? 'full' : 'off'
               changed = true
             }
           })
@@ -186,6 +197,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   }, [open, notebooks, dataKey])
 
   const resetState = useCallback(() => {
+    selectAllNotebookIdsRef.current.clear()
     setExpandedNotebooks([])
     setSelections({})
     setEpisodeProfileId('')
@@ -282,6 +294,13 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       const shouldCheck = checked === 'indeterminate' ? true : checked
       const sources = sourcesByNotebook[notebookId] ?? []
       const notes = notesByNotebook[notebookId] ?? []
+
+      if (shouldCheck) {
+        selectAllNotebookIdsRef.current.add(notebookId)
+      } else {
+        selectAllNotebookIdsRef.current.delete(notebookId)
+      }
+
       setSelections((prev) => {
         if (shouldCheck) {
           const nextSources: Record<string, SourceMode> = {}
@@ -451,7 +470,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       console.error('Failed to generate podcast', error)
       toast({
         title: t('podcasts.generationFailed'),
-        description: error instanceof Error ? error.message : t('common.refreshPage'),
+        description: getApiErrorMessage(error, (key) => t(key), 'common.refreshPage'),
         variant: 'destructive',
       })
     } finally {
@@ -472,21 +491,21 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const isSubmitting = generatePodcast.isPending || isBuildingContext
 
   return (
-    <Dialog open={open} onOpenChange={(value) => {
+    <Sheet open={open} onOpenChange={(value) => {
       onOpenChange(value)
       if (!value) {
         resetState()
       }
     }}>
-      <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>{t('podcasts.generateEpisode')}</DialogTitle>
-          <DialogDescription>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[1080px]">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
+          <SheetTitle>{t('podcasts.generateEpisode')}</SheetTitle>
+          <SheetDescription>
             {t('podcasts.generateEpisodeDesc')}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="grid gap-6 md:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]">
+        <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-6 md:grid-cols-[2fr_1fr] md:overflow-hidden xl:grid-cols-[3fr_1fr]">
           <ContentSelectionPanel
             notebooks={notebooks}
             isLoading={notebooksQuery.isLoading}
@@ -504,7 +523,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
             onNoteToggle={handleNoteToggle}
           />
 
-          <div className="space-y-6">
+          <div className="min-h-0 space-y-6 md:overflow-y-auto">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                 {t('podcasts.episodeSettings')}
@@ -514,7 +533,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                   <Loader2 className="h-4 w-4 animate-spin" /> {t('podcasts.loadingProfiles')}
                 </div>
               ) : episodeProfiles.length === 0 ? (
-                <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                <div className="rounded-[var(--surface-radius)] border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
                   {t('podcasts.noProfilesFound')}
                 </div>
               ) : (
@@ -579,27 +598,22 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
-                className="w-full"
-              >
-                {t('common.cancel')}
-              </Button>
-            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-3 sm:justify-between">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   )
 }

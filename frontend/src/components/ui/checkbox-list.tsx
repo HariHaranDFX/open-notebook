@@ -16,6 +16,7 @@ interface CheckboxListProps {
   loading?: boolean
   emptyMessage?: string
   className?: string
+  fill?: boolean
 }
 
 export function CheckboxList({
@@ -24,11 +25,18 @@ export function CheckboxList({
   onToggle,
   loading = false,
   emptyMessage = "No items found.",
-  className
+  className,
+  fill = false
 }: CheckboxListProps) {
+  const containerClassName = cn(
+    'rounded-[var(--surface-radius)] border border-border bg-card',
+    fill && 'flex min-h-0 flex-1 flex-col',
+    className
+  )
+
   if (loading) {
     return (
-      <div className={cn('border border-border rounded-md p-4 bg-card', className)}>
+      <div data-slot="checkbox-list" className={cn(containerClassName, 'p-4')}>
         <div className="animate-pulse space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex items-center gap-3">
@@ -46,15 +54,18 @@ export function CheckboxList({
 
   if (items.length === 0) {
     return (
-      <div className={cn('border border-border rounded-md p-4 bg-card', className)}>
+      <div data-slot="checkbox-list" className={cn(containerClassName, 'p-4')}>
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       </div>
     )
   }
 
   return (
-    <div className={cn('border border-border rounded-md bg-card', className)}>
-      <div className="max-h-48 overflow-y-auto p-4">
+    <div data-slot="checkbox-list" className={containerClassName}>
+      <div
+        data-slot="checkbox-list-content"
+        className={cn("overflow-y-auto p-4", fill ? "max-h-none min-h-0 flex-1" : "max-h-48")}
+      >
         <div className="space-y-3">
           {items.map((item) => (
             <label

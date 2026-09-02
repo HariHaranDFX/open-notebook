@@ -1,0 +1,6 @@
+-- Migration 28 rollback: remove WP2b sharing ACL tables and episode.notebook_id.
+
+REMOVE FIELD IF EXISTS notebook_id ON TABLE episode;
+REMOVE TABLE IF EXISTS resource_grant;
+REMOVE TABLE IF EXISTS user_group_member;
+REMOVE TABLE IF EXISTS user_group;

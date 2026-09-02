@@ -14,7 +14,7 @@ import {
   SourceListResponse,
   NoteResponse
 } from '@/lib/types/api'
-import { ContextSelections } from '@/app/(dashboard)/notebooks/[id]/page'
+import type { ContextSelections } from '@/lib/types/notebook-context'
 
 interface UseNotebookChatParams {
   notebookId: string
@@ -83,8 +83,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       toast.success(t('chat.sessionCreated'))
     },
     onError: (err: unknown) => {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+      toast.error(getApiErrorMessage(err, (key) => t(key), 'apiErrors.failedToCreateSession'))
     }
   })
 
@@ -104,8 +103,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       toast.success(t('chat.sessionUpdated'))
     },
     onError: (err: unknown) => {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToUpdateSession'))
+      toast.error(getApiErrorMessage(err, (key) => t(key), 'apiErrors.failedToUpdateSession'))
     }
   })
 
@@ -124,8 +122,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       toast.success(t('chat.sessionDeleted'))
     },
     onError: (err: unknown) => {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToDeleteSession'))
+      toast.error(getApiErrorMessage(err, (key) => t(key), 'apiErrors.failedToDeleteSession'))
     }
   })
 
@@ -196,8 +193,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
           queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
         })
       } catch (err: unknown) {
-        const error = err as { response?: { data?: { detail?: string } }, message?: string };
-        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToCreateSession'))
+        toast.error(getApiErrorMessage(err, (key) => t(key), 'apiErrors.failedToCreateSession'))
         return
       }
     }
@@ -228,9 +224,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       // Refetch current session to get updated data
       await refetchCurrentSession()
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      console.error('Error sending message:', error)
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+      console.error('Error sending message:', err)
+      toast.error(getApiErrorMessage(err, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {

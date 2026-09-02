@@ -5,6 +5,7 @@ from loguru import logger
 
 from api.auth.deps import current_user_optional
 from api.models import (
+    AccessSummary,
     NotebookCreate,
     NotebookDeletePreview,
     NotebookDeleteResponse,
@@ -12,7 +13,13 @@ from api.models import (
     NotebookUpdate,
     RecentlyViewedResponse,
 )
-from api.ownership import assert_owner_or_404, ownership_where
+from api.ownership import (
+    access_summary_for_notebook,
+    access_where,
+    assert_can_edit_notebook_or_403,
+    assert_owner_or_404,
+    source_access_where,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import (
@@ -94,7 +101,7 @@ async def get_notebooks(
             )
 
         # Build the query with counts
-        where_clause, where_params = ownership_where(request)
+        where_clause, where_params = await access_where(request, "notebook")
         where_sql = f"WHERE {where_clause}" if where_clause else ""
         query = f"""
             SELECT *,
@@ -111,19 +118,27 @@ async def get_notebooks(
         if archived is not None:
             result = [nb for nb in result if nb.get("archived") == archived]
 
-        return [
-            NotebookResponse(
-                id=str(nb.get("id", "")),
-                name=nb.get("name", ""),
-                description=nb.get("description", ""),
-                archived=nb.get("archived", False),
-                created=str(nb.get("created", "")),
-                updated=str(nb.get("updated", "")),
-                source_count=nb.get("source_count", 0),
-                note_count=nb.get("note_count", 0),
+        responses = []
+        for nb in result:
+            nb_id = str(nb.get("id", ""))
+            summary = await access_summary_for_notebook(
+                nb.get("user_id"), nb_id, request
             )
-            for nb in result
-        ]
+            responses.append(
+                NotebookResponse(
+                    id=nb_id,
+                    name=nb.get("name", ""),
+                    description=nb.get("description", ""),
+                    archived=nb.get("archived", False),
+                    created=str(nb.get("created", "")),
+                    updated=str(nb.get("updated", "")),
+                    source_count=nb.get("source_count", 0),
+                    note_count=nb.get("note_count", 0),
+                    access_role=summary.role if summary else None,
+                    access_summary=summary,
+                )
+            )
+        return responses
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -157,6 +172,10 @@ async def create_notebook(notebook: NotebookCreate, request: Request):
             updated=str(new_notebook.updated),
             source_count=0,  # New notebook has no sources
             note_count=0,  # New notebook has no notes
+            access_role="owner" if user else None,
+            access_summary=AccessSummary(role="owner", origin="owner")
+            if user
+            else None,
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -178,27 +197,29 @@ async def get_recently_viewed(
 ):
     """Get recently viewed notebooks and sources, newest first."""
     try:
-        where_clause, where_params = ownership_where(request)
-        owner_sql = f" AND {where_clause}" if where_clause else ""
+        nb_clause, nb_params = await access_where(request, "notebook")
+        src_clause, src_params = await source_access_where(request)
+        nb_sql = f" AND {nb_clause}" if nb_clause else ""
+        src_sql = f" AND {src_clause}" if src_clause else ""
         notebooks = await repo_query(
             f"""
             SELECT id, name AS title, last_viewed_at
             FROM notebook
-            WHERE last_viewed_at != NONE AND last_viewed_at != NULL{owner_sql}
+            WHERE last_viewed_at != NONE AND last_viewed_at != NULL{nb_sql}
             ORDER BY last_viewed_at DESC
             LIMIT $limit
             """,
-            {"limit": limit, **where_params},
+            {"limit": limit, **nb_params},
         )
         sources = await repo_query(
             f"""
             SELECT id, title, last_viewed_at
             FROM source
-            WHERE last_viewed_at != NONE AND last_viewed_at != NULL{owner_sql}
+            WHERE last_viewed_at != NONE AND last_viewed_at != NULL{src_sql}
             ORDER BY last_viewed_at DESC
             LIMIT $limit
             """,
-            {"limit": limit, **where_params},
+            {"limit": limit, **src_params},
         )
 
         items = [
@@ -227,6 +248,7 @@ async def get_notebook_delete_preview(notebook_id: str, request: Request):
     """Get a preview of what will be deleted when this notebook is deleted."""
     try:
         notebook = await Notebook.get(notebook_id)
+        # Delete preview / delete are owner-only
         assert_owner_or_404(notebook.user_id, request, "Notebook not found")
 
         preview = await notebook.get_delete_preview()
@@ -269,7 +291,14 @@ async def get_notebook(notebook_id: str, request: Request):
             raise HTTPException(status_code=404, detail="Notebook not found")
 
         nb = result[0]
-        assert_owner_or_404(nb.get("user_id"), request, "Notebook not found")
+        # Single resolver call carries both the authorization decision (404
+        # if None) and the origin metadata for the response - see
+        # api/ownership.py's access_summary_for_notebook.
+        summary = await access_summary_for_notebook(
+            nb.get("user_id"), notebook_id, request
+        )
+        if summary is None:
+            raise HTTPException(status_code=404, detail="Notebook not found")
 
         await _stamp_notebook_view(notebook_id)
         return NotebookResponse(
@@ -281,6 +310,8 @@ async def get_notebook(notebook_id: str, request: Request):
             updated=str(nb.get("updated", "")),
             source_count=nb.get("source_count", 0),
             note_count=nb.get("note_count", 0),
+            access_role=summary.role,
+            access_summary=summary,
         )
     except HTTPException:
         raise
@@ -300,7 +331,9 @@ async def update_notebook(
     """Update a notebook."""
     try:
         notebook = await Notebook.get(notebook_id)
-        assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+        await assert_can_edit_notebook_or_403(
+            notebook.user_id, notebook_id, request, "Notebook not found"
+        )
 
         # Update only provided fields
         if notebook_update.name is not None:
@@ -364,12 +397,17 @@ async def update_notebook(
 async def add_source_to_notebook(notebook_id: str, source_id: str, request: Request):
     """Add an existing source to a notebook (create the reference)."""
     try:
-        # Verify the notebook and source exist (raises NotFoundError -> 404)
-        # and are owned by the current user.
+        # Editors may link sources into a notebook they can edit.
         notebook = await Notebook.get(notebook_id)
-        assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+        await assert_can_edit_notebook_or_403(
+            notebook.user_id, notebook_id, request, "Notebook not found"
+        )
         source = await Source.get(source_id)
-        assert_owner_or_404(source.user_id, request, "Source not found")
+        from api.ownership import assert_can_view_source_or_404
+
+        await assert_can_view_source_or_404(
+            source.user_id, source_id, request, "Source not found"
+        )
 
         # Check if reference already exists (idempotency)
         existing_ref = await repo_query(
@@ -412,10 +450,10 @@ async def remove_source_from_notebook(
 ):
     """Remove a source from a notebook (delete the reference)."""
     try:
-        # Verify the notebook exists (raises NotFoundError -> 404) and is
-        # owned by the current user.
         notebook = await Notebook.get(notebook_id)
-        assert_owner_or_404(notebook.user_id, request, "Notebook not found")
+        await assert_can_edit_notebook_or_403(
+            notebook.user_id, notebook_id, request, "Notebook not found"
+        )
 
         # Delete the reference record linking source to notebook
         await repo_query(

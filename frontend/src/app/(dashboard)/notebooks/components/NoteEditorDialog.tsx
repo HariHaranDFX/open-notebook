@@ -5,7 +5,13 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { useCreateNote, useUpdateNote, useNote } from '@/lib/hooks/use-notes'
 import { QUERY_KEYS } from '@/lib/api/query-client'
@@ -14,7 +20,8 @@ import { InlineEdit } from '@/components/common/InlineEdit'
 import { cn } from "@/lib/utils";
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { ContentUnavailable } from '@/components/common/ContentUnavailable'
-import { isNotFoundError } from '@/lib/utils/error-handler'
+import { isForbiddenError, isNotFoundError } from '@/lib/utils/error-handler'
+import { toReferenceRecordId } from '@/lib/utils/source-references'
 
 const createNoteSchema = z.object({
   title: z.string().optional(),
@@ -38,9 +45,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   const isEditing = Boolean(note)
 
   // Ensure note ID has 'note:' prefix for API calls
-  const noteIdWithPrefix = note?.id
-    ? (note.id.includes(':') ? note.id : `note:${note.id}`)
-    : ''
+  const noteIdWithPrefix = note?.id ? toReferenceRecordId('note', note.id) : ''
 
   const {
     data: fetchedNote,
@@ -129,28 +134,29 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={cn(
-          "sm:max-w-3xl w-full h-[90vh] max-h-[90vh] overflow-hidden p-0 flex flex-col",
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent showCloseButton={false} className={cn(
+          "flex w-full max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden p-0 sm:max-w-3xl",
           isEditorFullscreen && "!max-w-screen !max-h-screen border-none w-screen h-screen"
       )}>
-        <DialogTitle className="sr-only">
-          {isEditing ? t('sources.editNote') : t('sources.createNote')}
-        </DialogTitle>
-        {noteUnavailable ? (
-          <ContentUnavailable
-            variant={isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
-            onClose={handleClose}
-          />
-        ) : (
+        <SheetHeader className="gap-1 border-b border-border px-6 py-3">
+          <SheetTitle>
+            {isEditing ? t('sources.editNote') : t('sources.createNote')}
+          </SheetTitle>
+        </SheetHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 min-h-0 flex-col min-w-0">
-          {isEditing && noteLoading ? (
+          {noteUnavailable ? (
+            <ContentUnavailable
+              variant={isForbiddenError(noteFetchError) ? 'forbidden' : isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
+              onClose={handleClose}
+            />
+          ) : isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
             </div>
           ) : (
             <>
-              <div className="border-b px-6 py-4">
+              <div className="border-b px-6 py-3">
                 <InlineEdit
                   id="note-title"
                   name="title"
@@ -158,8 +164,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   onSave={(value) => setValue('title', value || '')}
                   placeholder={t('sources.addTitle')}
                   emptyText={t('sources.untitledNote')}
-                  className="text-xl font-semibold"
-                  inputClassName="text-xl font-semibold"
+                  className="flex h-8 items-center py-1 text-base font-semibold leading-5"
+                  inputClassName="h-8 py-1 text-base font-semibold leading-5"
                 />
               </div>
 
@@ -192,24 +198,25 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             </>
           )}
 
-          <div className="border-t px-6 py-4 flex justify-end gap-2">
+          <SheetFooter className="flex-row items-center justify-between border-t border-border px-6 py-2 sm:justify-between">
             <Button type="button" variant="outline" onClick={handleClose}>
               {t('common.cancel')}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSaving || (isEditing && noteLoading)}
-            >
-              {isSaving
-                ? isEditing ? `${t('common.saving')}...` : `${t('common.creating')}...`
-                : isEditing
-                  ? t('sources.saveNote')
-                  : t('sources.createNoteBtn')}
-            </Button>
-          </div>
+            {!noteUnavailable && (
+              <Button
+                type="submit"
+                disabled={isSaving || (isEditing && noteLoading)}
+              >
+                {isSaving
+                  ? isEditing ? `${t('common.saving')}...` : `${t('common.creating')}...`
+                  : isEditing
+                    ? t('sources.saveNote')
+                    : t('sources.createNoteBtn')}
+              </Button>
+            )}
+          </SheetFooter>
         </form>
-        )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

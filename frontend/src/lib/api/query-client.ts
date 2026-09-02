@@ -24,6 +24,8 @@ export const QUERY_KEYS = {
   note: (id: string) => ['notes', id] as const,
   sources: (notebookId?: string) => ['sources', notebookId] as const,
   sourcesInfinite: (notebookId: string) => ['sources', 'infinite', notebookId] as const,
+  sourceLibrary: (params: { query: string; sortBy: string; sortOrder: string }) =>
+    ['sources', 'library', params] as const,
   source: (id: string) => ['sources', id] as const,
   settings: ['settings'] as const,
   sourceChatSessions: (sourceId: string) => ['source-chat', sourceId, 'sessions'] as const,
@@ -35,4 +37,9 @@ export const QUERY_KEYS = {
   episodeProfiles: ['podcasts', 'episode-profiles'] as const,
   speakerProfiles: ['podcasts', 'speaker-profiles'] as const,
   languages: ['languages'] as const,
+  users: ['users'] as const,
+  groups: ['groups'] as const,
+  groupMembers: (groupId: string) => ['groups', groupId, 'members'] as const,
+  grants: (resourceType: string, resourceId: string) =>
+    ['grants', resourceType, resourceId] as const,
 }

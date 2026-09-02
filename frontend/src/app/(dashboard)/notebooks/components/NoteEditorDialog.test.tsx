@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoteEditorDialog } from './NoteEditorDialog'
@@ -28,6 +28,11 @@ const notFoundError = Object.assign(new Error('Request failed with status code 4
 const networkError = Object.assign(new Error('Network Error'), {
   isAxiosError: true,
   response: undefined,
+})
+
+const forbiddenError = Object.assign(new Error('Request failed with status code 403'), {
+  isAxiosError: true,
+  response: { status: 403 },
 })
 
 type UseNoteResult = ReturnType<typeof useNote>
@@ -79,6 +84,22 @@ describe('NoteEditorDialog', () => {
     expect(screen.queryByTestId('markdown-editor')).not.toBeInTheDocument()
   })
 
+  it('shows the read-only forbidden state instead of the editor when the note returns 403', () => {
+    mockUseNote.mockReturnValue(
+      asResult({ data: undefined, isLoading: false, isError: true, error: forbiddenError })
+    )
+
+    renderDialog()
+
+    expect(screen.getByTestId('content-unavailable')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenTitle')).toBeInTheDocument()
+    expect(screen.getByText('common.contentUnavailable.forbiddenDescription')).toBeInTheDocument()
+    expect(
+      screen.queryByText('common.contentUnavailable.errorTitle')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('markdown-editor')).not.toBeInTheDocument()
+  })
+
   it('closes the dialog from the not-found state close button', () => {
     mockUseNote.mockReturnValue(
       asResult({ data: undefined, isLoading: false, isError: true, error: notFoundError })
@@ -113,5 +134,57 @@ describe('NoteEditorDialog', () => {
     expect(screen.getByTestId('markdown-editor')).toBeInTheDocument()
     expect(screen.getByText('sources.saveNote')).toBeInTheDocument()
     expect(screen.queryByTestId('content-unavailable')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    {
+      mode: 'edit',
+      note: { id: 'note-1', title: 'My note', content: 'Note body' },
+      heading: 'sources.editNote',
+      title: 'My note',
+      action: 'sources.saveNote',
+    },
+    {
+      mode: 'create',
+      note: undefined,
+      heading: 'sources.createNote',
+      title: 'sources.untitledNote',
+      action: 'sources.createNoteBtn',
+    },
+  ])('uses the compact, close-free sheet layout in $mode mode', ({ note, heading, title, action }) => {
+    mockUseNote.mockReturnValue(
+      asResult({
+        data: note
+          ? {
+              ...note,
+              note_type: 'human',
+              created: '2026-01-01T00:00:00Z',
+              updated: '2026-01-01T00:00:00Z',
+            } as UseNoteResult['data']
+          : undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+      })
+    )
+
+    renderDialog({ note, notebookId: 'notebook-1' })
+
+    const dialog = screen.getByRole('dialog', { name: heading })
+    const header = dialog.querySelector('[data-slot="sheet-header"]')
+    const cancelButton = within(dialog).getByRole('button', { name: 'common.cancel' })
+    const footer = cancelButton.closest('[data-slot="sheet-footer"]')
+    const titleButton = within(dialog).getByRole('button', { name: title })
+
+    expect(dialog.querySelector('.lucide-x')).not.toBeInTheDocument()
+    expect(header).toHaveClass('gap-1', 'border-b', 'py-3')
+    expect(footer).toHaveClass('flex-row', 'justify-between', 'sm:justify-between')
+    expect(cancelButton.nextElementSibling).toBe(
+      within(dialog).getByRole('button', { name: action })
+    )
+    expect(titleButton).toHaveClass('h-8', 'text-base')
+
+    fireEvent.click(titleButton)
+    expect(document.getElementById('note-title')).toHaveClass('h-8', 'text-base')
   })
 })

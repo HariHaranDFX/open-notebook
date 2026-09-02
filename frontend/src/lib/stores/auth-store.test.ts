@@ -8,11 +8,16 @@ vi.mock('@/lib/api/client', () => ({
   setEntraAuthMode: vi.fn(),
 }))
 
+vi.mock('@/lib/config', () => ({
+  getApiUrl: vi.fn().mockResolvedValue('http://localhost:5055'),
+}))
+
 import apiClient, { setEntraAuthMode } from '@/lib/api/client'
 import { useAuthStore } from './auth-store'
 
 const mockedGet = vi.mocked(apiClient.get)
 const mockedPost = vi.mocked(apiClient.post)
+const mockedFetch = vi.fn()
 
 const resetStore = () => {
   useAuthStore.setState({
@@ -25,6 +30,7 @@ const resetStore = () => {
     provider: 'password',
     authRequired: null,
     role: null,
+    user: null,
   })
 }
 
@@ -33,6 +39,7 @@ describe('auth-store provider branching', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('fetch', mockedFetch)
     resetStore()
     // logout() navigates via window.location.href in Entra mode.
     Object.defineProperty(window, 'location', {
@@ -42,6 +49,7 @@ describe('auth-store provider branching', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: originalLocation,
@@ -56,6 +64,14 @@ describe('auth-store provider branching', () => {
 
       expect(useAuthStore.getState().provider).toBe('password')
       expect(setEntraAuthMode).toHaveBeenCalledWith(false)
+    })
+
+    it('leaves a fresh password login ready for input when no saved token exists', async () => {
+      mockedGet.mockResolvedValueOnce({ data: { auth_enabled: true, provider: 'password' } })
+
+      await useAuthStore.getState().checkAuthRequired()
+
+      expect(useAuthStore.getState().isCheckingAuth).toBe(false)
     })
 
     it('switches to the entra provider and enables credentials mode', async () => {
@@ -82,7 +98,14 @@ describe('auth-store provider branching', () => {
     })
 
     it('marks authenticated when GET /auth/me succeeds via cookie session', async () => {
-      mockedGet.mockResolvedValueOnce({ data: { id: 'u1', role: 'user' } })
+      mockedGet.mockResolvedValueOnce({
+        data: {
+          id: 'u1',
+          email: 'researcher@example.com',
+          display_name: 'Researcher One',
+          role: 'user',
+        },
+      })
 
       const result = await useAuthStore.getState().checkAuth()
 
@@ -90,6 +113,12 @@ describe('auth-store provider branching', () => {
       expect(mockedGet).toHaveBeenCalledWith('/auth/me')
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
       expect(useAuthStore.getState().role).toBe('user')
+      expect(useAuthStore.getState().user).toEqual({
+        id: 'u1',
+        email: 'researcher@example.com',
+        displayName: 'Researcher One',
+        role: 'user',
+      })
     })
 
     it('stores admin role from /auth/me', async () => {
@@ -196,6 +225,24 @@ describe('auth-store provider branching', () => {
       expect(mockedPost).not.toHaveBeenCalled()
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
       expect(useAuthStore.getState().token).toBe(null)
+    })
+  })
+
+  describe('login errors', () => {
+    it('stores a translation key instead of a raw network exception', async () => {
+      mockedFetch.mockRejectedValueOnce(new Error('C:\\private\\trace.txt'))
+
+      await useAuthStore.getState().login('wrong')
+
+      expect(useAuthStore.getState().error).toBe('auth.authenticationFailed')
+    })
+
+    it('stores the invalid-password translation key for a 401', async () => {
+      mockedFetch.mockResolvedValueOnce({ ok: false, status: 401 })
+
+      await useAuthStore.getState().login('wrong')
+
+      expect(useAuthStore.getState().error).toBe('auth.invalidPassword')
     })
   })
 })

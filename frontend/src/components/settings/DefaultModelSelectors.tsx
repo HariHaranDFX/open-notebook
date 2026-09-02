@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Loader2, X, AlertCircle, Wand2 } from 'lucide-react'
+import { Loader2, AlertCircle, Wand2 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useUpdateModelDefaults, useAutoAssignDefaults } from '@/lib/hooks/use-models'
 import { Model, ModelDefaults } from '@/lib/types/models'
 import { ModelType } from '@/lib/providers'
+import { cn } from '@/lib/utils'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
 
 interface DefaultConfig {
@@ -33,7 +34,6 @@ interface DefaultModelSelectProps {
   available: Model[]
   currentValue?: string
   onChange: (key: keyof ModelDefaults, value: string) => void
-  showDescription?: boolean
   /** Name of the currently selected chat model, used for the fallback hint. */
   chatModelName?: string
 }
@@ -43,7 +43,6 @@ function DefaultModelSelect({
   available,
   currentValue,
   onChange,
-  showDescription,
   chatModelName,
 }: DefaultModelSelectProps) {
   const { t } = useTranslation()
@@ -63,20 +62,29 @@ function DefaultModelSelect({
     return null
   })()
 
+  const description = emptyOptionalHint || config.description
+
   return (
-    <div className="space-y-1">
-      <Label htmlFor={config.id} className="text-xs">
-        {config.label}
-        {config.required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-      <div className="flex gap-1">
+    <div className="flex items-center justify-between gap-4 border-t border-border/40 py-3 first:border-t-0">
+      <div className="min-w-0">
+        <div className="flex items-center gap-1">
+          <Label htmlFor={config.id} className="text-sm font-medium">
+            {config.label}
+          </Label>
+          {config.required && <span className="text-destructive">*</span>}
+        </div>
+        {description && (
+          <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
         <Select
           value={currentValue || (config.required ? "" : NONE_VALUE)}
           onValueChange={(v) => onChange(config.key, v === NONE_VALUE ? "" : v)}
         >
           <SelectTrigger
             id={config.id}
-            className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+            className={cn('w-52', config.required && !isValid && available.length > 0 && 'border-destructive')}
           >
             <SelectValue placeholder={
               config.required && !isValid && available.length > 0
@@ -102,18 +110,7 @@ function DefaultModelSelect({
             ))}
           </SelectContent>
         </Select>
-        {!config.required && currentValue && (
-          <Button variant="ghost" size="icon" onClick={() => onChange(config.key, "")} className="h-8 w-8 shrink-0">
-            <X className="h-3 w-3" />
-          </Button>
-        )}
       </div>
-      {emptyOptionalHint && (
-        <p className="text-[10px] text-muted-foreground leading-tight italic">{emptyOptionalHint}</p>
-      )}
-      {showDescription && (
-        <p className="text-[10px] text-muted-foreground leading-tight">{config.description}</p>
-      )}
     </div>
   )
 }
@@ -218,8 +215,8 @@ export function DefaultModelSelectors({
           </Alert>
         )}
 
-        {/* Primary models: Chat, Embedding, TTS, STT */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Core models: Chat, Embedding, TTS, STT */}
+        <div>
           {primaryConfigs.map(config => (
             <DefaultModelSelect
               key={config.key}
@@ -233,21 +230,20 @@ export function DefaultModelSelectors({
         </div>
 
         {/* Advanced models: Transformation, Tools, Large Context */}
-        <div className="border-t pt-3">
-          <p className="text-xs text-muted-foreground mb-3">{t('navigation.advanced')}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {advancedConfigs.map(config => (
-                <DefaultModelSelect
-                  key={config.key}
-                  config={config}
-                  available={getModelsForType(config.modelType)}
-                  currentValue={watch(config.key) || undefined}
-                  onChange={handleChange}
-                  showDescription
-                  chatModelName={chatModelName}
-                />
-              ))}
-            </div>
+        <div className="border-t border-border pt-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">{t('navigation.advanced')}</p>
+          <div>
+            {advancedConfigs.map(config => (
+              <DefaultModelSelect
+                key={config.key}
+                config={config}
+                available={getModelsForType(config.modelType)}
+                currentValue={watch(config.key) || undefined}
+                onChange={handleChange}
+                chatModelName={chatModelName}
+              />
+            ))}
+          </div>
         </div>
       </CardContent>
 
