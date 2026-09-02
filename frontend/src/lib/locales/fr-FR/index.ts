@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const frFR = {
+  notFound: {
+    title: "Page introuvable",
+    description: "La page que vous recherchez n'existe pas ou a été déplacée.",
+    backHome: "Retour à l'accueil",
+  },
   common: {
     preferences: "Préférences",
     appearance: "Apparence",

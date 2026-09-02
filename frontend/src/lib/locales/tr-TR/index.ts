@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const trTR = {
+  notFound: {
+    title: "Sayfa bulunamadı",
+    description: "Aradığınız sayfa mevcut değil veya taşınmış olabilir.",
+    backHome: "Ana sayfaya dön",
+  },
   common: {
     preferences: "Tercihler",
     appearance: "Görünüm",

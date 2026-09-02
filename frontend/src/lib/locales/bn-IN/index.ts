@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const bnIN = {
+  notFound: {
+    title: "পৃষ্ঠা পাওয়া যায়নি",
+    description: "আপনি যে পৃষ্ঠাটি খুঁজছেন সেটি নেই বা সরিয়ে ফেলা হয়েছে।",
+    backHome: "হোমে ফিরে যান",
+  },
   common: {
     preferences: "পছন্দসমূহ",
     appearance: "চেহারা",

@@ -4,6 +4,11 @@ import type { TranslationShape } from '../en-US';
 // Translate values only; do not change keys, placeholders or structure.
 
 export const deDE = {
+  notFound: {
+    title: "Seite nicht gefunden",
+    description: "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    backHome: "Zurück zur Startseite",
+  },
   common: {
     preferences: "Voreinstellungen",
     appearance: "Darstellung",

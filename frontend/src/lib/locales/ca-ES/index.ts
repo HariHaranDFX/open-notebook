@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const caES = {
+  notFound: {
+    title: "Pàgina no trobada",
+    description: "La pàgina que cerqueu no existeix o s'ha mogut.",
+    backHome: "Torna a l'inici",
+  },
   common: {
     preferences: "Preferències",
     appearance: "Aparença",

@@ -134,8 +134,17 @@ export function NotesColumn({
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="relative cursor-pointer rounded-[var(--surface-radius)] border p-3 card-hover group"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={note.title || (note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human'))}
+                    className="relative cursor-pointer rounded-[var(--surface-radius)] border p-3 card-hover group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => setEditingNote(note)}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        setEditingNote(note)
+                      }
+                    }}
                   >
                     <div className="workbench-item-header mb-2 flex items-start justify-between gap-2">
                       <div className="workbench-item-actions flex min-w-0 items-center gap-2">

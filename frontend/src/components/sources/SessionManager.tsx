@@ -128,6 +128,7 @@ export function SessionManager({
                 <Input
                   value={newSessionTitle}
                   onChange={(e) => setNewSessionTitle(e.target.value)}
+                  aria-label={t('chat.sessionTitlePlaceholder')}
                   placeholder={t('chat.sessionTitlePlaceholder')}
                   className="mb-2"
                   autoFocus
@@ -187,12 +188,13 @@ export function SessionManager({
                           autoFocus
                         />
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit}>
+                          <Button size="sm" aria-label={t('common.save')} onClick={handleSaveEdit}>
                             <Check className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            aria-label={t('common.cancel')}
                             onClick={handleCancelEdit}
                           >
                             <X className="h-3 w-3" />

@@ -296,6 +296,7 @@ function ChatComposer({
       <Textarea
         id={chatInputId}
         name="chat-message"
+        aria-label={t('chat.sendPlaceholder')}
         autoComplete="off"
         value={input}
         onChange={(e) => setInput(e.target.value)}

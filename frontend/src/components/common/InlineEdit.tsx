@@ -15,6 +15,7 @@ interface InlineEditProps {
   id?: string
   name?: string
   autocomplete?: string
+  ariaLabel?: string
 }
 
 export function InlineEdit({
@@ -27,7 +28,8 @@ export function InlineEdit({
   emptyText,
   id: providedId,
   name,
-  autocomplete = 'off'
+  autocomplete = 'off',
+  ariaLabel,
 }: InlineEditProps) {
   const generatedId = useId()
   const id = providedId || generatedId
@@ -105,6 +107,7 @@ export function InlineEdit({
     return (
       <textarea
         ref={inputRef as RefObject<HTMLTextAreaElement>}
+        aria-label={ariaLabel || placeholder || defaultEmptyText}
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -132,6 +135,7 @@ export function InlineEdit({
   return (
     <input
       ref={inputRef as RefObject<HTMLInputElement>}
+      aria-label={ariaLabel || placeholder || defaultEmptyText}
       value={editValue}
       onChange={(e) => setEditValue(e.target.value)}
       onKeyDown={handleKeyDown}

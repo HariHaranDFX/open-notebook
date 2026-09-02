@@ -62,6 +62,17 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
   // Add keyboard shortcut for retry (R key)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Never let a bare-key shortcut fire while the user is typing.
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.isContentEditable ||
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT')
+      ) {
+        return
+      }
       if (error && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault()
         checkConnection()

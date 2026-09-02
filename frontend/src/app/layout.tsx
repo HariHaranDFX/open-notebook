@@ -35,6 +35,8 @@ export function generateMetadata(): Metadata {
   return {
     title: brand.appName,
     description: "Privacy-focused research and knowledge management",
+    // Authenticated internal application — keep it out of search indexes.
+    robots: { index: false, follow: false },
     icons: brand.faviconUrl ? { icon: brand.faviconUrl } : undefined,
   }
 }

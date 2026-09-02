@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const zhCN = {
+  notFound: {
+    title: "页面未找到",
+    description: "您访问的页面不存在或已被移动。",
+    backHome: "返回首页",
+  },
   common: {
     preferences: "偏好设置",
     appearance: "外观",

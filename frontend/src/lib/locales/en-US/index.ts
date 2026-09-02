@@ -1,4 +1,9 @@
 export const enUS = {
+  notFound: {
+    title: "Page not found",
+    description: "The page you're looking for doesn't exist or may have moved.",
+    backHome: "Back to home",
+  },
   common: {
     preferences: "Preferences",
     appearance: "Appearance",

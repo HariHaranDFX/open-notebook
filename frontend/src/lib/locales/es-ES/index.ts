@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const esES = {
+  notFound: {
+    title: "Página no encontrada",
+    description: "La página que buscas no existe o se ha movido.",
+    backHome: "Volver al inicio",
+  },
   common: {
     preferences: "Preferencias",
     appearance: "Apariencia",

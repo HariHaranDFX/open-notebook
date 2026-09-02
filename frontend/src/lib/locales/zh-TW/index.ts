@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const zhTW = {
+  notFound: {
+    title: "找不到頁面",
+    description: "您造訪的頁面不存在或已被移動。",
+    backHome: "返回首頁",
+  },
   common: {
     preferences: "偏好設定",
     appearance: "外觀",

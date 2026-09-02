@@ -118,10 +118,11 @@ export function NotebookDeleteDialog({
               {/* Exclusive sources section - below the line with radio buttons */}
               {preview.exclusive_source_count > 0 && (
                 <div className="pt-3 border-t space-y-3">
-                  <p className="text-sm text-destructive font-medium">
+                  <p id="delete-exclusive-sources-label" className="text-sm text-destructive font-medium">
                     {t('notebooks.deleteNotebookExclusiveSources', { count: preview.exclusive_source_count })}
                   </p>
                   <RadioGroup
+                    aria-labelledby="delete-exclusive-sources-label"
                     value={sourceAction}
                     onValueChange={(value) => setSourceAction(value as 'keep' | 'delete')}
                     disabled={isDeleting}

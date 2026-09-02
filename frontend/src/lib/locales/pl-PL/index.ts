@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const plPL = {
+  notFound: {
+    title: "Nie znaleziono strony",
+    description: "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+    backHome: "Powrót do strony głównej",
+  },
   common: {
     preferences: "Preferencje",
     appearance: "Wygląd",

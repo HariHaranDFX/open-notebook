@@ -1,6 +1,11 @@
 import type { TranslationShape } from '../en-US';
 
 export const ruRU = {
+  notFound: {
+    title: "Страница не найдена",
+    description: "Запрашиваемая страница не существует или была перемещена.",
+    backHome: "На главную",
+  },
   common: {
     preferences: "Параметры",
     appearance: "Внешний вид",

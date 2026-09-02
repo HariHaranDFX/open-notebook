@@ -87,9 +87,10 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div role="group" aria-labelledby="search-type-label" className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <span id="search-type-label" className="text-sm font-medium">{t('searchPage.searchType')}</span>
             <RadioGroup
+              aria-labelledby="search-type-label"
               name="search-type"
               value={type}
               onValueChange={(value: 'text' | 'vector') => setType(value)}

@@ -152,6 +152,7 @@ export function SettingsForm() {
         render={({ field }) => (
           <Switch
             id={name}
+            aria-label={label}
             checked={field.value ?? defaultChecked}
             onCheckedChange={field.onChange}
             disabled={isLoading || !doclingAvailable}
