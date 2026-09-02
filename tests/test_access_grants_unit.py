@@ -11,7 +11,6 @@ from api.ownership import (
     role_at_least,
 )
 
-
 USER_A = AuthenticatedUser(
     id="user:a",
     email="a@example.com",
