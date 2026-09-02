@@ -180,6 +180,7 @@ export function SessionManager({
                       <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                         <Input
                           value={editTitle}
+                          aria-label={t('chat.sessionTitlePlaceholder')}
                           onChange={(e) => setEditTitle(e.target.value)}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') handleSaveEdit()
