@@ -129,7 +129,8 @@ claude-logs/
 docs/custom_gpt
 doc_exports/
 
-specs/
+# Root-level scratch specs only — do NOT ignore tracked docs/superpowers/specs/.
+/specs/
 .claude
 .sisyphus
 
