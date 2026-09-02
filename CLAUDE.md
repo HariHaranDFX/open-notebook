@@ -9,10 +9,12 @@ Rules:
 - One branch per work package (wp-<n>-<slug>). Never mix packages.
 - A package is done only when its acceptance criteria pass AND tests are green.
 - Stop and report at the end of each package for human review. Do not roll on.
-- Current work package: **WP2b in progress on `wp-2b-sharing`** (Sharing ACL,
-  groups, admin allocate). WP0–WP2 and WP-DEC are complete on `main`. After
-  WP2b merges, next is **WP3 (Frontend map + white-label)** — do not mix on
-  this branch.
+- Current work package: **WP3 complete and approved.** Frontend architecture
+  map + config-driven white-label + the full redesign (WP3-00..07), plus a
+  shadscan a11y/foundation hardening pass; human-reviewed on 2026-09-03, UI
+  approved. WP2b sharing is integrated here (WP3-00); WP0–WP2 and WP-DEC were
+  already on `main`. Shipping to `main` via the WP3 PR (this change rides in it).
+  Next package: TBD.
 
 WP0 landed: `upstream-base` tag at the fork point (upstream `30c7e2a`, v1.14.0
 — not v1.10.0 as the plan states), verified build steps + baselines in
