@@ -27,6 +27,7 @@ def test_source_title_query_is_bound_and_combined_with_access(
     response = _client().get("/api/sources?query=%20Lithium%20")
 
     assert response.status_code == 200
+    assert mock_query.await_args is not None
     query, params = mock_query.await_args.args
     assert "user_id = $access_uid" in query
     assert "string::lowercase(title OR '') CONTAINS $title_query" in query
@@ -46,6 +47,7 @@ def test_blank_source_title_query_behaves_like_omission(
     response = _client().get("/api/sources?query=%20%20%20")
 
     assert response.status_code == 200
+    assert mock_query.await_args is not None
     query, params = mock_query.await_args.args
     assert "$title_query" not in query
     assert "title_query" not in params
@@ -65,6 +67,7 @@ def test_source_title_query_preserves_pagination_and_sorting(
     )
 
     assert response.status_code == 200
+    assert mock_query.await_args is not None
     query, params = mock_query.await_args.args
     assert "ORDER BY title_sort ASC, id ASC" in query
     assert params == {
