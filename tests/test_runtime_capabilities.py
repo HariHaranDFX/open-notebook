@@ -8,7 +8,10 @@ isn't installed.
 
 from unittest.mock import patch
 
-from open_notebook.utils.runtime_capabilities import engine_runtime_missing
+from open_notebook.utils.runtime_capabilities import (
+    engine_runtime_missing,
+    media_processing_available,
+)
 
 
 class TestEngineRuntimeMissing:
@@ -76,3 +79,44 @@ class TestEngineRuntimeMissing:
             return_value=True,
         ):
             assert engine_runtime_missing("crawl4ai") is None
+
+
+class TestMediaProcessingAvailable:
+    """FFmpeg + FFprobe gate audio/video ingestion.
+
+    content-core shells out to both binaries to decode media before transcription;
+    if either is missing, extraction fails deep inside the worker with a cryptic
+    error that used to consume the 15-attempt retry budget. The probe lets the
+    API/UI advertise media honestly and lets the worker fail fast with a clear
+    message. Both binaries must resolve — ffprobe ships alongside ffmpeg in the
+    same LGPL apt/brew/winget package, so "one present, one missing" indicates a
+    broken install we should not silently paper over.
+    """
+
+    def test_both_present_is_available(self):
+        with patch(
+            "open_notebook.utils.runtime_capabilities.shutil.which",
+            side_effect=lambda name: f"/usr/bin/{name}",
+        ):
+            assert media_processing_available() is True
+
+    def test_only_ffmpeg_present_is_not_available(self):
+        with patch(
+            "open_notebook.utils.runtime_capabilities.shutil.which",
+            side_effect=lambda name: "/usr/bin/ffmpeg" if name == "ffmpeg" else None,
+        ):
+            assert media_processing_available() is False
+
+    def test_only_ffprobe_present_is_not_available(self):
+        with patch(
+            "open_notebook.utils.runtime_capabilities.shutil.which",
+            side_effect=lambda name: "/usr/bin/ffprobe" if name == "ffprobe" else None,
+        ):
+            assert media_processing_available() is False
+
+    def test_neither_present_is_not_available(self):
+        with patch(
+            "open_notebook.utils.runtime_capabilities.shutil.which",
+            return_value=None,
+        ):
+            assert media_processing_available() is False
