@@ -1060,11 +1060,10 @@ async def retry_source_processing(source_id: str, request: Request):
             {"source_id": ensure_record_id(source.id or source_id)},
         )
         notebook_ids = [str(nb_id) for nb_id in references] if references else []
-
-        if not notebook_ids:
-            raise HTTPException(
-                status_code=400, detail="Source is not associated with any notebooks"
-            )
+        # An empty notebook_ids list is legitimate: sources uploaded directly
+        # from the Sources page (WP2b source-level ownership) live outside any
+        # notebook. process_source_command accepts notebook_ids=[] just like
+        # the create endpoint does, so no rejection needed here.
 
         # Prepare content_state based on source asset
         content_state = {}

@@ -180,21 +180,39 @@ class TestRetrySourceProcessing:
         assert str(source.command).startswith("command:")
 
     @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
-    async def test_retry_400_only_when_truly_unlinked(
-        self, mock_get, mock_repo_query, client
+    async def test_retry_succeeds_for_orphan_source(
+        self, mock_get, mock_repo_query, mock_submit, client
     ):
+        """Retry must work even when a source has no notebook links. Uploads
+        made directly from the Sources page (WP2b sharing model, source-level
+        ownership without notebook membership) legitimately produce orphan
+        sources, and the create endpoint already accepts notebook_ids=[]. The
+        retry path used to reject them with a 400, which trapped the user
+        with a permanently failed source they could never retry (#user report
+        on fix/ingestion-media-capability)."""
         source = MagicMock()
         source.id = "source:1"
         source.command = None
+        source.title = "My source"
+        source.topics = []
+        source.full_text = None
+        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.save = AsyncMock()
+        source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
         mock_repo_query.return_value = []  # genuinely no notebooks
+        mock_submit.return_value = "command:123"
 
         response = client.post("/api/sources/source:1/retry")
 
-        assert response.status_code == 400
-        assert "not associated with any notebooks" in response.json()["detail"]
+        assert response.status_code == 200
+        # Retry command was submitted with an empty notebook_ids list, matching
+        # what the create endpoint would have accepted for the same source.
+        submitted_payload = mock_submit.await_args.args[2]
+        assert submitted_payload["notebook_ids"] == []
 
 
 class TestGetSourceNotFound:
