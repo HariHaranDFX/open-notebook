@@ -62,6 +62,7 @@ from open_notebook.exceptions import (
     UnsupportedTypeException,
 )
 from open_notebook.utils.encryption import get_secret_from_env
+from open_notebook.utils.runtime_capabilities import media_processing_available
 
 
 def _parse_cors_origins(raw: str) -> list[str]:
@@ -204,6 +205,18 @@ async def lifespan(app: FastAPI):
             "OPEN_NOTEBOOK_ENCRYPTION_KEY not set. "
             "API key encryption will fail until this is configured. "
             "Set OPEN_NOTEBOOK_ENCRYPTION_KEY to any secret string."
+        )
+
+    # Runtime capability: media processing (audio/video ingestion).
+    # Report at startup so operators see the media capability in the boot log
+    # rather than discovering it from a failed upload.
+    if media_processing_available():
+        logger.info("Media processing available (ffmpeg + ffprobe found on PATH)")
+    else:
+        logger.warning(
+            "ffmpeg/ffprobe not found on PATH - audio and video uploads will be "
+            "rejected with a clear error until FFmpeg is installed. "
+            "See docs/DEV_SETUP.md section 10."
         )
 
     # Run database migrations
