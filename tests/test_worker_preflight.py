@@ -24,6 +24,8 @@ from open_notebook.graphs.source import (
     _label_docling_flag,
     _preflight_upload,
     _rewrite_extraction_error,
+    _safe_unlink,
+    _url_looks_like_media,
 )
 
 
@@ -74,15 +76,108 @@ class TestPreflightMediaFile:
             )
 
 
-class TestPreflightSkips:
-    def test_url_input_is_not_preflighted_as_file(self):
-        # URL routing to files is the next commit; here the preflight is a no-op.
+class TestUrlLooksLikeMedia:
+    """URL detection must handle query strings and case, because the raw
+    os.path.splitext of a URL wrongly puts the query into the extension
+    (e.g. splitext('https://x/y.mp3?t=1') -> ('...y', '.mp3?t=1')).
+    """
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://samplelib.com/mp3/sample-speech-5m.mp3",
+            "https://samplelib.com/mp4/sample-10s.mp4",
+            "http://host/path/audio.wav",
+            "https://cdn.example.com/media/clip.m4a",
+        ],
+    )
+    def test_media_urls_are_detected(self, url):
+        assert _url_looks_like_media(url) is True
+
+    def test_query_string_does_not_break_detection(self):
+        assert (
+            _url_looks_like_media("https://x.com/audio.mp3?token=abc&sig=xyz")
+            is True
+        )
+
+    def test_case_insensitive(self):
+        assert _url_looks_like_media("https://EXAMPLE.COM/SONG.MP3") is True
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://example.com/article.html",
+            "https://example.com/paper.pdf",
+            "https://api.example.com/media/12345",  # no extension in path
+            "https://youtube.com/watch?v=abc",
+            "",
+        ],
+    )
+    def test_non_media_urls_are_not_detected(self, url):
+        assert _url_looks_like_media(url) is False
+
+
+class TestPreflightUrlMedia:
+    """Preflight is source-agnostic: file_path OR url, whichever the caller has."""
+
+    def test_media_url_without_ffmpeg_is_rejected(self):
+        with pytest.raises(ConfigurationError) as exc:
+            _preflight_upload(
+                {"url": "https://samplelib.com/mp3/sample.mp3"},
+                media_available=False,
+                stt_configured=True,
+            )
+        assert "ffmpeg" in str(exc.value).lower()
+
+    def test_media_url_with_query_string_still_gated(self):
+        with pytest.raises(ConfigurationError):
+            _preflight_upload(
+                {"url": "https://x.com/audio.mp3?token=abc"},
+                media_available=False,
+                stt_configured=True,
+            )
+
+    def test_media_url_needs_stt(self):
+        with pytest.raises(ConfigurationError) as exc:
+            _preflight_upload(
+                {"url": "https://x.com/song.mp3"},
+                media_available=True,
+                stt_configured=False,
+            )
+        assert "speech-to-text" in str(exc.value).lower()
+
+    def test_html_url_passes_even_without_media(self):
         _preflight_upload(
-            {"url": "https://samplelib.com/mp3/sample-speech-5m.mp3"},
+            {"url": "https://example.com/article"},
             media_available=False,
             stt_configured=False,
         )
 
+    def test_youtube_url_is_not_media_gated(self):
+        """YouTube goes through its own transcript extractor, no ffmpeg needed."""
+        _preflight_upload(
+            {"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
+            media_available=False,
+            stt_configured=False,
+        )
+
+
+class TestSafeUnlink:
+    def test_deletes_existing_file(self, tmp_path):
+        f = tmp_path / "delete_me.txt"
+        f.write_text("bye")
+        _safe_unlink(str(f))
+        assert not f.exists()
+
+    def test_missing_file_does_not_raise(self, tmp_path):
+        # No raise, no complaint.
+        _safe_unlink(str(tmp_path / "nope.txt"))
+
+    def test_none_is_a_noop(self):
+        _safe_unlink(None)
+
+
+class TestPreflightSkips:
     def test_plaintext_file_passes(self):
         _preflight_upload(
             {"file_path": "notes.txt"},

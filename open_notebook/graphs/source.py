@@ -1,7 +1,10 @@
 import operator
 import os
+import tempfile
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
+import aiohttp
 from content_core import ContentCoreConfig, extract_content
 from content_core.common import ExtractionOutput
 from langchain_core.runnables import RunnableConfig
@@ -83,6 +86,25 @@ def _usable_engine(engine: str, kind: str) -> str:
     return "auto"
 
 
+def _url_looks_like_media(url: str) -> bool:
+    """True when ``url``'s path ends in an ffmpeg-backed audio/video extension.
+
+    Uses ``urlparse(url).path`` because a naive ``os.path.splitext(url)`` puts
+    the query string into the extension for URLs like ``.mp3?token=abc``.
+    Extension-only detection covers the common case (samplelib, S3 links,
+    direct CDNs); URLs without a media extension in the path (e.g. a bare
+    ``/media/12345``) fall through to content-core's normal URL routing.
+    """
+    if not url:
+        return False
+    try:
+        path = urlparse(url).path
+    except Exception:
+        return False
+    ext = os.path.splitext(path)[1].lower()
+    return ext in _MEDIA_EXTS
+
+
 def _preflight_upload(
     content_state: Dict[str, Any],
     *,
@@ -96,15 +118,21 @@ def _preflight_upload(
     error. ConfigurationError is in the surreal-commands ``stop_on`` list for
     process_source, so raising it here is a hard stop, not a retry.
 
-    Only file uploads are gated here; URLs are validated in the URL-routing path
-    (they route through a separate download step). PDF encryption is handled by
-    _rewrite_extraction_error after the extractor raises, because pdfminer fails
-    fast at document initialisation with a specific typed exception.
+    Source-agnostic: works on ``file_path`` uploads and on ``url`` inputs whose
+    path ends in a media extension (samplelib.com/mp3/x.mp3, direct S3 links
+    etc). YouTube and other URLs without a media path extension pass through
+    unchecked because they route through their own extractors that don't need
+    ffmpeg. PDF encryption is handled post-hoc by _rewrite_extraction_error.
     """
     file_path = content_state.get("file_path")
-    if not file_path:
+    url = content_state.get("url")
+    if file_path:
+        ext = os.path.splitext(file_path)[1].lower()
+    elif url:
+        # Media detection via urlparse to strip query strings; matches _url_looks_like_media.
+        ext = os.path.splitext(urlparse(url).path)[1].lower()
+    else:
         return
-    ext = os.path.splitext(file_path)[1].lower()
     if ext in _MEDIA_EXTS:
         if not media_available:
             raise ConfigurationError(
@@ -117,6 +145,47 @@ def _preflight_upload(
                 "Audio and video uploads require a configured Speech-to-Text model. "
                 "Add one in Settings -> Models before uploading."
             )
+
+
+async def _download_url_to_tmp(url: str) -> str:
+    """Download ``url`` to a temp file, preserving its extension.
+
+    Extension preservation matters because content-core's file router picks the
+    extractor from the file's MIME/extension; a suffix-less tmp path would fall
+    back to text and re-hit the same UTF-8-decode-of-binary-bytes failure that
+    already breaks the URL path. Callers are responsible for _safe_unlink on
+    the returned path.
+    """
+    parsed = urlparse(url)
+    suffix = os.path.splitext(parsed.path)[1]
+    fd, tmp = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                resp.raise_for_status()
+                with open(tmp, "wb") as f:
+                    async for chunk in resp.content.iter_chunked(64 * 1024):
+                        f.write(chunk)
+    except Exception:
+        _safe_unlink(tmp)
+        raise
+    return tmp
+
+
+def _safe_unlink(path: Optional[str]) -> None:
+    """Delete ``path`` if it exists, ignoring missing-file and permission errors.
+
+    Used to clean up temp downloads whether extraction succeeds or fails. A
+    stuck lock on Windows or a race with another cleaner must not crash the
+    worker; the OS or a tmp reaper will handle whatever we leave behind.
+    """
+    if not path:
+        return
+    try:
+        os.remove(path)
+    except OSError:
+        logger.warning(f"Failed to delete temp download: {path}")
 
 
 def _rewrite_extraction_error(exc: BaseException) -> None:
@@ -215,7 +284,9 @@ async def content_process(state: SourceState) -> dict:
 
     # Reject uploads that would fail deep inside content-core with a cryptic
     # message and burn the 15-attempt retry budget. ConfigurationError is in
-    # process_source's stop_on list -> immediate permanent failure.
+    # process_source's stop_on list -> immediate permanent failure. Runs
+    # BEFORE any network download so a permanent reject doesn't fetch bytes
+    # we're about to throw away.
     _preflight_upload(
         content_state,
         media_available=media_processing_available(),
@@ -243,19 +314,34 @@ async def content_process(state: SourceState) -> dict:
         f"docling_vision={_label_docling_flag(config_kwargs.get('docling_vision'), effective_doc_engine)})"
     )
 
+    # Route direct audio/video URLs through the file extractor. content-core's
+    # URL router hands anything not matched by its MIME allowlist to the HTML
+    # extractors (Firecrawl/Jina/Crawl4AI/bs4), which try to UTF-8-decode the
+    # binary bytes and fail with a cryptic error. Downloading first and
+    # re-invoking with file_path lets content-core route to transcribe_audio /
+    # extract_video, the same path a local upload takes. The Asset saved later
+    # keeps the original URL (via state["content_state"]) so provenance is
+    # preserved even though the tmp file is deleted.
+    tmp_media_download: Optional[str] = None
+    if content_state.get("url") and _url_looks_like_media(content_state["url"]):
+        tmp_media_download = await _download_url_to_tmp(content_state["url"])
     try:
-        processed = await extract_content(
-            url=content_state.get("url"),
-            file_path=content_state.get("file_path"),
-            content=content_state.get("content"),
-            config=config,
-        )
-    except Exception as exc:
-        # Translate known-permanent failures (e.g. password-protected PDFs from
-        # pdfminer) into ConfigurationError so the worker stops retrying and the
-        # UI shows a real message. Unrelated exceptions bubble up unchanged.
-        _rewrite_extraction_error(exc)
-        raise  # unreachable; _rewrite_extraction_error always raises
+        try:
+            processed = await extract_content(
+                url=None if tmp_media_download else content_state.get("url"),
+                file_path=tmp_media_download or content_state.get("file_path"),
+                content=content_state.get("content"),
+                config=config,
+            )
+        except Exception as exc:
+            # Translate known-permanent failures (e.g. password-protected PDFs
+            # from pdfminer) into ConfigurationError so the worker stops
+            # retrying and the UI shows a real message. Unrelated exceptions
+            # bubble up unchanged.
+            _rewrite_extraction_error(exc)
+            raise  # unreachable; _rewrite_extraction_error always raises
+    finally:
+        _safe_unlink(tmp_media_download)
 
     # content-core signals a soft extraction failure (e.g. an unreachable or
     # invalid URL, via the bs4 fallback) by returning title="Error" and content
