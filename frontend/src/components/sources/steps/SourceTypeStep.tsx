@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
 import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
+import { useCapabilities } from "@/lib/hooks/use-capabilities"
 import { FormSection } from "@/components/ui/form-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Controller } from "react-hook-form"
+
+// Base document types content-core always handles: PDF, Office suite, plain
+// text/markdown, EPUB, HTML. Media (needs ffmpeg) and images (need Docling)
+// are appended below only when the server actually has those runtimes.
+// Archives (.zip / .tar / .gz) are intentionally absent: content-core detects
+// their MIME type but has no extractor for them, so advertising them was a
+// lie. Container / email support is a separate follow-up branch.
+const BASE_ACCEPT_EXTENSIONS = [
+  ".pdf", ".doc", ".docx", ".pptx", ".ppt", ".xlsx", ".xls",
+  ".txt", ".md", ".epub", ".html",
+] as const
+const MEDIA_ACCEPT_EXTENSIONS = [
+  ".mp4", ".avi", ".mov", ".wmv", ".mp3", ".wav", ".m4a", ".aac",
+] as const
+const IMAGE_ACCEPT_EXTENSIONS = [".jpg", ".jpeg", ".png", ".tiff"] as const
 
 interface CreateSourceFormData {
   type: 'link' | 'upload' | 'text'
@@ -99,6 +115,20 @@ const MAX_BATCH_SIZE = 50
 
 export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
   const { t } = useTranslation()
+  const { data: capabilities } = useCapabilities()
+  // While capabilities are loading (data undefined), fail closed: advertise
+  // only base document types. Falsely offering audio/video/images and then
+  // rejecting the upload is worse than the smaller picker for a moment.
+  const mediaAvailable = capabilities?.media_processing_available ?? false
+  const doclingAvailable = capabilities?.docling_available ?? false
+  const fileAccept = useMemo(() => {
+    // Widen to string[]: the three source arrays are ``as const`` so their
+    // element types are non-overlapping literal unions, which blocks spread.
+    const exts: string[] = [...BASE_ACCEPT_EXTENSIONS]
+    if (doclingAvailable) exts.push(...IMAGE_ACCEPT_EXTENSIONS)
+    if (mediaAvailable) exts.push(...MEDIA_ACCEPT_EXTENSIONS)
+    return exts.join(',')
+  }, [doclingAvailable, mediaAvailable])
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
   const urlInput = useWatch({ control, name: 'url' })
@@ -250,11 +280,21 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                         type="file"
                         multiple
                         {...register('file')}
-                        accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html"
+                        accept={fileAccept}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         {t('sources.selectMultipleFilesHint')}
                       </p>
+                      {!mediaAvailable && (
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                          {t('sources.mediaUnavailable')}
+                        </p>
+                      )}
+                      {!doclingAvailable && (
+                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                          {t('sources.imagesUnavailable')}
+                        </p>
+                      )}
                       {fileCount > 1 && fileInput instanceof FileList && (
                         <div className="mt-2 p-3 bg-muted rounded-md">
                           <p className="text-xs font-medium mb-2">{t('sources.selectedFiles')}</p>
