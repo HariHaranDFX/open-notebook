@@ -295,6 +295,17 @@ async def content_process(state: SourceState) -> dict:
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
+                # content-core -> esperanto's create_speech_to_text reads
+                # credentials from env vars only (its signature accepts no
+                # config beyond {"timeout": ...}); provision the LINKED STT
+                # credential into modality-specific env vars so a multi-
+                # credential Azure setup (LLM+embedding on one endpoint,
+                # STT+TTS on another) routes each model to its own resource.
+                from open_notebook.ai.key_provider import (
+                    provision_env_for_model,
+                )
+
+                await provision_env_for_model(stt_model, modality="STT")
     except Exception as e:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)

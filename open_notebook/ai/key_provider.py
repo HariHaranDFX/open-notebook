@@ -309,6 +309,131 @@ async def provision_provider_keys(provider: str) -> bool:
     return await _provision_simple_provider(provider_lower)
 
 
+async def provision_env_for_model(model, *, modality: Optional[str] = None) -> None:
+    """Push env vars from ``model``'s linked credential (or the provider's
+    default credential) for call sites that can't pass a config dict inline.
+
+    content-core's audio path reaches esperanto via ``AIFactory.create_speech
+    _to_text`` / ``create_text_to_speech`` with a fixed signature that only
+    accepts a ``{"timeout": ...}`` config dict; the credentials must come
+    from env vars. This helper mirrors what ``ModelManager.get_model`` does
+    for chat/embedding (which pass a config dict inline), so an audio model
+    with a linked credential gets its own credential in env vars instead of
+    silently falling back to whatever "default" credential lives at the
+    provider level.
+
+    ``modality`` is one of ``"STT"``, ``"TTS"``, or ``None``. For Azure it
+    decides whether to set the modality-specific ``AZURE_OPENAI_*_STT`` /
+    ``_TTS`` env vars (esperanto prefers those over the base names). That's
+    how a two-Azure-credential setup — one credential for LLM+embedding,
+    another for STT+TTS on a different resource endpoint — routes correctly:
+    the modality-specific vars land the STT credential without clobbering
+    the base vars owned by the LLM credential. For non-Azure providers the
+    modality is ignored — esperanto has no modality dimension in their env-
+    var scheme, so per-model routing there needs the "default credential"
+    to be set correctly by the operator.
+
+    When the model has no linked credential (or the linked one no longer
+    exists), delegates to ``provision_provider_keys(provider)`` — same
+    behavior the chat path uses as its fallback.
+    """
+    if not model or not getattr(model, "provider", None):
+        return
+
+    credential = None
+    if getattr(model, "credential", None):
+        try:
+            credential = await model.get_credential_obj()
+        except Exception as e:
+            logger.debug(
+                f"Could not load linked credential for model "
+                f"{getattr(model, 'id', '?')}: {e}"
+            )
+
+    if credential is None:
+        # Same fallback ModelManager.get_model uses when no credential is linked.
+        await provision_provider_keys(model.provider)
+        return
+
+    provider = model.provider.lower()
+
+    # Azure with a modality: set the *_STT / *_TTS env vars so a linked
+    # credential can own its modality without disturbing the base Azure vars
+    # that a different credential (LLM/embedding) may own.
+    if provider == "azure" and modality in ("STT", "TTS"):
+        if credential.api_key:
+            os.environ[f"AZURE_OPENAI_API_KEY_{modality}"] = (
+                credential.api_key.get_secret_value()
+            )
+        endpoint = (
+            getattr(credential, f"endpoint_{modality.lower()}", None)
+            or credential.endpoint
+            or credential.base_url
+        )
+        if endpoint:
+            os.environ[f"AZURE_OPENAI_ENDPOINT_{modality}"] = endpoint
+        if credential.api_version:
+            os.environ[f"AZURE_OPENAI_API_VERSION_{modality}"] = credential.api_version
+        logger.debug(
+            f"Provisioned Azure {modality} env vars from credential "
+            f"{getattr(credential, 'name', '?')!r}"
+        )
+        return
+
+    # Azure without a modality: base env vars (rare from content-core, but keep
+    # symmetric with _provision_azure so a linked non-default Azure credential
+    # still wins when the caller doesn't specify a modality).
+    if provider == "azure":
+        if credential.api_key:
+            os.environ["AZURE_OPENAI_API_KEY"] = credential.api_key.get_secret_value()
+        endpoint = credential.endpoint or credential.base_url
+        if endpoint:
+            os.environ["AZURE_OPENAI_ENDPOINT"] = endpoint
+        if credential.api_version:
+            os.environ["AZURE_OPENAI_API_VERSION"] = credential.api_version
+        return
+
+    # Vertex: multi-field, mirrors _provision_vertex.
+    if provider == "vertex":
+        if credential.project:
+            os.environ["VERTEX_PROJECT"] = credential.project
+        if credential.location:
+            os.environ["VERTEX_LOCATION"] = credential.location
+        if credential.credentials_path:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credential.credentials_path
+        return
+
+    if provider in ("openai_compatible", "openai-compatible"):
+        if credential.api_key:
+            os.environ["OPENAI_COMPATIBLE_API_KEY"] = credential.api_key.get_secret_value()
+        if credential.base_url:
+            os.environ["OPENAI_COMPATIBLE_BASE_URL"] = credential.base_url
+        return
+
+    if provider in ("anthropic_compatible", "anthropic-compatible"):
+        if credential.api_key:
+            os.environ["ANTHROPIC_COMPATIBLE_API_KEY"] = credential.api_key.get_secret_value()
+        if credential.base_url:
+            os.environ["ANTHROPIC_COMPATIBLE_BASE_URL"] = credential.base_url
+        return
+
+    # Simple providers: one API-key env var (+ optional API-base). Mirrors
+    # _provision_simple_provider's env-var scheme, but from the linked
+    # credential instead of the default.
+    config_info = PROVIDER_CONFIG.get(provider)
+    if not config_info:
+        # Unknown provider — best-effort delegate; the default provisioner
+        # returns False silently for unrecognized names.
+        await provision_provider_keys(model.provider)
+        return
+
+    env_var = config_info["env_var"]
+    if credential.api_key:
+        os.environ[env_var] = credential.api_key.get_secret_value()
+    if credential.base_url:
+        os.environ[f"{provider.upper()}_API_BASE"] = credential.base_url
+
+
 async def provision_all_keys() -> dict[str, bool]:
     """
     Provision environment variables from database for all providers.
