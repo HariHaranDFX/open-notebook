@@ -264,7 +264,52 @@ The worker is not running. This is the single most common local-setup mistake
 
 ---
 
-## 10. Fork hygiene
+## 10. FFmpeg for audio/video ingestion
+
+Audio and video sources (uploads and direct URLs) are transcribed via
+content-core → the configured Speech-to-Text model, and content-core shells
+out to **`ffmpeg` and `ffprobe`** to decode the media first. Missing either
+binary now fails the upload immediately with a clear message (a
+`ConfigurationError` from `open_notebook.graphs.source._preflight_upload`, no
+15-attempt retry loop), and the upload picker hides audio/video extensions
+from the file dialog. Install the pair on any host that runs the worker.
+
+**The shipped Docker images (`--target runtime` and `--target single`)
+already include ffmpeg** — this only affects bare-metal or `uv sync` dev
+setups.
+
+| OS | Install |
+|---|---|
+| Windows | `winget install --id=Gyan.FFmpeg -e` or `choco install ffmpeg` |
+| macOS | `brew install ffmpeg` |
+| Debian/Ubuntu | `sudo apt-get install ffmpeg` |
+| Fedora/RHEL | `sudo dnf install ffmpeg` |
+
+Verify — both must resolve on the PATH the worker is started from:
+
+```bash
+# Linux/macOS
+which ffmpeg && which ffprobe && ffmpeg -version | head -1
+```
+
+```bash
+# Windows (PowerShell)
+Get-Command ffmpeg, ffprobe
+```
+
+Confirm the API sees it (returns `"media_processing_available": true`):
+
+```bash
+curl -s http://localhost:5055/api/capabilities | jq .media_processing_available
+```
+
+**License note (LGPL, WP1).** The standard apt / brew / winget builds ship
+ffmpeg as **LGPL** shared libraries — safe to link and distribute alongside
+the app. Do **NOT** use the `--enable-gpl` custom build; that variant is
+GPL-licensed and would put the shipped image out of compliance. See
+[docs/LICENSE_COMPLIANCE.md](LICENSE_COMPLIANCE.md) §3.
+
+## 11. Fork hygiene
 
 ```
 origin    https://github.com/HariHaranDFX/open-notebook.git   (this fork)
