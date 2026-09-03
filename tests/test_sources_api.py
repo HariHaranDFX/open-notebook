@@ -138,6 +138,110 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset is None
 
 
+class TestDefaultTitleFromInput:
+    """A source created without a user-typed title must land with a friendly
+    default (filename for uploads, URL for links) instead of 'Processing...'.
+    Extraction can still upgrade it to a nicer title later; a permanent
+    failure leaves the friendly default in place, not the placeholder."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
+    async def test_upload_without_title_uses_filename(
+        self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_upload.return_value = os.path.join(
+            os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"
+        )
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "upload",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+                files={"file": ("quarterly-report.pdf", b"data", "application/pdf")},
+            )
+
+        assert saved, "source should have been saved"
+        assert saved[0].title == "quarterly-report.pdf"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    async def test_link_without_title_uses_url(
+        self, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "link",
+                    "url": "https://samplelib.com/mp3/sample.mp3",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+            )
+
+        assert saved, "source should have been saved"
+        assert saved[0].title == "https://samplelib.com/mp3/sample.mp3"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    async def test_explicit_title_is_preserved(
+        self, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "link",
+                    "url": "https://example.com/whatever",
+                    "title": "Q4 Board Deck",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+            )
+
+        assert saved[0].title == "Q4 Board Deck"
+
+
 class TestRetrySourceProcessing:
     """POST /sources/{id}/retry must find a source's notebooks via the reference
     edge's in/out columns, not a non-existent `source` column (#861)."""

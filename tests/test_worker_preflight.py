@@ -26,6 +26,7 @@ from open_notebook.graphs.source import (
     _rewrite_extraction_error,
     _safe_unlink,
     _url_looks_like_media,
+    default_source_title,
 )
 
 
@@ -252,6 +253,49 @@ class TestDoclingLogHonesty:
         assert _label_docling_flag(True, "auto") == "n/a"
         assert _label_docling_flag(True, "simple") == "n/a"
         assert _label_docling_flag(None, "auto") == "n/a"
+
+
+class TestDefaultSourceTitle:
+    """The friendly fallback the source gets when the user doesn't type a title.
+
+    Uploads become their filename (invoice.pdf), URLs become the URL string,
+    and text sources fall back to 'Processing...' because extraction always
+    succeeds for text and will overwrite immediately. The friendly default
+    means a permanent-failure source keeps a meaningful title instead of
+    being frozen as 'Processing...' forever.
+    """
+
+    def test_upload_uses_basename(self):
+        assert default_source_title({"file_path": "/uploads/invoice.pdf"}) == "invoice.pdf"
+
+    def test_upload_windows_path(self):
+        # Backslash separator resolves the same way on all platforms because
+        # our upload folder is always posix-style; guard against surprises.
+        result = default_source_title({"file_path": r"C:\uploads\report Q4.docx"})
+        assert result.endswith("report Q4.docx")
+
+    def test_url_returns_the_url_string(self):
+        assert (
+            default_source_title({"url": "https://samplelib.com/mp3/sample.mp3"})
+            == "https://samplelib.com/mp3/sample.mp3"
+        )
+
+    def test_url_with_query_string_kept_intact(self):
+        url = "https://example.com/doc?tab=1&sig=abc"
+        assert default_source_title({"url": url}) == url
+
+    def test_text_content_falls_back_to_processing(self):
+        # Text sources always extract on the first attempt; the placeholder
+        # never sticks in practice, so no filename to derive from.
+        assert default_source_title({"content": "some text"}) == "Processing..."
+
+    def test_empty_content_state_falls_back_to_processing(self):
+        assert default_source_title({}) == "Processing..."
+
+    def test_file_path_wins_over_url_when_both_present(self):
+        # This shouldn't happen in practice, but the ordering is deterministic.
+        state = {"file_path": "/uploads/a.pdf", "url": "https://example.com/x"}
+        assert default_source_title(state) == "a.pdf"
 
 
 class TestConfigurationErrorIsStopped:

@@ -86,6 +86,25 @@ def _usable_engine(engine: str, kind: str) -> str:
     return "auto"
 
 
+def default_source_title(content_state: Dict[str, Any]) -> str:
+    """Friendly fallback title used when the user doesn't type one at create.
+
+    Upload -> filename, URL -> the URL itself, text -> ``"Processing..."``
+    (extraction always succeeds for text and overwrites immediately, so the
+    placeholder never sticks in practice). Called from both the create-source
+    endpoint (to seed the title) and save_source (to recognise "this was the
+    auto default, feel free to upgrade it with the extracted title").
+    """
+    file_path = content_state.get("file_path")
+    if file_path:
+        # basename handles both posix and Windows separators uniformly.
+        return os.path.basename(file_path.replace("\\", "/")) or "Processing..."
+    url = content_state.get("url")
+    if url:
+        return url
+    return "Processing..."
+
+
 def _url_looks_like_media(url: str) -> bool:
     """True when ``url``'s path ends in an ffmpeg-backed audio/video extension.
 
@@ -402,8 +421,14 @@ async def save_source(state: SourceState) -> dict:
     )
     source.full_text = extraction.content
 
-    # Preserve user-set title; only overwrite placeholder or empty titles
-    if extraction.title and (not source.title or source.title == "Processing..."):
+    # Preserve user-set title; upgrade the auto default (filename / URL /
+    # "Processing...") when the extractor produced a nicer one.
+    auto_default = default_source_title(content_state)
+    if extraction.title and (
+        not source.title
+        or source.title == "Processing..."
+        or source.title == auto_default
+    ):
         source.title = extraction.title
 
     await source.save()

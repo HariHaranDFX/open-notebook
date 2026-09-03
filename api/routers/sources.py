@@ -55,6 +55,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
     UnsupportedTypeException,
 )
+from open_notebook.graphs.source import default_source_title
 
 router = APIRouter()
 
@@ -528,7 +529,7 @@ async def _create_source_async_path(
         source_asset = None
 
     source = Source(
-        title=source_data.title or "Processing...",
+        title=source_data.title or default_source_title(content_state),
         topics=[],
         asset=source_asset,
         user_id=user.id if user else None,
@@ -617,7 +618,7 @@ async def _create_source_sync_path(
 
         # Create source record - let SurrealDB generate the ID
         source = Source(
-            title=source_data.title or "Processing...",
+            title=source_data.title or default_source_title(content_state),
             topics=[],
             user_id=user.id if user else None,
             client_id=user.client_id if user else None,
