@@ -83,6 +83,7 @@ export interface Capabilities {
   docling_available: boolean
   crawl4ai_available: boolean
   crawl4ai_remote_configured: boolean
+  media_processing_available: boolean
 }
 
 export interface CreateNotebookRequest {
