@@ -14,8 +14,19 @@ from open_notebook.ai.models import Model, ModelManager
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
+from open_notebook.exceptions import ConfigurationError
 from open_notebook.graphs.transformation import graph as transform_graph
-from open_notebook.utils.runtime_capabilities import engine_runtime_missing
+from open_notebook.utils.runtime_capabilities import (
+    engine_runtime_missing,
+    media_processing_available,
+)
+
+# Extensions content-core routes to ffmpeg-backed transcription. Kept in lockstep
+# with the frontend upload picker so both sides agree what "media" means.
+_MEDIA_EXTS = frozenset(
+    {".mp3", ".mp4", ".wav", ".m4a", ".mov", ".avi", ".mkv", ".webm",
+     ".aac", ".flac", ".ogg", ".wmv"}
+)
 
 # Preferred languages for YouTube transcript selection. content-core's own
 # default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
@@ -72,6 +83,83 @@ def _usable_engine(engine: str, kind: str) -> str:
     return "auto"
 
 
+def _preflight_upload(
+    content_state: Dict[str, Any],
+    *,
+    media_available: bool,
+    stt_configured: bool,
+) -> None:
+    """Raise ConfigurationError for uploads that would fail deep inside content-core.
+
+    Runs BEFORE extract_content() so the worker marks the job ``failed`` on the
+    first try instead of consuming the 15-attempt retry budget on a permanent
+    error. ConfigurationError is in the surreal-commands ``stop_on`` list for
+    process_source, so raising it here is a hard stop, not a retry.
+
+    Only file uploads are gated here; URLs are validated in the URL-routing path
+    (they route through a separate download step). PDF encryption is handled by
+    _rewrite_extraction_error after the extractor raises, because pdfminer fails
+    fast at document initialisation with a specific typed exception.
+    """
+    file_path = content_state.get("file_path")
+    if not file_path:
+        return
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext in _MEDIA_EXTS:
+        if not media_available:
+            raise ConfigurationError(
+                "Audio and video uploads require FFmpeg (ffmpeg + ffprobe) on the "
+                "worker host. Install FFmpeg (see docs/DEV_SETUP.md) and restart "
+                "the worker."
+            )
+        if not stt_configured:
+            raise ConfigurationError(
+                "Audio and video uploads require a configured Speech-to-Text model. "
+                "Add one in Settings -> Models before uploading."
+            )
+
+
+def _rewrite_extraction_error(exc: BaseException) -> None:
+    """Translate a known-permanent extraction failure into ConfigurationError.
+
+    content-core's PDF path (pdfplumber -> pdfminer) raises
+    ``PDFPasswordIncorrect`` / ``PDFEncryptionError`` at document initialisation
+    when the file is password-protected. Without translation, the worker treats
+    both as transient and retries 15 times before giving up with a cryptic
+    message. Called from the ``except`` around extract_content(); re-raises the
+    original exception unchanged when it isn't one we can improve on.
+    """
+    from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
+
+    encryption_types = (PDFPasswordIncorrect, PDFEncryptionError)
+    encryption_keywords = ("encrypt", "password", "protected")
+
+    is_encryption = isinstance(exc, encryption_types) or any(
+        keyword in str(exc).lower() for keyword in encryption_keywords
+    )
+    if is_encryption:
+        raise ConfigurationError(
+            "This file is password-protected. Remove the password and re-upload."
+        ) from exc
+    raise exc
+
+
+def _label_docling_flag(value: bool | None, engine: str) -> str:
+    """Label a Docling toggle for the extraction log line.
+
+    content-core ignores docling_ocr/_formulas/_vision outside the Docling
+    document engine. Echoing the stored preference verbatim there read as if
+    OCR/formulas/vision were active when they weren't (e.g. Docling not
+    installed -> engine falls back to 'auto' via _usable_engine, but the log
+    still printed docling_ocr=True). Show "n/a" for the honest picture.
+    """
+    if engine != "docling":
+        return "n/a"
+    if value is None:
+        return "auto"
+    return str(value)
+
+
 async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]
 
@@ -125,6 +213,17 @@ async def content_process(state: SourceState) -> dict:
 
     config = ContentCoreConfig(**config_kwargs) if config_kwargs else None
 
+    # Reject uploads that would fail deep inside content-core with a cryptic
+    # message and burn the 15-attempt retry budget. ConfigurationError is in
+    # process_source's stop_on list -> immediate permanent failure.
+    _preflight_upload(
+        content_state,
+        media_available=media_processing_available(),
+        stt_configured=bool(
+            config_kwargs.get("audio_provider") and config_kwargs.get("audio_model")
+        ),
+    )
+
     # Log the effective extraction engines so operators can confirm which engine
     # actually ran (content-core logs its own dispatch only at DEBUG). Absent
     # overrides fall back to content-core's "auto".
@@ -134,21 +233,29 @@ async def content_process(state: SourceState) -> dict:
         target = "document"
     else:
         target = "content"
+    effective_doc_engine = config_kwargs.get("document_engine", "auto")
     logger.info(
         f"Extracting {target} via content-core "
         f"(url_engine={config_kwargs.get('url_engine', 'auto')}, "
-        f"document_engine={config_kwargs.get('document_engine', 'auto')}, "
-        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')}, "
-        f"docling_formulas={config_kwargs.get('docling_formulas', 'auto')}, "
-        f"docling_vision={config_kwargs.get('docling_vision', 'auto')})"
+        f"document_engine={effective_doc_engine}, "
+        f"docling_ocr={_label_docling_flag(config_kwargs.get('docling_ocr'), effective_doc_engine)}, "
+        f"docling_formulas={_label_docling_flag(config_kwargs.get('docling_formulas'), effective_doc_engine)}, "
+        f"docling_vision={_label_docling_flag(config_kwargs.get('docling_vision'), effective_doc_engine)})"
     )
 
-    processed = await extract_content(
-        url=content_state.get("url"),
-        file_path=content_state.get("file_path"),
-        content=content_state.get("content"),
-        config=config,
-    )
+    try:
+        processed = await extract_content(
+            url=content_state.get("url"),
+            file_path=content_state.get("file_path"),
+            content=content_state.get("content"),
+            config=config,
+        )
+    except Exception as exc:
+        # Translate known-permanent failures (e.g. password-protected PDFs from
+        # pdfminer) into ConfigurationError so the worker stops retrying and the
+        # UI shows a real message. Unrelated exceptions bubble up unchanged.
+        _rewrite_extraction_error(exc)
+        raise  # unreachable; _rewrite_extraction_error always raises
 
     # content-core signals a soft extraction failure (e.g. an unreachable or
     # invalid URL, via the bs4 fallback) by returning title="Error" and content
