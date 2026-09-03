@@ -24,7 +24,8 @@ describe('useTranslation Hook', () => {
     actionDark: '#74A9D6',
   }
   const wrapper = ({ children }: { children: React.ReactNode }) =>
-    createElement(BrandProvider, { brand: atlasBrand }, children)
+    // BrandProviderProps requires children in props, not as the third arg.
+    createElement(BrandProvider, { brand: atlasBrand, children })
 
   beforeEach(() => {
     vi.clearAllMocks()

@@ -45,9 +45,11 @@ describe('notebook pane toolbars', () => {
         sources={[{
           id: 'source:evidence',
           title: 'Evidence',
+          asset: null,
           created: '2026-01-01T00:00:00Z',
           updated: '2026-01-01T00:00:00Z',
           embedded: false,
+          embedded_chunks: 0,
           insights_count: 0,
         }]}
         onBulkContextModeChange={vi.fn()}
