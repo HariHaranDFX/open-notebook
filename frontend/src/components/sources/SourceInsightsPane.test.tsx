@@ -8,7 +8,17 @@ describe('SourceInsightsPane', () => {
     render(
       <SourceInsightsPane
         insights={[]}
-        transformations={[{ id: 'transformation:summary', name: 'Summary' }]}
+        transformations={[{
+          id: 'transformation:summary',
+          name: 'Summary',
+          title: 'Summary',
+          description: 'Summarise the source in a paragraph.',
+          prompt: 'Summarise: {{ text }}',
+          apply_default: false,
+          model_id: null,
+          created: '2026-08-01T00:00:00Z',
+          updated: '2026-08-01T00:00:00Z',
+        }]}
         selectedTransformation="transformation:summary"
         loadingInsights={false}
         creatingInsight={false}
@@ -33,8 +43,11 @@ describe('SourceInsightsPane', () => {
       <SourceInsightsPane
         insights={[{
           id: 'source_insight:summary',
+          source_id: 'source:evidence',
           insight_type: 'summary',
           content: 'A concise summary.',
+          created: '2026-08-01T00:00:00Z',
+          updated: '2026-08-01T00:00:00Z',
         }]}
         transformations={[]}
         selectedTransformation=""

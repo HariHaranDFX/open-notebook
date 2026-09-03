@@ -124,14 +124,17 @@ type UseDeleteGrantResult = ReturnType<typeof useDeleteGrant>
 
 const asResult = <T,>(value: Partial<T>) => value as T
 
-function mutationStub<TVars>(overrides: Partial<{
+function mutationStub<TResult, TVars = unknown>(overrides: Partial<{
   mutate: ReturnType<typeof vi.fn>
   mutateAsync: ReturnType<typeof vi.fn>
   isPending: boolean
   isError: boolean
   error: unknown
   variables: TVars | undefined
-}> = {}) {
+}> = {}): TResult {
+  // TanStack's UseMutationResult is a discriminated union
+  // (idle/pending/success/error); its Partial cannot be satisfied
+  // structurally, so cast through unknown at the seam.
   return {
     mutate: vi.fn(),
     mutateAsync: vi.fn().mockResolvedValue(undefined),
@@ -140,7 +143,7 @@ function mutationStub<TVars>(overrides: Partial<{
     error: null,
     variables: undefined,
     ...overrides,
-  }
+  } as unknown as TResult
 }
 
 const userGrant: GrantResponse = {
@@ -201,9 +204,13 @@ describe('ShareSheet', () => {
     mockUseGrants.mockReturnValue(
       asResult<UseGrantsResult>({ data: [userGrant, groupGrant], isLoading: false })
     )
-    createGrant = mutationStub()
-    updateGrant = mutationStub()
-    deleteGrant = mutationStub()
+    // mutationStub returns the fields the tests actually inspect. TanStack's
+    // UseMutationResult is a discriminated union (idle/pending/success/error)
+    // whose Partial cannot be satisfied structurally, so cast through unknown
+    // rather than enumerating every state's shape.
+    createGrant = mutationStub() as unknown as UseCreateGrantResult
+    updateGrant = mutationStub() as unknown as UseUpdateGrantResult
+    deleteGrant = mutationStub() as unknown as UseDeleteGrantResult
     mockUseCreateGrant.mockReturnValue(createGrant)
     mockUseUpdateGrant.mockReturnValue(updateGrant)
     mockUseDeleteGrant.mockReturnValue(deleteGrant)

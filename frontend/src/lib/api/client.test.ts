@@ -20,9 +20,14 @@ import { getAuthToken } from '@/lib/auth-token'
 // interceptor chain runs, so we replicate that merge here — otherwise
 // `config.withCredentials` would never reflect setEntraAuthMode().
 const runRequestInterceptor = (config: Partial<InternalAxiosRequestConfig>) => {
-  const fulfilled = apiClient.interceptors.request.handlers[0].fulfilled
-  const merged = mergeConfig(apiClient.defaults, { headers: {}, ...config })
-  return fulfilled(merged as InternalAxiosRequestConfig)
+  // axios's `.handlers` array is typed possibly-undefined since v1.7. The
+  // interceptor was registered by apiClient's own module init, so [0] is
+  // always present here; the guards are for tsc, not the runtime.
+  const handlers = (apiClient.interceptors.request as { handlers?: Array<{ fulfilled?: (c: InternalAxiosRequestConfig) => Promise<InternalAxiosRequestConfig> }> }).handlers
+  const fulfilled = handlers?.[0]?.fulfilled
+  if (!fulfilled) throw new Error('request interceptor missing')
+  const merged = mergeConfig(apiClient.defaults, { headers: {}, ...config }) as InternalAxiosRequestConfig
+  return fulfilled(merged)
 }
 
 describe('apiClient auth mode branching', () => {
@@ -67,8 +72,10 @@ describe('apiClient 401 response interceptor', () => {
   let rejected: (error: unknown) => unknown
 
   beforeEach(() => {
-    const handler = apiClient.interceptors.response.handlers[0]
-    rejected = handler.rejected!
+    const handlers = (apiClient.interceptors.response as { handlers?: Array<{ rejected?: (e: unknown) => unknown }> }).handlers
+    const handlerRejected = handlers?.[0]?.rejected
+    if (!handlerRejected) throw new Error('response interceptor missing')
+    rejected = handlerRejected
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: { ...originalLocation, pathname: '/notebooks', href: 'http://localhost:3000/notebooks' },
