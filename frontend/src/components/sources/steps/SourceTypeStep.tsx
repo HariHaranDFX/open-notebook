@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
-import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
+import { FileIcon, LinkIcon, FileTextIcon, UploadCloud } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
 import { useCapabilities } from "@/lib/hooks/use-capabilities"
 import { FormSection } from "@/components/ui/form-section"
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Controller } from "react-hook-form"
+import { cn } from "@/lib/utils"
 
 // Base document types content-core always handles: PDF, Office suite, plain
 // text/markdown, EPUB, HTML. Media (needs ffmpeg) and images (need Docling)
@@ -129,6 +130,14 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
     if (mediaAvailable) exts.push(...MEDIA_ACCEPT_EXTENSIONS)
     return exts.join(',')
   }, [doclingAvailable, mediaAvailable])
+  // Set form of the accept string used by the client-side extension check on
+  // drop / pick. Backend HTTP 415 remains authoritative; this is a hint that
+  // saves the user a round trip when a dropped file is obviously wrong.
+  const acceptedExtSet = useMemo(
+    () => new Set(fileAccept.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)),
+    [fileAccept],
+  )
+
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
   const urlInput = useWatch({ control, name: 'url' })
@@ -136,6 +145,31 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
 
   // Track if HTML content was pasted
   const [hasHtmlContent, setHasHtmlContent] = useState(false)
+  // Dropzone state.
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [rejectedFileNames, setRejectedFileNames] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const applyFilesToForm = (files: FileList | null | undefined) => {
+    if (!files || files.length === 0) return
+    const accepted: File[] = []
+    const rejected: string[] = []
+    Array.from(files).forEach((f) => {
+      const dot = f.name.lastIndexOf('.')
+      const ext = dot >= 0 ? f.name.slice(dot).toLowerCase() : ''
+      if (ext && acceptedExtSet.has(ext)) accepted.push(f)
+      else rejected.push(f.name)
+    })
+    setRejectedFileNames(rejected)
+    if (accepted.length > 0) {
+      // DataTransfer -> FileList lets us hand RHF the filtered set through
+      // setValue; the dropped files (with any unsupported ones removed) go
+      // straight into form state.
+      const dt = new DataTransfer()
+      accepted.forEach((f) => dt.items.add(f))
+      setValue('file', dt.files, { shouldValidate: true })
+    }
+  }
 
   // Handle paste event to check for HTML content in clipboard
   const handleTextPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -275,14 +309,60 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                           </Badge>
                         )}
                       </div>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        aria-label={t('sources.uploadDropzoneLabel')}
+                        data-drag-over={isDragOver || undefined}
+                        onClick={() => fileInputRef.current?.click()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            fileInputRef.current?.click()
+                          }
+                        }}
+                        onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true) }}
+                        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+                        onDragLeave={() => setIsDragOver(false)}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          setIsDragOver(false)
+                          applyFilesToForm(e.dataTransfer.files)
+                        }}
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-center cursor-pointer transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          isDragOver
+                            ? "border-primary bg-primary/5"
+                            : "border-input hover:border-primary/50 hover:bg-muted/30",
+                        )}
+                      >
+                        <UploadCloud className="h-6 w-6 text-muted-foreground" aria-hidden />
+                        <p className="text-sm font-medium">
+                          {t('sources.uploadDropzoneCta')}
+                        </p>
+                      </div>
+                      {/*
+                        Native input is visually hidden but focusable/clickable
+                        via ref+click(). register() lets RHF track user picks;
+                        onChange also filters unsupported files client-side so
+                        the same rejection UX applies to both drop and click.
+                      */}
                       <Input
+                        {...register('file', {
+                          onChange: (e) => applyFilesToForm(e.target.files),
+                        })}
+                        ref={(el) => {
+                          register('file').ref(el)
+                          fileInputRef.current = el
+                        }}
                         id="file"
                         type="file"
                         multiple
-                        {...register('file')}
                         accept={fileAccept}
+                        className="sr-only"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {t('sources.selectMultipleFilesHint')}
                       </p>
                       {!mediaAvailable && (
@@ -293,6 +373,17 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                       {!doclingAvailable && (
                         <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
                           {t('sources.imagesUnavailable')}
+                        </p>
+                      )}
+                      {rejectedFileNames.length > 0 && (
+                        <p
+                          className="text-xs text-destructive mt-1"
+                          data-testid="rejected-files"
+                        >
+                          {t('sources.uploadRejectedFiles', {
+                            count: rejectedFileNames.length,
+                            files: rejectedFileNames.join(', '),
+                          })}
                         </p>
                       )}
                       {fileCount > 1 && fileInput instanceof FileList && (
