@@ -120,9 +120,13 @@ export function SourceLibraryRow({
       )}
     </>
   )
+  // The compact row has no space for an inline failure reason like SourceCard;
+  // the native tooltip surfaces `statusData.message` (the worker's error text
+  // after the sources.py status endpoint was taught to forward it) on hover.
+  const statusBadgeTitle = isFailed ? statusData?.message : undefined
   const statusBadges = (
     <>
-      <Badge variant="outline" className={statusConfig.className}>
+      <Badge variant="outline" className={statusConfig.className} title={statusBadgeTitle}>
         <StatusIcon className={cn('size-3', status === 'running' && 'animate-spin')} />
         {statusConfig.label}
       </Badge>

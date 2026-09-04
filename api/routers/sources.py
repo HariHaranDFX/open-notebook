@@ -938,7 +938,17 @@ async def get_source_status(source_id: str, request: Request):
             if status == "completed":
                 message = "Source processing completed successfully"
             elif status == "failed":
-                message = "Source processing failed"
+                # Surface the worker's actual error text when available so the
+                # UI shows *why* the source failed, not just that it did. The
+                # worker persists str(exc) as processing_info["error"] on the
+                # command record; empty when a crash skipped the exception
+                # path -- keep the generic message for that edge case.
+                err = (
+                    processing_info.get("error")
+                    if isinstance(processing_info, dict)
+                    else None
+                )
+                message = err or "Source processing failed"
             elif status == "running":
                 message = "Source processing in progress"
             elif status == "queued":

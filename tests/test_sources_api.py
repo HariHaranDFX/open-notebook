@@ -336,6 +336,87 @@ class TestGetSourceNotFound:
         assert response.status_code == 404
 
 
+class TestGetSourceStatusMessage:
+    """GET /sources/{id}/status used to hardcode message="Source processing failed"
+    for every failure, throwing away the real error the worker had already saved
+    on the command record. Result: the UI card said "failed" with no reason.
+    The endpoint must forward the worker's error text as the message when the
+    status is `failed`."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_failed_status_surfaces_worker_error_message(
+        self, mock_get, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="failed")
+        source.get_processing_progress = AsyncMock(
+            return_value={
+                "status": "failed",
+                "started_at": None,
+                "completed_at": None,
+                "error": "This PDF is password-protected. Remove the password and re-upload.",
+                "result": None,
+            }
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "failed"
+        assert body["message"] == (
+            "This PDF is password-protected. Remove the password and re-upload."
+        )
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_failed_status_falls_back_when_no_error_message(
+        self, mock_get, client
+    ):
+        """A crash that skipped the exception path leaves error=None. Keep the
+        generic message so the UI still says something."""
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="failed")
+        source.get_processing_progress = AsyncMock(
+            return_value={"status": "failed", "error": None, "result": None}
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Source processing failed"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_completed_status_uses_success_message(
+        self, mock_get, client
+    ):
+        """Non-failed statuses keep their existing hardcoded strings; the
+        error carveout only applies to `failed`."""
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="completed")
+        source.get_processing_progress = AsyncMock(
+            return_value={"status": "completed", "error": None, "result": None}
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.json()["message"] == "Source processing completed successfully"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
