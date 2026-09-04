@@ -129,13 +129,16 @@ async def process_source_command(
             processing_time=processing_time,
         )
 
-    except ValueError as e:
-        # Validation errors are permanent failures. Re-raise so surreal-commands
-        # marks the job as `failed` (stop_on=[ValueError] already prevents
-        # pointless retries). Returning a success=False result instead marks the
-        # job `completed` (is_success() checks job status, not the payload),
-        # which hid extraction failures and left the source without a retryable
-        # `failed` status in the UI.
+    except (ValueError, ConfigurationError) as e:
+        # Permanent failures. Re-raise so surreal-commands marks the job as
+        # `failed` (stop_on above already covers both types and prevents
+        # pointless retries). Returning a success=False result instead marks
+        # the job `completed` (is_success() checks job status, not the
+        # payload), which hid extraction failures and left the source without
+        # a retryable `failed` status in the UI. Catching ConfigurationError
+        # here (not just ValueError) keeps the log wording honest -- password-
+        # protected PDF and missing-ffmpeg errors are permanent, not
+        # transient.
         logger.error(f"Source processing failed (permanent): {e}")
         raise
     except Exception as e:
