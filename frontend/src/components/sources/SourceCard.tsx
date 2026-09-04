@@ -135,6 +135,12 @@ function SourceCardImpl({
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
+    // Fetch once for terminal 'failed' too: the list response often reflects
+    // the pre-failure snapshot (list refresh raced ahead of the worker), so
+    // source.processing_info.error is empty and we need /status to load the
+    // message. useSourceStatus's refetchInterval already returns false for
+    // 'failed', so this is a one-shot, not a poll.
+    sourceWithStatus.status === 'failed' ||
     (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
     wasProcessing // Keep polling if we were processing to catch the completion
 

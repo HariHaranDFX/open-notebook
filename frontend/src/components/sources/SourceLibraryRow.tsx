@@ -74,7 +74,12 @@ export function SourceLibraryRow({
   const { isAdmin } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
   const initialStatus = source.status ?? (source.command_id ? 'new' : 'completed')
-  const shouldPoll = ['new', 'queued', 'running'].includes(initialStatus)
+  // Includes 'failed' so the /status endpoint is fetched once when a source
+  // lands as terminal-failed from a stale list refresh -- the list often
+  // reflects the pre-failure snapshot with empty processing_info.error, and
+  // this one-shot fill's the tooltip. useSourceStatus's refetchInterval
+  // returns false for 'failed', so this stays a one-shot, not a poll.
+  const shouldPoll = ['new', 'queued', 'running', 'failed'].includes(initialStatus)
   const {
     data: statusData,
     isError: statusError,
