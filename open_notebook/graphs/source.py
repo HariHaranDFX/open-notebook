@@ -124,6 +124,28 @@ def _url_looks_like_media(url: str) -> bool:
     return ext in _MEDIA_EXTS
 
 
+def _pdf_is_encrypted(file_path: str) -> bool:
+    """True when the PDF has ``/Encrypt`` in its bytes (password-protected).
+
+    Byte-level scan sidesteps pdfplumber's ``PdfminerException`` wrapping and
+    content-core's ``Exception("An error occurred: ...")`` re-wrapping -- both
+    of which drop the original exception type AND blank the message, so
+    downstream keyword matching against the wrapped exception was
+    unreliable. The ``/Encrypt`` marker is required by the PDF spec on any
+    encrypted document, so a substring hit is definitive; false positives on
+    plain PDFs that legitimately contain the byte sequence outside the
+    trailer are astronomically rare in practice.
+
+    Returns False for missing / unreadable files -- the extractor's own
+    FileNotFoundError surfaces the real problem with a better message.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            return b"/Encrypt" in f.read()
+    except OSError:
+        return False
+
+
 def _preflight_upload(
     content_state: Dict[str, Any],
     *,
@@ -164,6 +186,18 @@ def _preflight_upload(
                 "Audio and video uploads require a configured Speech-to-Text model. "
                 "Add one in Settings -> Models before uploading."
             )
+        return
+    # Preemptive PDF encryption check (file uploads only; URLs get downloaded
+    # elsewhere). Runs BEFORE extract_content because pdfplumber wraps
+    # PDFPasswordIncorrect in an empty-message PdfminerException and
+    # content-core wraps it again as bare Exception("An error occurred: "),
+    # so post-hoc detection via _rewrite_extraction_error can't identify the
+    # cause. Only fires for local file uploads; URL PDFs (rare in practice)
+    # fall through to _rewrite_extraction_error's best-effort keyword match.
+    if file_path and ext == ".pdf" and _pdf_is_encrypted(file_path):
+        raise ConfigurationError(
+            "This PDF is password-protected. Remove the password and re-upload."
+        )
 
 
 async def _download_url_to_tmp(url: str) -> str:

@@ -139,9 +139,20 @@ async def process_source_command(
         logger.error(f"Source processing failed (permanent): {e}")
         raise
     except Exception as e:
-        # Transient failure - will be retried (surreal-commands logs final failure)
-        logger.debug(
-            f"Transient error processing source {input_data.source_id}: {e}"
+        # Transient failure - will be retried by surreal-commands. Split by
+        # cause: SurrealDB transaction conflicts are expected noise during
+        # concurrent writes (see open_notebook/AGENTS.md), keep them at DEBUG.
+        # Everything else raised to WARNING with the exception TYPE included,
+        # because surreal-commands' worker overrides loguru's log level to
+        # INFO+ regardless of env vars -- a bare DEBUG log meant retry-loop
+        # failures were completely silent for 15 attempts.
+        is_transaction_conflict = isinstance(e, RuntimeError) and (
+            "transaction" in str(e).lower() or "conflict" in str(e).lower()
+        )
+        log = logger.debug if is_transaction_conflict else logger.warning
+        log(
+            f"Transient error processing source {input_data.source_id}: "
+            f"{type(e).__name__}: {e}"
         )
         raise
 

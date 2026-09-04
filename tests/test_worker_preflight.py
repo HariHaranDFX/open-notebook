@@ -196,6 +196,70 @@ class TestPreflightSkips:
         )
 
 
+class TestPreflightPdfEncryption:
+    """The user-hit case: a password-protected PDF used to retry 15 times
+    because pdfplumber wraps PDFPasswordIncorrect in an empty-message
+    PdfminerException, then content-core wraps THAT again as
+    Exception('An error occurred: '). By the time our code sees it, both the
+    type and the message are useless for keyword matching. The preemptive
+    /Encrypt byte scan sidesteps both wrappers -- if the marker is in the
+    file, it's encrypted, period."""
+
+    def test_encrypted_pdf_is_rejected_via_byte_scan(self, tmp_path):
+        # Minimal PDF-shaped bytes with a trailer that references /Encrypt.
+        # The scan is a substring match; no real cryptography needed.
+        pdf = tmp_path / "protected.pdf"
+        pdf.write_bytes(
+            b"%PDF-1.4\n"
+            b"1 0 obj\n<< /Type /Catalog >>\nendobj\n"
+            b"trailer\n<< /Size 1 /Root 1 0 R /Encrypt 2 0 R >>\n"
+            b"%%EOF\n"
+        )
+        with pytest.raises(ConfigurationError) as exc:
+            _preflight_upload(
+                {"file_path": str(pdf)},
+                media_available=True,
+                stt_configured=True,
+            )
+        assert "password" in str(exc.value).lower()
+
+    def test_plain_pdf_passes(self, tmp_path):
+        pdf = tmp_path / "open.pdf"
+        pdf.write_bytes(
+            b"%PDF-1.4\n"
+            b"1 0 obj\n<< /Type /Catalog >>\nendobj\n"
+            b"trailer\n<< /Size 1 /Root 1 0 R >>\n"
+            b"%%EOF\n"
+        )
+        # Must not raise.
+        _preflight_upload(
+            {"file_path": str(pdf)},
+            media_available=True,
+            stt_configured=True,
+        )
+
+    def test_missing_pdf_file_does_not_raise_here(self, tmp_path):
+        """A missing file is not an "encrypted" verdict; the preflight lets
+        the extractor's own FileNotFoundError surface with its real message."""
+        _preflight_upload(
+            {"file_path": str(tmp_path / "gone.pdf")},
+            media_available=True,
+            stt_configured=True,
+        )
+
+    def test_non_pdf_extension_is_not_byte_scanned(self, tmp_path):
+        """A .docx that happens to contain the bytes /Encrypt anywhere in its
+        zip payload must NOT be flagged as an encrypted PDF."""
+        docx = tmp_path / "innocent.docx"
+        docx.write_bytes(b"PK\x03\x04 zip-bytes with /Encrypt in a stream")
+        # Must not raise.
+        _preflight_upload(
+            {"file_path": str(docx)},
+            media_available=True,
+            stt_configured=True,
+        )
+
+
 class TestRewriteExtractionErrorForEncryption:
     """content-core -> pdfplumber -> pdfminer raises PDFPasswordIncorrect (and
     friends) when it opens an encrypted PDF. Without translation, the worker
