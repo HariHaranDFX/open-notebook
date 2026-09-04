@@ -243,4 +243,32 @@ describe('SourceLibraryRow', () => {
     expect(screen.getByText('Failed')).toBeVisible()
     expect(screen.queryByText('Embedded')).not.toBeInTheDocument()
   })
+
+  it.each(['list', 'card'] as const)(
+    'renders the list-supplied failure reason inline for failed sources (%s view)',
+    viewMode => {
+      // The /api/sources list endpoint embeds this on every failed row via
+      // SurrealDB FETCH on the linked command (api/routers/sources.py:366).
+      // Reading it directly means no per-card /status round trip for the
+      // common case; users see the reason immediately on page load.
+      render(
+        <SourceLibraryRow
+          source={source({
+            status: 'failed',
+            processing_info: {
+              error: 'This Office file is password-protected. Remove the password and re-upload.',
+            },
+          })}
+          onDelete={vi.fn()}
+          onRetry={vi.fn()}
+          viewMode={viewMode}
+        />,
+      )
+
+      const msg = screen.getByTestId('source-failure-message')
+      expect(msg).toHaveTextContent(
+        'This Office file is password-protected. Remove the password and re-upload.',
+      )
+    },
+  )
 })
