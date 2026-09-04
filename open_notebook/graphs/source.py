@@ -124,6 +124,27 @@ def _url_looks_like_media(url: str) -> bool:
     return ext in _MEDIA_EXTS
 
 
+_OLE_COMPOUND_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+# Modern XML-based Office formats only. Legacy .doc/.xls/.ppt are ALWAYS
+# OLE (encrypted or not), so magic-byte matching there would false-positive.
+_OFFICE_XML_EXTS = frozenset({".docx", ".xlsx", ".pptx"})
+
+
+def _office_is_encrypted(file_path: str) -> bool:
+    """True when a modern Office file (.docx/.xlsx/.pptx) starts with the OLE
+    compound-document magic bytes -- the container Office switches to for
+    password-protected files instead of the normal ZIP. python-docx /
+    openpyxl / python-pptx expect ZIP and fail with vague ``Package not
+    found`` / ``not a zip file`` errors that no downstream keyword scan can
+    reliably identify.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            return f.read(8) == _OLE_COMPOUND_MAGIC
+    except OSError:
+        return False
+
+
 def _pdf_is_encrypted(file_path: str) -> bool:
     """True when the PDF has ``/Encrypt`` in its bytes (password-protected).
 
@@ -197,6 +218,12 @@ def _preflight_upload(
     if file_path and ext == ".pdf" and _pdf_is_encrypted(file_path):
         raise ConfigurationError(
             "This PDF is password-protected. Remove the password and re-upload."
+        )
+    # Same shape as the PDF check, for the modern XML-based Office family only.
+    if file_path and ext in _OFFICE_XML_EXTS and _office_is_encrypted(file_path):
+        raise ConfigurationError(
+            "This Office file is password-protected. "
+            "Remove the password and re-upload."
         )
 
 

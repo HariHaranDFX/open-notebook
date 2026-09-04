@@ -22,6 +22,7 @@ import pytest
 from open_notebook.exceptions import ConfigurationError
 from open_notebook.graphs.source import (
     _label_docling_flag,
+    _office_is_encrypted,
     _preflight_upload,
     _rewrite_extraction_error,
     _safe_unlink,
@@ -258,6 +259,63 @@ class TestPreflightPdfEncryption:
             media_available=True,
             stt_configured=True,
         )
+
+
+class TestPreflightOfficeEncryption:
+    """python-docx / openpyxl / python-pptx expect their input to be a ZIP
+    archive (docx/xlsx/pptx are ZIP-based). When Office encrypts a file, it
+    switches the container to OLE compound-document format (magic bytes
+    D0 CF 11 E0 A1 B1 1A E1). The Python libraries then fail with vague
+    "Package not found" / "not a zip file" errors that our post-hoc
+    _rewrite_extraction_error can't match on. Detect the OLE magic before
+    extraction so the user sees the actual cause on the first attempt."""
+
+    _OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    _ZIP = b"PK\x03\x04"
+
+    @pytest.mark.parametrize("ext", [".docx", ".xlsx", ".pptx"])
+    def test_encrypted_office_is_rejected(self, tmp_path, ext):
+        f = tmp_path / f"protected{ext}"
+        f.write_bytes(self._OLE + b"\x00" * 64)
+        with pytest.raises(ConfigurationError) as exc:
+            _preflight_upload(
+                {"file_path": str(f)},
+                media_available=True,
+                stt_configured=True,
+            )
+        assert "password" in str(exc.value).lower()
+
+    @pytest.mark.parametrize("ext", [".docx", ".xlsx", ".pptx"])
+    def test_plain_office_passes(self, tmp_path, ext):
+        f = tmp_path / f"open{ext}"
+        f.write_bytes(self._ZIP + b"rest of a normal Office file")
+        _preflight_upload(
+            {"file_path": str(f)},
+            media_available=True,
+            stt_configured=True,
+        )
+
+    def test_legacy_doc_is_not_ole_checked(self, tmp_path):
+        """Legacy .doc/.xls/.ppt are ALWAYS OLE (encrypted or not). Applying
+        the check to them would falsely reject every plain legacy file."""
+        f = tmp_path / "old.doc"
+        f.write_bytes(self._OLE + b"legacy but not encrypted")
+        # Must not raise.
+        _preflight_upload(
+            {"file_path": str(f)},
+            media_available=True,
+            stt_configured=True,
+        )
+
+    def test_office_helper_direct(self, tmp_path):
+        f = tmp_path / "e.docx"
+        f.write_bytes(self._OLE + b"...")
+        assert _office_is_encrypted(str(f)) is True
+        f.write_bytes(self._ZIP + b"...")
+        assert _office_is_encrypted(str(f)) is False
+
+    def test_missing_file_returns_false(self, tmp_path):
+        assert _office_is_encrypted(str(tmp_path / "gone.docx")) is False
 
 
 class TestRewriteExtractionErrorForEncryption:
