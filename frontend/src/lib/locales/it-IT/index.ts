@@ -463,7 +463,7 @@ export const itIT = {
     invalidUrlsDetected: "URL non validi rilevati:",
     lineLabel: "Riga {{line}}",
     fixInvalidUrls: "Correggi o rimuovi gli URL non validi per continuare",
-    selectMultipleFilesHint: "Seleziona più file per importazione batch. Supportati: Documenti (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Immagini (JPG, PNG)",
+    selectMultipleFilesHint: "Seleziona più file per importazione batch. Documenti supportati: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Il caricamento di audio e video non è disponibile: FFmpeg non è installato sul server.",
     imagesUnavailable: "L'estrazione di immagini non è disponibile: Docling non è installato sul server.",
     selectedFiles: "File selezionati:",

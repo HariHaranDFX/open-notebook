@@ -463,7 +463,7 @@ export const zhCN = {
     invalidUrlsDetected: "检测到无效的 URL：",
     lineLabel: "第 {{line}} 行",
     fixInvalidUrls: "请修正或移除无效的 URL 以继续",
-    selectMultipleFilesHint: "选择多个文件进行批量导入。支持：文档 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒体 (MP4, MP3, WAV, M4A)，图片 (JPG",
+    selectMultipleFilesHint: "选择多个文件进行批量导入。支持的文档：PDF、DOC、DOCX、PPT、XLS、EPUB、TXT、MD。",
     mediaUnavailable: "音频和视频上传不可用 — 服务器未安装 FFmpeg。",
     imagesUnavailable: "图片提取不可用 — 服务器未安装 Docling。",
     selectedFiles: "已选择文件：",

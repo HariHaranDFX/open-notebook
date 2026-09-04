@@ -463,7 +463,7 @@ export const esES = {
     invalidUrlsDetected: "URLs inválidas detectadas:",
     lineLabel: "Línea {{line}}",
     fixInvalidUrls: "Por favor, corrige o elimina las URLs inválidas para continuar",
-    selectMultipleFilesHint: "Selecciona múltiples archivos para importar por lotes. Soportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Multimedia (MP4, MP3, WAV, M4A), Imágenes (JPG, PNG)",
+    selectMultipleFilesHint: "Selecciona múltiples archivos para importar por lotes. Documentos soportados: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "La carga de audio y vídeo no está disponible: FFmpeg no está instalado en el servidor.",
     imagesUnavailable: "La extracción de imágenes no está disponible: Docling no está instalado en el servidor.",
     selectedFiles: "Archivos seleccionados:",

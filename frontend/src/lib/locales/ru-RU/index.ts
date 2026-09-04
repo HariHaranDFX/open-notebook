@@ -463,7 +463,7 @@ export const ruRU = {
     invalidUrlsDetected: "Обнаружены недопустимые URL:",
     lineLabel: "Строка {{line}}",
     fixInvalidUrls: "Исправьте или удалите недопустимые URL для продолжения",
-    selectMultipleFilesHint: "Выберите несколько файлов для пакетного импорта. Поддерживаются: Документы (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Медиа (MP4, MP3, WAV, M4A), Изображения (JPG, PNG)",
+    selectMultipleFilesHint: "Выберите несколько файлов для пакетного импорта. Поддерживаемые документы: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Загрузка аудио и видео недоступна — FFmpeg не установлен на сервере.",
     imagesUnavailable: "Извлечение из изображений недоступно — Docling не установлен на сервере.",
     selectedFiles: "Выбранные файлы:",

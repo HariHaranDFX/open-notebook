@@ -466,7 +466,7 @@ export const deDE = {
     invalidUrlsDetected: "Ungültige URLs gefunden:",
     lineLabel: "Zeile {{line}}",
     fixInvalidUrls: "Bitte korrigiere oder entferne ungültige URLs, um fortzufahren",
-    selectMultipleFilesHint: "Wähle mehrere Dateien für den Sammelimport aus. Unterstützt werden: Dokumente (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Medien (MP4, MP3, WAV, M4A), Bilder (JPG, PNG)",
+    selectMultipleFilesHint: "Wähle mehrere Dateien für den Sammelimport aus. Unterstützte Dokumente: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Audio- und Video-Uploads nicht verfügbar - FFmpeg ist auf dem Server nicht installiert.",
     imagesUnavailable: "Bilderkennung nicht verfügbar - Docling ist auf dem Server nicht installiert.",
     selectedFiles: "Ausgewählte Dateien:",

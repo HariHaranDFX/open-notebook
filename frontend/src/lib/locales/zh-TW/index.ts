@@ -463,7 +463,7 @@ export const zhTW = {
     invalidUrlsDetected: "檢測到無效的 URL：",
     lineLabel: "第 {{line}} 行",
     fixInvalidUrls: "請修正或移除無效的 URL 以繼續",
-    selectMultipleFilesHint: "選擇多個檔案進行批次導入。支援：文件 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒體 (MP4, MP3, WAV, M4A)，圖片 (JPG",
+    selectMultipleFilesHint: "選擇多個檔案進行批次導入。支援的文件：PDF、DOC、DOCX、PPT、XLS、EPUB、TXT、MD。",
     mediaUnavailable: "音訊和影片上傳不可用 — 伺服器未安裝 FFmpeg。",
     imagesUnavailable: "圖片擷取不可用 — 伺服器未安裝 Docling。",
     selectedFiles: "已選擇檔案：",

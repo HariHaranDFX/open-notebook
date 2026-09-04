@@ -463,7 +463,7 @@ export const plPL = {
     invalidUrlsDetected: "Wykryto nieprawidłowe adresy URL:",
     lineLabel: "Wiersz {{line}}",
     fixInvalidUrls: "Popraw lub usuń nieprawidłowe adresy URL, aby kontynuować",
-    selectMultipleFilesHint: "Wybierz wiele plików, aby zaimportować je wsadowo. Obsługiwane: Dokumenty (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Obrazy (JPG, PNG)",
+    selectMultipleFilesHint: "Wybierz wiele plików, aby zaimportować je wsadowo. Obsługiwane dokumenty: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Przesyłanie audio i wideo niedostępne - FFmpeg nie jest zainstalowany na serwerze.",
     imagesUnavailable: "Ekstrakcja obrazów niedostępna - Docling nie jest zainstalowany na serwerze.",
     selectedFiles: "Wybrane pliki:",

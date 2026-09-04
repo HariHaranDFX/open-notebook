@@ -463,7 +463,7 @@ export const trTR = {
     invalidUrlsDetected: "Geçersiz URL'ler tespit edildi:",
     lineLabel: "Satır {{line}}",
     fixInvalidUrls: "Devam etmek için geçersiz URL'leri düzeltin veya kaldırın",
-    selectMultipleFilesHint: "Toplu içe aktarma için birden fazla dosya seçin. Desteklenenler: Belgeler (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Medya (MP4, MP3, WAV, M4A), Görseller (JPG, PNG)",
+    selectMultipleFilesHint: "Toplu içe aktarma için birden fazla dosya seçin. Desteklenen belgeler: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Ses ve video yüklemeleri kullanılamıyor - Sunucuda FFmpeg yüklü değil.",
     imagesUnavailable: "Görsellerden çıkarım kullanılamıyor - Sunucuda Docling yüklü değil.",
     selectedFiles: "Seçilen dosyalar:",

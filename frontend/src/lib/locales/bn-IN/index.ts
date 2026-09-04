@@ -463,7 +463,7 @@ export const bnIN = {
     invalidUrlsDetected: "অবৈধ URL সনাক্ত করা হয়েছে:",
     lineLabel: "লাইন {{line}}",
     fixInvalidUrls: "অবৈধ URL ঠিক করুন বা সরান",
-    selectMultipleFilesHint: "ব্যাচ ইমপোর্টের জন্য একাধিক ফাইল নির্বাচন করুন। সমর্থিত: ডকুমেন্ট (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), মিডিয়া (MP4, MP3, WAV, M4A), ছবি (JPG, PNG)",
+    selectMultipleFilesHint: "ব্যাচ ইমপোর্টের জন্য একাধিক ফাইল নির্বাচন করুন। সমর্থিত ডকুমেন্ট: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD।",
     mediaUnavailable: "অডিও এবং ভিডিও আপলোড অনুপলব্ধ — সার্ভারে FFmpeg ইনস্টল করা নেই।",
     imagesUnavailable: "ছবি এক্সট্র্যাকশন অনুপলব্ধ — সার্ভারে Docling ইনস্টল করা নেই।",
     selectedFiles: "নির্বাচিত ফাইল:",

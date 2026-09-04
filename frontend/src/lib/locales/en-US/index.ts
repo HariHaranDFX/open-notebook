@@ -461,7 +461,7 @@ export const enUS = {
     invalidUrlsDetected: "Invalid URLs detected:",
     lineLabel: "Line {{line}}",
     fixInvalidUrls: "Please fix or remove invalid URLs to continue",
-    selectMultipleFilesHint: "Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG)",
+    selectMultipleFilesHint: "Select multiple files to batch import. Supported documents: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "Audio and video uploads unavailable - FFmpeg is not installed on the server.",
     imagesUnavailable: "Image extraction unavailable - Docling is not installed on the server.",
     selectedFiles: "Selected files:",

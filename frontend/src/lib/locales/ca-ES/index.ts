@@ -463,7 +463,7 @@ export const caES = {
     invalidUrlsDetected: "S'han detectat URL no vàlides:",
     lineLabel: "Línia {{line}}",
     fixInvalidUrls: "Corregeix o elimina les URL no vàlides per continuar",
-    selectMultipleFilesHint: "Selecciona múltiples fitxers per a la importació per lots. Compatibles: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Multimèdia (MP4, MP3, WAV, M4A), Imatges (JPG, PNG)",
+    selectMultipleFilesHint: "Selecciona múltiples fitxers per a la importació per lots. Documents compatibles: PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD.",
     mediaUnavailable: "La càrrega d'àudio i vídeo no està disponible: FFmpeg no està instal·lat al servidor.",
     imagesUnavailable: "L'extracció d'imatges no està disponible: Docling no està instal·lat al servidor.",
     selectedFiles: "Fitxers seleccionats:",
