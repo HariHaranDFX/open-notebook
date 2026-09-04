@@ -121,9 +121,16 @@ export function SourceLibraryRow({
     </>
   )
   // The compact row has no space for an inline failure reason like SourceCard;
-  // the native tooltip surfaces `statusData.message` (the worker's error text
-  // after the sources.py status endpoint was taught to forward it) on hover.
-  const statusBadgeTitle = isFailed ? statusData?.message : undefined
+  // the native tooltip surfaces the worker's error text on hover. Prefer the
+  // list-supplied field -- the /api/sources endpoint already embeds it via
+  // SurrealDB FETCH on the linked command (see api/routers/sources.py:366),
+  // so the message is available immediately on page load without an extra
+  // /status round trip (useSourceStatus's enable-gate above wouldn't allow
+  // one for a terminal 'failed' anyway). statusData.message covers the
+  // in-session live-transition window.
+  const statusBadgeTitle = isFailed
+    ? ((source.processing_info?.error as string | undefined) ?? statusData?.message)
+    : undefined
   const statusBadges = (
     <>
       <Badge variant="outline" className={statusConfig.className} title={statusBadgeTitle}>

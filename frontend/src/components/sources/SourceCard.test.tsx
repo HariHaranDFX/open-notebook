@@ -89,6 +89,37 @@ describe('SourceCard', () => {
     expect(footer).toContainElement(within(card).getByRole('combobox', { name: 'common.contextModes.sourceLabel' }))
   })
 
+  it('renders the failure reason from list-supplied processing_info.error', () => {
+    // The list endpoint embeds the worker's error message on every failed
+    // source via SurrealDB FETCH; the card must read it directly rather than
+    // waiting for /status (which useSourceStatus's enable-gate wouldn't
+    // fetch for a terminal 'failed' anyway).
+    render(
+      <SourceCard
+        source={{
+          id: 'source:protected',
+          title: 'Protected test document.docx',
+          asset: { file_path: '/uploads/Protected test document.docx' },
+          embedded: false,
+          embedded_chunks: 0,
+          insights_count: 0,
+          created: '2026-01-01T00:00:00Z',
+          updated: '2026-01-02T00:00:00Z',
+          status: 'failed',
+          processing_info: {
+            error: 'This Office file is password-protected. Remove the password and re-upload.',
+          },
+        }}
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        'This Office file is password-protected. Remove the password and re-upload.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('uses a compact menu and the sign-out destructive style for deletion', () => {
     render(
       <SourceCard

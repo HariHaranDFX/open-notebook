@@ -212,6 +212,19 @@ function SourceCardImpl({
   const isFailed: boolean = currentStatus === 'failed'
   const isCompleted: boolean = currentStatus === 'completed'
 
+  // Failure reason. The list endpoint already embeds this on every failed
+  // source via SurrealDB's FETCH clause (see api/routers/sources.py:366) --
+  // reading it straight from the source object avoids a per-card /status
+  // round trip that the shouldFetchStatus gate above wouldn't allow for a
+  // terminal 'failed' anyway. statusData.message covers the live-transition
+  // window when a source we just uploaded flips to failed while polling.
+  // This matches TanStack Query's "seed detail from list" pattern
+  // (placeholderData) applied one layer up: the list already carries the
+  // detail, so the detail hook is only a fallback.
+  const failureMessage: string | undefined =
+    (source.processing_info?.error as string | undefined) ??
+    statusData?.message
+
   return (
     <Card
       className={cn(
@@ -347,9 +360,9 @@ function SourceCardImpl({
           </div>
         )}
 
-        {statusData?.message && (isProcessing || isFailed) && (
+        {failureMessage && (isProcessing || isFailed) && (
           <p className="mb-2 text-xs italic text-gray-600">
-            {statusData.message}
+            {failureMessage}
           </p>
         )}
 
