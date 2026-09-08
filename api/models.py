@@ -646,6 +646,10 @@ class CapabilitiesResponse(BaseModel):
         ...,
         description="A remote Crawl4AI endpoint is configured via CRAWL4AI_API_URL (no local install needed).",
     )
+    media_processing_available: bool = Field(
+        ...,
+        description="ffmpeg and ffprobe are both on PATH: audio and video uploads can be transcribed.",
+    )
 
 
 def validate_url_key_provider_required_fields(

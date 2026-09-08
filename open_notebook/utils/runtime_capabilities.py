@@ -16,6 +16,7 @@ made it available.
 
 import importlib.util
 import os
+import shutil
 import sys
 
 from loguru import logger
@@ -96,6 +97,20 @@ def crawl4ai_local_ready() -> bool:
 def crawl4ai_available() -> bool:
     """True when Crawl4AI can run at all — locally installed or offloaded to a server."""
     return crawl4ai_local_ready() or crawl4ai_remote_configured()
+
+
+def media_processing_available() -> bool:
+    """True when both ffmpeg and ffprobe are executable on PATH.
+
+    content-core shells out to both binaries to decode audio/video before
+    handing frames to the speech-to-text model. Missing either one fails
+    extraction deep inside the worker with a cryptic error that consumed the
+    15-attempt retry budget; this probe lets the API/UI advertise media
+    honestly and the worker fail fast with an actionable message. ffprobe
+    ships with ffmpeg in the same LGPL package (apt, brew, winget), so
+    requiring both catches broken installs instead of hiding them.
+    """
+    return bool(shutil.which("ffmpeg")) and bool(shutil.which("ffprobe"))
 
 
 # Engine name -> (availability probe, env var that enables it). Engines absent

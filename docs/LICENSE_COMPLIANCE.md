@@ -68,6 +68,7 @@ justification in the script. **Do not add to it to make CI green.**
 | `docutils` | BSD / GPL / Public Domain | Multi-licensed; **we elect the BSD option**, so no copyleft attaches |
 | `asciidoc` | GPLv2+ | Present in the dev/CI venv only — **purged from every shipped image**; see §5 |
 | `@img/sharp-*` | Apache-2.0 (+ LGPL-3.0 on some platforms) | libvips used as an unmodified shared library |
+| `ffmpeg` + `ffprobe` (system binary, Debian apt / brew / winget) | LGPL-2.1+ | Used unmodified via `subprocess` (no dynamic-linking of code we ship). Bundled in the shipped Docker image (`Dockerfile` line 102, `runtime-base`). **Never build with `--enable-gpl`** — that variant is GPL and would put the image out of compliance |
 
 ## 4. `pycountry` must stay unmodified
 

@@ -129,19 +129,33 @@ async def process_source_command(
             processing_time=processing_time,
         )
 
-    except ValueError as e:
-        # Validation errors are permanent failures. Re-raise so surreal-commands
-        # marks the job as `failed` (stop_on=[ValueError] already prevents
-        # pointless retries). Returning a success=False result instead marks the
-        # job `completed` (is_success() checks job status, not the payload),
-        # which hid extraction failures and left the source without a retryable
-        # `failed` status in the UI.
+    except (ValueError, ConfigurationError) as e:
+        # Permanent failures. Re-raise so surreal-commands marks the job as
+        # `failed` (stop_on above already covers both types and prevents
+        # pointless retries). Returning a success=False result instead marks
+        # the job `completed` (is_success() checks job status, not the
+        # payload), which hid extraction failures and left the source without
+        # a retryable `failed` status in the UI. Catching ConfigurationError
+        # here (not just ValueError) keeps the log wording honest -- password-
+        # protected PDF and missing-ffmpeg errors are permanent, not
+        # transient.
         logger.error(f"Source processing failed (permanent): {e}")
         raise
     except Exception as e:
-        # Transient failure - will be retried (surreal-commands logs final failure)
-        logger.debug(
-            f"Transient error processing source {input_data.source_id}: {e}"
+        # Transient failure - will be retried by surreal-commands. Split by
+        # cause: SurrealDB transaction conflicts are expected noise during
+        # concurrent writes (see open_notebook/AGENTS.md), keep them at DEBUG.
+        # Everything else raised to WARNING with the exception TYPE included,
+        # because surreal-commands' worker overrides loguru's log level to
+        # INFO+ regardless of env vars -- a bare DEBUG log meant retry-loop
+        # failures were completely silent for 15 attempts.
+        is_transaction_conflict = isinstance(e, RuntimeError) and (
+            "transaction" in str(e).lower() or "conflict" in str(e).lower()
+        )
+        log = logger.debug if is_transaction_conflict else logger.warning
+        log(
+            f"Transient error processing source {input_data.source_id}: "
+            f"{type(e).__name__}: {e}"
         )
         raise
 

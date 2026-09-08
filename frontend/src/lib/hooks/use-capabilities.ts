@@ -6,9 +6,10 @@ export const CAPABILITIES_QUERY_KEYS = {
 }
 
 /**
- * Hook reporting which opt-in extraction runtimes (Docling, Crawl4AI local) are
- * available. These only change when the container is restarted with different
- * OPEN_NOTEBOOK_ENABLE_* flags, so cache aggressively like the providers list.
+ * Hook reporting which opt-in extraction runtimes (Docling, Crawl4AI local) and
+ * media binaries (ffmpeg/ffprobe) are available. These only change when the
+ * container is restarted with different OPEN_NOTEBOOK_ENABLE_* flags or a
+ * different base image, so cache aggressively like the providers list.
  */
 export function useCapabilities() {
   return useQuery({

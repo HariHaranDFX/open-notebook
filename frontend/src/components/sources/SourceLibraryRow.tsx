@@ -74,7 +74,12 @@ export function SourceLibraryRow({
   const { isAdmin } = useAuth()
   const [showShareDialog, setShowShareDialog] = useState(false)
   const initialStatus = source.status ?? (source.command_id ? 'new' : 'completed')
-  const shouldPoll = ['new', 'queued', 'running'].includes(initialStatus)
+  // Includes 'failed' so the /status endpoint is fetched once when a source
+  // lands as terminal-failed from a stale list refresh -- the list often
+  // reflects the pre-failure snapshot with empty processing_info.error, and
+  // this one-shot fill's the tooltip. useSourceStatus's refetchInterval
+  // returns false for 'failed', so this stays a one-shot, not a poll.
+  const shouldPoll = ['new', 'queued', 'running', 'failed'].includes(initialStatus)
   const {
     data: statusData,
     isError: statusError,
@@ -120,9 +125,22 @@ export function SourceLibraryRow({
       )}
     </>
   )
+  // Failure reason. The /api/sources list endpoint already embeds this on
+  // every failed row via SurrealDB FETCH on the linked command (see
+  // api/routers/sources.py:366), so it's typically available with zero extra
+  // API calls. When the list refresh raced ahead of the worker,
+  // useSourceStatus (now enabled for 'failed' status) fills it in via a
+  // one-shot /status fetch. Rendered inline as a red line for BOTH card and
+  // list view -- users shouldn't have to hover a badge to know why a source
+  // failed. The tooltip on the status badge stays too for the moment before
+  // the eye reaches the inline text.
+  const failureMessage: string | undefined = isFailed
+    ? ((source.processing_info?.error as string | undefined) ?? statusData?.message)
+    : undefined
+  const statusBadgeTitle = failureMessage
   const statusBadges = (
     <>
-      <Badge variant="outline" className={statusConfig.className}>
+      <Badge variant="outline" className={statusConfig.className} title={statusBadgeTitle}>
         <StatusIcon className={cn('size-3', status === 'running' && 'animate-spin')} />
         {statusConfig.label}
       </Badge>
@@ -193,6 +211,14 @@ export function SourceLibraryRow({
           </div>
           {source.asset?.url && (
             <p className="mt-0.5 truncate pl-8 text-sm text-muted-foreground">{source.asset.url}</p>
+          )}
+          {failureMessage && (
+            <p
+              data-testid="source-failure-message"
+              className="mt-1 pl-8 text-xs italic text-destructive"
+            >
+              {failureMessage}
+            </p>
           )}
         </div>
 

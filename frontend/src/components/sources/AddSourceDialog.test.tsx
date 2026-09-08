@@ -19,6 +19,13 @@ vi.mock('@/lib/hooks/use-settings', () => ({
   useSettings: () => ({ data: undefined }),
 }))
 
+// SourceTypeStep (rendered inside AddSourceDialog) now consults useCapabilities
+// via TanStack Query -- stub the hook so this test doesn't need a
+// QueryClientProvider wrapper.
+vi.mock('@/lib/hooks/use-capabilities', () => ({
+  useCapabilities: () => ({ data: undefined, isLoading: false, isError: false }),
+}))
+
 describe('AddSourceDialog', () => {
   it('uses a compact full-height sheet layout with the actions pinned to the bottom', () => {
     render(<AddSourceDialog open onOpenChange={vi.fn()} />)

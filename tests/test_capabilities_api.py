@@ -18,7 +18,9 @@ def client():
     return TestClient(app)
 
 
-def _patch_probes(monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote):
+def _patch_probes(
+    monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote, media=False
+):
     monkeypatch.setattr(
         "api.routers.capabilities.docling_available", lambda: docling
     )
@@ -29,6 +31,9 @@ def _patch_probes(monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote):
     # Local readiness means package installed AND a Chromium browser present.
     monkeypatch.setattr(
         "api.routers.capabilities.crawl4ai_local_ready", lambda: crawl4ai_local
+    )
+    monkeypatch.setattr(
+        "api.routers.capabilities.media_processing_available", lambda: media
     )
 
 
@@ -43,6 +48,7 @@ class TestCapabilitiesEndpoint:
             "docling_available": False,
             "crawl4ai_available": False,
             "crawl4ai_remote_configured": False,
+            "media_processing_available": False,
         }
 
     def test_docling_available_is_independent_of_crawl4ai(self, client, monkeypatch):
@@ -70,6 +76,20 @@ class TestCapabilitiesEndpoint:
         body = client.get("/api/capabilities").json()
         assert body["crawl4ai_available"] is True
         assert body["crawl4ai_remote_configured"] is True
+
+    def test_media_processing_reported_independently(self, client, monkeypatch):
+        """Media availability is orthogonal to Docling and Crawl4AI."""
+        _patch_probes(
+            monkeypatch,
+            docling=False,
+            crawl4ai_local=False,
+            crawl4ai_remote=False,
+            media=True,
+        )
+        body = client.get("/api/capabilities").json()
+        assert body["media_processing_available"] is True
+        assert body["docling_available"] is False
+        assert body["crawl4ai_available"] is False
 
 
 class TestCrawl4aiLocalReadiness:

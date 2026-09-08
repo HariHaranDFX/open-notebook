@@ -74,8 +74,14 @@ class TestUrlIngestion:
         # The URL is persisted on the source's asset before the job is queued,
         # so a failed job can still be retried.
         assert saved_sources[0].asset.url == "https://example.com/article"
-        # Default placeholder title until extraction names it.
-        assert saved_sources[0].title == "Processing..."
+        # Intentional contract change: the default title used to be the
+        # literal "Processing..." (which stayed frozen when extraction failed
+        # permanently and misled users into thinking a source was still
+        # working). The new default is the URL itself for link sources and
+        # the filename for uploads, so a failed source keeps a meaningful
+        # title. Extraction can still overwrite this with a nicer title from
+        # the extracted document (see save_source in graphs/source.py).
+        assert saved_sources[0].title == "https://example.com/article"
 
         # The job carries the url through as content_state.
         submitted = mock_submit.await_args.args

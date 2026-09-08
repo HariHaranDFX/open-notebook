@@ -138,6 +138,110 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset is None
 
 
+class TestDefaultTitleFromInput:
+    """A source created without a user-typed title must land with a friendly
+    default (filename for uploads, URL for links) instead of 'Processing...'.
+    Extraction can still upgrade it to a nicer title later; a permanent
+    failure leaves the friendly default in place, not the placeholder."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
+    async def test_upload_without_title_uses_filename(
+        self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_upload.return_value = os.path.join(
+            os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"
+        )
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "upload",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+                files={"file": ("quarterly-report.pdf", b"data", "application/pdf")},
+            )
+
+        assert saved, "source should have been saved"
+        assert saved[0].title == "quarterly-report.pdf"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    async def test_link_without_title_uses_url(
+        self, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "link",
+                    "url": "https://samplelib.com/mp3/sample.mp3",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+            )
+
+        assert saved, "source should have been saved"
+        assert saved[0].title == "https://samplelib.com/mp3/sample.mp3"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    async def test_explicit_title_is_preserved(
+        self, mock_nb_get, mock_add_nb, mock_submit, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_submit.return_value = "command:123"
+
+        saved: list = []
+
+        async def capture(self_source):
+            saved.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture):
+            client.post(
+                "/api/sources",
+                data={
+                    "type": "link",
+                    "url": "https://example.com/whatever",
+                    "title": "Q4 Board Deck",
+                    "notebooks": '["notebook:1"]',
+                    "async_processing": "true",
+                },
+            )
+
+        assert saved[0].title == "Q4 Board Deck"
+
+
 class TestRetrySourceProcessing:
     """POST /sources/{id}/retry must find a source's notebooks via the reference
     edge's in/out columns, not a non-existent `source` column (#861)."""
@@ -180,21 +284,39 @@ class TestRetrySourceProcessing:
         assert str(source.command).startswith("command:")
 
     @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
-    async def test_retry_400_only_when_truly_unlinked(
-        self, mock_get, mock_repo_query, client
+    async def test_retry_succeeds_for_orphan_source(
+        self, mock_get, mock_repo_query, mock_submit, client
     ):
+        """Retry must work even when a source has no notebook links. Uploads
+        made directly from the Sources page (WP2b sharing model, source-level
+        ownership without notebook membership) legitimately produce orphan
+        sources, and the create endpoint already accepts notebook_ids=[]. The
+        retry path used to reject them with a 400, which trapped the user
+        with a permanently failed source they could never retry (#user report
+        on fix/ingestion-media-capability)."""
         source = MagicMock()
         source.id = "source:1"
         source.command = None
+        source.title = "My source"
+        source.topics = []
+        source.full_text = None
+        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.save = AsyncMock()
+        source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
         mock_repo_query.return_value = []  # genuinely no notebooks
+        mock_submit.return_value = "command:123"
 
         response = client.post("/api/sources/source:1/retry")
 
-        assert response.status_code == 400
-        assert "not associated with any notebooks" in response.json()["detail"]
+        assert response.status_code == 200
+        # Retry command was submitted with an empty notebook_ids list, matching
+        # what the create endpoint would have accepted for the same source.
+        submitted_payload = mock_submit.await_args.args[2]
+        assert submitted_payload["notebook_ids"] == []
 
 
 class TestGetSourceNotFound:
@@ -212,6 +334,87 @@ class TestGetSourceNotFound:
         response = client.get("/api/sources/source:gone")
 
         assert response.status_code == 404
+
+
+class TestGetSourceStatusMessage:
+    """GET /sources/{id}/status used to hardcode message="Source processing failed"
+    for every failure, throwing away the real error the worker had already saved
+    on the command record. Result: the UI card said "failed" with no reason.
+    The endpoint must forward the worker's error text as the message when the
+    status is `failed`."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_failed_status_surfaces_worker_error_message(
+        self, mock_get, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="failed")
+        source.get_processing_progress = AsyncMock(
+            return_value={
+                "status": "failed",
+                "started_at": None,
+                "completed_at": None,
+                "error": "This PDF is password-protected. Remove the password and re-upload.",
+                "result": None,
+            }
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "failed"
+        assert body["message"] == (
+            "This PDF is password-protected. Remove the password and re-upload."
+        )
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_failed_status_falls_back_when_no_error_message(
+        self, mock_get, client
+    ):
+        """A crash that skipped the exception path leaves error=None. Keep the
+        generic message so the UI still says something."""
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="failed")
+        source.get_processing_progress = AsyncMock(
+            return_value={"status": "failed", "error": None, "result": None}
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.status_code == 200
+        assert response.json()["message"] == "Source processing failed"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_completed_status_uses_success_message(
+        self, mock_get, client
+    ):
+        """Non-failed statuses keep their existing hardcoded strings; the
+        error carveout only applies to `failed`."""
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = "command:abc"
+        source.user_id = None
+        source.get_status = AsyncMock(return_value="completed")
+        source.get_processing_progress = AsyncMock(
+            return_value={"status": "completed", "error": None, "result": None}
+        )
+        mock_get.return_value = source
+
+        response = client.get("/api/sources/source:1/status")
+
+        assert response.json()["message"] == "Source processing completed successfully"
 
 
 if __name__ == "__main__":

@@ -55,6 +55,7 @@ from open_notebook.exceptions import (
     OpenNotebookError,
     UnsupportedTypeException,
 )
+from open_notebook.graphs.source import default_source_title
 
 router = APIRouter()
 
@@ -528,7 +529,7 @@ async def _create_source_async_path(
         source_asset = None
 
     source = Source(
-        title=source_data.title or "Processing...",
+        title=source_data.title or default_source_title(content_state),
         topics=[],
         asset=source_asset,
         user_id=user.id if user else None,
@@ -617,7 +618,7 @@ async def _create_source_sync_path(
 
         # Create source record - let SurrealDB generate the ID
         source = Source(
-            title=source_data.title or "Processing...",
+            title=source_data.title or default_source_title(content_state),
             topics=[],
             user_id=user.id if user else None,
             client_id=user.client_id if user else None,
@@ -937,7 +938,17 @@ async def get_source_status(source_id: str, request: Request):
             if status == "completed":
                 message = "Source processing completed successfully"
             elif status == "failed":
-                message = "Source processing failed"
+                # Surface the worker's actual error text when available so the
+                # UI shows *why* the source failed, not just that it did. The
+                # worker persists str(exc) as processing_info["error"] on the
+                # command record; empty when a crash skipped the exception
+                # path -- keep the generic message for that edge case.
+                err = (
+                    processing_info.get("error")
+                    if isinstance(processing_info, dict)
+                    else None
+                )
+                message = err or "Source processing failed"
             elif status == "running":
                 message = "Source processing in progress"
             elif status == "queued":
@@ -1060,11 +1071,10 @@ async def retry_source_processing(source_id: str, request: Request):
             {"source_id": ensure_record_id(source.id or source_id)},
         )
         notebook_ids = [str(nb_id) for nb_id in references] if references else []
-
-        if not notebook_ids:
-            raise HTTPException(
-                status_code=400, detail="Source is not associated with any notebooks"
-            )
+        # An empty notebook_ids list is legitimate: sources uploaded directly
+        # from the Sources page (WP2b source-level ownership) live outside any
+        # notebook. process_source_command accepts notebook_ids=[] just like
+        # the create endpoint does, so no rejection needed here.
 
         # Prepare content_state based on source asset
         content_state = {}
