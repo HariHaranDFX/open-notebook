@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import fs from 'node:fs'
 import path from 'node:path'
-import { createElement } from 'react'
 import { BrandProvider } from '@/components/providers/BrandProvider'
 import type { BrandConfig } from '@/lib/types/brand'
 // Ensure we are testing the real implementation
@@ -23,8 +22,12 @@ describe('useTranslation Hook', () => {
     actionLight: '#275E91',
     actionDark: '#74A9D6',
   }
-  const wrapper = ({ children }: { children: React.ReactNode }) =>
-    createElement(BrandProvider, { brand: atlasBrand }, children)
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    // JSX satisfies both TS (typed component signature keeps children as a
+    // real prop) and eslint's react/no-children-prop (children is not a
+    // property literal). createElement fought both rules simultaneously.
+    <BrandProvider brand={atlasBrand}>{children}</BrandProvider>
+  )
 
   beforeEach(() => {
     vi.clearAllMocks()
