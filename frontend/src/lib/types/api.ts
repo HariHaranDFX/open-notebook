@@ -61,6 +61,15 @@ export interface SourceDetailResponse extends SourceListResponse {
 
 export type SourceResponse = SourceDetailResponse
 
+/** One page of the Sources library route (`GET /sources/library`).
+ * `next_cursor` is an opaque, backend-issued token; echo it unchanged on the
+ * next request to fetch the next page, or `null` when no page follows.
+ */
+export interface SourceLibraryPage {
+  items: SourceListResponse[]
+  next_cursor: string | null
+}
+
 export interface SourceStatusResponse {
   status?: string
   message: string

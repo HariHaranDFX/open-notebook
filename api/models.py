@@ -415,6 +415,18 @@ class SourceListResponse(BaseModel):
     access_summary: Optional[AccessSummary] = None
 
 
+class SourceLibraryPageResponse(BaseModel):
+    """One page of the Sources library — keyset paginated.
+
+    ``next_cursor`` is an opaque, backend-issued token; callers echo it
+    back unchanged to fetch the next page. It is ``None`` when no further
+    page exists. See ``api/pagination.py``.
+    """
+
+    items: List[SourceListResponse]
+    next_cursor: Optional[str] = None
+
+
 # Insights API models
 class SourceInsightResponse(BaseModel):
     id: str
