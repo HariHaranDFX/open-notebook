@@ -362,6 +362,7 @@ export const ruRU = {
     recentlyViewed: "Недавно просмотренные",
     recentlyViewedNotebook: "Блокнот",
     recentlyViewedSource: "Источник",
+    loadMore: "Загрузить ещё блокноты",
   },
   sources: {
     bulkContext: "Контекст",

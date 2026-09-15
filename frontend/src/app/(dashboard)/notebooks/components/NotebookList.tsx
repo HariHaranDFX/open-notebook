@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { AlertTriangle, Book, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Book, ChevronDown, ChevronRight, Loader2, Plus, RefreshCw } from 'lucide-react'
 
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,10 @@ interface NotebookListProps {
   isError?: boolean
   onRetry?: () => void
   viewMode?: LibraryViewMode
+  hasNextPage?: boolean
+  isFetchingNextPage?: boolean
+  onLoadMore?: () => void
+  loadMoreLabel?: string
 }
 
 export function NotebookList({
@@ -38,6 +42,10 @@ export function NotebookList({
   isError = false,
   onRetry,
   viewMode = 'list',
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onLoadMore,
+  loadMoreLabel,
 }: NotebookListProps) {
   const { t } = useTranslation()
   const contentId = useId()
@@ -175,6 +183,19 @@ export function NotebookList({
               {notebooks.map(notebook => (
                 <NotebookRow key={notebook.id} notebook={notebook} viewMode={viewMode} />
               ))}
+            </div>
+          )}
+
+          {hasNextPage && onLoadMore && loadMoreLabel && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={onLoadMore}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage && <Loader2 className="animate-spin" />}
+                {loadMoreLabel}
+              </Button>
             </div>
           )}
         </div>

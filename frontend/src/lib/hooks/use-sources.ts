@@ -85,28 +85,26 @@ export function useNotebookSources(notebookId: string) {
 
 export function useSourceLibrary(params: SourceLibraryParams) {
   const query = useInfiniteQuery({
+    // sortBy/sortOrder/query are in the key so changing any of them starts
+    // a fresh query with no cursor (per plan Global Constraints).
     queryKey: QUERY_KEYS.sourceLibrary(params),
-    queryFn: async ({ pageParam = 0 }) => {
-      const sources = await sourcesApi.list({
+    queryFn: async ({ pageParam }) => {
+      const request: Parameters<typeof sourcesApi.listLibrary>[0] = {
         query: params.query,
         sort_by: params.sortBy,
         sort_order: params.sortOrder,
         limit: SOURCE_LIBRARY_PAGE_SIZE,
-        offset: pageParam,
-      })
-      return {
-        sources,
-        nextOffset: sources.length === SOURCE_LIBRARY_PAGE_SIZE
-          ? pageParam + sources.length
-          : undefined,
       }
+      // Only include cursor once one exists — the first page must not send it.
+      if (pageParam) request.cursor = pageParam
+      return sourcesApi.listLibrary(request)
     },
-    initialPageParam: 0,
-    getNextPageParam: lastPage => lastPage.nextOffset,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: lastPage => lastPage.next_cursor ?? undefined,
   })
 
   const sources = useMemo(
-    () => query.data?.pages.flatMap(page => page.sources) ?? [],
+    () => query.data?.pages.flatMap(page => page.items) ?? [],
     [query.data?.pages],
   )
 

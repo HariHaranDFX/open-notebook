@@ -319,4 +319,54 @@ describe('NotebookList', () => {
     expect(screen.getByText('Viewer')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument()
   })
+
+  it('renders a keyboard-accessible Load more control when hasNextPage is true', () => {
+    const onLoadMore = vi.fn()
+    render(
+      <NotebookList
+        notebooks={[notebook()]}
+        isLoading={false}
+        title="Active notebooks"
+        hasNextPage
+        onLoadMore={onLoadMore}
+        loadMoreLabel="Load more notebooks"
+      />,
+    )
+
+    const loadMore = screen.getByRole('button', { name: 'Load more notebooks' })
+    expect(loadMore).toBeVisible()
+    fireEvent.click(loadMore)
+    expect(onLoadMore).toHaveBeenCalledOnce()
+  })
+
+  it('hides the Load more control when hasNextPage is false', () => {
+    render(
+      <NotebookList
+        notebooks={[notebook()]}
+        isLoading={false}
+        title="Active notebooks"
+        hasNextPage={false}
+        onLoadMore={vi.fn()}
+        loadMoreLabel="Load more notebooks"
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Load more notebooks' })).not.toBeInTheDocument()
+  })
+
+  it('disables the Load more control while fetching the next page', () => {
+    render(
+      <NotebookList
+        notebooks={[notebook()]}
+        isLoading={false}
+        title="Active notebooks"
+        hasNextPage
+        isFetchingNextPage
+        onLoadMore={vi.fn()}
+        loadMoreLabel="Load more notebooks"
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Load more notebooks' })).toBeDisabled()
+  })
 })

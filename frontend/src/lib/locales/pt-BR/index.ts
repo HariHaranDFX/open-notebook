@@ -362,6 +362,7 @@ export const ptBR = {
     recentlyViewed: "Vistos recentemente",
     recentlyViewedNotebook: "Caderno",
     recentlyViewedSource: "Fonte",
+    loadMore: "Carregar mais cadernos",
   },
   sources: {
     bulkContext: "Contexto",

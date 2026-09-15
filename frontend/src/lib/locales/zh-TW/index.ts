@@ -362,6 +362,7 @@ export const zhTW = {
     recentlyViewed: "最近檢視",
     recentlyViewedNotebook: "筆記本",
     recentlyViewedSource: "來源",
+    loadMore: "載入更多筆記本",
   },
   sources: {
     bulkContext: "上下文",

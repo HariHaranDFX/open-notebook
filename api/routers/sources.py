@@ -30,6 +30,7 @@ from api.models import (
     InsightCreationResponse,
     SourceCreate,
     SourceInsightResponse,
+    SourceLibraryPageResponse,
     SourceListResponse,
     SourceResponse,
     SourceStatusResponse,
@@ -43,6 +44,13 @@ from api.ownership import (
     assert_can_view_source_or_404,
     role_at_least,
     source_access_where,
+)
+from api.pagination import (
+    CURSOR_VERSION,
+    CursorValidationError,
+    decode_cursor,
+    encode_cursor,
+    fingerprint_filters,
 )
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
@@ -114,6 +122,30 @@ SOURCE_TYPE_EXPRESSION = (
     "IF asset.file_path != NONE THEN 'file' "
     "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
 )
+
+# Sort expressions inlined into the WHERE keyset predicate for each sort key.
+# ORDER BY still references the SELECT alias (SOURCE_SORT_FIELDS above), which
+# SurrealDB resolves; WHERE can't reference an alias, so it must inline the
+# same expression that produced the alias.
+SOURCE_LIBRARY_SORT_EXPR = {
+    "created": "created",
+    "updated": "updated",
+    "title": "string::lowercase(title OR '')",
+    "insights_count": (
+        "(SELECT VALUE count() FROM source_insight "
+        "WHERE source = $parent.id GROUP ALL)[0].count OR 0"
+    ),
+    "embedded": (
+        "(SELECT VALUE id FROM source_embedding "
+        "WHERE source = $parent.id LIMIT 1) != []"
+    ),
+    "type": SOURCE_TYPE_EXPRESSION,
+}
+
+# Default page size and cap for the library route. Kept modest — clients
+# paginate with cursors, so a big page here doesn't help anyone.
+SOURCE_LIBRARY_DEFAULT_LIMIT = 30
+SOURCE_LIBRARY_MAX_LIMIT = 200
 
 
 async def _stamp_source_view(source_id: str) -> None:
@@ -412,6 +444,219 @@ async def get_sources(
     except Exception as e:
         logger.error(f"Error fetching sources: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching sources")
+
+
+async def _build_source_list_response(
+    row: dict[str, Any], request: Request
+) -> SourceListResponse:
+    """Convert one SurrealDB row from the library projection into a
+    ``SourceListResponse``. Mirrors the loop inside :func:`get_sources` — the
+    plan requires reusing that projection and status/access resolution."""
+    command = row.get("command")
+    command_id: Optional[str] = None
+    status = None
+    processing_info = None
+
+    if command and isinstance(command, dict):
+        command_id = str(command.get("id")) if command.get("id") else None
+        status = command.get("status")
+        result_data = command.get("result")
+        execution_metadata = (
+            result_data.get("execution_metadata", {})
+            if isinstance(result_data, dict)
+            else {}
+        )
+        processing_info = {
+            "started_at": execution_metadata.get("started_at"),
+            "completed_at": execution_metadata.get("completed_at"),
+            "error": _truncate_error(command.get("error_message")),
+        }
+    elif command:
+        command_id = str(command)
+        status = "unknown"
+
+    source_id = str(row["id"])
+    summary = await access_summary_for_source(row.get("user_id"), source_id, request)
+    return SourceListResponse(
+        id=row["id"],
+        title=row.get("title"),
+        topics=row.get("topics") or [],
+        asset=AssetModel(
+            file_path=row["asset"].get("file_path") if row.get("asset") else None,
+            url=row["asset"].get("url") if row.get("asset") else None,
+        )
+        if row.get("asset")
+        else None,
+        embedded=row.get("embedded", False),
+        embedded_chunks=0,
+        insights_count=row.get("insights_count", 0),
+        created=str(row["created"]),
+        updated=str(row["updated"]),
+        command_id=command_id,
+        status=status,
+        processing_info=processing_info,
+        access_role=summary.role if summary else None,
+        access_summary=summary,
+    )
+
+
+def _source_library_fingerprint(query: str, sort_by: str, sort_order: str) -> str:
+    """Fingerprint the request's filters so a cursor from one query can't be
+    reused with a different query/sort. Kept minimal — text query + sort keys
+    are the only user-controlled filters this route exposes today."""
+    return fingerprint_filters(
+        {"q": query, "sort_by": sort_by, "sort_order": sort_order}
+    )
+
+
+@router.get("/sources/library", response_model=SourceLibraryPageResponse)
+async def get_sources_library(
+    request: Request,
+    query: Optional[str] = Query(
+        None, max_length=200, description="Filter by source title"
+    ),
+    sort_by: str = Query(
+        "updated",
+        description=(
+            "Field to sort by (type, title, created, updated, insights_count, "
+            "or embedded)"
+        ),
+    ),
+    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
+    limit: int = Query(
+        SOURCE_LIBRARY_DEFAULT_LIMIT,
+        ge=1,
+        le=SOURCE_LIBRARY_MAX_LIMIT,
+        description="Maximum sources to return (1-200)",
+    ),
+    cursor: Optional[str] = Query(
+        None, description="Opaque cursor from a previous page"
+    ),
+) -> SourceLibraryPageResponse:
+    """Keyset-paginated Sources library.
+
+    Returns at most ``limit`` items plus an opaque ``next_cursor`` when
+    another page exists. The cursor is version-tagged and fingerprint-bound
+    to this request's filters — reusing one with a different query, sort
+    field or sort order returns HTTP 400.
+
+    Access predicate and the title text filter are applied *before* the
+    keyset predicate, so cursors can never leak inaccessible records.
+    """
+    if sort_by not in SOURCE_SORT_FIELDS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "sort_by must be one of: type, title, created, updated, "
+                "insights_count, embedded"
+            ),
+        )
+    if sort_order.lower() not in ("asc", "desc"):
+        raise HTTPException(
+            status_code=400, detail="sort_order must be 'asc' or 'desc'"
+        )
+    sort_order_norm = sort_order.lower()
+
+    normalized_query = query.strip().lower() if query else ""
+    fp = _source_library_fingerprint(normalized_query, sort_by, sort_order_norm)
+
+    # Validate & decode the cursor before we build any SurrealQL. A bad
+    # cursor is a client bug — reject fast with a stable HTTP 400 message.
+    cursor_payload: Optional[dict[str, Any]] = None
+    if cursor:
+        try:
+            cursor_payload = decode_cursor(
+                cursor,
+                allowed_sort_fields=SOURCE_SORT_FIELDS.keys(),
+                expected_sort_by=sort_by,
+                expected_sort_order=sort_order_norm,
+                expected_fp=fp,
+            )
+        except CursorValidationError:
+            raise HTTPException(status_code=400, detail="Invalid cursor")
+
+    # Access + text filters go into WHERE before the keyset predicate.
+    where_clause, where_params = await source_access_where(request)
+    where_parts: list[str] = []
+    params: dict[str, Any] = {}
+    if where_clause:
+        where_parts.append(f"({where_clause})")
+    if normalized_query:
+        where_parts.append("string::lowercase(title OR '') CONTAINS $title_query")
+        params["title_query"] = normalized_query
+    params.update(where_params)
+
+    if cursor_payload is not None:
+        sort_expr = SOURCE_LIBRARY_SORT_EXPR[sort_by]
+        cmp = ">" if sort_order_norm == "asc" else "<"
+        # (value, id) keyset predicate — deterministic when primary values tie.
+        where_parts.append(
+            f"({sort_expr} {cmp} $cursor_value "
+            f"OR ({sort_expr} = $cursor_value AND id {cmp} $cursor_id))"
+        )
+        params["cursor_value"] = cursor_payload["value"]
+        params["cursor_id"] = ensure_record_id(str(cursor_payload["id"]))
+
+    where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+
+    order_alias = SOURCE_SORT_FIELDS[sort_by]
+    direction = sort_order_norm.upper()
+    order_clause = (
+        f"ORDER BY {order_alias} {direction}, id {direction}"
+    )
+
+    # limit + 1 internally — the extra row is our "another page exists" signal
+    # and never returned to the caller.
+    internal_limit = limit + 1
+    params["limit"] = internal_limit
+
+    query_sql = f"""
+        SELECT id, asset, created, title, updated, topics, command, user_id,
+        string::lowercase(title OR '') AS title_sort,
+        ({SOURCE_TYPE_EXPRESSION}) AS type,
+        (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+        (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
+        FROM source
+        {where_sql}
+        {order_clause}
+        LIMIT $limit
+        FETCH command
+    """
+
+    try:
+        rows = await repo_query(query_sql, params)
+    except OpenNotebookError:
+        raise
+    except HTTPException:
+        raise
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"Error fetching sources library: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching sources")
+
+    has_next = len(rows) > limit
+    visible_rows = rows[:limit]
+    items = [await _build_source_list_response(row, request) for row in visible_rows]
+
+    next_cursor: Optional[str] = None
+    if has_next and visible_rows:
+        last = visible_rows[-1]
+        cursor_value: Any
+        if sort_by == "title":
+            cursor_value = last.get("title_sort", "")
+        else:
+            cursor_value = last.get(sort_by)
+        next_cursor = encode_cursor(
+            {
+                "v": CURSOR_VERSION,
+                "sort_by": sort_by,
+                "sort_order": sort_order_norm,
+                "value": cursor_value,
+                "id": str(last["id"]),
+                "fp": fp,
+            }
+        )
+
+    return SourceLibraryPageResponse(items=items, next_cursor=next_cursor)
 
 
 def _source_to_response(

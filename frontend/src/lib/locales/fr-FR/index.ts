@@ -362,6 +362,7 @@ export const frFR = {
     recentlyViewed: "Consultés récemment",
     recentlyViewedNotebook: "Carnet",
     recentlyViewedSource: "Source",
+    loadMore: "Charger plus de carnets",
   },
   sources: {
     bulkContext: "Contexte",

@@ -48,7 +48,7 @@
 - Produces `sourcesApi.listLibrary(params)`; preserves `sourcesApi.list(params)` and its current array response for non-library consumers.
 - Preserves the existing `useSourceLibrary()` public result: flattened `sources`, loading/error state, `hasNextPage`, and `fetchNextPage`.
 
-- [ ] **Step 1: Write failing backend cursor tests**
+- [x] **Step 1: Write failing backend cursor tests**
 
   Add tests that cover:
 
@@ -61,13 +61,13 @@
   - malformed, oversized, wrong-version, and query/sort-mismatched cursors return HTTP 400;
   - the generated SurrealQL does not contain `START` or `OFFSET`.
 
-- [ ] **Step 2: Run the backend test and verify red**
+- [x] **Step 2: Run the backend test and verify red**
 
   Run: `uv run pytest tests/test_source_cursor_pagination.py -q`
 
   Expected: failures because the library cursor route and cursor codec do not exist.
 
-- [ ] **Step 3: Write failing frontend hook tests**
+- [x] **Step 3: Write failing frontend hook tests**
 
   Update `use-source-library.test.tsx` so `sourcesApi.listLibrary` returns:
 
@@ -77,17 +77,17 @@
 
   Assert the first request omits `cursor`, the next request sends `cursor: 'source-cursor-1'`, the hook flattens both pages, and no call contains `offset`. Assert changing search or sorting starts again without a cursor.
 
-- [ ] **Step 4: Run the frontend hook test and verify red**
+- [x] **Step 4: Run the frontend hook test and verify red**
 
   Run from `frontend/`: `npm run test -- src/lib/hooks/use-source-library.test.tsx`
 
   Expected: failures because `listLibrary` and cursor-based page parameters are not implemented.
 
-- [ ] **Step 5: Implement the shared opaque cursor codec**
+- [x] **Step 5: Implement the shared opaque cursor codec**
 
   Encode a compact payload containing `v`, `sort_by`, `sort_order`, typed `value`, `id`, and a SHA-256 fingerprint of normalized filters. Decode with strict maximum token length, JSON shape, version, field allowlist, direction, record ID, and value-type validation. Raise a small pagination-specific validation exception that routes translate to HTTP 400 without returning decoder internals.
 
-- [ ] **Step 6: Implement the Source library keyset route**
+- [x] **Step 6: Implement the Source library keyset route**
 
   Reuse the current source projection, access predicate, normalized title query, sort allowlist, and response conversion. Query `limit + 1`, order by the selected expression and `id` in the requested direction, then apply:
 
@@ -98,15 +98,15 @@
 
   for ascending order and the corresponding `<` predicate for descending order. Parse cursor values into the correct bound type for datetime, integer, boolean, and string sort fields. Return only `limit` items and build `next_cursor` from the last returned item only when the extra row exists.
 
-- [ ] **Step 7: Switch only the Sources library hook to the new route**
+- [x] **Step 7: Switch only the Sources library hook to the new route**
 
   Add `sourcesApi.listLibrary()` and change `useSourceLibrary()` from numeric `pageParam` offsets to `string | undefined` cursors. Leave `sourcesApi.list()`, `useSources()`, and `useNotebookSources()` unchanged so dialogs, podcasts, and notebook workbench behavior are not silently truncated.
 
-- [ ] **Step 8: Verify Sources list/card integration**
+- [x] **Step 8: Verify Sources list/card integration**
 
   Confirm the existing Load more control still appears only when `hasNextPage`, works in both list and card modes, preserves accumulated records when switching view, and retains the current retry behavior when a later page fails.
 
-- [ ] **Step 9: Run focused and regression verification**
+- [x] **Step 9: Run focused and regression verification**
 
   Run:
 
@@ -119,7 +119,7 @@
 
   Expected: all commands exit 0; Sources library traffic uses cursors and existing non-library source consumers still receive arrays.
 
-- [ ] **Step 10: Commit Task 1**
+- [x] **Step 10: Commit Task 1**
 
   ```bash
   git add api/pagination.py api/models.py api/routers/sources.py tests/test_source_cursor_pagination.py frontend/src/lib/types/api.ts frontend/src/lib/api/sources.ts frontend/src/lib/hooks/use-sources.ts frontend/src/lib/hooks/use-source-library.test.tsx frontend/src/app/\(dashboard\)/sources/page.test.tsx
@@ -152,21 +152,21 @@
 - Preserves `notebooksApi.list()` and `useNotebooks()` as complete-list APIs for selection and navigation surfaces.
 - Adds optional `hasNextPage`, `isFetchingNextPage`, `onLoadMore`, and `loadMoreLabel` inputs to `NotebookList` without changing its row/card rendering contract.
 
-- [ ] **Step 1: Write failing backend Notebook pagination tests**
+- [x] **Step 1: Write failing backend Notebook pagination tests**
 
   Cover first/next pages, duplicate primary values resolved by ID, inserted records not duplicating later pages, active and archived isolation, case-insensitive name search, access filtering, `name`/`created`/`updated` sorts in both directions, malformed or mismatched cursors, and absence of `START`/`OFFSET` in generated SurrealQL.
 
-- [ ] **Step 2: Run the backend test and verify red**
+- [x] **Step 2: Run the backend test and verify red**
 
   Run: `uv run pytest tests/test_notebook_cursor_pagination.py -q`
 
   Expected: failures because the Notebook library page response and route do not exist.
 
-- [ ] **Step 3: Write failing hook and page tests**
+- [x] **Step 3: Write failing hook and page tests**
 
   Assert `useNotebookLibrary({ archived: false, query, sortBy, sortOrder })` sends no cursor on its first request, passes the returned cursor on Load more, and resets when any filter changes. On the page, assert active and archived collections maintain independent cursors, search is server-backed rather than filtering only loaded records, and list/card switching preserves each accumulated collection.
 
-- [ ] **Step 4: Run the frontend tests and verify red**
+- [x] **Step 4: Run the frontend tests and verify red**
 
   Run from `frontend/`:
 
@@ -176,23 +176,23 @@
 
   Expected: failures because `listLibrary`, `useNotebookLibrary`, and Notebook Load more controls do not exist.
 
-- [ ] **Step 5: Implement the Notebook library keyset route**
+- [x] **Step 5: Implement the Notebook library keyset route**
 
   Apply access, `archived`, and normalized name-query predicates in SurrealQL before ordering and limiting; do not fetch all notebooks and filter archived records in Python. Use `name`/`created`/`updated` plus record `id` as the composite key, fetch `limit + 1`, and return a backend-issued next cursor only when another item exists. Continue calculating source and note counts for each returned notebook and preserve effective access roles.
 
-- [ ] **Step 6: Add the independent infinite-query hook**
+- [x] **Step 6: Add the independent infinite-query hook**
 
   Add `notebooksApi.listLibrary()` and `useNotebookLibrary()` without changing `useNotebooks()`. Include `archived`, normalized query, sort field, and sort direction in the query key. Use the opaque cursor as `pageParam` and flatten pages for the collection component.
 
-- [ ] **Step 7: Connect both Notebook sections**
+- [x] **Step 7: Connect both Notebook sections**
 
   Replace the two complete-list calls on the Notebooks library page with independent active and archived `useNotebookLibrary()` calls. Pass pagination state into each `NotebookList`, reuse the localized Load more label, and keep later-page errors recoverable without hiding already loaded notebooks. Keep Recently Viewed at its current fixed limit and hide it during search as it behaves today.
 
-- [ ] **Step 8: Verify responsive list/card behavior**
+- [x] **Step 8: Verify responsive list/card behavior**
 
   Confirm Load more is keyboard accessible, appears after its own section in both views, does not cause horizontal overflow on mobile, and keeps the current list/card layout, full-surface navigation, actions, counts, skeletons, and empty states unchanged.
 
-- [ ] **Step 9: Run focused and final verification**
+- [x] **Step 9: Run focused and final verification**
 
   Run:
 
@@ -206,7 +206,7 @@
 
   Expected: all commands exit 0; active and archived libraries page independently with cursors, complete-list notebook consumers remain unchanged, and Recently Viewed remains capped rather than paginated.
 
-- [ ] **Step 10: Commit Task 2**
+- [x] **Step 10: Commit Task 2**
 
   ```bash
   git add api/models.py api/routers/notebooks.py tests/test_notebook_cursor_pagination.py frontend/src/lib/types/api.ts frontend/src/lib/api/notebooks.ts frontend/src/lib/hooks/use-notebooks.ts frontend/src/lib/hooks/use-notebooks.test.tsx frontend/src/app/\(dashboard\)/notebooks/page.tsx frontend/src/app/\(dashboard\)/notebooks/page.test.tsx frontend/src/app/\(dashboard\)/notebooks/components/NotebookList.tsx frontend/src/app/\(dashboard\)/notebooks/components/NotebookList.test.tsx

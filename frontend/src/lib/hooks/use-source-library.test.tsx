@@ -8,7 +8,7 @@ import { useSourceLibrary, useSourceStatus } from '@/lib/hooks/use-sources'
 import type { SourceListResponse } from '@/lib/types/api'
 
 vi.mock('@/lib/api/sources', () => ({
-  sourcesApi: { list: vi.fn(), status: vi.fn() },
+  sourcesApi: { list: vi.fn(), listLibrary: vi.fn(), status: vi.fn() },
 }))
 
 function createWrapper(client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) {
@@ -31,29 +31,38 @@ function source(index: number): SourceListResponse {
 }
 
 describe('useSourceLibrary', () => {
-  beforeEach(() => vi.mocked(sourcesApi.list).mockReset())
+  beforeEach(() => {
+    vi.mocked(sourcesApi.listLibrary).mockReset()
+    vi.mocked(sourcesApi.list).mockReset()
+  })
 
-  it('requests the first filtered and sorted page', async () => {
-    vi.mocked(sourcesApi.list).mockResolvedValue([])
+  it('requests the first page without a cursor', async () => {
+    vi.mocked(sourcesApi.listLibrary).mockResolvedValue({ items: [], next_cursor: null })
 
     renderHook(
       () => useSourceLibrary({ query: 'evidence', sortBy: 'title', sortOrder: 'asc' }),
       { wrapper: createWrapper() },
     )
 
-    await waitFor(() => expect(sourcesApi.list).toHaveBeenCalledWith({
+    await waitFor(() => expect(sourcesApi.listLibrary).toHaveBeenCalledWith({
       query: 'evidence',
       sort_by: 'title',
       sort_order: 'asc',
       limit: 30,
-      offset: 0,
     }))
+    // First call must NEVER carry an offset — cursor pagination only.
+    const call = vi.mocked(sourcesApi.listLibrary).mock.calls[0]?.[0] ?? {}
+    expect(call).not.toHaveProperty('offset')
+    expect(call).not.toHaveProperty('cursor')
+    // And the old array-returning `list` is untouched for the library route.
+    expect(sourcesApi.list).not.toHaveBeenCalled()
   })
 
-  it('loads the next page at the next offset', async () => {
-    vi.mocked(sourcesApi.list)
-      .mockResolvedValueOnce(Array.from({ length: 30 }, (_, index) => source(index)))
-      .mockResolvedValueOnce([source(30)])
+  it('sends the returned cursor on the next request and flattens both pages', async () => {
+    const firstPage = Array.from({ length: 30 }, (_, index) => source(index))
+    vi.mocked(sourcesApi.listLibrary)
+      .mockResolvedValueOnce({ items: firstPage, next_cursor: 'source-cursor-1' })
+      .mockResolvedValueOnce({ items: [source(30)], next_cursor: null })
 
     const { result } = renderHook(
       () => useSourceLibrary({ query: '', sortBy: 'updated', sortOrder: 'desc' }),
@@ -63,35 +72,64 @@ describe('useSourceLibrary', () => {
     await waitFor(() => expect(result.current.sources).toHaveLength(30))
     await act(async () => { await result.current.fetchNextPage() })
 
-    expect(sourcesApi.list).toHaveBeenLastCalledWith({
+    expect(sourcesApi.listLibrary).toHaveBeenLastCalledWith({
       query: '',
       sort_by: 'updated',
       sort_order: 'desc',
       limit: 30,
-      offset: 30,
+      cursor: 'source-cursor-1',
     })
+    // No call ever carries an offset.
+    for (const [args] of vi.mocked(sourcesApi.listLibrary).mock.calls) {
+      expect(args).not.toHaveProperty('offset')
+    }
     await waitFor(() => expect(result.current.sources).toHaveLength(31))
   })
 
-  it('starts a fresh query when the search changes', async () => {
-    vi.mocked(sourcesApi.list).mockResolvedValue([])
+  it('starts a fresh query without a cursor when the search changes', async () => {
+    vi.mocked(sourcesApi.listLibrary).mockResolvedValue({ items: [], next_cursor: null })
     let search = 'first'
     const { rerender } = renderHook(
       () => useSourceLibrary({ query: search, sortBy: 'updated', sortOrder: 'desc' }),
       { wrapper: createWrapper() },
     )
 
-    await waitFor(() => expect(sourcesApi.list).toHaveBeenCalledWith(expect.objectContaining({
+    await waitFor(() => expect(sourcesApi.listLibrary).toHaveBeenCalledWith(expect.objectContaining({
       query: 'first',
-      offset: 0,
     })))
+    const firstCall = vi.mocked(sourcesApi.listLibrary).mock.calls[0]?.[0] ?? {}
+    expect(firstCall).not.toHaveProperty('cursor')
+
     search = 'second'
     rerender()
 
-    await waitFor(() => expect(sourcesApi.list).toHaveBeenCalledWith(expect.objectContaining({
+    await waitFor(() => expect(sourcesApi.listLibrary).toHaveBeenCalledWith(expect.objectContaining({
       query: 'second',
-      offset: 0,
     })))
+    const secondCall = vi.mocked(sourcesApi.listLibrary).mock.calls.at(-1)?.[0] ?? {}
+    expect(secondCall).not.toHaveProperty('cursor')
+  })
+
+  it('starts a fresh query without a cursor when the sort changes', async () => {
+    vi.mocked(sourcesApi.listLibrary).mockResolvedValue({ items: [], next_cursor: null })
+    let sortBy: 'updated' | 'title' = 'updated'
+    const { rerender } = renderHook(
+      () => useSourceLibrary({ query: '', sortBy, sortOrder: 'desc' }),
+      { wrapper: createWrapper() },
+    )
+
+    await waitFor(() => expect(sourcesApi.listLibrary).toHaveBeenCalledWith(expect.objectContaining({
+      sort_by: 'updated',
+    })))
+
+    sortBy = 'title'
+    rerender()
+
+    await waitFor(() => expect(sourcesApi.listLibrary).toHaveBeenCalledWith(expect.objectContaining({
+      sort_by: 'title',
+    })))
+    const latest = vi.mocked(sourcesApi.listLibrary).mock.calls.at(-1)?.[0] ?? {}
+    expect(latest).not.toHaveProperty('cursor')
   })
 
   it('refreshes source metadata when processing reaches a terminal state', async () => {

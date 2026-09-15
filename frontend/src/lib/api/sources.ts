@@ -1,16 +1,25 @@
 import type { AxiosResponse } from 'axios'
 
 import apiClient from './client'
-import { 
-  SourceListResponse, 
-  SourceDetailResponse, 
+import {
+  SourceListResponse,
+  SourceDetailResponse,
+  SourceLibraryPage,
   SourceResponse,
   SourceStatusResponse,
-  CreateSourceRequest, 
-  UpdateSourceRequest 
+  CreateSourceRequest,
+  UpdateSourceRequest
 } from '@/lib/types/api'
 
 export type SourceSortField = 'type' | 'title' | 'created' | 'updated' | 'insights_count' | 'embedded'
+
+export interface SourceLibraryParams {
+  query?: string
+  sort_by?: SourceSortField
+  sort_order?: 'asc' | 'desc'
+  limit?: number
+  cursor?: string
+}
 
 export const sourcesApi = {
   list: async (params?: {
@@ -22,6 +31,13 @@ export const sourcesApi = {
     sort_order?: 'asc' | 'desc'
   }) => {
     const response = await apiClient.get<SourceListResponse[]>('/sources', { params })
+    return response.data
+  },
+
+  /** Keyset-paginated Sources library page. Non-library consumers stay on
+   * `list()` — this route returns a page envelope, not a flat array. */
+  listLibrary: async (params: SourceLibraryParams) => {
+    const response = await apiClient.get<SourceLibraryPage>('/sources/library', { params })
     return response.data
   },
 

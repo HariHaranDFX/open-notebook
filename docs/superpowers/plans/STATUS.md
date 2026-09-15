@@ -1,7 +1,7 @@
 # Plans — done / not done
 
 Index of every file in this directory, with what actually landed on `main`.
-Last verified: 2026-09-15 against branch `main` at commit `3c21361`.
+Last verified: 2026-09-15 against branch `main` at commit `8ce0cd1` (post PR #14).
 
 This file is a **status snapshot**, not a source of truth for what the plans
 should contain. When a plan lands or its verdict changes, update the row here.
@@ -25,7 +25,8 @@ should contain. When a plan lands or its verdict changes, update the row here.
 | [2026-08-07-wp3-07-hardening.md](2026-08-07-wp3-07-hardening.md) | WP3-07 (PR #10) | a11y + foundation hardening |
 | [2026-08-07-wp3-redesign-roadmap.md](2026-08-07-wp3-redesign-roadmap.md) | Roadmap only — the 7 tickets above delivered it | — |
 | [2026-08-13-ingestion-runtime-capabilities.md](2026-08-13-ingestion-runtime-capabilities.md) | PR #13 (merge `3c21361`) | `runtime_capabilities.py`: `docling_available`, `crawl4ai_available`, `crawl4ai_local_ready`, `crawl4ai_remote_configured`, `media_processing_available`, `engine_runtime_missing` + tests |
-| [2026-08-13-notebook-source-documentation-truth.md](2026-08-13-notebook-source-documentation-truth.md) | Doc-only correction on working tree (uncommitted, 2026-09-15) | [docs/2-CORE-CONCEPTS/notebooks-sources-notes.md](../../2-CORE-CONCEPTS/notebooks-sources-notes.md): `Reusable` property (line 110), `Reusable Sources, Explicit Notebook Associations` decision (line 207), common questions (line 259), summary table (line 278), and Why-This-Matters framing (line 46) all match `PRODUCT.md:27` |
+| [2026-08-13-notebook-source-documentation-truth.md](2026-08-13-notebook-source-documentation-truth.md) | PR #14 (squash `8ce0cd1`, 2026-09-15) | [docs/2-CORE-CONCEPTS/notebooks-sources-notes.md](../../2-CORE-CONCEPTS/notebooks-sources-notes.md): `Reusable` property (line 110), `Reusable Sources, Explicit Notebook Associations` decision (line 207), common questions (line 259), summary table (line 278), and Why-This-Matters framing (line 46) all match `PRODUCT.md:27` |
+| [2026-08-17-library-keyset-pagination.md](2026-08-17-library-keyset-pagination.md) | Branch `feat/library-keyset-pagination` (commits `5000456` sources + `72edfa7` notebooks, 2026-09-15) — Tasks 1 + 2 complete | `api/pagination.py` cursor codec (opaque, versioned, URL-safe, SHA-256 fingerprint of filters); `GET /api/sources/library` + `GET /api/notebooks/library` (keyset predicates in SurrealQL, no `START`/`OFFSET`); `useSourceLibrary` + `useNotebookLibrary` `useInfiniteQuery` hooks; NotebookList Load more; 29+54 backend tests + 28 frontend tests + locale parity green; `GET /sources` and `GET /notebooks` complete-list APIs kept for dialogs (CommandPalette, GeneratePodcastDialog, SaveToNotebooksDialog, AddSourceDialog, NotebookAssociations, AddExistingSourceDialog, ContentSelectionPanel); Recently Viewed left capped |
 
 ---
 
@@ -34,7 +35,6 @@ should contain. When a plan lands or its verdict changes, update the row here.
 | Plan | What shipped | What's missing |
 |---|---|---|
 | [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Plan + design docs merged (PR #11, merge `a47461f`, 2026-09-03) | No code: `open_notebook/domain/original_file_policy.py` does not exist; `content_settings.py` has no `OriginalFilePolicy` / `OriginalFileAction` |
-| [2026-08-17-library-keyset-pagination.md](2026-08-17-library-keyset-pagination.md) | `frontend/src/lib/hooks/use-sources.ts` uses `useInfiniteQuery` (line 42, 87) | `use-notebooks.ts` has no `useInfiniteQuery`; backend cursor endpoints not fully audited |
 
 ---
 
