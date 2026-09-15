@@ -666,6 +666,7 @@ export const itIT = {
     loadErrorTitle: "Impossibile caricare gli episodi",
     loadErrorDesc: "Non siamo riusciti a recuperare gli ultimi episodi podcast. Riprova tra poco.",
     loadingEpisodes: "Caricamento episodi…",
+    loadMore: "Carica altri episodi",
     noEpisodesYet: "Ancora nessun episodio podcast. Genera il tuo primo dalle interfacce chat di quaderni o fonti.",
     statusRunningTitle: "In elaborazione",
     statusRunningDesc: "Episodi che stanno attivamente generando risorse.",

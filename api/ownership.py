@@ -170,6 +170,36 @@ async def source_access_where(request: Request) -> Tuple[str, dict]:
     return "(" + " OR ".join(parts) + ")", binds
 
 
+async def episode_access_where(request: Request) -> Tuple[str, dict]:
+    """Episodes: owner, or a notebook the user can access.
+
+    Mirrors :func:`filter_episodes_by_access` but runs entirely in SurrealQL,
+    so cursor pagination (limit+1 fetch, exact next_cursor) stays correct —
+    a Python-side filter after the LIMIT would leave next_cursor uncertain.
+    """
+    if not auth_enforces_ownership():
+        return "", {}
+    user = current_user_optional(request)
+    if user is None:
+        return "", {}
+    nb_clause, nb_binds = await access_where(request, "notebook")
+    nb_ids: list = []
+    if nb_clause:
+        accessible_nbs = await repo_query(
+            f"SELECT id FROM notebook WHERE {nb_clause}",
+            nb_binds,
+        )
+        nb_ids = [
+            ensure_record_id(str(r["id"])) for r in accessible_nbs if r.get("id")
+        ]
+    binds: dict = {"access_uid": ensure_record_id(user.id)}
+    parts = ["user_id = $access_uid"]
+    if nb_ids:
+        binds["access_episode_notebook_ids"] = nb_ids
+        parts.append("notebook_id IN $access_episode_notebook_ids")
+    return "(" + " OR ".join(parts) + ")", binds
+
+
 async def effective_role_for_notebook(
     owner_user_id: Optional[str], notebook_id: str, request: Request
 ) -> Optional[AccessRole]:

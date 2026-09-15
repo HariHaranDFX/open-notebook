@@ -664,6 +664,7 @@ export const enUS = {
     loadErrorTitle: "Failed to load episodes",
     loadErrorDesc: "We could not fetch the latest podcast episodes. Try again shortly.",
     loadingEpisodes: "Loading episodes…",
+    loadMore: "Load more episodes",
     noEpisodesYet: "No podcast episodes yet. Generate your first one from the notebook or source chat interfaces.",
     statusRunningTitle: "Currently Processing",
     statusRunningDesc: "Episodes that are actively generating assets.",

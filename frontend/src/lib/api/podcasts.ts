@@ -30,9 +30,54 @@ export async function resolvePodcastAssetUrl(path?: string | null): Promise<stri
   return `${base}/${path}`
 }
 
+export type EpisodeLibrarySortField = 'updated' | 'created' | 'episode_name'
+
+export interface EpisodeLibraryParams {
+  query?: string
+  sort_by?: EpisodeLibrarySortField
+  sort_order?: 'asc' | 'desc'
+  limit?: number
+  cursor?: string | null
+}
+
+export interface EpisodeLibraryPage {
+  items: PodcastEpisode[]
+  next_cursor: string | null
+}
+
+export interface EpisodeSummary {
+  total: number
+  running: number
+  completed: number
+  failed: number
+  pending: number
+  has_active: boolean
+}
+
 export const podcastsApi = {
   listEpisodes: async () => {
     const response = await apiClient.get<PodcastEpisode[]>('/podcasts/episodes')
+    return response.data
+  },
+
+  listEpisodeLibrary: async (params: EpisodeLibraryParams = {}) => {
+    const search: Record<string, string | number> = {}
+    if (params.query) search.query = params.query
+    if (params.sort_by) search.sort_by = params.sort_by
+    if (params.sort_order) search.sort_order = params.sort_order
+    if (params.limit !== undefined) search.limit = params.limit
+    if (params.cursor) search.cursor = params.cursor
+    const response = await apiClient.get<EpisodeLibraryPage>(
+      '/podcasts/episodes/library',
+      { params: search }
+    )
+    return response.data
+  },
+
+  getEpisodeSummary: async () => {
+    const response = await apiClient.get<EpisodeSummary>(
+      '/podcasts/episodes/summary'
+    )
     return response.data
   },
 

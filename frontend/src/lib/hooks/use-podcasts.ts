@@ -1,7 +1,19 @@
 import { useMemo } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
-import { podcastsApi, EpisodeProfileInput, SpeakerProfileInput } from '@/lib/api/podcasts'
+import {
+  podcastsApi,
+  EpisodeLibraryPage,
+  EpisodeLibrarySortField,
+  EpisodeProfileInput,
+  EpisodeSummary,
+  SpeakerProfileInput,
+} from '@/lib/api/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -15,6 +27,14 @@ import {
   groupEpisodesByStatus,
   speakerUsageMap,
 } from '@/lib/types/podcasts'
+
+const EPISODE_LIBRARY_PAGE_SIZE = 30
+
+export interface EpisodeLibraryParams {
+  query?: string
+  sortBy?: EpisodeLibrarySortField
+  sortOrder?: 'asc' | 'desc'
+}
 
 export function useLanguages() {
   return useQuery({
@@ -86,6 +106,81 @@ export function usePodcastEpisodes(options?: { autoRefresh?: boolean }) {
     statusCounts,
     hasActiveEpisodes: active,
   }
+}
+
+/**
+ * Cursor-paginated episode library for the /podcasts page.
+ *
+ * Keeps `usePodcastEpisodes` unchanged as the complete-list surface for
+ * anywhere else that still needs the full set. This hook drives the page's
+ * rendered list; pair it with `usePodcastEpisodesSummary` for global
+ * status-count tiles that stay accurate under pagination.
+ */
+export function useEpisodeLibrary(params: EpisodeLibraryParams = {}) {
+  const sortBy: EpisodeLibrarySortField = params.sortBy ?? 'updated'
+  const sortOrder: 'asc' | 'desc' = params.sortOrder ?? 'desc'
+  const normalizedQuery = params.query?.trim().toLowerCase() ?? ''
+
+  const query = useInfiniteQuery({
+    queryKey: QUERY_KEYS.podcastEpisodeLibrary({
+      query: normalizedQuery,
+      sortBy,
+      sortOrder,
+    }),
+    queryFn: ({ pageParam }: { pageParam: string | undefined }) =>
+      podcastsApi.listEpisodeLibrary({
+        query: normalizedQuery || undefined,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        limit: EPISODE_LIBRARY_PAGE_SIZE,
+        cursor: pageParam,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: EpisodeLibraryPage) =>
+      lastPage.next_cursor ?? undefined,
+  })
+
+  const episodes = useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data?.pages]
+  )
+
+  return {
+    episodes,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    refetch: query.refetch,
+    error: query.error,
+    isError: query.isError,
+    isFetchNextPageError: query.isFetchNextPageError,
+    isRefetchError: query.isRefetchError,
+  }
+}
+
+/**
+ * Global episode status tiles + polling driver.
+ *
+ * Returns aggregate counts that stay accurate when the library is
+ * cursor-paginated (the server computes them owner-scoped). Polls every
+ * 15s while any episode is active, mirroring `usePodcastEpisodes`.
+ */
+export function usePodcastEpisodesSummary(options?: { autoRefresh?: boolean }) {
+  const { autoRefresh = true } = options ?? {}
+
+  return useQuery({
+    queryKey: QUERY_KEYS.podcastEpisodeSummary,
+    queryFn: podcastsApi.getEpisodeSummary,
+    refetchInterval: (current) => {
+      if (!autoRefresh) {
+        return false
+      }
+      const data = current.state.data as EpisodeSummary | undefined
+      return data?.has_active ? 15_000 : false
+    },
+  })
 }
 
 export function usePodcastEpisode(episodeId: string) {

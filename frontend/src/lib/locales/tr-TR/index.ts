@@ -666,6 +666,7 @@ export const trTR = {
     loadErrorTitle: "Bölümler yüklenemedi",
     loadErrorDesc: "En son podcast bölümleri alınamadı. Kısa süre sonra tekrar deneyin.",
     loadingEpisodes: "Bölümler yükleniyor…",
+    loadMore: "Daha fazla bölüm yükle",
     noEpisodesYet: "Henüz podcast bölümü yok. Defter veya kaynak sohbet arayüzlerinden ilk bölümünüzü oluşturun.",
     statusRunningTitle: "Şu An İşleniyor",
     statusRunningDesc: "Aktif olarak içerik oluşturan bölümler.",

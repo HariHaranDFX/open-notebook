@@ -5,6 +5,7 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import get_command_status, submit_command
 
+from open_notebook.database.repository import repo_query
 from open_notebook.domain.notebook import Notebook
 from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
 
@@ -28,6 +29,23 @@ class PodcastGenerationResponse(BaseModel):
     message: str
     episode_profile: str
     episode_name: str
+
+
+# ORDER BY references the SELECT alias, which SurrealDB resolves; WHERE
+# cannot reference an alias, so keyset predicates inline the same expression
+# that produced the alias. Exported so the library route can validate the
+# sort_by query param without duplicating the allowlist.
+EPISODE_LIBRARY_SORT_FIELDS: Dict[str, str] = {
+    "updated": "updated",
+    "created": "created",
+    "episode_name": "name_sort",
+}
+
+EPISODE_LIBRARY_SORT_EXPR: Dict[str, str] = {
+    "updated": "updated",
+    "created": "created",
+    "episode_name": "string::lowercase(name OR '')",
+}
 
 
 class PodcastService:
@@ -150,6 +168,140 @@ class PodcastService:
         except Exception as e:
             logger.error(f"Failed to list podcast episodes: {e}")
             raise HTTPException(status_code=500, detail="Failed to list episodes")
+
+    @staticmethod
+    async def list_episodes_page(
+        *,
+        access_clause: str,
+        access_binds: Dict[str, Any],
+        normalized_query: str,
+        sort_by: str,
+        sort_order: str,
+        limit: int,
+        cursor_value: Any = None,
+        cursor_id: Any = None,
+    ) -> list:
+        """Fetch one keyset page of episodes, access-filtered in SurrealQL.
+
+        Callers own the cursor codec (see ``api/pagination.py``) and the sort
+        allowlist. This helper only builds the SurrealQL. Returns raw rows —
+        the router converts them to ``PodcastEpisodeResponse`` and computes
+        display fields (job_status, model refs, access_role).
+
+        ``sort_by`` must already be validated by the router against
+        :data:`EPISODE_LIBRARY_SORT_FIELDS`. ``sort_order`` is ``"asc"`` or
+        ``"desc"``.
+        """
+        where_parts: list = []
+        params: Dict[str, Any] = {}
+        if access_clause:
+            where_parts.append(f"({access_clause})")
+            params.update(access_binds)
+
+        if normalized_query:
+            where_parts.append("string::lowercase(name OR '') CONTAINS $name_query")
+            params["name_query"] = normalized_query
+
+        if cursor_value is not None or cursor_id is not None:
+            sort_expr = EPISODE_LIBRARY_SORT_EXPR[sort_by]
+            cmp = ">" if sort_order == "asc" else "<"
+            where_parts.append(
+                f"({sort_expr} {cmp} $cursor_value "
+                f"OR ({sort_expr} = $cursor_value AND id {cmp} $cursor_id))"
+            )
+            params["cursor_value"] = cursor_value
+            params["cursor_id"] = cursor_id
+
+        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
+        direction = sort_order.upper()
+        order_alias = EPISODE_LIBRARY_SORT_FIELDS[sort_by]
+        order_clause = f"ORDER BY {order_alias} {direction}, id {direction}"
+
+        params["limit"] = limit
+
+        query_sql = f"""
+            SELECT id, name, episode_profile, speaker_profile, briefing,
+              audio_file, transcript, outline, command, user_id, notebook_id,
+              created, updated,
+              string::lowercase(name OR '') AS name_sort
+            FROM episode
+            {where_sql}
+            {order_clause}
+            LIMIT $limit
+        """
+        rows = await repo_query(query_sql, params)
+        return rows
+
+    @staticmethod
+    async def episode_status_counts(
+        *,
+        access_clause: str,
+        access_binds: Dict[str, Any],
+    ) -> Dict[str, int]:
+        """Aggregate status counts for the current user's episodes.
+
+        Runs one owner-scoped query to fetch each episode's ``command``
+        reference, then one batch query to resolve command statuses (reuses
+        :meth:`PodcastEpisode.get_job_details_for_commands`). Returns keys
+        ``total``, ``running``, ``completed``, ``failed``, ``pending``.
+
+        The status classification mirrors the frontend's
+        ``ACTIVE_EPISODE_STATUSES`` / ``groupEpisodesByStatus`` so tile
+        counts match what the library page actually renders.
+        """
+        where_sql = f"WHERE ({access_clause})" if access_clause else ""
+        rows = await repo_query(
+            f"SELECT id, command, audio_file FROM episode {where_sql}",
+            access_binds,
+        )
+
+        command_ids: list = [str(r["command"]) for r in rows if r.get("command")]
+        try:
+            details_by_command = await PodcastEpisode.get_job_details_for_commands(
+                command_ids
+            )
+        except Exception as e:  # pragma: no cover - defensive
+            logger.warning(f"Error batch-fetching podcast job statuses: {e}")
+            details_by_command = {}
+
+        # Status classification matches frontend/src/lib/types/podcasts.ts
+        # groupEpisodesByStatus exactly — the tiles the /podcasts page renders
+        # would otherwise disagree with the aggregate.
+        counts = {
+            "total": 0,
+            "running": 0,
+            "completed": 0,
+            "failed": 0,
+            "pending": 0,
+            "active": 0,
+        }
+        for row in rows:
+            command = row.get("command")
+            audio_file = row.get("audio_file")
+            if not command and not audio_file:
+                continue  # Incomplete row, matches list route's skip rule.
+            counts["total"] += 1
+            if command:
+                detail = details_by_command.get(str(command))
+                job_status: str = (
+                    detail["status"] if detail is not None else "unknown"
+                )
+            else:
+                job_status = "completed"
+            if job_status in ("running", "processing"):
+                counts["running"] += 1
+            elif job_status == "completed":
+                counts["completed"] += 1
+            elif job_status in ("failed", "error"):
+                counts["failed"] += 1
+            else:
+                # Everything else (new/queued/pending/submitted/unknown) →
+                # the frontend's "pending" group.
+                counts["pending"] += 1
+            # has_active mirrors ACTIVE_EPISODE_STATUSES on the frontend.
+            if job_status in ("running", "processing", "pending", "submitted"):
+                counts["active"] += 1
+        return counts
 
     @staticmethod
     async def get_episode(episode_id: str) -> PodcastEpisode:

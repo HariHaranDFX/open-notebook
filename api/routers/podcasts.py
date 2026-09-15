@@ -1,19 +1,29 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
 
 from api.auth.deps import auth_enforces_ownership, current_user_optional
+from api.models import EpisodeSummaryResponse
 from api.ownership import (
     AccessRole,
     assert_can_edit_notebook_or_403,
     canonical_id,
     effective_role_for_episode,
+    episode_access_where,
     filter_episodes_by_access,
 )
+from api.pagination import (
+    CURSOR_VERSION,
+    CursorValidationError,
+    decode_cursor,
+    encode_cursor,
+    fingerprint_filters,
+)
 from api.podcast_service import (
+    EPISODE_LIBRARY_SORT_FIELDS,
     PodcastGenerationRequest,
     PodcastGenerationResponse,
     PodcastService,
@@ -160,6 +170,101 @@ class PodcastEpisodeResponse(BaseModel):
     job_status: Optional[str] = None
     error_message: Optional[str] = None
     access_role: Optional[AccessRole] = None
+
+
+class EpisodeLibraryPageResponse(BaseModel):
+    """One page of the Podcast Episodes library — keyset paginated.
+
+    ``next_cursor`` is an opaque, backend-issued token; callers echo it
+    back unchanged to fetch the next page. It is ``None`` when no further
+    page exists. See ``api/pagination.py``.
+    """
+
+    items: List[PodcastEpisodeResponse]
+    next_cursor: Optional[str] = None
+
+
+EPISODE_LIBRARY_DEFAULT_LIMIT = 30
+EPISODE_LIBRARY_MAX_LIMIT = 200
+
+
+def _episode_library_fingerprint(
+    query: str, sort_by: str, sort_order: str
+) -> str:
+    """Bind a cursor to (normalized_query, sort_by, sort_order).
+
+    Any change here invalidates every issued cursor — a HTTP 400, not a
+    silently misordered next page. Mirrors the sources/notebooks pattern.
+    """
+    return fingerprint_filters(
+        {"q": query, "sort_by": sort_by, "sort_order": sort_order}
+    )
+
+
+async def _episode_row_to_response(
+    row: dict,
+    *,
+    details_by_command: dict,
+    models_by_id: dict,
+    request: Request,
+) -> PodcastEpisodeResponse:
+    """Build one episode response from a keyset library row.
+
+    Applies the same status/model-resolution + audio_url derivation the
+    complete-list route uses so the library payload matches shape-for-shape.
+    """
+    command = row.get("command")
+    audio_file = row.get("audio_file")
+
+    if command:
+        detail = details_by_command.get(str(command))
+        if detail is not None:
+            job_status = detail["status"]
+            error_message = detail["error_message"]
+        else:
+            job_status = "unknown"
+            error_message = None
+    else:
+        job_status = "completed"
+        error_message = None
+
+    audio_url = None
+    audio_path = resolve_contained_audio_path(audio_file)
+    if audio_path is not None and audio_path.exists():
+        audio_url = f"/api/podcasts/episodes/{row['id']}/audio"
+
+    # We need a lightweight episode-shaped object for effective_role_for_episode;
+    # constructing a full PodcastEpisode would fail validation on partial rows.
+    class _EpisodeLike:
+        pass
+
+    ep_like = _EpisodeLike()
+    ep_like.user_id = row.get("user_id")
+    ep_like.notebook_id = row.get("notebook_id")
+
+    return PodcastEpisodeResponse(
+        id=str(row["id"]),
+        name=row.get("name") or "",
+        episode_profile=_with_resolved_model_fields(
+            row.get("episode_profile") or {},
+            _EPISODE_PROFILE_MODEL_FIELDS,
+            models_by_id,
+        ),
+        speaker_profile=_with_resolved_model_fields(
+            row.get("speaker_profile") or {},
+            _SPEAKER_PROFILE_MODEL_FIELDS,
+            models_by_id,
+        ),
+        briefing=row.get("briefing") or "",
+        audio_file=audio_file,
+        audio_url=audio_url,
+        transcript=row.get("transcript"),
+        outline=row.get("outline"),
+        created=str(row.get("created")) if row.get("created") else None,
+        job_status=job_status,
+        error_message=error_message,
+        access_role=await effective_role_for_episode(ep_like, request),
+    )
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -312,6 +417,186 @@ async def list_podcast_episodes(request: Request):
         raise HTTPException(
             status_code=500, detail="Failed to list podcast episodes"
         )
+
+
+@router.get(
+    "/podcasts/episodes/library", response_model=EpisodeLibraryPageResponse
+)
+async def get_episodes_library(
+    request: Request,
+    query: Optional[str] = Query(
+        None, max_length=200, description="Filter by episode name"
+    ),
+    sort_by: str = Query(
+        "updated",
+        description="Field to sort by (updated, created, or episode_name)",
+    ),
+    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
+    limit: int = Query(
+        EPISODE_LIBRARY_DEFAULT_LIMIT,
+        ge=1,
+        le=EPISODE_LIBRARY_MAX_LIMIT,
+        description="Maximum episodes to return (1-200)",
+    ),
+    cursor: Optional[str] = Query(
+        None, description="Opaque cursor from a previous page"
+    ),
+) -> EpisodeLibraryPageResponse:
+    """Keyset-paginated Podcast Episodes library.
+
+    Access predicate and the name text filter are applied in SurrealQL
+    *before* the keyset predicate, so cursors can never leak inaccessible
+    records. The cursor is version-tagged and fingerprint-bound to this
+    request's filters — reusing one with a different query, sort field or
+    sort order returns HTTP 400.
+    """
+    if sort_by not in EPISODE_LIBRARY_SORT_FIELDS:
+        raise HTTPException(
+            status_code=400,
+            detail="sort_by must be one of: updated, created, episode_name",
+        )
+    if sort_order.lower() not in ("asc", "desc"):
+        raise HTTPException(
+            status_code=400, detail="sort_order must be 'asc' or 'desc'"
+        )
+    sort_order_norm = sort_order.lower()
+
+    normalized_query = query.strip().lower() if query else ""
+    fp = _episode_library_fingerprint(normalized_query, sort_by, sort_order_norm)
+
+    cursor_payload: Optional[dict[str, Any]] = None
+    if cursor:
+        try:
+            cursor_payload = decode_cursor(
+                cursor,
+                allowed_sort_fields=EPISODE_LIBRARY_SORT_FIELDS.keys(),
+                expected_sort_by=sort_by,
+                expected_sort_order=sort_order_norm,
+                expected_fp=fp,
+            )
+        except CursorValidationError:
+            raise HTTPException(status_code=400, detail="Invalid cursor")
+
+    access_clause, access_binds = await episode_access_where(request)
+
+    cursor_value = cursor_payload["value"] if cursor_payload else None
+    cursor_id = None
+    if cursor_payload is not None:
+        cursor_id = ensure_record_id(str(cursor_payload["id"]))
+
+    try:
+        rows = await PodcastService.list_episodes_page(
+            access_clause=access_clause,
+            access_binds=access_binds,
+            normalized_query=normalized_query,
+            sort_by=sort_by,
+            sort_order=sort_order_norm,
+            limit=limit + 1,  # limit + 1 internally; extra row = next-page signal
+            cursor_value=cursor_value,
+            cursor_id=cursor_id,
+        )
+    except OpenNotebookError:
+        raise
+    except HTTPException:
+        raise
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"Error fetching episodes library: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching episodes")
+
+    has_next = len(rows) > limit
+    visible_rows = rows[:limit]
+
+    # Batch-fetch job statuses + model refs for the visible rows only —
+    # matches the complete-list route's shape without loading everything.
+    try:
+        details_by_command = await PodcastEpisode.get_job_details_for_commands(
+            [row["command"] for row in visible_rows if row.get("command")]
+        )
+    except Exception as e:
+        logger.warning(f"Error batch-fetching podcast job statuses: {e}")
+        details_by_command = {}
+
+    model_ids: set = set()
+    for row in visible_rows:
+        for field in _EPISODE_PROFILE_MODEL_FIELDS:
+            ref = (row.get("episode_profile") or {}).get(field)
+            if ref:
+                model_ids.add(str(ref))
+        for field in _SPEAKER_PROFILE_MODEL_FIELDS:
+            ref = (row.get("speaker_profile") or {}).get(field)
+            if ref:
+                model_ids.add(str(ref))
+    try:
+        models_by_id = await Model.get_display_info_for_ids(sorted(model_ids))
+    except Exception as e:
+        logger.warning(f"Error batch-resolving snapshot model references: {e}")
+        models_by_id = {}
+
+    items = [
+        await _episode_row_to_response(
+            row,
+            details_by_command=details_by_command,
+            models_by_id=models_by_id,
+            request=request,
+        )
+        for row in visible_rows
+    ]
+
+    next_cursor: Optional[str] = None
+    if has_next and visible_rows:
+        last = visible_rows[-1]
+        if sort_by == "episode_name":
+            cursor_value_out: Any = last.get("name_sort", "")
+        else:
+            cursor_value_out = last.get(sort_by)
+        next_cursor = encode_cursor(
+            {
+                "v": CURSOR_VERSION,
+                "sort_by": sort_by,
+                "sort_order": sort_order_norm,
+                "value": cursor_value_out,
+                "id": str(last["id"]),
+                "fp": fp,
+            }
+        )
+
+    return EpisodeLibraryPageResponse(items=items, next_cursor=next_cursor)
+
+
+@router.get(
+    "/podcasts/episodes/summary", response_model=EpisodeSummaryResponse
+)
+async def get_episodes_summary(request: Request) -> EpisodeSummaryResponse:
+    """Aggregate status counts for the user's podcast episodes.
+
+    Drives the /podcasts stat tiles and the poll-when-active decision.
+    Counts are global across the owner's accessible library (owner + notebook
+    shares), so they stay accurate when the library is keyset-paginated.
+    """
+    access_clause, access_binds = await episode_access_where(request)
+    try:
+        counts = await PodcastService.episode_status_counts(
+            access_clause=access_clause,
+            access_binds=access_binds,
+        )
+    except OpenNotebookError:
+        raise
+    except HTTPException:
+        raise
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"Error computing episode summary: {e}")
+        raise HTTPException(status_code=500, detail="Error computing summary")
+
+    return EpisodeSummaryResponse(
+        total=counts.get("total", 0),
+        running=counts.get("running", 0),
+        completed=counts.get("completed", 0),
+        failed=counts.get("failed", 0),
+        pending=counts.get("pending", 0),
+        # has_active mirrors ACTIVE_EPISODE_STATUSES on the frontend — see
+        # PodcastService.episode_status_counts, which counts it separately.
+        has_active=counts.get("active", 0) > 0,
+    )
 
 
 @router.get("/podcasts/episodes/{episode_id}", response_model=PodcastEpisodeResponse)

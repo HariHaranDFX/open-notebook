@@ -439,6 +439,22 @@ class SourceLibraryPageResponse(BaseModel):
     next_cursor: Optional[str] = None
 
 
+class EpisodeSummaryResponse(BaseModel):
+    """Aggregate status counts for the current user's podcast episodes.
+
+    Drives the /podcasts stat tiles and the poll-when-active decision. The
+    counts are global (whole owner's library) so they stay accurate under
+    keyset pagination — the library route only ships one page at a time.
+    """
+
+    total: int
+    running: int
+    completed: int
+    failed: int
+    pending: int
+    has_active: bool
+
+
 # Insights API models
 class SourceInsightResponse(BaseModel):
     id: str

@@ -666,6 +666,7 @@ export const plPL = {
     loadErrorTitle: "Nie udało się załadować odcinków",
     loadErrorDesc: "Nie mogliśmy pobrać najnowszych odcinków podcastu. Spróbuj ponownie za chwilę.",
     loadingEpisodes: "Ładowanie odcinków…",
+    loadMore: "Wczytaj więcej odcinków",
     noEpisodesYet: "Brak odcinków podcastu. Wygeneruj pierwszy z poziomu notatnika lub interfejsu czatu źródła.",
     statusRunningTitle: "Obecnie przetwarzane",
     statusRunningDesc: "Odcinki, dla których aktywnie generowane są materiały.",
