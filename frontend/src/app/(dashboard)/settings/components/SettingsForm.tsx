@@ -12,6 +12,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { SettingsSection, SettingRow } from '@/components/settings/SettingRow'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
+import { useCleanupPreview, useSubmitCleanup } from '@/lib/hooks/use-source-files'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useTheme } from '@/lib/stores/theme-store'
@@ -343,6 +344,8 @@ export function SettingsForm() {
         <p className="text-xs text-muted-foreground">
           {t('settings.fileRetentionFuture')}
         </p>
+
+        <CleanupOriginalsPanel />
       </SettingsSection>
 
       <SettingsSection title={t('common.preferences')}>
@@ -395,4 +398,55 @@ export function SettingsForm() {
       </div>
     </form>
   )
+}
+
+
+function CleanupOriginalsPanel() {
+  const { t } = useTranslation()
+  const { data: preview, isLoading } = useCleanupPreview('all')
+  const submit = useSubmitCleanup()
+
+  const eligible = preview?.eligible_count ?? 0
+  const bytes = preview?.eligible_bytes ?? 0
+  const humanBytes = formatBytes(bytes)
+
+  return (
+    <div className="mt-6 space-y-3 rounded-md border border-border/60 p-4">
+      <div className="space-y-1">
+        <h4 className="text-sm font-semibold">{t('settings.cleanupAllUsers')}</h4>
+        <p className="text-xs text-muted-foreground">
+          {t('settings.cleanupAllUsersDesc')}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground">
+          {isLoading ? (
+            t('common.loading')
+          ) : (
+            t('settings.cleanupPreview', {
+              count: eligible,
+              size: humanBytes,
+            })
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          disabled={eligible === 0 || submit.isPending || isLoading}
+          onClick={() => submit.mutate('all')}
+        >
+          {submit.isPending ? t('common.processing') : t('settings.startCleanup')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
