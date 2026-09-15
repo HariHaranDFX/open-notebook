@@ -19,6 +19,22 @@ What each source type needs at the worker host. Runtimes are probed at request t
 
 **Install ffmpeg** — see [docs/DEV_SETUP.md](../DEV_SETUP.md) §10. Shipped Docker images already include it (`Dockerfile` line 102, shared `runtime-base` stage).
 
+## Original file retention
+
+The admin picks one policy in Settings → File management (see [design](../superpowers/specs/2026-09-01-original-file-retention-governance-design.md)):
+
+- `always_keep` — every upload's original file is retained after processing (default; also the safe fallback for legacy installs).
+- `user_choice` — the source owner selects `keep` or `delete_after_processing` per upload; the admin-set default applies when the owner is silent. Forced admin modes always win.
+- `always_delete` — every upload's original file is deleted once processing succeeds and `full_text` is persisted.
+
+Deletion runs only at the **successful-command boundary** in `commands/source_commands.py::process_source_command` (see `_maybe_delete_original_after_success`) — a failed transformation or embedding never leaves us without the input to retry. The helper is idempotent via a two-phase write (`original_deletion_started_at` before unlink → `original_deleted_at` after) so a crashed retry finalizes cleanly. Extracted `full_text`, embeddings, insights, and notebook links **survive** the delete.
+
+Policy changes affect **future uploads only** — the resolved action is snapshotted on `Asset.original_file_action` at upload time. Existing sources are never rewritten.
+
+**Downloads** use `Asset.original_filename` (the client-visible name captured at upload) for `Content-Disposition`. The internal storage path (`Asset.file_path`) is never returned by any public API — every source-response constructor goes through `api.source_file_service.build_public_asset_model`.
+
+**Cleanup APIs** (`/api/source-files/*`) let an administrator preview eligible retained files across all users and enqueue a bounded `cleanup_original_files` surreal command. If `allow_source_owner_cleanup` is enabled, source owners get the same preview/delete surface for their own files. Editors and viewers never have delete rights. The cleanup command is internal — the generic `/api/commands/jobs` endpoint rejects direct submission.
+
 ## Chunking (`utils/chunking.py`)
 
 Content is split with content-type-aware LangChain splitters (`HTMLHeaderTextSplitter`, `MarkdownHeaderTextSplitter`, `RecursiveCharacterTextSplitter`). Content type detection uses the file extension first; heuristics can override a PLAIN extension when confidence ≥ 0.8. Oversized chunks from the HTML/Markdown splitters get a secondary split.

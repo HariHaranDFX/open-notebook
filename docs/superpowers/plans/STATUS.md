@@ -34,7 +34,7 @@ should contain. When a plan lands or its verdict changes, update the row here.
 
 | Plan | What shipped | What's missing |
 |---|---|---|
-| [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Plan + design docs merged (PR #11, merge `a47461f`, 2026-09-03) | No code: `open_notebook/domain/original_file_policy.py` does not exist; `content_settings.py` has no `OriginalFilePolicy` / `OriginalFileAction` |
+| [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Branch `feat/original-file-retention-governance` (Tasks 1–6 fully, Task 7 partial, Task 8 docs only) | Task 7 Steps 1, 2, 4, 7, 8: Source Details filename+size+status badge, per-source Delete-original confirmation dialog, keyboard/light-dark visual sweep, focused frontend test suite pass. Task 8 Steps 2 (server-path audit), 3–4 (full backend/frontend quality gates on new tests), 5 (manual product verification with real DB+worker), 7 (final docs commit including remember). |
 
 ---
 
