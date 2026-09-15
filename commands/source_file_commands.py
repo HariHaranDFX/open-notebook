@@ -30,6 +30,7 @@ from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.domain.notebook import Source
+from open_notebook.domain.original_file_policy import OriginalFileDeletionReason
 
 CleanupScope = Literal["mine", "all"]
 
@@ -77,7 +78,9 @@ async def cleanup_original_files_command(
     start = time.time()
     deleted = skipped = failed = 0
     bytes_reclaimed = 0
-    reason = "admin_cleanup" if input_data.scope == "all" else "source_owner"
+    reason: OriginalFileDeletionReason = (
+        "admin_cleanup" if input_data.scope == "all" else "source_owner"
+    )
 
     for source_id in input_data.candidate_source_ids:
         try:

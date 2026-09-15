@@ -35,7 +35,6 @@ from api.models import (
     SourceStatusResponse,
     SourceUpdate,
 )
-from api.source_file_service import build_public_asset_model
 from api.ownership import (
     access_summary_for_source,
     assert_can_delete_source_or_403,
@@ -52,6 +51,7 @@ from api.pagination import (
     encode_cursor,
     fingerprint_filters,
 )
+from api.source_file_service import build_public_asset_model
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query

@@ -32,6 +32,7 @@ from api.source_file_service import build_public_asset_model, delete_original_fi
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Source
+from open_notebook.domain.original_file_policy import OriginalFileDeletionReason
 
 router = APIRouter()
 
@@ -65,7 +66,11 @@ class CleanupSubmitResponse(BaseModel):
 
 
 async def _load_settings() -> ContentSettings:
-    return await ContentSettings.get_instance()
+    # ContentSettings.get_instance is typed as returning the RecordModel
+    # base — narrow via cast so the retention fields are visible.
+    from typing import cast
+
+    return cast(ContentSettings, await ContentSettings.get_instance())
 
 
 async def _query_eligible_sources(
@@ -241,6 +246,7 @@ async def delete_source_original_file(
     settings = await _load_settings()
     is_admin = _user_is_admin_silent(request)
     user = current_user_optional(request)
+    reason: OriginalFileDeletionReason
     if not is_admin:
         # Not admin — must be owner AND owner cleanup enabled.
         if user is None or source.user_id != user.id:

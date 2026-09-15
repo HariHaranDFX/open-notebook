@@ -43,9 +43,25 @@ async def resolve_action_for_source_create(
     ``user_choice``, the legacy ``delete_source`` boolean is translated
     into an action; forced admin modes still win, so the deprecated flag
     can never override an ``always_keep`` install.
+
+    If loading settings fails (e.g. characterization tests without a
+    live DB, or a first-boot install), fall back to the safe default —
+    keep originals until an admin explicitly chooses a policy.
     """
     if settings is None:
-        settings = await ContentSettings.get_instance()
+        try:
+            loaded = await ContentSettings.get_instance()
+            if isinstance(loaded, ContentSettings):
+                settings = loaded
+        except Exception:
+            # Fail-safe: default to keep — matches the legacy-install
+            # invariant from the plan.
+            settings = None
+
+    policy = settings.original_file_policy if settings else "always_keep"
+    default_action = (
+        settings.original_file_user_default if settings else "keep"
+    )
 
     requested: OriginalFileAction | None = source_data.original_file_action
     if requested is None and source_data.delete_source:
@@ -55,8 +71,8 @@ async def resolve_action_for_source_create(
         requested = "delete_after_processing"
 
     return resolve_original_file_action(
-        policy=settings.original_file_policy,
-        default_action=settings.original_file_user_default,
+        policy=policy,
+        default_action=default_action,
         requested_action=requested,
     )
 
