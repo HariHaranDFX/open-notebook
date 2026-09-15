@@ -327,8 +327,21 @@ class SettingsUpdate(BaseModel):
 
 # Sources API models
 class AssetModel(BaseModel):
+    # DEPRECATED public field — removed in Task 4 once every response
+    # constructor routes through the safe asset mapper. Retained for one
+    # release to keep existing frontend deploys working during rollout.
     file_path: Optional[str] = None
     url: Optional[str] = None
+    original_filename: Optional[str] = None
+    original_size_bytes: Optional[int] = None
+    original_file_action: Optional[Literal["keep", "delete_after_processing"]] = None
+    original_deleted_at: Optional[str] = None
+    original_deleted_reason: Optional[
+        Literal["retention_policy", "source_owner", "admin_cleanup"]
+    ] = None
+    original_file_status: Optional[
+        Literal["retained", "deleted", "missing", "not_applicable"]
+    ] = None
 
 
 class SourceCreate(BaseModel):
@@ -354,8 +367,20 @@ class SourceCreate(BaseModel):
         description="Transformation IDs to apply (max 50)",
     )
     embed: bool = Field(False, description="Whether to embed content for vector search")
+    # DEPRECATED: legacy request field replaced by ``original_file_action``.
+    # Kept for one release so old clients continue to work; the resolver in
+    # ``api/source_file_service.py`` translates it only when policy mode is
+    # ``user_choice`` and ``original_file_action`` is absent. Never derive
+    # deletion from the old ``auto_delete_files=yes`` default.
     delete_source: bool = Field(
-        False, description="Whether to delete uploaded file after processing"
+        False, description="Whether to delete uploaded file after processing (deprecated)"
+    )
+    original_file_action: Optional[Literal["keep", "delete_after_processing"]] = Field(
+        None,
+        description=(
+            "Owner's preferred retention action for this upload. Ignored "
+            "when policy is 'always_keep' or 'always_delete'."
+        ),
     )
     # New async processing support
     async_processing: bool = Field(
