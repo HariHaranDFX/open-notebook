@@ -30,8 +30,10 @@ const settingsData = {
   default_content_processing_engine_doc: 'auto',
   default_content_processing_engine_url: 'auto',
   default_embedding_option: 'ask',
-  auto_delete_files: 'no',
   docling_ocr: true,
+  original_file_policy: 'always_keep',
+  original_file_user_default: 'keep',
+  allow_source_owner_cleanup: false,
 }
 
 function mockCapabilities(caps: unknown, { isError = false } = {}) {

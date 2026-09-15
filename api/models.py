@@ -307,22 +307,40 @@ class SettingsResponse(BaseModel):
     default_content_processing_engine_doc: Optional[str] = None
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    # Retention governance fields (2026-09-01 design).
+    original_file_policy: Optional[
+        Literal["always_keep", "user_choice", "always_delete"]
+    ] = None
+    original_file_user_default: Optional[
+        Literal["keep", "delete_after_processing"]
+    ] = None
+    allow_source_owner_cleanup: Optional[bool] = None
 
 
 class SettingsUpdate(BaseModel):
+    # extra='forbid' forces old clients that still send auto_delete_files=yes
+    # to migrate — a legacy toggle can no longer silently opt an install
+    # into deletion. Callers must explicitly select an original_file_policy.
+    model_config = ConfigDict(extra="forbid")
+
     default_content_processing_engine_doc: Optional[str] = None
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    original_file_policy: Optional[
+        Literal["always_keep", "user_choice", "always_delete"]
+    ] = None
+    original_file_user_default: Optional[
+        Literal["keep", "delete_after_processing"]
+    ] = None
+    allow_source_owner_cleanup: Optional[bool] = None
 
 
 # Sources API models

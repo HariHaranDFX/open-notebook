@@ -52,10 +52,12 @@ const settingsSchema = z.object({
   default_content_processing_engine_doc: z.enum(['auto', 'docling', 'simple']).optional(),
   default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'crawl4ai', 'simple']).optional(),
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
-  auto_delete_files: z.enum(['yes', 'no']).optional(),
   docling_ocr: z.boolean().optional(),
   docling_formulas: z.boolean().optional(),
   docling_vision: z.boolean().optional(),
+  original_file_policy: z.enum(['always_keep', 'user_choice', 'always_delete']).optional(),
+  original_file_user_default: z.enum(['keep', 'delete_after_processing']).optional(),
+  allow_source_owner_cleanup: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -90,10 +92,12 @@ export function SettingsForm() {
       default_content_processing_engine_doc: undefined,
       default_content_processing_engine_url: undefined,
       default_embedding_option: undefined,
-      auto_delete_files: undefined,
       docling_ocr: undefined,
       docling_formulas: undefined,
       docling_vision: undefined,
+      original_file_policy: undefined,
+      original_file_user_default: undefined,
+      allow_source_owner_cleanup: undefined,
     },
   })
 
@@ -103,10 +107,15 @@ export function SettingsForm() {
         default_content_processing_engine_doc: settings.default_content_processing_engine_doc as 'auto' | 'docling' | 'simple',
         default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'crawl4ai' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
-        auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
         docling_ocr: settings.docling_ocr ?? true,
         docling_formulas: settings.docling_formulas ?? false,
         docling_vision: settings.docling_vision ?? false,
+        original_file_policy:
+          (settings.original_file_policy as 'always_keep' | 'user_choice' | 'always_delete') ??
+          'always_keep',
+        original_file_user_default:
+          (settings.original_file_user_default as 'keep' | 'delete_after_processing') ?? 'keep',
+        allow_source_owner_cleanup: settings.allow_source_owner_cleanup ?? false,
       })
       setHasResetForm(true)
     }
@@ -247,20 +256,93 @@ export function SettingsForm() {
       </SettingsSection>
 
       <SettingsSection title={t('settings.fileManagement')} description={t('settings.fileManagementDesc')}>
-        <SettingRow label={t('settings.autoDeleteFiles')} htmlFor="auto_delete" help={t('settings.filesHelp')}>
+        <SettingRow
+          label={t('settings.originalFilePolicy')}
+          htmlFor="original_file_policy"
+          help={t('settings.originalFilePolicyDesc')}
+        >
           <Controller
-            name="auto_delete_files"
+            name="original_file_policy"
+            control={control}
+            render={({ field }) => (
+              <Select
+                value={field.value ?? 'always_keep'}
+                onValueChange={field.onChange}
+                disabled={field.disabled || isLoading}
+              >
+                <SelectTrigger id="original_file_policy" className={SELECT_WIDTH}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="always_keep">{t('settings.originalFilePolicyAlwaysKeep')}</SelectItem>
+                  <SelectItem value="user_choice">{t('settings.originalFilePolicyUserChoice')}</SelectItem>
+                  <SelectItem value="always_delete">{t('settings.originalFilePolicyAlwaysDelete')}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </SettingRow>
+
+        <Controller
+          name="original_file_policy"
+          control={control}
+          render={({ field: policyField }) =>
+            policyField.value === 'user_choice' ? (
+              <SettingRow
+                label={t('settings.originalFileDefault')}
+                htmlFor="original_file_user_default"
+                help={t('settings.originalFileDefaultDesc')}
+              >
+                <Controller
+                  name="original_file_user_default"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? 'keep'}
+                      onValueChange={field.onChange}
+                      disabled={field.disabled || isLoading}
+                    >
+                      <SelectTrigger id="original_file_user_default" className={SELECT_WIDTH}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="keep">{t('settings.originalFileDefaultKeep')}</SelectItem>
+                        <SelectItem value="delete_after_processing">
+                          {t('settings.originalFileDefaultDelete')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </SettingRow>
+            ) : (
+              <></>
+            )
+          }
+        />
+
+        <SettingRow
+          label={t('settings.allowOwnerCleanup')}
+          htmlFor="allow_source_owner_cleanup"
+          help={t('settings.allowOwnerCleanupDesc')}
+        >
+          <Controller
+            name="allow_source_owner_cleanup"
             control={control}
             render={({ field }) => (
               <Switch
-                id="auto_delete"
-                checked={field.value === 'yes'}
-                onCheckedChange={(checked) => field.onChange(checked ? 'yes' : 'no')}
+                id="allow_source_owner_cleanup"
+                checked={field.value ?? false}
+                onCheckedChange={field.onChange}
                 disabled={field.disabled || isLoading}
               />
             )}
           />
         </SettingRow>
+
+        <p className="text-xs text-muted-foreground">
+          {t('settings.fileRetentionFuture')}
+        </p>
       </SettingsSection>
 
       <SettingsSection title={t('common.preferences')}>

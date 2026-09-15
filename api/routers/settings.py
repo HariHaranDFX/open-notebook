@@ -18,16 +18,7 @@ async def get_settings():
     try:
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
 
-        return SettingsResponse(
-            default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
-            default_content_processing_engine_url=settings.default_content_processing_engine_url,
-            default_embedding_option=settings.default_embedding_option,
-            auto_delete_files=settings.auto_delete_files,
-            docling_ocr=settings.docling_ocr,
-            docling_formulas=settings.docling_formulas,
-            docling_vision=settings.docling_vision,
-            youtube_preferred_languages=settings.youtube_preferred_languages,
-        )
+        return _to_response(settings)
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -39,64 +30,43 @@ async def get_settings():
         )
 
 
+def _to_response(settings: ContentSettings) -> SettingsResponse:
+    """Map domain settings to the public SettingsResponse.
+
+    Retention-governance rollout: ``auto_delete_files`` is no longer
+    surfaced. Legacy clients that still send it get 422 from
+    SettingsUpdate's ``extra='forbid'`` — they must adopt the new
+    ``original_file_policy`` explicitly.
+    """
+    return SettingsResponse(
+        default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
+        default_content_processing_engine_url=settings.default_content_processing_engine_url,
+        default_embedding_option=settings.default_embedding_option,
+        docling_ocr=settings.docling_ocr,
+        docling_formulas=settings.docling_formulas,
+        docling_vision=settings.docling_vision,
+        youtube_preferred_languages=settings.youtube_preferred_languages,
+        original_file_policy=settings.original_file_policy,
+        original_file_user_default=settings.original_file_user_default,
+        allow_source_owner_cleanup=settings.allow_source_owner_cleanup,
+    )
+
+
 @router.put("/settings", response_model=SettingsResponse)
 async def update_settings(settings_update: SettingsUpdate):
     """Update application settings."""
     try:
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
 
-        # Update only provided fields
-        if settings_update.default_content_processing_engine_doc is not None:
-            # Cast to proper literal type
-            from typing import Literal, cast
-
-            settings.default_content_processing_engine_doc = cast(
-                Literal["auto", "docling", "simple"],
-                settings_update.default_content_processing_engine_doc,
-            )
-        if settings_update.default_content_processing_engine_url is not None:
-            from typing import Literal, cast
-
-            settings.default_content_processing_engine_url = cast(
-                Literal["auto", "firecrawl", "jina", "crawl4ai", "simple"],
-                settings_update.default_content_processing_engine_url,
-            )
-        if settings_update.default_embedding_option is not None:
-            from typing import Literal, cast
-
-            settings.default_embedding_option = cast(
-                Literal["ask", "always", "never"],
-                settings_update.default_embedding_option,
-            )
-        if settings_update.auto_delete_files is not None:
-            from typing import Literal, cast
-
-            settings.auto_delete_files = cast(
-                Literal["yes", "no"], settings_update.auto_delete_files
-            )
-        if settings_update.docling_ocr is not None:
-            settings.docling_ocr = settings_update.docling_ocr
-        if settings_update.docling_formulas is not None:
-            settings.docling_formulas = settings_update.docling_formulas
-        if settings_update.docling_vision is not None:
-            settings.docling_vision = settings_update.docling_vision
-        if settings_update.youtube_preferred_languages is not None:
-            settings.youtube_preferred_languages = (
-                settings_update.youtube_preferred_languages
-            )
+        # Assign typed Pydantic values directly — the model already
+        # narrowed the strings via Literal validators.
+        update_dict = settings_update.model_dump(exclude_unset=True)
+        for field, value in update_dict.items():
+            setattr(settings, field, value)
 
         await settings.update()
 
-        return SettingsResponse(
-            default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
-            default_content_processing_engine_url=settings.default_content_processing_engine_url,
-            default_embedding_option=settings.default_embedding_option,
-            auto_delete_files=settings.auto_delete_files,
-            docling_ocr=settings.docling_ocr,
-            docling_formulas=settings.docling_formulas,
-            docling_vision=settings.docling_vision,
-            youtube_preferred_languages=settings.youtube_preferred_languages,
-        )
+        return _to_response(settings)
     except HTTPException:
         raise
     except InvalidInputError as e:

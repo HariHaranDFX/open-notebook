@@ -105,11 +105,34 @@ export interface SettingsResponse {
   default_content_processing_engine_doc?: string
   default_content_processing_engine_url?: string
   default_embedding_option?: string
-  auto_delete_files?: string
   docling_ocr?: boolean
   docling_formulas?: boolean
   docling_vision?: boolean
   youtube_preferred_languages?: string[]
+  // Retention governance (2026-09-01 design).
+  original_file_policy?: 'always_keep' | 'user_choice' | 'always_delete'
+  original_file_user_default?: OriginalFileAction
+  allow_source_owner_cleanup?: boolean
+}
+
+export interface SourceFilePolicyResponse {
+  original_file_policy: 'always_keep' | 'user_choice' | 'always_delete'
+  original_file_user_default: OriginalFileAction
+  allow_source_owner_cleanup: boolean
+  owner_can_cleanup_own: boolean
+  is_admin: boolean
+}
+
+export interface CleanupPreviewResponse {
+  scope: 'mine' | 'all'
+  eligible_count: number
+  eligible_bytes: number
+}
+
+export interface CleanupSubmitResponse {
+  job_id: string
+  scope: 'mine' | 'all'
+  eligible_count: number
 }
 
 export interface Capabilities {
