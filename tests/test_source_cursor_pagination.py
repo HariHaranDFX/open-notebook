@@ -86,6 +86,7 @@ def test_first_page_returns_thirty_items_and_next_cursor(
 
     # Only one repo_query call and it must not use OFFSET/START.
     assert mock_query.await_count == 1
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "OFFSET" not in query_sql.upper()
     assert "START" not in query_sql.upper()
@@ -139,6 +140,7 @@ def test_second_page_excludes_first_page_rows(
     )
     assert second_resp.status_code == 200
 
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "$cursor_value" in query_sql
     assert "$cursor_id" in query_sql
@@ -170,6 +172,7 @@ def test_ascending_order_uses_greater_than_predicate(
     mock_query.return_value = []
     _client().get(f"/api/sources/library?limit=30&sort_by=title&sort_order=asc&cursor={cursor}")
 
+    assert mock_query.await_args is not None
     query_sql, _ = mock_query.await_args.args
     assert ">" in query_sql
     # Not descending.
@@ -191,6 +194,7 @@ def test_id_tiebreak_when_primary_values_are_equal(
 
     _client().get("/api/sources/library?sort_by=updated&sort_order=desc&limit=10")
 
+    assert mock_query.await_args is not None
     query_sql, _ = mock_query.await_args.args
     assert "ORDER BY" in query_sql.upper()
     # Composite key: sort expression, then id, in the same direction.
@@ -226,6 +230,7 @@ def test_access_and_query_filters_run_before_keyset(
         f"/api/sources/library?query=Evidence&sort_by=updated&sort_order=desc&cursor={cursor}"
     )
 
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     # The access predicate and title filter live in the WHERE clause, and
     # the cursor predicate is combined with AND — so the access filter is
@@ -272,6 +277,7 @@ def test_insert_before_cursor_does_not_shift_next_page() -> None:
         _client().get(
             f"/api/sources/library?limit=30&sort_by=updated&sort_order=desc&cursor={cursor}"
         )
+        assert mock_query.await_args is not None
         _, params = mock_query.await_args.args
         # Bound predicate is anchored to the boundary from page 1, not the
         # newly-inserted row.
@@ -305,6 +311,7 @@ def test_all_six_sort_fields_both_directions(sort_by: str, direction: str) -> No
             f"/api/sources/library?sort_by={sort_by}&sort_order={direction}&limit=5"
         )
         assert resp.status_code == 200
+        assert mock_query.await_args is not None
         query_sql, _ = mock_query.await_args.args
         # `title` uses the case-insensitive title_sort alias — mirror the
         # existing /sources route's mapping.
@@ -431,6 +438,7 @@ def test_no_start_or_offset_in_generated_sql() -> None:
         mock_query.return_value = []
 
         _client().get("/api/sources/library?limit=30&sort_by=updated&sort_order=desc")
+        assert mock_query.await_args is not None
         query_sql, _ = mock_query.await_args.args
         # Guard against BOTH keywords appearing anywhere in the SurrealQL —
         # library queries must be pure keyset.

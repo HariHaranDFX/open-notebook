@@ -86,6 +86,7 @@ def test_first_page_returns_thirty_items_and_next_cursor(
     assert payload["next_cursor"] is not None
 
     assert mock_query.await_count == 1
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "OFFSET" not in query_sql.upper()
     assert "START" not in query_sql.upper()
@@ -140,6 +141,7 @@ def test_second_page_excludes_first_page_rows(
     )
     assert second_resp.status_code == 200
 
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "$cursor_value" in query_sql
     assert "$cursor_id" in query_sql
@@ -173,6 +175,7 @@ def test_ascending_order_uses_greater_than_predicate(
         f"/api/notebooks/library?archived=false&limit=30&sort_by=name&sort_order=asc&cursor={cursor}"
     )
 
+    assert mock_query.await_args is not None
     query_sql, _ = mock_query.await_args.args
     assert ">" in query_sql
     assert "> $cursor_value OR" in query_sql or "> $cursor_id" in query_sql
@@ -195,6 +198,7 @@ def test_id_tiebreak_when_primary_values_are_equal(
         "/api/notebooks/library?archived=false&sort_by=updated&sort_order=desc&limit=10"
     )
 
+    assert mock_query.await_args is not None
     query_sql, _ = mock_query.await_args.args
     upper = query_sql.upper()
     assert "ORDER BY UPDATED DESC, ID DESC" in upper
@@ -225,6 +229,7 @@ def test_access_and_query_filters_run_before_keyset(
         f"/api/notebooks/library?archived=false&query=Research&sort_by=updated&sort_order=desc&cursor={cursor}"
     )
 
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "user_id = $access_uid" in query_sql
     assert "$name_query" in query_sql
@@ -249,12 +254,14 @@ def test_archived_filter_is_in_surrealql(
     mock_query.return_value = []
 
     _client().get("/api/notebooks/library?archived=true&limit=5")
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "archived" in query_sql
     assert params.get("archived") is True
 
     mock_query.reset_mock()
     _client().get("/api/notebooks/library?archived=false&limit=5")
+    assert mock_query.await_args is not None
     query_sql, params = mock_query.await_args.args
     assert "archived" in query_sql
     assert params.get("archived") is False
@@ -315,6 +322,7 @@ def test_all_three_sort_fields_both_directions(sort_by: str, direction: str) -> 
             f"/api/notebooks/library?archived=false&sort_by={sort_by}&sort_order={direction}&limit=5"
         )
         assert resp.status_code == 200
+        assert mock_query.await_args is not None
         query_sql, _ = mock_query.await_args.args
         # ``name`` uses a case-insensitive alias, other fields sort directly.
         expected_field = "name_sort" if sort_by == "name" else sort_by
@@ -351,6 +359,7 @@ def test_insert_before_cursor_does_not_shift_next_page() -> None:
         _client().get(
             f"/api/notebooks/library?archived=false&limit=30&sort_by=updated&sort_order=desc&cursor={cursor}"
         )
+        assert mock_query.await_args is not None
         _, params = mock_query.await_args.args
         assert params["cursor_value"] == boundary["updated"]
         assert str(params["cursor_id"]) == boundary["id"]
@@ -469,6 +478,7 @@ def test_no_start_or_offset_in_generated_sql() -> None:
         _client().get(
             "/api/notebooks/library?archived=false&limit=30&sort_by=updated&sort_order=desc"
         )
+        assert mock_query.await_args is not None
         query_sql, _ = mock_query.await_args.args
         assert "OFFSET" not in query_sql.upper()
         assert "START" not in query_sql.upper()
@@ -519,6 +529,7 @@ def test_source_and_note_counts_are_preserved() -> None:
         assert item["source_count"] == 4
         assert item["note_count"] == 2
 
+        assert mock_query.await_args is not None
         query_sql, _ = mock_query.await_args.args
         # The projection must compute these in SurrealQL, mirroring the
         # existing complete-list route.
