@@ -47,7 +47,7 @@ should contain. When a plan lands or its verdict changes, update the row here.
 | [2026-09-01-podcast-notebook-origin.md](2026-09-01-podcast-notebook-origin.md) | No `notebook_name` / `notebook_origin` / `origin_notebook` in [api/routers/podcasts.py](../../../api/routers/podcasts.py) |
 | [2026-09-05-orphan-command-reconciliation.md](2026-09-05-orphan-command-reconciliation.md) | `open_notebook/database/reconcile.py` does not exist; no `ORPHAN_ERROR_MESSAGE` in `commands/` |
 
-Also see the paired spec file: [../specs/2026-09-04-container-and-email-sources.md](../specs/2026-09-04-container-and-email-sources.md) — no plan file, no `container` source type in the sources router.
+Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not yet in `docs/superpowers/specs/`) — no plan file, no `container` source type in the sources router.
 
 ---
 
