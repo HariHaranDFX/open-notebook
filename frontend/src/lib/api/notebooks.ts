@@ -1,5 +1,6 @@
 import apiClient from './client'
 import {
+  NotebookLibraryPage,
   NotebookResponse,
   RecentlyViewedResponse,
   CreateNotebookRequest,
@@ -8,9 +9,29 @@ import {
   NotebookDeleteResponse,
 } from '@/lib/types/api'
 
+export type NotebookSortField = 'name' | 'created' | 'updated'
+
+export interface NotebookLibraryParams {
+  archived: boolean
+  query?: string
+  sort_by?: NotebookSortField
+  sort_order?: 'asc' | 'desc'
+  limit?: number
+  cursor?: string
+}
+
 export const notebooksApi = {
   list: async (params?: { archived?: boolean; order_by?: string }) => {
     const response = await apiClient.get<NotebookResponse[]>('/notebooks', { params })
+    return response.data
+  },
+
+  /** Keyset-paginated Notebooks library page. Non-library consumers stay on
+   * `list()` — this route returns a page envelope, not a flat array. */
+  listLibrary: async (params: NotebookLibraryParams) => {
+    const response = await apiClient.get<NotebookLibraryPage>('/notebooks/library', {
+      params,
+    })
     return response.data
   },
 

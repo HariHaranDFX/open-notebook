@@ -362,6 +362,7 @@ export const plPL = {
     recentlyViewed: "Ostatnio przeglądane",
     recentlyViewedNotebook: "Notatnik",
     recentlyViewedSource: "Źródło",
+    loadMore: "Wczytaj więcej notatników",
   },
   sources: {
     bulkContext: "Kontekst",

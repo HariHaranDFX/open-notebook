@@ -362,6 +362,7 @@ export const jaJP = {
     recentlyViewed: "最近表示した項目",
     recentlyViewedNotebook: "ノートブック",
     recentlyViewedSource: "ソース",
+    loadMore: "さらにノートブックを読み込む",
   },
   sources: {
     bulkContext: "コンテキスト",

@@ -362,6 +362,7 @@ export const trTR = {
     recentlyViewed: "Son Görüntülenenler",
     recentlyViewedNotebook: "Defter",
     recentlyViewedSource: "Kaynak",
+    loadMore: "Daha fazla not defteri yükle",
   },
   sources: {
     bulkContext: "Bağlam",

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Plus, RefreshCw } from 'lucide-react'
 
 import { LibraryToolbar } from '@/components/common/LibraryToolbar'
@@ -9,29 +9,18 @@ import { PageFrame } from '@/components/layout/PageFrame'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { Button } from '@/components/ui/button'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import type { NotebookSortField } from '@/lib/api/notebooks'
+import { useNotebookLibrary } from '@/lib/hooks/use-notebooks'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useLibraryView } from '@/lib/stores/library-view-store'
-import type { NotebookResponse } from '@/lib/types/api'
 import { NotebookList } from './components/NotebookList'
 import { RecentlyViewed } from './components/RecentlyViewed'
-
-type NotebookSortField = 'updated' | 'name' | 'created'
 
 const notebookSortOptions: Array<{ value: NotebookSortField; label: string }> = [
   { value: 'updated', label: 'common.updated_label' },
   { value: 'name', label: 'common.name' },
   { value: 'created', label: 'common.created_label' },
 ]
-
-function filterNotebooks(
-  notebooks: NotebookResponse[] | undefined,
-  query: string,
-) {
-  if (!notebooks) return notebooks
-
-  return notebooks.filter(notebook => !query || notebook.name.toLowerCase().includes(query))
-}
 
 export default function NotebooksPage() {
   const { t } = useTranslation()
@@ -40,30 +29,26 @@ export default function NotebooksPage() {
   const [sortBy, setSortBy] = useState<NotebookSortField>('updated')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const { viewMode, setViewMode } = useLibraryView('notebooks')
-  const {
-    data: notebooks,
-    isLoading,
-    isError: activeError,
-    refetch: refetchActive,
-  } = useNotebooks(false, `${sortBy} ${sortDirection}`)
-  const {
-    data: archivedNotebooks,
-    isLoading: archivedLoading,
-    isError: archivedError,
-    refetch: refetchArchived,
-  } = useNotebooks(true, `${sortBy} ${sortDirection}`)
 
+  // Search is server-backed via the library route; normalize to match the
+  // backend's fingerprint (trim + lowercase) so cursor and query stay aligned.
   const normalizedQuery = searchTerm.trim().toLowerCase()
-  const filteredActive = useMemo(
-    () => filterNotebooks(notebooks, normalizedQuery),
-    [notebooks, normalizedQuery],
-  )
-  const filteredArchived = useMemo(
-    () => filterNotebooks(archivedNotebooks, normalizedQuery),
-    [archivedNotebooks, normalizedQuery],
-  )
   const isSearching = normalizedQuery.length > 0
-  const showArchived = (archivedNotebooks?.length ?? 0) > 0 || isSearching
+
+  const active = useNotebookLibrary({
+    archived: false,
+    query: normalizedQuery,
+    sortBy,
+    sortOrder: sortDirection,
+  })
+  const archived = useNotebookLibrary({
+    archived: true,
+    query: normalizedQuery,
+    sortBy,
+    sortOrder: sortDirection,
+  })
+
+  const showArchived = archived.notebooks.length > 0 || isSearching || archived.isLoading
 
   return (
     <AppShell>
@@ -74,7 +59,7 @@ export default function NotebooksPage() {
           secondaryActions={(
             <Button
               variant="outline"
-              onClick={() => void Promise.all([refetchActive(), refetchArchived()])}
+              onClick={() => void Promise.all([active.refetch(), archived.refetch()])}
             >
               <RefreshCw />
               {t('common.refresh')}
@@ -114,29 +99,73 @@ export default function NotebooksPage() {
         <div className="space-y-8">
           {!isSearching && <RecentlyViewed viewMode={viewMode} />}
           <NotebookList
-            notebooks={filteredActive}
-            isLoading={isLoading}
-            isError={activeError}
-            onRetry={() => void refetchActive()}
+            notebooks={active.notebooks}
+            isLoading={active.isLoading}
+            isError={active.isError}
+            onRetry={() => void active.refetch()}
             title={t('notebooks.activeNotebooks')}
             emptyTitle={isSearching ? t('common.noMatches') : undefined}
             emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
             onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
             actionLabel={!isSearching ? t('notebooks.newNotebook') : undefined}
             viewMode={viewMode}
+            hasNextPage={active.hasNextPage}
+            isFetchingNextPage={active.isFetchingNextPage}
+            onLoadMore={() => void active.fetchNextPage()}
+            loadMoreLabel={t('notebooks.loadMore')}
           />
+          {/* Later-page errors must not hide already-loaded rows — mirror
+              the retryable pattern from the sources library. */}
+          {active.notebooks.length > 0
+            && (active.isFetchNextPageError || active.isRefetchError) && (
+            <div
+              className="flex flex-col gap-3 border border-warning/40 bg-warning-surface p-4 text-warning sm:flex-row sm:items-center sm:justify-between"
+              role="alert"
+            >
+              <p>{t('common.contentUnavailable.errorDescription')}</p>
+              <Button
+                variant="outline"
+                onClick={() => void (active.isFetchNextPageError ? active.fetchNextPage() : active.refetch())}
+              >
+                <RefreshCw />
+                {t('common.retry')}
+              </Button>
+            </div>
+          )}
+
           {showArchived && (
             <NotebookList
-              notebooks={filteredArchived}
-              isLoading={archivedLoading}
-              isError={archivedError}
-              onRetry={() => void refetchArchived()}
+              notebooks={archived.notebooks}
+              isLoading={archived.isLoading}
+              isError={archived.isError}
+              onRetry={() => void archived.refetch()}
               title={t('notebooks.archivedNotebooks')}
               collapsible
               emptyTitle={isSearching ? t('common.noMatches') : undefined}
               emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
               viewMode={viewMode}
+              hasNextPage={archived.hasNextPage}
+              isFetchingNextPage={archived.isFetchingNextPage}
+              onLoadMore={() => void archived.fetchNextPage()}
+              loadMoreLabel={t('notebooks.loadMore')}
             />
+          )}
+
+          {showArchived && archived.notebooks.length > 0
+            && (archived.isFetchNextPageError || archived.isRefetchError) && (
+            <div
+              className="flex flex-col gap-3 border border-warning/40 bg-warning-surface p-4 text-warning sm:flex-row sm:items-center sm:justify-between"
+              role="alert"
+            >
+              <p>{t('common.contentUnavailable.errorDescription')}</p>
+              <Button
+                variant="outline"
+                onClick={() => void (archived.isFetchNextPageError ? archived.fetchNextPage() : archived.refetch())}
+              >
+                <RefreshCw />
+                {t('common.retry')}
+              </Button>
+            </div>
           )}
         </div>
       </PageFrame>

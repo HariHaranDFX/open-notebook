@@ -1,16 +1,66 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { notebooksApi } from '@/lib/api/notebooks'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { notebooksApi, type NotebookSortField } from '@/lib/api/notebooks'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
 
+const NOTEBOOK_LIBRARY_PAGE_SIZE = 30
+
+export interface NotebookLibraryParams {
+  archived: boolean
+  query: string
+  sortBy: NotebookSortField
+  sortOrder: 'asc' | 'desc'
+}
+
 export function useNotebooks(archived?: boolean, orderBy = 'updated desc') {
   return useQuery({
     queryKey: [...QUERY_KEYS.notebooks, { archived, orderBy }],
     queryFn: () => notebooksApi.list({ archived, order_by: orderBy }),
   })
+}
+
+export function useNotebookLibrary(params: NotebookLibraryParams) {
+  const query = useInfiniteQuery({
+    // archived/sortBy/sortOrder/query are in the key so changing any of them
+    // starts a fresh query with no cursor (per plan Global Constraints).
+    queryKey: QUERY_KEYS.notebookLibrary(params),
+    queryFn: async ({ pageParam }) => {
+      const request: Parameters<typeof notebooksApi.listLibrary>[0] = {
+        archived: params.archived,
+        query: params.query,
+        sort_by: params.sortBy,
+        sort_order: params.sortOrder,
+        limit: NOTEBOOK_LIBRARY_PAGE_SIZE,
+      }
+      // Only include cursor once one exists — the first page must not send it.
+      if (pageParam) request.cursor = pageParam
+      return notebooksApi.listLibrary(request)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: lastPage => lastPage.next_cursor ?? undefined,
+  })
+
+  const notebooks = useMemo(
+    () => query.data?.pages.flatMap(page => page.items) ?? [],
+    [query.data?.pages],
+  )
+
+  return {
+    notebooks,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    refetch: query.refetch,
+    error: query.error,
+    isError: query.isError,
+    isFetchNextPageError: query.isFetchNextPageError,
+    isRefetchError: query.isRefetchError,
+  }
 }
 
 export function useNotebook(id: string) {

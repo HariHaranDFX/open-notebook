@@ -362,6 +362,7 @@ export const itIT = {
     recentlyViewed: "Visti di recente",
     recentlyViewedNotebook: "Quaderno",
     recentlyViewedSource: "Fonte",
+    loadMore: "Carica altri taccuini",
   },
   sources: {
     bulkContext: "Contesto",

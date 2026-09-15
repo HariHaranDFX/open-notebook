@@ -362,6 +362,7 @@ export const caES = {
     recentlyViewed: "Vistos recentment",
     recentlyViewedNotebook: "Quadern",
     recentlyViewedSource: "Font",
+    loadMore: "Carrega més quaderns",
   },
   sources: {
     bulkContext: "Context",

@@ -365,6 +365,7 @@ export const deDE = {
     recentlyViewed: "Zuletzt angesehen",
     recentlyViewedNotebook: "Notebook",
     recentlyViewedSource: "Quelle",
+    loadMore: "Weitere Notizbücher laden",
   },
   sources: {
     bulkContext: "Kontext",

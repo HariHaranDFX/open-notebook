@@ -362,6 +362,7 @@ export const bnIN = {
     recentlyViewed: "সম্প্রতি দেখা",
     recentlyViewedNotebook: "নোটবুক",
     recentlyViewedSource: "উৎস",
+    loadMore: "আরও নোটবুক লোড করুন",
   },
   sources: {
     bulkContext: "প্রসঙ্গ",

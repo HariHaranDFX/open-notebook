@@ -360,6 +360,7 @@ export const enUS = {
     recentlyViewed: "Recently Viewed",
     recentlyViewedNotebook: "Notebook",
     recentlyViewedSource: "Source",
+    loadMore: "Load more notebooks",
   },
   sources: {
     title: "Sources",

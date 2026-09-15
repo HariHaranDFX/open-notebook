@@ -362,6 +362,7 @@ export const zhCN = {
     recentlyViewed: "最近查看",
     recentlyViewedNotebook: "笔记本",
     recentlyViewedSource: "来源",
+    loadMore: "加载更多笔记本",
   },
   sources: {
     bulkContext: "上下文",

@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import NotebooksPage from './page'
 
-const { useNotebooksMock } = vi.hoisted(() => ({
-  useNotebooksMock: vi.fn(),
+const { useNotebookLibraryMock } = vi.hoisted(() => ({
+  useNotebookLibraryMock: vi.fn(),
 }))
 
 const activeNotebooks = [
@@ -50,18 +50,29 @@ vi.mock('./components/NotebookList', () => ({
   NotebookList: ({
     notebooks,
     title,
+    hasNextPage,
+    onLoadMore,
+    loadMoreLabel,
   }: {
     notebooks?: Array<{ id: string; name: string }>
     title: string
+    hasNextPage?: boolean
+    onLoadMore?: () => void
+    loadMoreLabel?: string
   }) => (
     <section aria-label={title}>
       <ul>{notebooks?.map(notebook => <li key={notebook.id}>{notebook.name}</li>)}</ul>
+      {hasNextPage && (
+        <button type="button" onClick={onLoadMore} data-testid={`load-more-${title}`}>
+          {loadMoreLabel}
+        </button>
+      )}
     </section>
   ),
 }))
 
 vi.mock('@/lib/hooks/use-notebooks', () => ({
-  useNotebooks: useNotebooksMock,
+  useNotebookLibrary: useNotebookLibraryMock,
 }))
 
 vi.mock('@/lib/stores/library-view-store', () => ({
@@ -71,6 +82,7 @@ vi.mock('@/lib/stores/library-view-store', () => ({
 vi.mock('@/lib/hooks/use-translation', () => ({
   useTranslation: () => ({
     t: (key: string) => ({
+      'common.accessibility.searchNotebooks': 'Search notebooks',
       'common.cardView': 'Cards',
       'common.created_label': 'Created',
       'common.listView': 'List',
@@ -79,9 +91,10 @@ vi.mock('@/lib/hooks/use-translation', () => ({
       'common.updated_label': 'Updated',
       'common.viewMode': 'Collection view',
       'notebooks.activeNotebooks': 'Active notebooks',
+      'notebooks.archivedNotebooks': 'Archived notebooks',
       'notebooks.description': 'Organize sources, notes, and research in focused workspaces.',
+      'notebooks.loadMore': 'Load more notebooks',
       'notebooks.newNotebook': 'New notebook',
-      'notebooks.searchLabel': 'Search notebooks',
       'notebooks.searchPlaceholder': 'Search notebooks...',
       'notebooks.sortDirection': 'Change sort direction',
       'notebooks.sortLabel': 'Sort notebooks',
@@ -90,40 +103,89 @@ vi.mock('@/lib/hooks/use-translation', () => ({
   }),
 }))
 
+interface LibraryHookOverrides {
+  notebooks?: Array<{ id: string; name: string; archived?: boolean }>
+  hasNextPage?: boolean
+  isFetchingNextPage?: boolean
+  fetchNextPage?: () => void
+  refetch?: () => void
+  isLoading?: boolean
+  isError?: boolean
+}
+
+function libraryState(overrides: LibraryHookOverrides = {}) {
+  return {
+    notebooks: [],
+    isLoading: false,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+    refetch: vi.fn(),
+    isError: false,
+    isFetchNextPageError: false,
+    isRefetchError: false,
+    error: null,
+    ...overrides,
+  }
+}
+
 describe('NotebooksPage', () => {
-  it('describes the library and requests notebook sorting in both directions', () => {
-    useNotebooksMock.mockImplementation((archived: boolean, orderBy: string) => ({
-      data: archived
-        ? []
-        : [...activeNotebooks].sort((left, right) => {
-            const comparison = left.updated.localeCompare(right.updated)
-            return orderBy.endsWith('asc') ? comparison : -comparison
-          }),
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    }))
+  it('drives active and archived collections with independent library queries', () => {
+    useNotebookLibraryMock.mockImplementation(({ archived }: { archived: boolean }) =>
+      libraryState({
+        notebooks: archived ? [] : activeNotebooks,
+      }),
+    )
 
     render(<NotebooksPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Notebooks' })).toBeVisible()
-    expect(
-      screen.getByText('Organize sources, notes, and research in focused workspaces.'),
-    ).toBeVisible()
     expect(screen.getAllByRole('listitem').map(item => item.textContent)).toEqual([
-      'Newer notebook',
       'Older notebook',
+      'Newer notebook',
     ])
-    expect(useNotebooksMock).toHaveBeenCalledWith(false, 'updated desc')
-    expect(useNotebooksMock).toHaveBeenCalledWith(true, 'updated desc')
-    expect(screen.getByTestId('page-frame')).toHaveClass('space-y-4', 'py-4', 'sm:py-4')
+    expect(useNotebookLibraryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ archived: false, query: '', sortBy: 'updated', sortOrder: 'desc' }),
+    )
+    expect(useNotebookLibraryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ archived: true, query: '', sortBy: 'updated', sortOrder: 'desc' }),
+    )
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Change sort direction' }))
-    expect(screen.getAllByRole('listitem').map(item => item.textContent)).toEqual([
-      'Older notebook',
-      'Newer notebook',
-    ])
-    expect(useNotebooksMock).toHaveBeenCalledWith(false, 'updated asc')
-    expect(useNotebooksMock).toHaveBeenCalledWith(true, 'updated asc')
+  it('propagates the search term to the server (no client-only filtering)', () => {
+    useNotebookLibraryMock.mockImplementation(() => libraryState({ notebooks: activeNotebooks }))
+
+    render(<NotebooksPage />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search notebooks' }), {
+      target: { value: 'evidence' },
+    })
+
+    // Search term is normalized (trimmed, lowercased) and sent to the hook.
+    expect(useNotebookLibraryMock).toHaveBeenCalledWith(
+      expect.objectContaining({ query: 'evidence', archived: false }),
+    )
+  })
+
+  it('surfaces Load more per collection when hasNextPage is true', () => {
+    const activeFetchNextPage = vi.fn()
+    const archivedFetchNextPage = vi.fn()
+    useNotebookLibraryMock.mockImplementation(({ archived }: { archived: boolean }) =>
+      libraryState({
+        notebooks: archived ? [{ id: 'notebook:a1', name: 'Archived one' }] : activeNotebooks,
+        hasNextPage: true,
+        fetchNextPage: archived ? archivedFetchNextPage : activeFetchNextPage,
+      }),
+    )
+
+    render(<NotebooksPage />)
+
+    const activeLoadMore = screen.getByTestId('load-more-Active notebooks')
+    const archivedLoadMore = screen.getByTestId('load-more-Archived notebooks')
+    expect(activeLoadMore).toHaveTextContent('Load more notebooks')
+    fireEvent.click(activeLoadMore)
+    expect(activeFetchNextPage).toHaveBeenCalledOnce()
+    expect(archivedFetchNextPage).not.toHaveBeenCalled()
+    fireEvent.click(archivedLoadMore)
+    expect(archivedFetchNextPage).toHaveBeenCalledOnce()
   })
 })

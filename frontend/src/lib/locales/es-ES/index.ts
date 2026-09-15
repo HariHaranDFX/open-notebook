@@ -362,6 +362,7 @@ export const esES = {
     recentlyViewed: "Vistos recientemente",
     recentlyViewedNotebook: "Cuaderno",
     recentlyViewedSource: "Fuente",
+    loadMore: "Cargar más blocs de notas",
   },
   sources: {
     bulkContext: "Contexto",
