@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -233,14 +234,13 @@ async def _episode_row_to_response(
     if audio_path is not None and audio_path.exists():
         audio_url = f"/api/podcasts/episodes/{row['id']}/audio"
 
-    # We need a lightweight episode-shaped object for effective_role_for_episode;
-    # constructing a full PodcastEpisode would fail validation on partial rows.
-    class _EpisodeLike:
-        pass
-
-    ep_like = _EpisodeLike()
-    ep_like.user_id = row.get("user_id")
-    ep_like.notebook_id = row.get("notebook_id")
+    # We need a lightweight episode-shaped object for effective_role_for_episode
+    # (uses getattr on user_id/notebook_id); constructing a full PodcastEpisode
+    # would fail validation on partial rows.
+    ep_like = SimpleNamespace(
+        user_id=row.get("user_id"),
+        notebook_id=row.get("notebook_id"),
+    )
 
     return PodcastEpisodeResponse(
         id=str(row["id"]),
