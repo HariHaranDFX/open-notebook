@@ -703,7 +703,10 @@ def _cleanup_uploaded_file(
 
 
 async def _build_content_state(
-    source_data: SourceCreate, file_path: Optional[str]
+    source_data: SourceCreate,
+    file_path: Optional[str],
+    original_file_action: Optional[str] = None,
+    original_filename: Optional[str] = None,
 ) -> dict[str, Any]:
     """Validate the type-specific input and build the content_state passed to
     the processing command. The SSRF and LFI guards live here."""
@@ -738,7 +741,26 @@ async def _build_content_state(
         # Reject unsupported files before enqueueing a doomed background job.
         await _assert_file_supported(final_file_path)
         content_state["file_path"] = final_file_path
+        # Deprecated: kept for one release while workers/consumers migrate to
+        # ``original_file_action``. The graph MUST NOT delete based on this
+        # flag anymore — deletion moves to the successful-command boundary
+        # in Task 3.
         content_state["delete_source"] = source_data.delete_source
+        # Snapshot the resolved retention action + display metadata so
+        # downstream (worker, cleanup APIs) never re-reads the current
+        # admin policy for this source — future policy changes never
+        # rewrite history.
+        if original_file_action is not None:
+            content_state["original_file_action"] = original_file_action
+        # Prefer the client-provided upload filename; fall back to the
+        # basename of the stored path (safe: dirs are stripped).
+        content_state["original_filename"] = (
+            original_filename or Path(final_file_path).name
+        )
+        try:
+            content_state["original_size_bytes"] = Path(final_file_path).stat().st_size
+        except OSError:
+            content_state["original_size_bytes"] = None
     elif source_data.type == "text":
         if not source_data.content:
             raise HTTPException(
@@ -760,6 +782,8 @@ async def _create_source_async_path(
     transformation_ids: List[str],
     file_path: Optional[str],
     user: Optional[AuthenticatedUser],
+    original_filename: Optional[str] = None,
+    original_file_action: Optional[str] = None,
 ) -> SourceResponse:
     """ASYNC PATH: Create source record first, then queue command."""
     logger.info("Using async processing path")
@@ -769,7 +793,25 @@ async def _create_source_async_path(
     if source_data.type == "link":
         source_asset = Asset(url=source_data.url)
     elif source_data.type == "upload":
-        source_asset = Asset(file_path=file_path or source_data.file_path)
+        stored_path = file_path or source_data.file_path
+        # Snapshot upload metadata for retention governance. Legacy JSON
+        # requests that only carry a file_path derive the filename from
+        # the basename (containment already checked in _build_content_state).
+        display_filename = original_filename or (
+            Path(stored_path).name if stored_path else None
+        )
+        size = None
+        if stored_path:
+            try:
+                size = Path(stored_path).stat().st_size
+            except OSError:
+                size = None
+        source_asset = Asset(
+            file_path=stored_path,
+            original_filename=display_filename,
+            original_size_bytes=size,
+            original_file_action=original_file_action,
+        )
     else:
         source_asset = None
 
@@ -966,13 +1008,37 @@ async def create_source(
                 logger.error(f"File upload failed: {e}")
                 raise HTTPException(status_code=400, detail="File upload failed")
 
+        # Capture the client-provided filename BEFORE any processing —
+        # we snapshot it on the asset so users can see and download the
+        # original name later, independent of internal storage paths.
+        original_filename: Optional[str] = None
+        if source_data.type == "upload":
+            if upload_file and upload_file.filename:
+                original_filename = Path(upload_file.filename).name
+            elif source_data.file_path:
+                # Legacy JSON path form — basename only.
+                original_filename = Path(source_data.file_path).name
+
         if source_data.type == "upload" and not source_data.title:
-            upload_name = upload_file.filename if upload_file else source_data.file_path
-            if upload_name:
-                source_data.title = Path(upload_name).name
+            if original_filename:
+                source_data.title = original_filename
+
+        # Resolve the effective retention action once — the snapshot is
+        # threaded through content_state and Asset so a later admin
+        # policy change never rewrites this source's decision.
+        original_file_action: Optional[str] = None
+        if source_data.type == "upload":
+            from api.source_file_service import resolve_action_for_source_create
+
+            original_file_action = await resolve_action_for_source_create(source_data)
 
         # Prepare content_state for processing (type validation + SSRF/LFI guards)
-        content_state = await _build_content_state(source_data, file_path)
+        content_state = await _build_content_state(
+            source_data,
+            file_path,
+            original_file_action=original_file_action,
+            original_filename=original_filename,
+        )
 
         # Validate transformations exist
         transformation_ids = source_data.transformations or []
@@ -986,7 +1052,13 @@ async def create_source(
         # Branch based on processing mode
         if source_data.async_processing:
             return await _create_source_async_path(
-                source_data, content_state, transformation_ids, file_path, user
+                source_data,
+                content_state,
+                transformation_ids,
+                file_path,
+                user,
+                original_filename=original_filename,
+                original_file_action=original_file_action,
             )
         return await _create_source_sync_path(
             source_data, content_state, transformation_ids, user
