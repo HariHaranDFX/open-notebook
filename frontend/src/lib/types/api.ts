@@ -40,14 +40,30 @@ export interface NoteResponse {
   updated: string
 }
 
+export type OriginalFileAction = 'keep' | 'delete_after_processing'
+export type OriginalFileStatus = 'retained' | 'deleted' | 'missing' | 'not_applicable'
+export type OriginalFileDeletionReason =
+  | 'retention_policy'
+  | 'source_owner'
+  | 'admin_cleanup'
+
+// Public asset payload — the internal storage path is never returned.
+// Uploads are identified externally by ``original_filename``.
+export interface SourceAssetPublic {
+  url?: string
+  original_filename?: string
+  original_size_bytes?: number
+  original_file_action?: OriginalFileAction
+  original_deleted_at?: string
+  original_deleted_reason?: OriginalFileDeletionReason
+  original_file_status?: OriginalFileStatus
+}
+
 export interface SourceListResponse {
   id: string
   title: string | null
   topics?: string[]                  // Make optional to match Python API
-  asset: {
-    file_path?: string
-    url?: string
-  } | null
+  asset: SourceAssetPublic | null
   embedded: boolean
   embedded_chunks: number            // ADD: From Python API
   insights_count: number
@@ -89,11 +105,34 @@ export interface SettingsResponse {
   default_content_processing_engine_doc?: string
   default_content_processing_engine_url?: string
   default_embedding_option?: string
-  auto_delete_files?: string
   docling_ocr?: boolean
   docling_formulas?: boolean
   docling_vision?: boolean
   youtube_preferred_languages?: string[]
+  // Retention governance (2026-09-01 design).
+  original_file_policy?: 'always_keep' | 'user_choice' | 'always_delete'
+  original_file_user_default?: OriginalFileAction
+  allow_source_owner_cleanup?: boolean
+}
+
+export interface SourceFilePolicyResponse {
+  original_file_policy: 'always_keep' | 'user_choice' | 'always_delete'
+  original_file_user_default: OriginalFileAction
+  allow_source_owner_cleanup: boolean
+  owner_can_cleanup_own: boolean
+  is_admin: boolean
+}
+
+export interface CleanupPreviewResponse {
+  scope: 'mine' | 'all'
+  eligible_count: number
+  eligible_bytes: number
+}
+
+export interface CleanupSubmitResponse {
+  job_id: string
+  scope: 'mine' | 'all'
+  eligible_count: number
 }
 
 export interface Capabilities {

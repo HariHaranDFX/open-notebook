@@ -166,7 +166,7 @@ export function AddExistingSourceDialog({
     if (source.asset?.url) {
       return <LinkIcon className="h-4 w-4" />
     }
-    if (source.asset?.file_path) {
+    if (source.asset?.original_filename) {
       return <Upload className="h-4 w-4" />
     }
     return <FileText className="h-4 w-4" />

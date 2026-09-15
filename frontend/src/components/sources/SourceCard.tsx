@@ -96,7 +96,7 @@ function isSourceStatus(status: unknown): status is SourceStatus {
 function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
   // Determine type based on asset information
   if (source.asset?.url) return 'link'
-  if (source.asset?.file_path) return 'upload'
+  if (source.asset?.original_filename) return 'upload'
   return 'text'
 }
 
@@ -475,7 +475,7 @@ function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
     p.embedded === n.embedded &&
     p.insights_count === n.insights_count &&
     p.asset?.url === n.asset?.url &&
-    p.asset?.file_path === n.asset?.file_path &&
+    p.asset?.original_filename === n.asset?.original_filename &&
     topicsEqual(p.topics, n.topics) &&
     prev.contextMode === next.contextMode &&
     prev.showRemoveFromNotebook === next.showRemoveFromNotebook &&

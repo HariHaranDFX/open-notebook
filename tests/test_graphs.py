@@ -280,12 +280,21 @@ class TestSaveSourceTitlePreservation:
 
 
 class TestContentProcessDeleteSource:
-    """content-core 2.x no longer deletes the uploaded file; the graph must."""
+    """Retention governance (Task 3 of the retention-governance plan) moved
+    upload deletion out of the graph's extraction phase and into the
+    successful-command boundary in ``commands/source_commands.py``.
+
+    Intentional safety-boundary change: a later transformation or embedding
+    failure must be retryable, which is impossible once the input file has
+    been unlinked. The graph now never touches the uploaded file. The
+    legacy ``delete_source`` flag on ``content_state`` is kept for one
+    release but has no effect here.
+    """
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")
     @patch("open_notebook.graphs.source.ModelManager")
-    async def test_uploaded_file_deleted_when_flag_set(
+    async def test_graph_never_unlinks_uploaded_file(
         self, mock_model_manager, mock_extract, tmp_path
     ):
         from content_core.common import ExtractionOutput
@@ -305,6 +314,8 @@ class TestContentProcessDeleteSource:
         uploaded = tmp_path / "upload.pdf"
         uploaded.write_text("data")
 
+        # Even with the legacy delete_source flag set, the graph must NOT
+        # delete the input. Post-success deletion is the command's job.
         state = {
             "source_id": "source:123",
             "content_state": {"file_path": str(uploaded), "delete_source": True},
@@ -315,7 +326,10 @@ class TestContentProcessDeleteSource:
         result = await content_process(cast(SourceState, state))
 
         assert result["extraction"].content == "extracted text"
-        assert not uploaded.exists()  # file removed by the graph
+        assert uploaded.exists(), (
+            "The graph must not delete uploads — retention deletion is "
+            "handled at the successful-command boundary."
+        )
         mock_extract.assert_awaited_once()
         # The broader YouTube transcript language list is wired into the config
         # (content-core's own default is only en/es/pt).

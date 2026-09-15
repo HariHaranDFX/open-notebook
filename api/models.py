@@ -307,28 +307,64 @@ class SettingsResponse(BaseModel):
     default_content_processing_engine_doc: Optional[str] = None
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    # Retention governance fields (2026-09-01 design).
+    original_file_policy: Optional[
+        Literal["always_keep", "user_choice", "always_delete"]
+    ] = None
+    original_file_user_default: Optional[
+        Literal["keep", "delete_after_processing"]
+    ] = None
+    allow_source_owner_cleanup: Optional[bool] = None
 
 
 class SettingsUpdate(BaseModel):
+    # extra='forbid' forces old clients that still send auto_delete_files=yes
+    # to migrate — a legacy toggle can no longer silently opt an install
+    # into deletion. Callers must explicitly select an original_file_policy.
+    model_config = ConfigDict(extra="forbid")
+
     default_content_processing_engine_doc: Optional[str] = None
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
     docling_formulas: Optional[bool] = None
     docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    original_file_policy: Optional[
+        Literal["always_keep", "user_choice", "always_delete"]
+    ] = None
+    original_file_user_default: Optional[
+        Literal["keep", "delete_after_processing"]
+    ] = None
+    allow_source_owner_cleanup: Optional[bool] = None
 
 
 # Sources API models
 class AssetModel(BaseModel):
-    file_path: Optional[str] = None
+    """Public view of an internal ``Asset``.
+
+    Retention governance (2026-09-01 design) hides ``file_path`` — the
+    internal storage location is never returned to any client. Uploads
+    are identified externally by ``original_filename``. Every response
+    that includes an asset must route through
+    ``api.source_file_service.build_public_asset_model``.
+    """
+
     url: Optional[str] = None
+    original_filename: Optional[str] = None
+    original_size_bytes: Optional[int] = None
+    original_file_action: Optional[Literal["keep", "delete_after_processing"]] = None
+    original_deleted_at: Optional[str] = None
+    original_deleted_reason: Optional[
+        Literal["retention_policy", "source_owner", "admin_cleanup"]
+    ] = None
+    original_file_status: Optional[
+        Literal["retained", "deleted", "missing", "not_applicable"]
+    ] = None
 
 
 class SourceCreate(BaseModel):
@@ -354,8 +390,20 @@ class SourceCreate(BaseModel):
         description="Transformation IDs to apply (max 50)",
     )
     embed: bool = Field(False, description="Whether to embed content for vector search")
+    # DEPRECATED: legacy request field replaced by ``original_file_action``.
+    # Kept for one release so old clients continue to work; the resolver in
+    # ``api/source_file_service.py`` translates it only when policy mode is
+    # ``user_choice`` and ``original_file_action`` is absent. Never derive
+    # deletion from the old ``auto_delete_files=yes`` default.
     delete_source: bool = Field(
-        False, description="Whether to delete uploaded file after processing"
+        False, description="Whether to delete uploaded file after processing (deprecated)"
+    )
+    original_file_action: Optional[Literal["keep", "delete_after_processing"]] = Field(
+        None,
+        description=(
+            "Owner's preferred retention action for this upload. Ignored "
+            "when policy is 'always_keep' or 'always_delete'."
+        ),
     )
     # New async processing support
     async_processing: bool = Field(

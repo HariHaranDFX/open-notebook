@@ -23,6 +23,14 @@ vi.mock('@/lib/hooks/use-capabilities', () => ({
   useCapabilities: vi.fn(),
 }))
 
+vi.mock('@/lib/hooks/use-source-files', () => ({
+  useCleanupPreview: () => ({
+    data: { scope: 'all', eligible_count: 0, eligible_bytes: 0 },
+    isLoading: false,
+  }),
+  useSubmitCleanup: () => ({ mutate: vi.fn(), isPending: false }),
+}))
+
 import { useSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 
@@ -30,8 +38,10 @@ const settingsData = {
   default_content_processing_engine_doc: 'auto',
   default_content_processing_engine_url: 'auto',
   default_embedding_option: 'ask',
-  auto_delete_files: 'no',
   docling_ocr: true,
+  original_file_policy: 'always_keep',
+  original_file_user_default: 'keep',
+  allow_source_owner_cleanup: false,
 }
 
 function mockCapabilities(caps: unknown, { isError = false } = {}) {

@@ -301,7 +301,7 @@ function SourceDetailContentInner({
   }
 
   const handleDownloadFile = async () => {
-    if (!source?.asset?.file_path || isDownloadingFile || fileAvailable === false) {
+    if (!source?.asset?.original_filename || isDownloadingFile || fileAvailable === false) {
       return
     }
 
@@ -311,7 +311,7 @@ function SourceDetailContentInner({
       const filenameFromHeader = parseContentDisposition(
         response.headers?.['content-disposition'] as string | undefined
       )
-      const fallbackName = extractFilename(source.asset.file_path, `source-${source.id}`)
+      const fallbackName = extractFilename(source.asset.original_filename, `source-${source.id}`)
       const filename = filenameFromHeader || fallbackName
 
       const blobUrl = window.URL.createObjectURL(response.data)
@@ -340,14 +340,14 @@ function SourceDetailContentInner({
   const getSourceIcon = () => {
     if (!source) return null
     if (source.asset?.url) return <LinkIcon className="h-5 w-5" />
-    if (source.asset?.file_path) return <Upload className="h-5 w-5" />
+    if (source.asset?.original_filename) return <Upload className="h-5 w-5" />
     return <AlignLeft className="h-5 w-5" />
   }
 
   const getSourceType = () => {
     if (!source) return 'unknown'
     if (source.asset?.url) return 'link'
-    if (source.asset?.file_path) return 'file'
+    if (source.asset?.original_filename) return 'file'
     return 'text'
   }
 
@@ -425,7 +425,7 @@ function SourceDetailContentInner({
 
   const canEdit = canEditContent(source.access_role)
   const canDelete = canDeleteSource(source.access_role)
-  const hasPrimaryMenuActions = Boolean(renderWorkspace || source.asset?.file_path)
+  const hasPrimaryMenuActions = Boolean(renderWorkspace || source.asset?.original_filename)
   const contentPane = (
     <SourceContentPane
       source={source}
@@ -568,7 +568,7 @@ function SourceDetailContentInner({
                         {t('sources.details')}
                       </DropdownMenuItem>
                     )}
-                    {source.asset?.file_path && (
+                    {source.asset?.original_filename && (
                       <DropdownMenuItem
                         onClick={handleDownloadFile}
                         disabled={isDownloadingFile || fileAvailable === false}

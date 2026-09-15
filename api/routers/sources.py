@@ -25,7 +25,6 @@ from api.command_service import CommandService
 from api.credentials_service import validate_url
 from api.models import (
     AccessSummary,
-    AssetModel,
     CreateSourceInsightRequest,
     InsightCreationResponse,
     SourceCreate,
@@ -52,6 +51,7 @@ from api.pagination import (
     encode_cursor,
     fingerprint_filters,
 )
+from api.source_file_service import build_public_asset_model
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -414,14 +414,7 @@ async def get_sources(
                     id=row["id"],
                     title=row.get("title"),
                     topics=row.get("topics") or [],
-                    asset=AssetModel(
-                        file_path=row["asset"].get("file_path")
-                        if row.get("asset")
-                        else None,
-                        url=row["asset"].get("url") if row.get("asset") else None,
-                    )
-                    if row.get("asset")
-                    else None,
+                    asset=build_public_asset_model(row.get("asset")),
                     embedded=row.get("embedded", False),
                     embedded_chunks=0,  # Not needed in list view
                     insights_count=row.get("insights_count", 0),
@@ -481,12 +474,7 @@ async def _build_source_list_response(
         id=row["id"],
         title=row.get("title"),
         topics=row.get("topics") or [],
-        asset=AssetModel(
-            file_path=row["asset"].get("file_path") if row.get("asset") else None,
-            url=row["asset"].get("url") if row.get("asset") else None,
-        )
-        if row.get("asset")
-        else None,
+        asset=build_public_asset_model(row.get("asset")),
         embedded=row.get("embedded", False),
         embedded_chunks=0,
         insights_count=row.get("insights_count", 0),
@@ -672,12 +660,7 @@ def _source_to_response(
         "id": source.id or "",
         "title": source.title,
         "topics": source.topics or [],
-        "asset": AssetModel(
-            file_path=source.asset.file_path,
-            url=source.asset.url,
-        )
-        if source.asset
-        else None,
+        "asset": build_public_asset_model(source.asset),
         "full_text": source.full_text,
         "embedded": embedded_chunks > 0,
         "embedded_chunks": embedded_chunks,
@@ -703,7 +686,10 @@ def _cleanup_uploaded_file(
 
 
 async def _build_content_state(
-    source_data: SourceCreate, file_path: Optional[str]
+    source_data: SourceCreate,
+    file_path: Optional[str],
+    original_file_action: Optional[str] = None,
+    original_filename: Optional[str] = None,
 ) -> dict[str, Any]:
     """Validate the type-specific input and build the content_state passed to
     the processing command. The SSRF and LFI guards live here."""
@@ -738,7 +724,26 @@ async def _build_content_state(
         # Reject unsupported files before enqueueing a doomed background job.
         await _assert_file_supported(final_file_path)
         content_state["file_path"] = final_file_path
+        # Deprecated: kept for one release while workers/consumers migrate to
+        # ``original_file_action``. The graph MUST NOT delete based on this
+        # flag anymore — deletion moves to the successful-command boundary
+        # in Task 3.
         content_state["delete_source"] = source_data.delete_source
+        # Snapshot the resolved retention action + display metadata so
+        # downstream (worker, cleanup APIs) never re-reads the current
+        # admin policy for this source — future policy changes never
+        # rewrite history.
+        if original_file_action is not None:
+            content_state["original_file_action"] = original_file_action
+        # Prefer the client-provided upload filename; fall back to the
+        # basename of the stored path (safe: dirs are stripped).
+        content_state["original_filename"] = (
+            original_filename or Path(final_file_path).name
+        )
+        try:
+            content_state["original_size_bytes"] = Path(final_file_path).stat().st_size
+        except OSError:
+            content_state["original_size_bytes"] = None
     elif source_data.type == "text":
         if not source_data.content:
             raise HTTPException(
@@ -760,6 +765,8 @@ async def _create_source_async_path(
     transformation_ids: List[str],
     file_path: Optional[str],
     user: Optional[AuthenticatedUser],
+    original_filename: Optional[str] = None,
+    original_file_action: Optional[str] = None,
 ) -> SourceResponse:
     """ASYNC PATH: Create source record first, then queue command."""
     logger.info("Using async processing path")
@@ -769,7 +776,25 @@ async def _create_source_async_path(
     if source_data.type == "link":
         source_asset = Asset(url=source_data.url)
     elif source_data.type == "upload":
-        source_asset = Asset(file_path=file_path or source_data.file_path)
+        stored_path = file_path or source_data.file_path
+        # Snapshot upload metadata for retention governance. Legacy JSON
+        # requests that only carry a file_path derive the filename from
+        # the basename (containment already checked in _build_content_state).
+        display_filename = original_filename or (
+            Path(stored_path).name if stored_path else None
+        )
+        size = None
+        if stored_path:
+            try:
+                size = Path(stored_path).stat().st_size
+            except OSError:
+                size = None
+        source_asset = Asset(
+            file_path=stored_path,
+            original_filename=display_filename,
+            original_size_bytes=size,
+            original_file_action=original_file_action,
+        )
     else:
         source_asset = None
 
@@ -966,13 +991,37 @@ async def create_source(
                 logger.error(f"File upload failed: {e}")
                 raise HTTPException(status_code=400, detail="File upload failed")
 
+        # Capture the client-provided filename BEFORE any processing —
+        # we snapshot it on the asset so users can see and download the
+        # original name later, independent of internal storage paths.
+        original_filename: Optional[str] = None
+        if source_data.type == "upload":
+            if upload_file and upload_file.filename:
+                original_filename = Path(upload_file.filename).name
+            elif source_data.file_path:
+                # Legacy JSON path form — basename only.
+                original_filename = Path(source_data.file_path).name
+
         if source_data.type == "upload" and not source_data.title:
-            upload_name = upload_file.filename if upload_file else source_data.file_path
-            if upload_name:
-                source_data.title = Path(upload_name).name
+            if original_filename:
+                source_data.title = original_filename
+
+        # Resolve the effective retention action once — the snapshot is
+        # threaded through content_state and Asset so a later admin
+        # policy change never rewrites this source's decision.
+        original_file_action: Optional[str] = None
+        if source_data.type == "upload":
+            from api.source_file_service import resolve_action_for_source_create
+
+            original_file_action = await resolve_action_for_source_create(source_data)
 
         # Prepare content_state for processing (type validation + SSRF/LFI guards)
-        content_state = await _build_content_state(source_data, file_path)
+        content_state = await _build_content_state(
+            source_data,
+            file_path,
+            original_file_action=original_file_action,
+            original_filename=original_filename,
+        )
 
         # Validate transformations exist
         transformation_ids = source_data.transformations or []
@@ -986,7 +1035,13 @@ async def create_source(
         # Branch based on processing mode
         if source_data.async_processing:
             return await _create_source_async_path(
-                source_data, content_state, transformation_ids, file_path, user
+                source_data,
+                content_state,
+                transformation_ids,
+                file_path,
+                user,
+                original_filename=original_filename,
+                original_file_action=original_file_action,
             )
         return await _create_source_sync_path(
             source_data, content_state, transformation_ids, user
@@ -1041,7 +1096,14 @@ async def _resolve_source_file(source_id: str, request: Request) -> tuple[str, s
     if not os.path.exists(resolved_path):
         raise HTTPException(status_code=404, detail="File not found on server")
 
-    filename = os.path.basename(resolved_path)
+    # Prefer the client-visible original filename over the internal
+    # basename so Content-Disposition reflects what the user uploaded,
+    # not our storage layout. Legacy rows without the snapshot fall back
+    # to the storage basename.
+    filename = (
+        (source.asset.original_filename if source.asset else None)
+        or os.path.basename(resolved_path)
+    )
     return resolved_path, filename
 
 

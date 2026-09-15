@@ -59,7 +59,7 @@ const accessRoleLabels = {
 
 function getSourceType(source: SourceListResponse): keyof typeof sourceTypes {
   if (source.asset?.url) return 'link'
-  if (source.asset?.file_path) return 'file'
+  if (source.asset?.original_filename) return 'file'
   return 'text'
 }
 

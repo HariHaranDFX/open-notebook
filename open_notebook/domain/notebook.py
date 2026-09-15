@@ -331,8 +331,22 @@ class Notebook(ObjectModel):
 
 
 class Asset(BaseModel):
+    # Internal storage path for uploaded originals. NEVER serialize this
+    # in a public response — go through ``api.source_file_service``'s
+    # safe asset mapper (introduced in Task 4). URL/text sources leave it
+    # None.
     file_path: Optional[str] = None
     url: Optional[str] = None
+    # Original-upload metadata (Task 1 of retention governance). URL and
+    # pasted-text sources leave every ``original_*`` field None.
+    original_filename: Optional[str] = None
+    original_size_bytes: Optional[int] = None
+    original_file_action: Optional[Literal["keep", "delete_after_processing"]] = None
+    original_deletion_started_at: Optional[datetime] = None
+    original_deleted_at: Optional[datetime] = None
+    original_deleted_reason: Optional[
+        Literal["retention_policy", "source_owner", "admin_cleanup"]
+    ] = None
 
 
 class SourceEmbedding(ObjectModel):

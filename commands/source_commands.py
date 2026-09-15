@@ -18,6 +18,47 @@ except ImportError as e:
     raise ValueError("graphs not available")
 
 
+async def _maybe_delete_original_after_success(source: Source) -> None:
+    """Post-success retention hook.
+
+    Called only from ``process_source_command`` once the source_graph has
+    returned. Deletion executes only when:
+
+    - the source has an asset with ``original_file_action == "delete_after_processing"``,
+    - ``full_text`` is populated (guard against a "successful" empty extract),
+    - the file is still on the filesystem and safely contained (helper enforces).
+
+    Failure to unlink raises through so the command retries. Once deleted,
+    the helper is idempotent on subsequent calls.
+    """
+    # Reload so we see everything the graph just saved (full_text + asset).
+    reloaded = await Source.get(str(source.id))
+    if reloaded is None:
+        return
+    asset = reloaded.asset
+    if asset is None or asset.original_file_action != "delete_after_processing":
+        return
+    if not reloaded.full_text:
+        # Safety net — the graph raises on empty extract, but if a future
+        # code path ever bypasses that, do not delete the input we still
+        # need for retry.
+        logger.warning(
+            f"Skipping post-success delete for {source.id}: full_text empty"
+        )
+        return
+
+    from api.source_file_service import delete_original_file
+
+    outcome = await delete_original_file(reloaded, reason="retention_policy")
+    logger.info(f"Retention delete outcome for {source.id}: {outcome}")
+    if outcome == "error":
+        # Fail the command so surreal-commands retries; the two-phase
+        # write keeps the marker, so a retry finalizes cleanly.
+        raise RuntimeError(
+            f"Failed to delete original file for source {source.id}"
+        )
+
+
 class SourceProcessingInput(CommandInput):
     source_id: str
     content_state: Dict[str, Any]
@@ -105,7 +146,15 @@ async def process_source_command(
 
         processed_source = result["source"]
 
-        # 4. Gather processing results (notebook associations handled by source_graph)
+        # 4. Retention governance (Task 3): now that the graph succeeded and
+        # ``full_text`` has been persisted, delete the original upload if
+        # the snapshotted action asks us to. This runs AFTER the graph so
+        # a downstream failure never leaves us without the file to retry.
+        # Reload the source to pick up the graph's saves and confirm
+        # full_text is present before touching the file.
+        await _maybe_delete_original_after_success(processed_source)
+
+        # 5. Gather processing results (notebook associations handled by source_graph)
         # Note: embedding is fire-and-forget (async job), so we can't query the
         # count here — it hasn't completed yet. The embed_source_command logs
         # the actual count when it finishes.

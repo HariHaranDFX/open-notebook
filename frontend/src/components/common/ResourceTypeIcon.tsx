@@ -26,7 +26,9 @@ export type ResourceKind =
   | 'video'
   | 'archive'
 
-type SourceAsset = { file_path?: string; url?: string } | null
+// Retention governance (2026-09-01) hides the internal storage path from
+// public responses. Uploads are identified by the safe original filename.
+type SourceAsset = { original_filename?: string; url?: string } | null
 
 const extensionKinds: Record<string, ResourceKind> = {
   txt: 'text',
@@ -74,9 +76,13 @@ const resourceVisuals = {
 
 export function getSourceResourceKind(asset: SourceAsset): ResourceKind {
   if (asset?.url) return 'link'
-  if (!asset?.file_path) return 'text'
+  if (!asset?.original_filename) return 'text'
 
-  const extension = asset.file_path.split(/[?#]/, 1)[0].split('.').pop()?.toLowerCase()
+  const extension = asset.original_filename
+    .split(/[?#]/, 1)[0]
+    .split('.')
+    .pop()
+    ?.toLowerCase()
   return extension ? extensionKinds[extension] ?? 'document' : 'document'
 }
 

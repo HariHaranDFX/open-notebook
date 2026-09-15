@@ -137,11 +137,11 @@ export function SourceContentPane({
   const isSheetDetails = detailsVariant === 'sheet'
   const sourceType = source.asset?.url
     ? t('sources.type.link')
-    : source.asset?.file_path
+    : source.asset?.original_filename
       ? t('sources.type.file')
       : t('sources.type.text')
   const hasSourceDetails = Boolean(
-    source.asset?.url || source.asset?.file_path || source.topics?.length,
+    source.asset?.url || source.asset?.original_filename || source.topics?.length,
   )
 
   return (
@@ -225,7 +225,7 @@ export function SourceContentPane({
             </div>
           )}
 
-          {source.asset?.file_path && (
+          {source.asset?.original_filename && (
             <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
               <p className="pt-2 text-sm font-medium text-muted-foreground">
                 {t('sources.uploadedFile')}
@@ -233,7 +233,7 @@ export function SourceContentPane({
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <code className="min-w-0 flex-1 break-all bg-muted px-2 py-1.5 text-sm">
-                    {source.asset.file_path}
+                    {source.asset.original_filename}
                   </code>
                   <Button
                     size="sm"

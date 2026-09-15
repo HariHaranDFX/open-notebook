@@ -462,18 +462,13 @@ async def content_process(state: SourceState) -> dict:
             "The content may be empty, inaccessible, or in an unsupported format."
         )
 
-    # content-core 2.x no longer deletes the uploaded source file after
-    # extraction (the delete_source flag it used to honor is gone). Preserve the
-    # previous auto-delete behavior on our side.
-    if content_state.get("delete_source") and content_state.get("file_path"):
-        file_path = content_state["file_path"]
-        try:
-            os.unlink(file_path)
-        except FileNotFoundError:
-            logger.warning(f"File not found while trying to delete: {file_path}")
-        except Exception as e:
-            logger.warning(f"Failed to delete source file {file_path}: {e}")
-
+    # Intentional safety-boundary change (retention governance, Task 3):
+    # the graph must NEVER delete the uploaded original at extraction
+    # time — a later transformation or embedding failure would then have
+    # nothing to retry from. Deletion moves to
+    # ``process_source_command`` and runs only after full_text has been
+    # persisted and the whole command succeeded. The old delete_source
+    # flag on content_state is kept but ignored here for one release.
     return {"extraction": processed}
 
 
@@ -488,8 +483,35 @@ async def save_source(state: SourceState) -> dict:
 
     # Update the source with processed content. content-core's ExtractionOutput
     # does not echo url/file_path back, so carry them from the input state.
+    # For retention-governance snapshot: prefer any fields already on the
+    # asset (async path pre-populates them at upload time) over the ones
+    # carried in content_state (sync path relies on content_state only).
+    existing_asset = getattr(source, "asset", None)
     source.asset = Asset(
-        url=content_state.get("url"), file_path=content_state.get("file_path")
+        url=content_state.get("url"),
+        file_path=content_state.get("file_path"),
+        original_filename=(
+            (existing_asset.original_filename if existing_asset else None)
+            or content_state.get("original_filename")
+        ),
+        original_size_bytes=(
+            (existing_asset.original_size_bytes if existing_asset else None)
+            or content_state.get("original_size_bytes")
+        ),
+        original_file_action=(
+            (existing_asset.original_file_action if existing_asset else None)
+            or content_state.get("original_file_action")
+        ),
+        # Retry-recovery: never lose in-flight deletion state on re-save.
+        original_deletion_started_at=(
+            existing_asset.original_deletion_started_at if existing_asset else None
+        ),
+        original_deleted_at=(
+            existing_asset.original_deleted_at if existing_asset else None
+        ),
+        original_deleted_reason=(
+            existing_asset.original_deleted_reason if existing_asset else None
+        ),
     )
     source.full_text = extraction.content
 
