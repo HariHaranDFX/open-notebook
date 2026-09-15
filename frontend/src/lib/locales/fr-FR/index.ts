@@ -666,6 +666,7 @@ export const frFR = {
     loadErrorTitle: "Échec du chargement des épisodes",
     loadErrorDesc: "Nous n'avons pas pu récupérer les derniers épisodes. Réessayez dans un instant.",
     loadingEpisodes: "Chargement des épisodes…",
+    loadMore: "Charger plus d’épisodes",
     noEpisodesYet: "Aucun épisode de podcast pour le moment. Générez votre premier depuis le carnet ou les interfaces de chat.",
     statusRunningTitle: "En cours de traitement",
     statusRunningDesc: "Épisodes dont les ressources sont activement en cours de génération.",

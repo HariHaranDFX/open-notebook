@@ -669,6 +669,7 @@ export const deDE = {
     loadErrorTitle: "Episoden konnten nicht geladen werden",
     loadErrorDesc: "Die neuesten Podcast-Episoden konnten nicht abgerufen werden. Versuche es gleich erneut.",
     loadingEpisodes: "Episoden werden geladen…",
+    loadMore: "Weitere Episoden laden",
     noEpisodesYet: "Noch keine Podcast-Episoden. Erzeuge deine erste Episode über die Chat-Oberflächen eines Notebooks oder einer Quelle.",
     statusRunningTitle: "Aktuell in Verarbeitung",
     statusRunningDesc: "Episoden, deren Inhalte gerade erzeugt werden.",

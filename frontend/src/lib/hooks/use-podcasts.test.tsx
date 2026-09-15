@@ -5,14 +5,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { podcastsApi } from '@/lib/api/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
-import { usePodcastEpisode, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
+import {
+  useEpisodeLibrary,
+  usePodcastEpisode,
+  usePodcastEpisodesSummary,
+  useRetryPodcastEpisode,
+} from '@/lib/hooks/use-podcasts'
 import { isNotFoundError } from '@/lib/utils/error-handler'
 import type { PodcastEpisode } from '@/lib/types/podcasts'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string).
 
 vi.mock('@/lib/api/podcasts', () => ({
-  podcastsApi: { getEpisode: vi.fn(), retryEpisode: vi.fn() },
+  podcastsApi: {
+    getEpisode: vi.fn(),
+    retryEpisode: vi.fn(),
+    listEpisodeLibrary: vi.fn(),
+    getEpisodeSummary: vi.fn(),
+  },
 }))
 
 function makeEpisode(overrides: Partial<PodcastEpisode> = {}): PodcastEpisode {
@@ -83,6 +93,103 @@ describe('usePodcastEpisode', () => {
     })
 
     expect(isNotFoundError(notFound)).toBe(true)
+  })
+})
+
+describe('useEpisodeLibrary', () => {
+  beforeEach(() => vi.mocked(podcastsApi.listEpisodeLibrary).mockReset())
+
+  it('first request sends no cursor and normalizes the query', async () => {
+    vi.mocked(podcastsApi.listEpisodeLibrary).mockResolvedValue({
+      items: [],
+      next_cursor: null,
+    })
+
+    const { result } = renderHook(
+      () => useEpisodeLibrary({ query: '  Hello  ' }),
+      { wrapper: createWrapper() }
+    )
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(podcastsApi.listEpisodeLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: 'hello',
+        sort_by: 'updated',
+        sort_order: 'desc',
+        limit: 30,
+        cursor: undefined,
+      })
+    )
+  })
+
+  it('load more sends the previously returned cursor', async () => {
+    vi.mocked(podcastsApi.listEpisodeLibrary)
+      .mockResolvedValueOnce({ items: [makeEpisode()], next_cursor: 'cursor-1' })
+      .mockResolvedValueOnce({ items: [makeEpisode({ id: 'episode:2' })], next_cursor: null })
+
+    const { result } = renderHook(() => useEpisodeLibrary(), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true))
+    await act(async () => {
+      await result.current.fetchNextPage()
+    })
+
+    expect(podcastsApi.listEpisodeLibrary).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ cursor: 'cursor-1' })
+    )
+    await waitFor(() => expect(result.current.episodes).toHaveLength(2))
+  })
+
+  it('changing the filter starts a fresh query with no cursor', async () => {
+    vi.mocked(podcastsApi.listEpisodeLibrary).mockResolvedValue({
+      items: [],
+      next_cursor: null,
+    })
+
+    const { rerender } = renderHook(
+      ({ q }: { q: string }) => useEpisodeLibrary({ query: q }),
+      { wrapper: createWrapper(), initialProps: { q: 'alpha' } }
+    )
+    await waitFor(() => expect(podcastsApi.listEpisodeLibrary).toHaveBeenCalled())
+
+    vi.mocked(podcastsApi.listEpisodeLibrary).mockClear()
+    rerender({ q: 'beta' })
+    await waitFor(() => expect(podcastsApi.listEpisodeLibrary).toHaveBeenCalled())
+
+    expect(podcastsApi.listEpisodeLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({ query: 'beta', cursor: undefined })
+    )
+  })
+})
+
+describe('usePodcastEpisodesSummary', () => {
+  beforeEach(() => vi.mocked(podcastsApi.getEpisodeSummary).mockReset())
+
+  it('fetches under the summary query key', async () => {
+    const summary = {
+      total: 3,
+      running: 1,
+      pending: 0,
+      completed: 2,
+      failed: 0,
+      has_active: true,
+    }
+    vi.mocked(podcastsApi.getEpisodeSummary).mockResolvedValue(summary)
+
+    const { result } = renderHook(() => usePodcastEpisodesSummary({ autoRefresh: false }), {
+      wrapper: createWrapper(),
+    })
+
+    await waitFor(() => expect(result.current.data).toEqual(summary))
+    expect(QUERY_KEYS.podcastEpisodeSummary).toEqual([
+      'podcasts',
+      'episodes',
+      'summary',
+    ])
   })
 })
 

@@ -666,6 +666,7 @@ export const jaJP = {
     loadErrorTitle: "エピソードの読み込みに失敗しました",
     loadErrorDesc: "最新のポッドキャストエピソードを取得できませんでした。しばらくしてから再試行してください。",
     loadingEpisodes: "エピソードを読み込み中...",
+    loadMore: "さらにエピソードを読み込む",
     noEpisodesYet: "ポッドキャストエピソードがまだありません。ノートブックまたはソースのチャットインターフェースから最初のエピソードを生成してください。",
     statusRunningTitle: "処理中",
     statusRunningDesc: "現在アセットを生成中のエピソード。",

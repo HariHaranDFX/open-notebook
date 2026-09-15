@@ -666,6 +666,7 @@ export const ptBR = {
     loadErrorTitle: "Falha ao carregar episódios",
     loadErrorDesc: "Não foi possível buscar os episódios de podcast mais recentes. Tente novamente em breve.",
     loadingEpisodes: "Carregando episódios…",
+    loadMore: "Carregar mais episódios",
     noEpisodesYet: "Nenhum episódio de podcast ainda. Gere seu primeiro a partir das interfaces de chat de caderno ou fonte.",
     statusRunningTitle: "Processando Atualmente",
     statusRunningDesc: "Episódios que estão gerando ativos ativamente.",

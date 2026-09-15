@@ -666,6 +666,7 @@ export const esES = {
     loadErrorTitle: "Error al cargar episodios",
     loadErrorDesc: "No pudimos obtener los episodios más recientes. Intenta de nuevo en un momento.",
     loadingEpisodes: "Cargando episodios…",
+    loadMore: "Cargar más episodios",
     noEpisodesYet: "Aún no hay episodios de podcast. Genera tu primero desde las interfaces de chat de cuadernos o fuentes.",
     statusRunningTitle: "Procesando actualmente",
     statusRunningDesc: "Episodios que están generando activos activamente.",

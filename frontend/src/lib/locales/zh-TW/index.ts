@@ -666,6 +666,7 @@ export const zhTW = {
     loadErrorTitle: "載入單集失敗",
     loadErrorDesc: "無法獲取最新的播客單集。請稍後重試。",
     loadingEpisodes: "正在載入單集...",
+    loadMore: "載入更多節目",
     noEpisodesYet: "暫無播客單集。從筆記本或來源聊天介面開始生成您的第一個單集。",
     statusRunningTitle: "正在處理中",
     statusRunningDesc: "正在活躍生成資產的單集。",

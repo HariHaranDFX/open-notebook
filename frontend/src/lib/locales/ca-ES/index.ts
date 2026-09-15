@@ -666,6 +666,7 @@ export const caES = {
     loadErrorTitle: "Ha fallat la càrrega dels episodis",
     loadErrorDesc: "No s'han pogut obtenir els darrers episodis de podcast. Torna-ho a provar en breu.",
     loadingEpisodes: "S'estan carregant els episodis…",
+    loadMore: "Carrega més episodis",
     noEpisodesYet: "Encara no hi ha episodis de podcast. Genera el primer des de les interfícies de xat del quadern o la font.",
     statusRunningTitle: "S'està processant",
     statusRunningDesc: "Episodis que estan generant recursos activament.",

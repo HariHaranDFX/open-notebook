@@ -666,6 +666,7 @@ export const zhCN = {
     loadErrorTitle: "加载单集失败",
     loadErrorDesc: "无法获取最新的播客单集。请稍后重试。",
     loadingEpisodes: "正在加载单集...",
+    loadMore: "加载更多剧集",
     noEpisodesYet: "暂无播客单集。从笔记本或来源聊天界面开始生成您的第一个单集。",
     statusRunningTitle: "正在处理中",
     statusRunningDesc: "正在活跃生成资产的单集。",

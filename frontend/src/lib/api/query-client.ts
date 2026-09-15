@@ -40,6 +40,12 @@ export const QUERY_KEYS = {
   notebookChatSession: (sessionId: string) => ['notebook-chat', 'sessions', sessionId] as const,
   podcastEpisodes: ['podcasts', 'episodes'] as const,
   podcastEpisode: (episodeId: string) => ['podcasts', 'episodes', episodeId] as const,
+  podcastEpisodeLibrary: (params: {
+    query: string
+    sortBy: string
+    sortOrder: string
+  }) => ['podcasts', 'episodes', 'library', params] as const,
+  podcastEpisodeSummary: ['podcasts', 'episodes', 'summary'] as const,
   episodeProfiles: ['podcasts', 'episode-profiles'] as const,
   speakerProfiles: ['podcasts', 'speaker-profiles'] as const,
   languages: ['languages'] as const,
