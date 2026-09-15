@@ -53,6 +53,19 @@ async def execute_command(request: CommandExecutionRequest):
         }
     }
     """
+    # Some commands are internal — their authorization is enforced by a
+    # dedicated route, not the generic submitter. Reject direct submission
+    # so an authenticated user can't bypass the specialized route.
+    _INTERNAL_COMMANDS = {"cleanup_original_files"}
+    if request.command in _INTERNAL_COMMANDS:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This command is internal-only. Use its dedicated route "
+                "(see /source-files/cleanup for cleanup_original_files)."
+            ),
+        )
+
     try:
         # Submit command using app name (not module name)
         job_id = await CommandService.submit_command_job(

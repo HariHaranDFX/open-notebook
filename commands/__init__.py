@@ -16,6 +16,7 @@ from .embedding_commands import (
 )
 from .podcast_commands import generate_podcast_command
 from .source_commands import process_source_command
+from .source_file_commands import cleanup_original_files_command
 
 __all__ = [
     # Embedding commands
@@ -26,4 +27,5 @@ __all__ = [
     # Other commands
     "generate_podcast_command",
     "process_source_command",
+    "cleanup_original_files_command",
 ]

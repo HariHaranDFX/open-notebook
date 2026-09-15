@@ -44,6 +44,7 @@ from api.routers import (
     search,
     settings,
     source_chat,
+    source_files,
     sources,
     speaker_profiles,
     transformations,
@@ -419,6 +420,7 @@ app.include_router(
 )
 app.include_router(settings.router, prefix="/api", tags=["settings"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])
+app.include_router(source_files.router, prefix="/api", tags=["source-files"])
 app.include_router(insights.router, prefix="/api", tags=["insights"])
 app.include_router(commands_router.router, prefix="/api", tags=["commands"])
 app.include_router(podcasts.router, prefix="/api", tags=["podcasts"])
