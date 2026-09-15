@@ -370,7 +370,7 @@ describe('SourceDetailContent', () => {
       id: 'source:menu',
       title: 'Grounded source',
       access_role: 'owner',
-      asset: { file_path: '/uploads/source.pdf' },
+      asset: { original_filename: 'source.pdf' },
       embedded: false,
       embedded_chunks: 0,
       insights_count: 0,

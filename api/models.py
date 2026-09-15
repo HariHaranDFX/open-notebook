@@ -327,10 +327,15 @@ class SettingsUpdate(BaseModel):
 
 # Sources API models
 class AssetModel(BaseModel):
-    # DEPRECATED public field — removed in Task 4 once every response
-    # constructor routes through the safe asset mapper. Retained for one
-    # release to keep existing frontend deploys working during rollout.
-    file_path: Optional[str] = None
+    """Public view of an internal ``Asset``.
+
+    Retention governance (2026-09-01 design) hides ``file_path`` — the
+    internal storage location is never returned to any client. Uploads
+    are identified externally by ``original_filename``. Every response
+    that includes an asset must route through
+    ``api.source_file_service.build_public_asset_model``.
+    """
+
     url: Optional[str] = None
     original_filename: Optional[str] = None
     original_size_bytes: Optional[int] = None

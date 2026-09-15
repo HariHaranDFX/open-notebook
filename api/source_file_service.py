@@ -102,8 +102,23 @@ def _derive_original_file_status(asset: Asset) -> OriginalFileStatus:
     return "not_applicable"
 
 
-def build_public_asset_model(asset: Optional[Asset]) -> Optional[AssetModel]:
-    """Map an internal ``Asset`` to the public ``AssetModel``.
+def _asset_from_row(row: Optional[dict]) -> Optional[Asset]:
+    """Best-effort ``Asset`` reconstruction from a library-query row dict.
+
+    The library route returns row dicts (not domain objects) for
+    performance. Unknown / legacy rows may omit any subset of
+    retention-governance fields; ``Asset`` allows all of them to be
+    None, so a partial dict passes validation.
+    """
+    if row is None:
+        return None
+    return Asset(**{k: row.get(k) for k in Asset.model_fields.keys()})
+
+
+def build_public_asset_model(
+    asset: Optional[Asset | dict],
+) -> Optional[AssetModel]:
+    """Map an internal ``Asset`` (or raw row dict) to the public ``AssetModel``.
 
     Never emits ``file_path`` — the internal storage location stays
     server-side. For legacy assets that only have ``file_path`` (before
@@ -111,6 +126,15 @@ def build_public_asset_model(asset: Optional[Asset]) -> Optional[AssetModel]:
     original filename display; only after containment validation, which
     happens in the download endpoint before streaming.
     """
+    if asset is None:
+        return None
+    if isinstance(asset, dict):
+        asset = _asset_from_row(asset)
+    elif not isinstance(asset, Asset):
+        # A duck-typed / MagicMock payload can't be trusted to satisfy
+        # Pydantic's strict validators on the response model. Behave as
+        # if there were no asset rather than raising through.
+        return None
     if asset is None:
         return None
 

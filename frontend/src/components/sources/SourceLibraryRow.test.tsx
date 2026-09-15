@@ -128,7 +128,7 @@ describe('SourceLibraryRow', () => {
   it('makes the complete card a native link while keeping actions above it', () => {
     render(
       <SourceLibraryRow
-        source={source({ asset: { file_path: '/uploads/evidence.pdf' } })}
+        source={source({ asset: { original_filename: 'evidence.pdf' } })}
         onDelete={vi.fn()}
         onRetry={vi.fn()}
         viewMode="card"
@@ -216,7 +216,7 @@ describe('SourceLibraryRow', () => {
   it('uses a file-specific colored icon without a background in source cards', () => {
     render(
       <SourceLibraryRow
-        source={source({ asset: { file_path: '/uploads/evidence.xlsx' } })}
+        source={source({ asset: { original_filename: 'evidence.xlsx' } })}
         onDelete={vi.fn()}
         onRetry={vi.fn()}
         viewMode="card"

@@ -25,7 +25,6 @@ from api.command_service import CommandService
 from api.credentials_service import validate_url
 from api.models import (
     AccessSummary,
-    AssetModel,
     CreateSourceInsightRequest,
     InsightCreationResponse,
     SourceCreate,
@@ -36,6 +35,7 @@ from api.models import (
     SourceStatusResponse,
     SourceUpdate,
 )
+from api.source_file_service import build_public_asset_model
 from api.ownership import (
     access_summary_for_source,
     assert_can_delete_source_or_403,
@@ -414,14 +414,7 @@ async def get_sources(
                     id=row["id"],
                     title=row.get("title"),
                     topics=row.get("topics") or [],
-                    asset=AssetModel(
-                        file_path=row["asset"].get("file_path")
-                        if row.get("asset")
-                        else None,
-                        url=row["asset"].get("url") if row.get("asset") else None,
-                    )
-                    if row.get("asset")
-                    else None,
+                    asset=build_public_asset_model(row.get("asset")),
                     embedded=row.get("embedded", False),
                     embedded_chunks=0,  # Not needed in list view
                     insights_count=row.get("insights_count", 0),
@@ -481,12 +474,7 @@ async def _build_source_list_response(
         id=row["id"],
         title=row.get("title"),
         topics=row.get("topics") or [],
-        asset=AssetModel(
-            file_path=row["asset"].get("file_path") if row.get("asset") else None,
-            url=row["asset"].get("url") if row.get("asset") else None,
-        )
-        if row.get("asset")
-        else None,
+        asset=build_public_asset_model(row.get("asset")),
         embedded=row.get("embedded", False),
         embedded_chunks=0,
         insights_count=row.get("insights_count", 0),
@@ -672,12 +660,7 @@ def _source_to_response(
         "id": source.id or "",
         "title": source.title,
         "topics": source.topics or [],
-        "asset": AssetModel(
-            file_path=source.asset.file_path,
-            url=source.asset.url,
-        )
-        if source.asset
-        else None,
+        "asset": build_public_asset_model(source.asset),
         "full_text": source.full_text,
         "embedded": embedded_chunks > 0,
         "embedded_chunks": embedded_chunks,
@@ -1113,7 +1096,14 @@ async def _resolve_source_file(source_id: str, request: Request) -> tuple[str, s
     if not os.path.exists(resolved_path):
         raise HTTPException(status_code=404, detail="File not found on server")
 
-    filename = os.path.basename(resolved_path)
+    # Prefer the client-visible original filename over the internal
+    # basename so Content-Disposition reflects what the user uploaded,
+    # not our storage layout. Legacy rows without the snapshot fall back
+    # to the storage basename.
+    filename = (
+        (source.asset.original_filename if source.asset else None)
+        or os.path.basename(resolved_path)
+    )
     return resolved_path, filename
 
 

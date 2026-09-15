@@ -28,7 +28,7 @@ describe('SourceCard', () => {
         source={{
           id: 'source:budget',
           title: 'budget.xlsx',
-          asset: { file_path: '/uploads/budget.xlsx' },
+          asset: { original_filename: 'budget.xlsx' },
           embedded: false,
           embedded_chunks: 0,
           insights_count: 0,
@@ -99,7 +99,7 @@ describe('SourceCard', () => {
         source={{
           id: 'source:protected',
           title: 'Protected test document.docx',
-          asset: { file_path: '/uploads/Protected test document.docx' },
+          asset: { original_filename: 'Protected test document.docx' },
           embedded: false,
           embedded_chunks: 0,
           insights_count: 0,
