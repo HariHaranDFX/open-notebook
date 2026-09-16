@@ -66,11 +66,23 @@ class CleanupSubmitResponse(BaseModel):
 
 
 async def _load_settings() -> ContentSettings:
-    # ContentSettings.get_instance is typed as returning the RecordModel
-    # base — narrow via cast so the retention fields are visible.
+    """Load ContentSettings, falling back to safe defaults if the row is
+    missing or unreadable.
+
+    Fresh installs (or a DB blip during startup) must not 500 the policy
+    endpoint — the frontend calls it to render the Settings form; a 500
+    here would break the very screen an admin uses to configure the
+    policy. Matches ``resolve_action_for_source_create``'s fallback.
+    """
     from typing import cast
 
-    return cast(ContentSettings, await ContentSettings.get_instance())
+    try:
+        loaded = await ContentSettings.get_instance()
+        if isinstance(loaded, ContentSettings):
+            return loaded
+        return cast(ContentSettings, loaded)
+    except Exception:
+        return cast(ContentSettings, ContentSettings())
 
 
 async def _query_eligible_sources(

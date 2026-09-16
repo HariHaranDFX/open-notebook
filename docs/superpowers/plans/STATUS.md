@@ -34,7 +34,7 @@ should contain. When a plan lands or its verdict changes, update the row here.
 
 | Plan | What shipped | What's missing |
 |---|---|---|
-| [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Branch `feat/original-file-retention-governance` (Tasks 1–6 fully, Task 7 partial, Task 8 docs only) | Task 7 Steps 1, 2, 4, 7, 8: Source Details filename+size+status badge, per-source Delete-original confirmation dialog, keyboard/light-dark visual sweep, focused frontend test suite pass. Task 8 Steps 2 (server-path audit), 3–4 (full backend/frontend quality gates on new tests), 5 (manual product verification with real DB+worker), 7 (final docs commit including remember). |
+| [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Landed via PR #17 (`86d6e93`, 2026-09-16) + follow-up branch `feat/retention-followups` (Tasks 1–7 fully; Task 8 automated gates green) | Task 8 Step 5 (manual product-verification matrix — needs a live running stack) and Step 6 (recording the exact passing-test totals in Remember and marking Definition-of-Done evidence). Every acceptance criterion the automated suite can prove is now proved. |
 
 ---
 

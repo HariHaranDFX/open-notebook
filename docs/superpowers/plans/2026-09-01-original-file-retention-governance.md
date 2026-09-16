@@ -531,7 +531,7 @@ git commit -m "feat(settings): govern original file retention"
 - Source Details shows original filename, size, action result, and availability without a path.
 - Authorized admin/owner can delete one retained original after confirmation.
 
-- [ ] **Step 1: Write failing Source Details state tests**
+- [x] **Step 1: Write failing Source Details state tests**
 
 Cover retained, policy-deleted, owner-deleted, admin-deleted, missing, and non-upload states. Assert:
 
@@ -543,7 +543,7 @@ Cover retained, policy-deleted, owner-deleted, admin-deleted, missing, and non-u
 - confirmation explains that extracted content and the source record remain;
 - successful deletion invalidates source list/detail queries and updates the visible state.
 
-- [ ] **Step 2: Write failing admin cleanup UI tests**
+- [x] **Step 2: Write failing admin cleanup UI tests**
 
 Assert settings shows preview count/bytes, disables cleanup at zero eligible files, requires confirmation, starts the command, polls with the existing job-status API, reports aggregate completion, and refreshes preview/source queries. Verify the all-user scope wording explicitly includes the administrator's files.
 
@@ -551,7 +551,7 @@ Assert settings shows preview count/bytes, disables cleanup at zero eligible fil
 
 Use `apiClient`, `QUERY_KEYS`, TanStack Query mutations, and the existing command status endpoint. Keep policy summary, preview, start-cleanup, and single-delete in one small source-files API module. Do not add a polling package.
 
-- [ ] **Step 4: Implement Source Details metadata and confirmation**
+- [x] **Step 4: Implement Source Details metadata and confirmation**
 
 Replace the current server-path row in `SourceContentPane`. Use `Intl.NumberFormat` or existing formatting utilities for bytes. Reuse sheet/dialog footer and destructive-action styles. Keep actions keyboard accessible and screen-reader named.
 
@@ -559,11 +559,11 @@ Replace the current server-path row in `SourceContentPane`. Use `Intl.NumberForm
 
 Place cleanup below policy controls as a separate destructive maintenance subsection. Preview is read-only. Confirmation repeats scope and eligible storage. Starting cleanup must not optimistically claim files were deleted; show worker completion results.
 
-- [ ] **Step 6: Add localized strings and verify both themes**
+- [x] **Step 6: Add localized strings and verify both themes**
 
 Add keys to every locale, run locale parity, then inspect settings and Source Details at 375, 768, 1024, and 1440px in light/dark modes. Confirm long filenames ellipsize with an accessible full-value title and no horizontal overflow.
 
-- [ ] **Step 7: Run focused frontend verification**
+- [x] **Step 7: Run focused frontend verification**
 
 Run from `frontend/`:
 
@@ -575,7 +575,7 @@ npm run build
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit cleanup and details UI**
+- [x] **Step 8: Commit cleanup and details UI**
 
 ```bash
 git add frontend/src/lib/api/source-files.ts frontend/src/lib/hooks/use-source-files.ts frontend/src/app/\(dashboard\)/settings/components/SettingsForm.tsx frontend/src/app/\(dashboard\)/settings/components/SettingsForm.test.tsx frontend/src/components/sources/SourceContentPane.tsx frontend/src/components/sources/SourceDetailContent.tsx frontend/src/components/sources/SourceDetailContent.test.tsx frontend/src/lib/locales
@@ -597,7 +597,7 @@ git commit -m "feat(sources): manage retained originals in the UI"
 
 Document the three admin modes, future-upload-only semantics, successful-processing deletion boundary, exact-original download, cleanup permissions, worker requirement, internal storage location, and the fact that deleting an original preserves extracted content. Include the safe-upgrade behavior from legacy settings.
 
-- [ ] **Step 2: Run a server-path exposure audit**
+- [x] **Step 2: Run a server-path exposure audit**
 
 Run:
 
@@ -607,7 +607,7 @@ rg -n "file_path" api/models.py api/routers frontend/src
 
 Inspect every match. Accept internal request/domain handling only. No public response type, response mapper, client type, component, toast, or API error may expose a stored server path.
 
-- [ ] **Step 3: Run the full backend quality gate**
+- [x] **Step 3: Run the full backend quality gate**
 
 ```bash
 uv run pytest tests/
@@ -618,7 +618,7 @@ uv run python scripts/check_licenses.py
 
 Expected: PASS. If a known environment-only failure matches `docs/DEV_SETUP.md`, record its exact command/output and run the documented equivalent verification; do not label a new product failure as environmental.
 
-- [ ] **Step 4: Run the full frontend quality gate**
+- [x] **Step 4: Run the full frontend quality gate**
 
 From `frontend/`:
 
@@ -649,7 +649,7 @@ With database, API, worker, and frontend running, verify:
 
 Check completed plan boxes, mark the roadmap follow-up complete, and update Remember with the exact passing test totals and any separately tracked deferred compatibility removal. Do not mark complete from implementation alone.
 
-- [ ] **Step 7: Commit documentation and verification record**
+- [x] **Step 7: Commit documentation and verification record**
 
 ```bash
 git add docs .remember/remember.md

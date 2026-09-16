@@ -35,6 +35,8 @@ Policy changes affect **future uploads only** — the resolved action is snapsho
 
 **Cleanup APIs** (`/api/source-files/*`) let an administrator preview eligible retained files across all users and enqueue a bounded `cleanup_original_files` surreal command. If `allow_source_owner_cleanup` is enabled, source owners get the same preview/delete surface for their own files. Editors and viewers never have delete rights. The cleanup command is internal — the generic `/api/commands/jobs` endpoint rejects direct submission.
 
+**Source Details UI**. Uploaded sources show `original_filename`, a formatted `original_size_bytes`, and a status badge — `retained`, `deleted`, or `missing`. A **Delete original** button appears next to Download when the caller is authorized (admin, or owner with `allow_source_owner_cleanup` on) and the current status is `retained`. Its confirmation dialog spells out that extracted content, insights, and notebook links are preserved.
+
 ## Chunking (`utils/chunking.py`)
 
 Content is split with content-type-aware LangChain splitters (`HTMLHeaderTextSplitter`, `MarkdownHeaderTextSplitter`, `RecursiveCharacterTextSplitter`). Content type detection uses the file extension first; heuristics can override a PLAIN extension when confidence ≥ 0.8. Oversized chunks from the HTML/Markdown splitters get a secondary split.
