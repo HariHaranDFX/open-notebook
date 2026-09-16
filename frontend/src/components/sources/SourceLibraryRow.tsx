@@ -18,6 +18,7 @@ import { getSourceResourceKind, ResourceTypeIcon } from '@/components/common/Res
 import { ShareSheet } from '@/components/sharing/ShareSheet'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -254,19 +255,24 @@ export function SourceLibraryRow({
 
         {hasMenuActions && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t('common.actions')}
-                className={cn(
-                  'relative z-10 col-start-2 row-start-1 self-start justify-self-end',
-                  viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
-                )}
-              >
-                <MoreVertical />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t('common.actions')}
+                    className={cn(
+                      'relative z-10 col-start-2 row-start-1 self-start justify-self-end',
+                      viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
+                    )}
+                  >
+                    <MoreVertical />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('common.actions')}</TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end">
               {canShare && (
                 <DropdownMenuItem onClick={() => setShowShareDialog(true)}>

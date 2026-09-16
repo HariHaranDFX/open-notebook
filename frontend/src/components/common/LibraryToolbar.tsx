@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { LibraryViewMode } from '@/lib/stores/library-view-store'
 
 interface SortOption {
@@ -98,16 +99,20 @@ export function LibraryToolbar({
         </div>
 
         <div className="flex h-9 shrink-0 items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => onSortDirectionChange(sortDirection === 'asc' ? 'desc' : 'asc')}
-            aria-label={sortDirectionLabel}
-            title={sortDirectionLabel}
-          >
-            {sortDirection === 'asc' ? <ArrowUp /> : <ArrowDown />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => onSortDirectionChange(sortDirection === 'asc' ? 'desc' : 'asc')}
+                aria-label={sortDirectionLabel}
+              >
+                {sortDirection === 'asc' ? <ArrowUp /> : <ArrowDown />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{sortDirectionLabel}</TooltipContent>
+          </Tooltip>
 
           <ViewModeToggle
             viewMode={viewMode}

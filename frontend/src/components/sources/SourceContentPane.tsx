@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Card,
   CardContent,
@@ -249,19 +250,29 @@ export function SourceContentPane({
                 <code className="min-w-0 flex-1 truncate bg-muted px-2 py-1.5 text-sm">
                   {source.asset.url}
                 </code>
-                <Button size="icon" variant="outline" onClick={onCopyUrl}>
-                  <span className="sr-only">{t('common.copyToClipboard')}</span>
-                  {copied ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
-                </Button>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={onOpenExternal}
-                  disabled={!externalHref}
-                >
-                  <span className="sr-only">{t('sources.viewSource')}</span>
-                  <ExternalLink className="size-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="outline" onClick={onCopyUrl}>
+                      <span className="sr-only">{t('common.copyToClipboard')}</span>
+                      {copied ? <CheckCircle className="size-4" /> : <Copy className="size-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{t('common.copyToClipboard')}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={onOpenExternal}
+                      disabled={!externalHref}
+                    >
+                      <span className="sr-only">{t('sources.viewSource')}</span>
+                      <ExternalLink className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{t('sources.viewSource')}</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           )}
@@ -272,39 +283,53 @@ export function SourceContentPane({
                 {t('sources.uploadedFile')}
               </p>
               <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <code
-                    className="min-w-0 flex-1 break-all bg-muted px-2 py-1.5 text-sm"
+                    className="min-w-0 flex-1 truncate bg-muted px-2 py-1.5 text-sm"
                     title={source.asset.original_filename}
                   >
                     {source.asset.original_filename}
                   </code>
                   {source.asset.original_file_status !== 'deleted' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onDownloadFile}
-                      disabled={isDownloadingFile || fileAvailable === false}
-                    >
-                      <Download className="mr-2 size-4" />
-                      {fileAvailable === false
-                        ? t('sources.fileUnavailable')
-                        : isDownloadingFile
-                          ? t('sources.preparing')
-                          : t('common.download')}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={onDownloadFile}
+                          disabled={isDownloadingFile || fileAvailable === false}
+                        >
+                          <span className="sr-only">{t('common.download')}</span>
+                          <Download className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {fileAvailable === false
+                          ? t('sources.fileUnavailable')
+                          : isDownloadingFile
+                            ? t('sources.preparing')
+                            : t('common.download')}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                   {canDeleteOriginal && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setConfirmDeleteOriginal(true)}
-                      disabled={deleteOriginal.isPending}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="mr-2 size-4" />
-                      {t('sources.deleteOriginal')}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setConfirmDeleteOriginal(true)}
+                          disabled={deleteOriginal.isPending}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
+                        >
+                          <span className="sr-only">{t('sources.deleteOriginal')}</span>
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {t('sources.deleteOriginal')}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

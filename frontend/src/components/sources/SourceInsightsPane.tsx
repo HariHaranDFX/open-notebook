@@ -6,6 +6,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -134,15 +135,20 @@ export function SourceInsightsPane({
                     {t('sources.viewInsight')}
                   </Button>
                   {canEdit && (
-                    <Button
-                      size="icon-sm"
-                      variant="outline"
-                      onClick={() => onDeleteInsight(insight.id)}
-                      className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <span className="sr-only">{t('common.delete')}</span>
-                      <Trash2 />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon-sm"
+                          variant="outline"
+                          onClick={() => onDeleteInsight(insight.id)}
+                          className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <span className="sr-only">{t('common.delete')}</span>
+                          <Trash2 />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t('common.delete')}</TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </article>

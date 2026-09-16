@@ -630,7 +630,7 @@ npm run build
 
 Expected: PASS.
 
-- [ ] **Step 5: Perform manual product verification**
+- [x] **Step 5: Perform manual product verification**
 
 With database, API, worker, and frontend running, verify:
 
@@ -645,7 +645,7 @@ With database, API, worker, and frontend running, verify:
 9. deleted sources retain extracted content and insights;
 10. light/dark, keyboard, focus order, 200% zoom, and the four required widths remain usable.
 
-- [ ] **Step 6: Update task state only after evidence exists**
+- [x] **Step 6: Update task state only after evidence exists**
 
 Check completed plan boxes, mark the roadmap follow-up complete, and update Remember with the exact passing test totals and any separately tracked deferred compatibility removal. Do not mark complete from implementation alone.
 

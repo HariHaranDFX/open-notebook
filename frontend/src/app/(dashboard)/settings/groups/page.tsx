@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import {
   useGroups, useCreateGroup, useDeleteGroup, useGroupMembers,
@@ -152,11 +153,16 @@ export default function GroupsPage() {
                       <Badge variant="secondary" className="mt-0.5 tabular-nums">{t('groups.memberCount', { count: memberCount })}</Badge>
                     </div>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" aria-label={t('common.actions')}>
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" aria-label={t('common.actions')}>
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{t('common.actions')}</TooltipContent>
+                      </Tooltip>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem variant="destructive" onSelect={() => setGroupToDelete(selectedGroup.id)}>
                           <Trash2 className="size-4" />
@@ -190,15 +196,20 @@ export default function GroupsPage() {
                                   <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
                                 )}
                               </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={`${t('groups.removeMember')} ${label}`}
-                                className="shrink-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeMember.mutate(m.user_id)}
-                              >
-                                <X className="size-4" />
-                              </Button>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={`${t('groups.removeMember')} ${label}`}
+                                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                                    onClick={() => removeMember.mutate(m.user_id)}
+                                  >
+                                    <X className="size-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">{t('groups.removeMember')}</TooltipContent>
+                              </Tooltip>
                             </li>
                           )
                         })}
