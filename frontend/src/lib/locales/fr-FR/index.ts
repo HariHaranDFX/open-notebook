@@ -790,6 +790,8 @@ export const frFR = {
     segment: "Segment",
     speaker: "Intervenant",
     profile: "Profil",
+    fromNotebook: "Depuis {{name}}",
+    standaloneEpisode: "Autonome",
     link: "Lien",
     file: "Fichier",
     embedded: "Indexé",

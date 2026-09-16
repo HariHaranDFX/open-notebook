@@ -790,6 +790,8 @@ export const trTR = {
     segment: "Segment",
     speaker: "Konuşmacı",
     profile: "Profil",
+    fromNotebook: "{{name}} defterinden",
+    standaloneEpisode: "Bağımsız",
     link: "Bağlantı",
     file: "Dosya",
     embedded: "Gömüldü",

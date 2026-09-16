@@ -790,6 +790,8 @@ export const bnIN = {
     segment: "সেগমেন্ট",
     speaker: "স্পিকার",
     profile: "প্রোফাইল",
+    fromNotebook: "{{name}} থেকে",
+    standaloneEpisode: "স্বতন্ত্র",
     link: "লিঙ্ক",
     file: "ফাইল",
     embedded: "এমবেডেড",

@@ -790,6 +790,8 @@ export const ptBR = {
     segment: "Segmento",
     speaker: "Locutor",
     profile: "Perfil",
+    fromNotebook: "De {{name}}",
+    standaloneEpisode: "Independente",
     link: "Link",
     file: "Arquivo",
     embedded: "Incorporado",

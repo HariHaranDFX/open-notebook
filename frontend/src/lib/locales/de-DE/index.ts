@@ -793,6 +793,8 @@ export const deDE = {
     segment: "Abschnitt",
     speaker: "Sprecher",
     profile: "Profil",
+    fromNotebook: "Aus {{name}}",
+    standaloneEpisode: "Eigenständig",
     link: "Link",
     file: "Datei",
     embedded: "Eingebettet",

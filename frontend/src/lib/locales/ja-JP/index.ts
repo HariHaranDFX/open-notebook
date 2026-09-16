@@ -790,6 +790,8 @@ export const jaJP = {
     segment: "セグメント",
     speaker: "スピーカー",
     profile: "プロファイル",
+    fromNotebook: "{{name}} から",
+    standaloneEpisode: "スタンドアロン",
     link: "リンク",
     file: "ファイル",
     embedded: "Embedding済み",

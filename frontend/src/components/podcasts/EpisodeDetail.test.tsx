@@ -245,6 +245,38 @@ describe('EpisodeDetail playback and status', () => {
   })
 })
 
+describe('EpisodeDetail notebook origin', () => {
+  it('shows the originating notebook in the header metadata', () => {
+    render(
+      <EpisodeDetail
+        episode={makeEpisode({
+          notebook_id: 'notebook:1',
+          notebook_name: 'Research notebook',
+        })}
+        onDelete={vi.fn()}
+      />
+    )
+
+    const heading = screen.getByRole('heading', { name: 'Test Episode', level: 1 })
+    const header = heading.closest('header') as HTMLElement
+    const pill = within(header).getByText('podcasts.fromNotebook')
+
+    expect(pill).toHaveAttribute('data-slot', 'badge')
+    expect(within(header).queryByText('podcasts.standaloneEpisode')).not.toBeInTheDocument()
+  })
+
+  it('labels an episode without a notebook as standalone', () => {
+    render(<EpisodeDetail episode={makeEpisode()} onDelete={vi.fn()} />)
+
+    const heading = screen.getByRole('heading', { name: 'Test Episode', level: 1 })
+    const header = heading.closest('header') as HTMLElement
+    const pill = within(header).getByText('podcasts.standaloneEpisode')
+
+    expect(pill).toHaveAttribute('data-slot', 'badge')
+    expect(within(header).queryByText('podcasts.fromNotebook')).not.toBeInTheDocument()
+  })
+})
+
 describe('EpisodeDetail model snapshot fallback', () => {
   it('resolves API-provided model display fields for new episodes', () => {
     render(

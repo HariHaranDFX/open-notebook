@@ -48,7 +48,7 @@ These issues were discovered while testing the running WP3 application. They are
 2. [ ] [Notebook–source documentation truth](2026-08-13-notebook-source-documentation-truth.md) — remove the stale one-notebook-per-source and re-upload guidance, then document reuse, unlinking, and global deletion accurately.
 3. [ ] [Ingestion runtime capabilities](2026-08-13-ingestion-runtime-capabilities.md) — require a complete FFmpeg/FFprobe runtime for advertised media support, gate images on optional Docling, and remove unsupported ZIP/TAR/GZ from the picker.
 4. [ ] [Long-context handling](2026-08-13-long-context-handling.md) — add model-aware context budgeting, warnings, and recovery without silently dropping selected evidence.
-5. [ ] [Podcast notebook origin](2026-09-01-podcast-notebook-origin.md) — expose a linked episode's notebook identity in the detail response and show a notebook/standalone pill in the single-podcast header without changing inherited authorization.
+5. [x] [Podcast notebook origin](2026-09-01-podcast-notebook-origin.md) — expose a linked episode's notebook identity in the detail response and show a notebook/standalone pill in the single-podcast header without changing inherited authorization.
 6. [ ] Original file retention governance _(planned on a separate branch)_ — replace ambiguous auto-delete behavior with an admin policy, per-upload snapshots, post-success deletion, path-private source metadata, exact-original downloads, and permission-aware cleanup.
 
 ## Shared Interfaces

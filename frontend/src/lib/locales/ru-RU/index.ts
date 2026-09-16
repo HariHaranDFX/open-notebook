@@ -790,6 +790,8 @@ export const ruRU = {
     segment: "Сегмент",
     speaker: "Говорящий",
     profile: "Профиль",
+    fromNotebook: "Из {{name}}",
+    standaloneEpisode: "Отдельный",
     link: "Ссылка",
     file: "Файл",
     embedded: "С эмбеддингом",

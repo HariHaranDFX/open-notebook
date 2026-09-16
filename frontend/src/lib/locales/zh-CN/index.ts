@@ -790,6 +790,8 @@ export const zhCN = {
     segment: "分段",
     speaker: "发言人",
     profile: "简介",
+    fromNotebook: "来自 {{name}}",
+    standaloneEpisode: "独立剧集",
     link: "链接",
     file: "文件",
     embedded: "已嵌入",
