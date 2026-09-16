@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, ArrowUp, Eye, MessageCircleQuestion, RotateCcw, SlidersHorizontal, Square, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -191,9 +192,14 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
       icon: Eye,
       // Close lives in the tab bar so the preview pane isn't double-headed.
       action: previewOpen ? (
-        <Button variant="ghost" size="icon-sm" onClick={preview.closePreview} aria-label={t('common.close')}>
-          <X className="size-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" onClick={preview.closePreview} aria-label={t('common.close')}>
+              <X className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">{t('common.close')}</TooltipContent>
+        </Tooltip>
       ) : undefined,
       content: (
         <div className="absolute inset-0 min-h-0 bg-card">

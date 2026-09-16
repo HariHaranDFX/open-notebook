@@ -5,6 +5,7 @@ import type { ComponentType, ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useIsDesktop, useIsTablet } from '@/lib/hooks/use-media-query'
@@ -186,15 +187,20 @@ export function ResearchWorkbench({
         </Button>
       ) : (
         <div className="relative min-w-80 flex-1 overflow-hidden">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label={t('workbench.collapseChat')}
-            className="absolute right-2 top-2 z-20"
-            onClick={() => setChatCollapsed(workspaceKey, true)}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={t('workbench.collapseChat')}
+                className="absolute right-2 top-2 z-20"
+                onClick={() => setChatCollapsed(workspaceKey, true)}
+              >
+                <ChevronRight className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">{t('workbench.collapseChat')}</TooltipContent>
+          </Tooltip>
           {chat}
         </div>
       )}

@@ -4,6 +4,7 @@ import { FileText, StickyNote, Lightbulb, X } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { useSource } from '@/lib/hooks/use-sources'
@@ -76,9 +77,14 @@ export function ResourcePreview({ type, id, onClose, showHeader = true }: Resour
             <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
             {t('common.preview')}
           </span>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('common.close')}>
-            <X className="size-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label={t('common.close')}>
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{t('common.close')}</TooltipContent>
+          </Tooltip>
         </div>
       )}
 

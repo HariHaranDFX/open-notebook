@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Archive, ArchiveRestore, ArrowLeft, MoreVertical, Trash2, Share2 } from 'lucide-react'
 import {
@@ -139,16 +140,20 @@ export function NotebookHeader({ notebook, onBack }: NotebookHeaderProps) {
             )}
             {(canEdit || canDelete) && (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={t('common.actions')}
-                    title={t('common.actions')}
-                  >
-                    <MoreVertical />
-                  </Button>
-                </DropdownMenuTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label={t('common.actions')}
+                      >
+                        <MoreVertical />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{t('common.actions')}</TooltipContent>
+                </Tooltip>
                 <DropdownMenuContent align="end">
                   {canEdit && (
                     <DropdownMenuItem onClick={() => setShowArchiveDialog(true)}>

@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,20 +152,25 @@ export function NotebookRow({ notebook, viewMode = 'list' }: NotebookRowProps) {
 
         {hasActions && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-label={t('common.actions')}
-                variant="ghost"
-                size="icon-sm"
-                className={cn(
-                  'relative z-10 justify-self-end',
-                  'col-start-2 row-start-1 self-start',
-                  viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
-                )}
-              >
-                <MoreVertical />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-label={t('common.actions')}
+                    variant="ghost"
+                    size="icon-sm"
+                    className={cn(
+                      'relative z-10 justify-self-end',
+                      'col-start-2 row-start-1 self-start',
+                      viewMode === 'list' && 'md:col-start-auto md:row-start-auto md:self-auto',
+                    )}
+                  >
+                    <MoreVertical />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('common.actions')}</TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end">
               {canShare && (
                 <DropdownMenuItem onClick={() => setShowShareDialog(true)}>

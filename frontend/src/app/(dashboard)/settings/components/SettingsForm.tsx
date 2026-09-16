@@ -342,7 +342,7 @@ export function SettingsForm() {
           />
         </SettingRow>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="-mt-2 text-xs italic text-muted-foreground">
           {t('settings.fileRetentionFuture')}
         </p>
 

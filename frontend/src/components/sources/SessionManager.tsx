@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -110,14 +111,19 @@ export function SessionManager({
             {t('chat.sessions')}
           </CardTitle>
           <CardAction className="row-span-1 row-start-1 self-center">
-            <Button
-              size="icon-sm"
-              variant="outline"
-              aria-label={t('common.create')}
-              onClick={() => setIsCreating(true)}
-            >
-              <Plus />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  aria-label={t('common.create')}
+                  onClick={() => setIsCreating(true)}
+                >
+                  <Plus />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{t('common.create')}</TooltipContent>
+            </Tooltip>
           </CardAction>
         </CardHeader>
         <CardContent className="flex-1 p-0 min-h-0">
@@ -209,24 +215,34 @@ export function SessionManager({
                             {session.title}
                           </h4>
                           <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              size="icon-sm"
-                              variant="ghost"
-                              className="text-primary hover:bg-primary/10 hover:text-primary"
-                              aria-label={t('common.edit')}
-                              onClick={() => handleStartEdit(session)}
-                            >
-                              <Edit2 />
-                            </Button>
-                            <Button
-                              size="icon-sm"
-                              variant="ghost"
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              aria-label={t('common.delete')}
-                              onClick={() => setDeleteConfirmId(session.id)}
-                            >
-                              <Trash2 />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-primary hover:bg-primary/10 hover:text-primary"
+                                  aria-label={t('common.edit')}
+                                  onClick={() => handleStartEdit(session)}
+                                >
+                                  <Edit2 />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">{t('common.edit')}</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  aria-label={t('common.delete')}
+                                  onClick={() => setDeleteConfirmId(session.id)}
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">{t('common.delete')}</TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
