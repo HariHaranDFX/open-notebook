@@ -12,6 +12,16 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }))
 
+// Radix Tooltip (used broadly across icon-only buttons) mounts its
+// content via react-use-size, which needs ResizeObserver — jsdom lacks it.
+// Stub globally so any test that renders a Tooltip works without local mocks.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('ResizeObserver', ResizeObserverStub)
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
