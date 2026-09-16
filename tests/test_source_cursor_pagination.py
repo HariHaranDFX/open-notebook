@@ -493,7 +493,7 @@ def test_cursor_encodes_real_datetime_from_surrealdb(
     mock_summary.return_value = None
     # Mimic the exact row shape the SurrealDB Python client returns —
     # 'updated' is a real datetime, not the ISO strings the older tests used.
-    rows = []
+    rows: list[dict[str, Any]] = []
     for i in range(31):
         rows.append(
             {
