@@ -13,6 +13,7 @@ import { SettingsSection, SettingRow } from '@/components/settings/SettingRow'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useCapabilities } from '@/lib/hooks/use-capabilities'
 import { useCleanupPreview, useSubmitCleanup } from '@/lib/hooks/use-source-files'
+import { formatBytes } from '@/lib/utils/format-bytes'
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useTheme } from '@/lib/stores/theme-store'
@@ -441,12 +442,4 @@ function CleanupOriginalsPanel() {
       </div>
     </div>
   )
-}
-
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   AlertCircle,
@@ -10,12 +11,23 @@ import {
   ExternalLink,
   FileText,
   Link as LinkIcon,
+  Trash2,
 } from 'lucide-react'
 
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { EmptyState } from '@/components/common/EmptyState'
 import { getSourceResourceKind, ResourceTypeIcon } from '@/components/common/ResourceTypeIcon'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,9 +37,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { useSourceFilePolicy, useDeleteOriginalFile } from '@/lib/hooks/use-source-files'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import type { SourceDetailResponse } from '@/lib/types/api'
 import { getDateLocale } from '@/lib/utils/date-locale'
+import { formatBytes } from '@/lib/utils/format-bytes'
 import { NotebookAssociations } from './NotebookAssociations'
 
 interface SourceContentPaneProps {
@@ -72,6 +86,33 @@ export function SourceContentPane({
   onRefresh,
 }: SourceContentPaneProps) {
   const { t, language } = useTranslation()
+  const { data: policy } = useSourceFilePolicy()
+  const deleteOriginal = useDeleteOriginalFile()
+  const [confirmDeleteOriginal, setConfirmDeleteOriginal] = useState(false)
+
+  const assetStatus = source.asset?.original_file_status ?? null
+  // Authorization: admin, or owner with the admin opt-in enabled. `open`
+  // dev mode (no access_role) also allows delete — matches canDeleteSource.
+  const canDeleteOriginal = Boolean(
+    source.asset?.original_filename &&
+      assetStatus === 'retained' &&
+      (policy?.is_admin ||
+        !source.access_role ||
+        (source.access_role === 'owner' && policy?.owner_can_cleanup_own))
+  )
+
+  const originalSizeText = formatBytes(source.asset?.original_size_bytes ?? null)
+  const originalStatusLabel: Record<string, string> = {
+    retained: t('sources.originalStatusRetained'),
+    deleted: t('sources.originalStatusDeleted'),
+    missing: t('sources.originalStatusMissing'),
+  }
+  const statusLabel = assetStatus ? originalStatusLabel[assetStatus] : null
+  const statusVariant: Record<string, 'default' | 'destructive' | 'secondary'> = {
+    retained: 'secondary',
+    deleted: 'default',
+    missing: 'destructive',
+  }
 
   if (section === 'content') {
     const linkHeaderHref = youTubeVideoId ? null : externalHref
@@ -232,22 +273,50 @@ export function SourceContentPane({
               </p>
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all bg-muted px-2 py-1.5 text-sm">
+                  <code
+                    className="min-w-0 flex-1 break-all bg-muted px-2 py-1.5 text-sm"
+                    title={source.asset.original_filename}
+                  >
                     {source.asset.original_filename}
                   </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onDownloadFile}
-                    disabled={isDownloadingFile || fileAvailable === false}
-                  >
-                    <Download className="mr-2 size-4" />
-                    {fileAvailable === false
-                      ? t('sources.fileUnavailable')
-                      : isDownloadingFile
-                        ? t('sources.preparing')
-                        : t('common.download')}
-                  </Button>
+                  {source.asset.original_file_status !== 'deleted' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onDownloadFile}
+                      disabled={isDownloadingFile || fileAvailable === false}
+                    >
+                      <Download className="mr-2 size-4" />
+                      {fileAvailable === false
+                        ? t('sources.fileUnavailable')
+                        : isDownloadingFile
+                          ? t('sources.preparing')
+                          : t('common.download')}
+                    </Button>
+                  )}
+                  {canDeleteOriginal && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmDeleteOriginal(true)}
+                      disabled={deleteOriginal.isPending}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      {t('sources.deleteOriginal')}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {originalSizeText && <span>{originalSizeText}</span>}
+                  {statusLabel && (
+                    <Badge
+                      variant={statusVariant[assetStatus ?? 'retained']}
+                      className="text-[10px] uppercase tracking-wide"
+                    >
+                      {statusLabel}
+                    </Badge>
+                  )}
                 </div>
                 {fileAvailable === false && (
                   <p className="text-xs text-muted-foreground">
@@ -257,6 +326,37 @@ export function SourceContentPane({
               </div>
             </div>
           )}
+
+          <AlertDialog
+            open={confirmDeleteOriginal}
+            onOpenChange={setConfirmDeleteOriginal}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t('sources.deleteOriginalConfirmTitle')}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('sources.deleteOriginalConfirmDesc')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    try {
+                      await deleteOriginal.mutateAsync(sourceId)
+                    } finally {
+                      setConfirmDeleteOriginal(false)
+                    }
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t('sources.deleteOriginal')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {source.topics && source.topics.length > 0 && (
             <div className="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">

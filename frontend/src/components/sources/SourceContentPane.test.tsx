@@ -4,6 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SourceDetailResponse } from '@/lib/types/api'
 import { SourceContentPane } from './SourceContentPane'
 
+// The retention-governance hooks read from TanStack Query; these tests
+// render outside a QueryClientProvider by design (layout-only concerns),
+// so mock the hooks to no-op data.
+vi.mock('@/lib/hooks/use-source-files', () => ({
+  useSourceFilePolicy: () => ({ data: undefined }),
+  useDeleteOriginalFile: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}))
+
 const source: SourceDetailResponse = {
   id: 'source:youtube',
   title: 'Responsive research source',
