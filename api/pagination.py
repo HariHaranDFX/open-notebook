@@ -28,6 +28,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+from datetime import datetime
 from typing import Any, Iterable
 
 # Version bump this integer if the payload shape changes incompatibly.
@@ -47,14 +48,38 @@ class CursorValidationError(ValueError):
     """
 
 
+def _cursor_json_default(obj: Any) -> Any:
+    """JSON encoder fallback for cursor payloads.
+
+    SurrealDB returns real ``datetime`` objects for datetime columns
+    (``created`` / ``updated``); vanilla ``json.dumps`` can't serialize
+    those. We store the ISO 8601 form — SurrealDB parses ISO strings
+    against datetime columns via its own type coercion, so the value
+    round-trips into the next request's WHERE keyset predicate as a
+    valid bind.
+    """
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(
+        f"Object of type {type(obj).__name__} is not JSON-serializable "
+        "in a cursor payload"
+    )
+
+
 def encode_cursor(payload: dict[str, object]) -> str:
     """Encode a payload as a compact URL-safe base64 token.
 
     The payload is serialized with the most compact JSON separators. Padding
     ``=`` characters are stripped so the token is safe to embed in a URL
-    without escaping.
+    without escaping. Non-JSON primitives (``datetime``) are normalized
+    by :func:`_cursor_json_default`.
     """
-    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    raw = json.dumps(
+        payload,
+        separators=(",", ":"),
+        sort_keys=True,
+        default=_cursor_json_default,
+    ).encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
 
 

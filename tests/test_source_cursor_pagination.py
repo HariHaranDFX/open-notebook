@@ -472,3 +472,55 @@ def test_next_cursor_payload_is_versioned_and_typed() -> None:
         assert "value" in decoded
         assert "id" in decoded
         assert "fp" in decoded
+
+
+@patch("api.routers.sources.access_summary_for_source", new_callable=AsyncMock)
+@patch("api.routers.sources.source_access_where", new_callable=AsyncMock)
+@patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+def test_cursor_encodes_real_datetime_from_surrealdb(
+    mock_query: AsyncMock,
+    mock_access: AsyncMock,
+    mock_summary: AsyncMock,
+) -> None:
+    """Regression: SurrealDB returns real ``datetime`` objects for
+    ``updated`` / ``created`` columns. Prior to the fix in ``pagination``,
+    ``encode_cursor`` blew up with ``Object of type datetime is not JSON
+    serializable`` the moment page 1 tried to emit ``next_cursor``.
+    """
+    from datetime import datetime, timezone
+
+    mock_access.return_value = ("", {})
+    mock_summary.return_value = None
+    # Mimic the exact row shape the SurrealDB Python client returns —
+    # 'updated' is a real datetime, not the ISO strings the older tests used.
+    rows = []
+    for i in range(31):
+        rows.append(
+            {
+                "id": f"source:s{i:04d}",
+                "title": f"Source {i}",
+                "topics": [],
+                "asset": None,
+                "created": datetime(2026, 1, 1, tzinfo=timezone.utc),
+                "updated": datetime(2026, 2, (i % 28) + 1, tzinfo=timezone.utc),
+                "title_sort": f"source {i}",
+                "type": "text",
+                "insights_count": i,
+                "embedded": False,
+                "command": None,
+                "user_id": None,
+            }
+        )
+    mock_query.return_value = rows
+
+    response = _client().get(
+        "/api/sources/library?limit=30&sort_by=updated&sort_order=desc"
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    # Cursor was issued cleanly — datetime coerced to ISO in the token.
+    assert payload["next_cursor"] is not None
+    decoded_payload = _decode_cursor(payload["next_cursor"])
+    assert isinstance(decoded_payload["value"], str)
+    # Round-trip ISO — starts with "2026-" for our synthetic rows.
+    assert decoded_payload["value"].startswith("2026-")
