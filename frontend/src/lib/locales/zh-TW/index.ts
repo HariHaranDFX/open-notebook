@@ -790,6 +790,8 @@ export const zhTW = {
     segment: "分段",
     speaker: "發言人",
     profile: "簡介",
+    fromNotebook: "來自 {{name}}",
+    standaloneEpisode: "獨立集數",
     link: "連結",
     file: "檔案",
     embedded: "已嵌入",

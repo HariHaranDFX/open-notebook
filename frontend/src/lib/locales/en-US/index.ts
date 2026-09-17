@@ -788,6 +788,8 @@ export const enUS = {
     segment: "Segment",
     speaker: "Speaker",
     profile: "Profile",
+    fromNotebook: "From {{name}}",
+    standaloneEpisode: "Standalone",
     link: "Link",
     file: "File",
     embedded: "Embedded",

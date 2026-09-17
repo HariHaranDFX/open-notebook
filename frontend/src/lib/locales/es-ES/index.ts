@@ -790,6 +790,8 @@ export const esES = {
     segment: "Segmento",
     speaker: "Locutor",
     profile: "Perfil",
+    fromNotebook: "De {{name}}",
+    standaloneEpisode: "Independiente",
     link: "Enlace",
     file: "Archivo",
     embedded: "Embebido",

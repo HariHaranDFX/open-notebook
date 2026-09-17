@@ -171,6 +171,11 @@ class PodcastEpisodeResponse(BaseModel):
     job_status: Optional[str] = None
     error_message: Optional[str] = None
     access_role: Optional[AccessRole] = None
+    # Origin fields are populated by the single-episode detail endpoint only.
+    # Kept out of the list payload to avoid an N+1 notebook lookup on the hot
+    # path — the podcast header is the only view that renders them.
+    notebook_id: Optional[str] = None
+    notebook_name: Optional[str] = None
 
 
 class EpisodeLibraryPageResponse(BaseModel):
@@ -627,6 +632,23 @@ async def get_podcast_episode(episode_id: str, request: Request):
 
         models_by_id = await _resolve_snapshot_models([episode])
 
+        # Resolve the originating notebook's name for the header origin pill.
+        # Access is already asserted above; a missing row here just leaves the
+        # name null and the UI falls back to a generic label.
+        notebook_id = str(episode.notebook_id) if episode.notebook_id else None
+        notebook_name: Optional[str] = None
+        if notebook_id:
+            try:
+                rows = await repo_query(
+                    "SELECT name FROM notebook WHERE id = $id",
+                    {"id": ensure_record_id(notebook_id)},
+                )
+                notebook_name = rows[0].get("name") if rows else None
+            except Exception as e:
+                logger.warning(
+                    f"Error resolving notebook name for episode {episode.id}: {e}"
+                )
+
         return PodcastEpisodeResponse(
             id=str(episode.id),
             name=episode.name,
@@ -649,6 +671,8 @@ async def get_podcast_episode(episode_id: str, request: Request):
             job_status=job_status,
             error_message=error_message,
             access_role=await effective_role_for_episode(episode, request),
+            notebook_id=notebook_id,
+            notebook_name=notebook_name,
         )
 
     except HTTPException:

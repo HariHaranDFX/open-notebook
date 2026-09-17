@@ -188,6 +188,13 @@ export function EpisodeDetail({
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <StatusBadge status={episode.job_status} showCompleted />
+              <Badge variant="secondary" className="font-normal">
+                {episode.notebook_id
+                  ? t('podcasts.fromNotebook', {
+                      name: episode.notebook_name || t('common.unknown'),
+                    })
+                  : t('podcasts.standaloneEpisode')}
+              </Badge>
               {speakers.length > 0 ? (
                 <Badge variant="secondary" className="font-normal">
                   {speakers.map((speaker) => speaker.name).filter(Boolean).join(' · ')}

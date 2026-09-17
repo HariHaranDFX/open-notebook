@@ -92,6 +92,13 @@ export interface PodcastEpisode {
   error_message?: string | null
   /** Notebook-inherited effective role (WP3-06); absent = open mode = full access. */
   access_role?: AccessRole | null
+  /**
+   * Originating notebook, resolved server-side by the single-episode detail
+   * endpoint only. Both null = standalone episode. Presentation only —
+   * authorization stays inherited from the notebook grant path.
+   */
+  notebook_id?: string | null
+  notebook_name?: string | null
 }
 
 export interface PodcastGenerationRequest {

@@ -33,7 +33,7 @@
 - Consumes: `PodcastEpisode.notebook_id: Optional[str]` and the existing `GET /api/podcasts/episodes/{episode_id}` authorization guard.
 - Produces: `PodcastEpisode.notebook_id?: string | null`, `PodcastEpisode.notebook_name?: string | null`, and a localized origin pill in `EpisodeDetail`.
 
-- [ ] **Step 1: Write failing API response tests**
+- [x] **Step 1: Write failing API response tests**
 
 Create `tests/test_podcast_notebook_origin.py` using the existing podcast route test client and mocks. Cover both response shapes:
 
@@ -52,13 +52,13 @@ def test_standalone_episode_reports_no_notebook_origin(...):
     assert response.json()["notebook_name"] is None
 ```
 
-- [ ] **Step 2: Run the API tests and confirm the contract is missing**
+- [x] **Step 2: Run the API tests and confirm the contract is missing**
 
 Run: `uv run pytest tests/test_podcast_notebook_origin.py -q`
 
 Expected: FAIL because `PodcastEpisodeResponse` does not yet contain `notebook_id` or `notebook_name`.
 
-- [ ] **Step 3: Add the minimal detail-response origin fields**
+- [x] **Step 3: Add the minimal detail-response origin fields**
 
 Add optional fields to `PodcastEpisodeResponse`:
 
@@ -82,13 +82,13 @@ if notebook_id:
 
 Pass both values into the detail endpoint's `PodcastEpisodeResponse`. Leave list responses at the optional defaults because the origin is required only by the single-podcast page.
 
-- [ ] **Step 4: Run the API regression tests**
+- [x] **Step 4: Run the API regression tests**
 
 Run: `uv run pytest tests/test_podcast_notebook_origin.py tests/test_podcast_access_role.py tests/test_ownership_notes_chat_podcasts.py -q`
 
 Expected: PASS, including the existing inherited-role and authorization tests.
 
-- [ ] **Step 5: Write failing UI tests for linked and standalone episodes**
+- [x] **Step 5: Write failing UI tests for linked and standalone episodes**
 
 Extend `EpisodeDetail.test.tsx` with two cases:
 
@@ -108,13 +108,13 @@ it('labels an episode without a notebook as standalone', () => {
 })
 ```
 
-- [ ] **Step 6: Run the UI test and confirm the indicator is absent**
+- [x] **Step 6: Run the UI test and confirm the indicator is absent**
 
 Run from `frontend/`: `npm run test -- src/components/podcasts/EpisodeDetail.test.tsx`
 
 Expected: FAIL because the episode type and header do not yet expose notebook origin.
 
-- [ ] **Step 7: Add the typed, localized metadata pill**
+- [x] **Step 7: Add the typed, localized metadata pill**
 
 Add the optional response fields to `PodcastEpisode`:
 
@@ -137,7 +137,7 @@ In `EpisodeDetail`, add one secondary `Badge` in the existing metadata row after
 
 Add `podcasts.fromNotebook` (`From {{name}}`) and `podcasts.standaloneEpisode` (`Standalone`) to `en-US`, then add equivalent keys to every other locale. Do not make the pill a link in this task; the response communicates origin but does not promise that the current user can open the notebook after a later permission change.
 
-- [ ] **Step 8: Verify frontend behavior and locale parity**
+- [x] **Step 8: Verify frontend behavior and locale parity**
 
 Run from `frontend/`:
 

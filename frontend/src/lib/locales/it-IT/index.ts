@@ -790,6 +790,8 @@ export const itIT = {
     segment: "Segmento",
     speaker: "Speaker",
     profile: "Profilo",
+    fromNotebook: "Da {{name}}",
+    standaloneEpisode: "Indipendente",
     link: "Link",
     file: "File",
     embedded: "Indicizzato",

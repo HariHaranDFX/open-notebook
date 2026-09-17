@@ -790,6 +790,8 @@ export const caES = {
     segment: "Segment",
     speaker: "Locutor",
     profile: "Perfil",
+    fromNotebook: "De {{name}}",
+    standaloneEpisode: "Independent",
     link: "Enllaç",
     file: "Fitxer",
     embedded: "Incrustat",

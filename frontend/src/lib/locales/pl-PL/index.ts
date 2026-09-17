@@ -790,6 +790,8 @@ export const plPL = {
     segment: "Segment",
     speaker: "Mówca",
     profile: "Profil",
+    fromNotebook: "Z {{name}}",
+    standaloneEpisode: "Samodzielny",
     link: "Link",
     file: "Plik",
     embedded: "Osadzone",
