@@ -34,9 +34,9 @@ LICENSE file in the package itself.
 
 | License | Packages |
 |---|---|
-| MIT | 349 |
+| MIT | 348 |
 | MIT License | 48 |
-| Apache-2.0 | 21 |
+| Apache-2.0 | 20 |
 | Apache Software License | 18 |
 | BSD License | 18 |
 | BSD-3-Clause | 16 |
@@ -46,7 +46,6 @@ LICENSE file in the package itself.
 | Apache License 2.0 | 2 |
 | Apache Software License; BSD License | 2 |
 | ISC License (ISCL) | 2 |
-| LGPL-3.0-or-later | 2 |
 | Mozilla Public License 2.0 (MPL 2.0) | 2 |
 | 0BSD | 1 |
 | Apache Software License; MIT License | 1 |
@@ -61,6 +60,7 @@ LICENSE file in the package itself.
 | CC0-1.0 | 1 |
 | GNU Lesser General Public License v2 or later (LGPLv2+) | 1 |
 | LGPL-2.1-only | 1 |
+| LGPL-3.0-or-later | 1 |
 | MIT License, Apache License, Version 2.0 | 1 |
 | MIT License; Mozilla Public License 2.0 (MPL 2.0) | 1 |
 | MIT-CMU | 1 |
@@ -343,7 +343,7 @@ BSL requires.
 
 ---
 
-## Frontend dependencies (316)
+## Frontend dependencies (313)
 
 Production dependencies only — build-time-only tooling is not distributed.
 
@@ -357,12 +357,9 @@ Production dependencies only — build-time-only tooling is not distributed.
 | @hookform/resolvers | 5.1.1 | MIT | bluebill1049 | [link](https://github.com/react-hook-form/resolvers) |
 | @img/colour | 1.1.0 | MIT | - | [link](https://github.com/lovell/colour) |
 | @img/sharp-libvips-linux-x64 | 1.3.3 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
-| @img/sharp-libvips-linuxmusl-x64 | 1.3.3 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
 | @img/sharp-linux-x64 | 0.35.4 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
-| @img/sharp-linuxmusl-x64 | 0.35.4 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
 | @next/env | 16.3.5 | MIT | Next.js Team | [link](https://github.com/vercel/next.js) |
 | @next/swc-linux-x64-gnu | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
-| @next/swc-linux-x64-musl | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
 | @radix-ui/number | 1.1.1 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.2 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.3 | MIT | - | [link](https://github.com/radix-ui/primitives) |
