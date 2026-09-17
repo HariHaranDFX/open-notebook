@@ -558,6 +558,20 @@ class Source(ObjectModel):
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
         await Notebook.get(notebook_id)  # raises NotFoundError if invalid/missing
+        # Idempotency guard: without this, re-ingesting a source into the
+        # same notebook creates a second `reference` edge (and the get_sources
+        # listing then returns the source twice). Migration 29 also enforces
+        # this at the DB layer; the pre-check keeps the API path a no-op
+        # instead of surfacing a unique-index violation.
+        existing = await repo_query(
+            "SELECT id FROM reference WHERE in = $source_id AND out = $notebook_id LIMIT 1",
+            {
+                "source_id": ensure_record_id(self.id),
+                "notebook_id": ensure_record_id(notebook_id),
+            },
+        )
+        if existing:
+            return existing
         return await self.relate("reference", notebook_id)
 
     async def vectorize(self) -> str:

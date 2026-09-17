@@ -44,7 +44,7 @@ Do not execute packages out of order. WP3-01 establishes tokens and structural i
 
 These issues were discovered while testing the running WP3 application. They are executable Superpowers plans, but they are tracked separately from the nine WP3 redesign packages so completed WP3 package status remains accurate.
 
-1. [ ] [Source–notebook relationship integrity](2026-08-13-source-notebook-relationship-integrity.md) — correct reversed edge predicates, make repeated linking idempotent, and enforce pair uniqueness. Complete before bulk notebook population.
+1. [x] [Source–notebook relationship integrity](2026-08-13-source-notebook-relationship-integrity.md) — reversed link-lookup predicate corrected, `Source.add_to_notebook` idempotent at the domain layer, and migration 29 enforces `(in, out)` uniqueness on `reference` edges after deduping any historical pairs.
 2. [ ] [Notebook–source documentation truth](2026-08-13-notebook-source-documentation-truth.md) — remove the stale one-notebook-per-source and re-upload guidance, then document reuse, unlinking, and global deletion accurately.
 3. [ ] [Ingestion runtime capabilities](2026-08-13-ingestion-runtime-capabilities.md) — require a complete FFmpeg/FFprobe runtime for advertised media support, gate images on optional Docling, and remove unsupported ZIP/TAR/GZ from the picker.
 4. [ ] [Long-context handling](2026-08-13-long-context-handling.md) — add model-aware context budgeting, warnings, and recovery without silently dropping selected evidence.

@@ -1,0 +1,5 @@
+-- Migration 29 rollback: drop the uniqueness index.
+-- Deduplicated rows are not restored — there is no safe reconstruction and
+-- allowing duplicates back in was the bug this migration closed.
+
+REMOVE INDEX IF EXISTS reference_pair_unique ON TABLE reference;

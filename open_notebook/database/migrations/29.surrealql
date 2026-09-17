@@ -1,0 +1,24 @@
+-- Migration 29: enforce (source, notebook) uniqueness on `reference` edges.
+--
+-- The `reference` edge is `source -> reference -> notebook` (migration 1).
+-- Historically both the `POST /api/notebooks/{nb}/sources/{src}` endpoint
+-- and `Source.add_to_notebook` issued RELATE without a working existence
+-- check — the endpoint's lookup used a reversed predicate — so re-linking
+-- the same source to the same notebook silently created duplicate rows,
+-- and `notebook.get_sources()` returned the source twice.
+--
+-- Step 1: dedup existing rows, keeping one edge per (in, out) pair.
+-- Step 2: enforce it going forward with a unique index.
+
+FOR $pair IN (SELECT in, out FROM reference GROUP BY in, out) {
+    LET $keep = (
+        SELECT VALUE id FROM reference
+        WHERE in = $pair.in AND out = $pair.out
+        LIMIT 1
+    )[0];
+    DELETE reference
+        WHERE in = $pair.in AND out = $pair.out AND id != $keep;
+};
+
+DEFINE INDEX IF NOT EXISTS reference_pair_unique
+    ON TABLE reference FIELDS in, out UNIQUE;
