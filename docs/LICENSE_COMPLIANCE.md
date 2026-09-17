@@ -32,8 +32,7 @@ both are met in [LICENSE](../LICENSE):
   images, and the per-client installer planned in WP7), so GPL is off-limits in
   any shipped artifact.
 - **LGPL is acceptable** while the library is used unmodified and dynamically
-  linked — which is why `pycountry` and `chardet` are fine and `asciidoc`
-  was not.
+  linked — which is why `pycountry` and `chardet` are fine.
 
 ### The trap to avoid
 
@@ -66,7 +65,6 @@ justification in the script. **Do not add to it to make CI green.**
 | `pycountry` | LGPL-2.1-only | Unmodified, separately installed — see §4 |
 | `chardet` | LGPL-2.1+ | Unmodified, used over its public API (via `readability-lxml`) |
 | `docutils` | BSD / GPL / Public Domain | Multi-licensed; **we elect the BSD option**, so no copyleft attaches |
-| `asciidoc` | GPLv2+ | Present in the dev/CI venv only — **purged from every shipped image**; see §5 |
 | `@img/sharp-*` | Apache-2.0 (+ LGPL-3.0 on some platforms) | libvips used as an unmodified shared library |
 | `ffmpeg` + `ffprobe` (system binary, Debian apt / brew / winget) | LGPL-2.1+ | Used unmodified via `subprocess` (no dynamic-linking of code we ship). Bundled in the shipped Docker image (`Dockerfile` line 102, `runtime-base`). **Never build with `--enable-gpl`** — that variant is GPL and would put the image out of compliance |
 
@@ -86,27 +84,7 @@ installed package is byte-identical to the distribution recorded in its own
 `RECORD` manifest. It fails if any file is edited, added, or removed. That test
 runs in CI with the rest of the suite.
 
-## 5. `asciidoc` — GPL, purged from shipped artifacts
-
-`content-core` declares `asciidoc` (GPLv2+) as a hard dependency but **never
-imports it** — verified against both the installed wheel and the upstream
-source. Extraction output is byte-identical without it across every supported
-format.
-
-- `uv sync` still installs it into the **development and CI** virtualenv. That
-  is not distribution, so no GPL obligation attaches.
-- The `Dockerfile` **purges it from every shipped image**, and that step is
-  self-verifying: it asserts the package is gone *and* that `content_core`
-  still imports, so a future content-core that genuinely needs it fails the
-  build rather than shipping broken.
-- `tests/test_license_check.py::TestAsciidocStaysUnused` fails if content-core
-  ever starts referencing it, which would invalidate the purge.
-
-**Upstream fix in progress:** [lfnovo/content-core#58](https://github.com/lfnovo/content-core/pull/58).
-Once merged and `content-core` is bumped, **delete the Dockerfile purge and the
-allowlist entry together**, so asciidoc's return becomes a hard CI failure.
-
-## 6. SurrealDB — BSL 1.1
+## 5. SurrealDB — BSL 1.1
 
 **Decision: KEEP SurrealDB. No licence purchase is required for our model.**
 
@@ -156,7 +134,7 @@ the v2.6.5 licence).
 The BSL position is recorded as an accepted business decision in
 [LEGAL_DECISIONS.md](LEGAL_DECISIONS.md) §1.
 
-## 7. Encryption key management
+## 6. Encryption key management
 
 `OPEN_NOTEBOOK_ENCRYPTION_KEY` encrypts stored provider credentials at rest. It
 has **no default** and is required for credential storage.
@@ -185,7 +163,7 @@ To rotate:
 Rotate on suspected compromise, on operator offboarding, and when a deployment
 is handed to a different client.
 
-## 8. Brand assets — WP3, not here
+## 7. Brand assets — WP3, not here
 
 The MIT licence gives us the code, **not** the name "Open Notebook", its logo,
 or the open-notebook.ai brand. Those must be replaced before commercial launch.
@@ -204,13 +182,13 @@ inventory of where brand identity currently lives, so WP3 can act on it:
 
 ⚠️ Upstream brand assets must be removed from shipped artifacts at that point.
 
-## 9. AI provider terms
+## 8. AI provider terms
 
 Each provider's commercial terms govern our use of its API. See
 [PROVIDER_TERMS.md](PROVIDER_TERMS.md) for the per-provider list and the ones
 flagged for review.
 
-## 10. Regenerating the notices
+## 9. Regenerating the notices
 
 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) is generated, never
 hand-edited:
@@ -242,7 +220,7 @@ MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W):/src" node:22-slim bash -c '
   cp /build/THIRD-PARTY-NOTICES.md /src/THIRD-PARTY-NOTICES.md'
 ```
 
-## 11. Status of the licensing items
+## 10. Status of the licensing items
 
 Decisions and their reasoning are recorded in
 [LEGAL_DECISIONS.md](LEGAL_DECISIONS.md).

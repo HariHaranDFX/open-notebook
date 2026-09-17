@@ -76,20 +76,6 @@ ALLOWED: dict[str, Allowance] = {
         "Multi-licensed BSD / GPL / Public Domain (via rich-rst). We take it "
         "under the BSD option, so no copyleft obligation attaches.",
     ),
-    "asciidoc": Allowance(
-        "asciidoc",
-        "GPLv2+, pulled in transitively by content-core, which declares it as a "
-        "hard dependency but never imports it (verified: zero references in "
-        "content-core's source, and extraction output is byte-identical without "
-        "it across every supported format). It is therefore present in the "
-        "development and CI virtualenv -- which this scan sees -- but is PURGED "
-        "from every shipped artifact by the Dockerfile, so nothing "
-        "strong-copyleft is ever redistributed. GPL obligations attach on "
-        "distribution, and we do not distribute it. "
-        "`TestAsciidocStaysUnused` in tests/test_license_check.py fails if a "
-        "future content-core starts using it, which would invalidate the purge. "
-        "Remove this entry once content-core makes asciidoc an optional extra.",
-    ),
     # --- Frontend ---
     # sharp ships a per-platform binary package (@img/sharp-<platform>-<arch>),
     # so the exact name differs between a Windows dev box and Linux CI. The

@@ -58,19 +58,6 @@ LICENSE_OVERRIDES: dict[str, tuple[str, str]] = {
     ),
 }
 
-# Present in the dev/CI virtualenv but deliberately NOT shipped, so listing
-# them here as distributed dependencies would be factually wrong.
-EXCLUDED: dict[str, str] = {
-    "asciidoc": (
-        "GPLv2+. Declared as a hard dependency by content-core but never "
-        "imported by it, and purged from every shipped artifact by the "
-        "Dockerfile. `uv sync` still installs it into the development and CI "
-        "virtualenv, but no GPL code is distributed. Removal proposed upstream "
-        "in lfnovo/content-core#58."
-    ),
-}
-
-
 @dataclass(frozen=True)
 class Package:
     name: str
@@ -184,13 +171,6 @@ on every pull request by `scripts/check_licenses.py`, which fails the build on
 any copyleft dependency not on its reviewed allowlist; AGPL can never be
 allowlisted. See [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md).
 
-### Installed for development but not distributed
-
-These are present in the development and CI virtualenv but are removed from
-every shipped artifact, so they are not listed as dependencies above.
-
-{excluded}
-
 ### Licenses corrected from package metadata
 
 These packages declare no usable license in their metadata. The license below
@@ -287,9 +267,8 @@ def collect_python() -> list[Package]:
     packages = []
     for pkg in json.loads(raw):
         name = pkg.get("Name", "")
-        # The project itself is not a third-party dependency, and EXCLUDED
-        # packages are installed locally but never shipped.
-        if name in {"open-notebook", "UNKNOWN"} or name in EXCLUDED:
+        # The project itself is not a third-party dependency.
+        if name in {"open-notebook", "UNKNOWN"}:
             continue
         author = pkg.get("Author", "")
         packages.append(
@@ -325,8 +304,6 @@ def collect_frontend() -> list[Package]:
         name, _, version = key.rpartition("@")
         if name == own_name:
             continue
-        if name in EXCLUDED:
-            continue
         licenses = meta.get("licenses", "")
         if isinstance(licenses, list):
             licenses = " AND ".join(licenses)
@@ -356,9 +333,6 @@ def summarize(*groups: list[Package]) -> str:
 def render() -> str:
     python_pkgs = collect_python()
     frontend_pkgs = collect_frontend()
-    excluded = "\n".join(
-        f"- **{name}** — {reason}" for name, reason in sorted(EXCLUDED.items())
-    )
     overrides = "\n".join(
         f"- **{name}** — recorded as `{lic}`: {why}"
         for name, (lic, why) in sorted(LICENSE_OVERRIDES.items())
@@ -368,7 +342,6 @@ def render() -> str:
         generated=date.today().isoformat(),
         summary=summarize(python_pkgs, frontend_pkgs),
         manual=MANUAL_ENTRIES,
-        excluded=excluded,
         overrides=overrides,
         py_count=len(python_pkgs),
         js_count=len(frontend_pkgs),

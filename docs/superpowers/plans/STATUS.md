@@ -69,7 +69,6 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 - Customer ToS for model-weight + customer-configured endpoint responsibility (`LEGAL_DECISIONS.md` items 5–6)
 - PRC-jurisdiction providers → opt-in per deployment (DeepSeek, DashScope, MiniMax)
 - Re-verify `PROVIDER_TERMS.md` links before commercial launch
-- `asciidoc` Dockerfile purge — remove when `lfnovo/content-core#58` merges
 
 **Product gaps found while testing** (from CLAUDE.md):
 - Uploaded `.html`, `.json`, `.png` without Docling are rejected
