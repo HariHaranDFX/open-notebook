@@ -617,9 +617,12 @@ async def add_source_to_notebook(notebook_id: str, source_id: str, request: Requ
             source.user_id, source_id, request, "Source not found"
         )
 
-        # Check if reference already exists (idempotency)
+        # Check if reference already exists (idempotency). The `reference`
+        # edge is `FROM source TO notebook` (migration 1), so rows carry
+        # `in = source, out = notebook`. Getting the direction wrong here
+        # made the lookup miss and every re-link created a duplicate edge.
         existing_ref = await repo_query(
-            "SELECT * FROM reference WHERE out = $source_id AND in = $notebook_id",
+            "SELECT * FROM reference WHERE in = $source_id AND out = $notebook_id LIMIT 1",
             {
                 "notebook_id": ensure_record_id(notebook_id),
                 "source_id": ensure_record_id(source_id),
@@ -663,9 +666,11 @@ async def remove_source_from_notebook(
             notebook.user_id, notebook_id, request, "Notebook not found"
         )
 
-        # Delete the reference record linking source to notebook
+        # Delete the reference record linking source to notebook.
+        # Field ordering matches the link lookup above — `in = source,
+        # out = notebook` per migration 1's schema direction.
         await repo_query(
-            "DELETE FROM reference WHERE out = $notebook_id AND in = $source_id",
+            "DELETE reference WHERE in = $source_id AND out = $notebook_id",
             {
                 "notebook_id": ensure_record_id(notebook_id),
                 "source_id": ensure_record_id(source_id),
