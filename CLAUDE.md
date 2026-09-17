@@ -66,11 +66,8 @@ Open items carried forward (not WP2 blockers unless noted):
   **opt-in per deployment**, not default-on (item 3) — track in WP2/WP3 UI.
 - Re-verify [PROVIDER_TERMS.md](docs/PROVIDER_TERMS.md) links before commercial
   launch.
-- `asciidoc` (GPLv2+) is purged from the shipped image pending
-  lfnovo/content-core#58. When that merges and content-core is bumped, drop the
-  Dockerfile purge and the allowlist entry together.
 - Rebranding is **WP3** — brand string/asset inventory is in
-  LICENSE_COMPLIANCE.md §8.
+  LICENSE_COMPLIANCE.md §7.
 - Product gaps found while testing (not licensing): uploaded `.html` files are
   rejected — only *inline* HTML content is processed — as are `.json` and
   `.png` without Docling enabled.

@@ -74,13 +74,6 @@ on every pull request by `scripts/check_licenses.py`, which fails the build on
 any copyleft dependency not on its reviewed allowlist; AGPL can never be
 allowlisted. See [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md).
 
-### Installed for development but not distributed
-
-These are present in the development and CI virtualenv but are removed from
-every shipped artifact, so they are not listed as dependencies above.
-
-- **asciidoc** — GPLv2+. Declared as a hard dependency by content-core but never imported by it, and purged from every shipped artifact by the Dockerfile. `uv sync` still installs it into the development and CI virtualenv, but no GPL code is distributed. Removal proposed upstream in lfnovo/content-core#58.
-
 ### Licenses corrected from package metadata
 
 These packages declare no usable license in their metadata. The license below
@@ -171,7 +164,7 @@ BSL requires.
 | chardet | 5.2.0 | GNU Lesser General Public License v2 or later (LGPLv2+) | Mark Pilgrim | [link](https://github.com/chardet/chardet) |
 | charset-normalizer | 3.4.4 | MIT | "Ahmed R. TAHRI" <tahri.ahmed@proton.me> | [link](https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md) |
 | click | 8.3.1 | BSD-3-Clause | - | [link](https://github.com/pallets/click/) |
-| content-core | 2.0.4 | MIT | LUIS NOVO <lfnovo@gmail.com> | - |
+| content-core | 2.1.0 | MIT | LUIS NOVO <lfnovo@gmail.com> | - |
 | coverage | 7.14.3 | Apache-2.0 | Ned Batchelder and 257 others | [link](https://github.com/coveragepy/coveragepy) |
 | cryptography | 48.0.1 | Apache-2.0 OR BSD-3-Clause | The Python Cryptographic Authority and individual contributors <cryptography-dev@python.org> | [link](https://github.com/pyca/cryptography) |
 | cssselect | 1.3.0 | BSD License | Ian Bicking | [link](https://github.com/scrapy/cssselect) |
