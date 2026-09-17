@@ -34,23 +34,23 @@ LICENSE file in the package itself.
 
 | License | Packages |
 |---|---|
-| MIT | 347 |
-| MIT License | 49 |
-| Apache-2.0 | 20 |
-| BSD License | 19 |
+| MIT | 349 |
+| MIT License | 48 |
+| Apache-2.0 | 21 |
 | Apache Software License | 18 |
+| BSD License | 18 |
 | BSD-3-Clause | 16 |
 | ISC | 8 |
 | BSD-2-Clause | 5 |
-| Python Software Foundation License | 4 |
+| Python Software Foundation License | 3 |
 | Apache License 2.0 | 2 |
 | Apache Software License; BSD License | 2 |
 | ISC License (ISCL) | 2 |
+| LGPL-3.0-or-later | 2 |
 | Mozilla Public License 2.0 (MPL 2.0) | 2 |
 | 0BSD | 1 |
 | Apache Software License; MIT License | 1 |
 | Apache-2.0 AND CNRI-Python | 1 |
-| Apache-2.0 AND LGPL-3.0-or-later | 1 |
 | Apache-2.0 AND MIT | 1 |
 | Apache-2.0 OR BSD-3-Clause | 1 |
 | Apache-2.0 OR MIT | 1 |
@@ -165,7 +165,7 @@ BSL requires.
 | charset-normalizer | 3.4.4 | MIT | "Ahmed R. TAHRI" <tahri.ahmed@proton.me> | [link](https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md) |
 | click | 8.3.1 | BSD-3-Clause | - | [link](https://github.com/pallets/click/) |
 | content-core | 2.1.0 | MIT | LUIS NOVO <lfnovo@gmail.com> | - |
-| coverage | 7.14.3 | Apache-2.0 | Ned Batchelder and 263 others | [link](https://github.com/coveragepy/coveragepy) |
+| coverage | 7.14.3 | Apache-2.0 | Ned Batchelder and 257 others | [link](https://github.com/coveragepy/coveragepy) |
 | cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause | The Python Cryptographic Authority and individual contributors <cryptography-dev@python.org> | [link](https://github.com/pyca/cryptography) |
 | cssselect | 1.3.0 | BSD License | Ian Bicking | [link](https://github.com/scrapy/cssselect) |
 | cyclopts | 4.5.0 | Apache-2.0 | Brian Pugh | [link](https://github.com/BrianPugh/cyclopts) |
@@ -305,6 +305,7 @@ BSL requires.
 | rpds-py | 0.30.0 | MIT | Julian Berman <Julian+rpds@GrayVines.com> | [link](https://github.com/crate-py/rpds) |
 | rsa | 4.9.1 | Apache Software License | Sybren A. Stüvel | [link](https://stuvel.eu/rsa) |
 | ruff | 0.14.13 | MIT License | "Astral Software Inc." <hey@astral.sh> | [link](https://docs.astral.sh/ruff) |
+| SecretStorage | 3.5.0 | BSD-3-Clause | Dmitry Shachnev <mitya57@gmail.com> | [link](https://github.com/mitya57/secretstorage) |
 | shellingham | 1.5.4 | ISC License (ISCL) | Tzu-ping Chung | [link](https://github.com/sarugaku/shellingham) |
 | six | 1.17.0 | MIT License | Benjamin Peterson | [link](https://github.com/benjaminp/six) |
 | sniffio | 1.3.1 | Apache Software License; MIT License | "Nathaniel J. Smith" <njs@pobox.com> | [link](https://github.com/python-trio/sniffio) |
@@ -342,7 +343,7 @@ BSL requires.
 
 ---
 
-## Frontend dependencies (312)
+## Frontend dependencies (316)
 
 Production dependencies only — build-time-only tooling is not distributed.
 
@@ -355,9 +356,13 @@ Production dependencies only — build-time-only tooling is not distributed.
 | @floating-ui/utils | 0.2.10 | MIT | atomiks | [link](https://github.com/floating-ui/floating-ui) |
 | @hookform/resolvers | 5.1.1 | MIT | bluebill1049 | [link](https://github.com/react-hook-form/resolvers) |
 | @img/colour | 1.1.0 | MIT | - | [link](https://github.com/lovell/colour) |
-| @img/sharp-win32-x64 | 0.35.4 | Apache-2.0 AND LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp) |
+| @img/sharp-libvips-linux-x64 | 1.3.3 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
+| @img/sharp-libvips-linuxmusl-x64 | 1.3.3 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
+| @img/sharp-linux-x64 | 0.35.4 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
+| @img/sharp-linuxmusl-x64 | 0.35.4 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
 | @next/env | 16.3.5 | MIT | Next.js Team | [link](https://github.com/vercel/next.js) |
-| @next/swc-win32-x64-msvc | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
+| @next/swc-linux-x64-gnu | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
+| @next/swc-linux-x64-musl | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
 | @radix-ui/number | 1.1.1 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.2 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.3 | MIT | - | [link](https://github.com/radix-ui/primitives) |
