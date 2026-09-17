@@ -11,7 +11,7 @@ permissive licenses across the stack in one place.
 
 > **Generated file — do not edit by hand.**
 > Regenerate with `uv run python scripts/generate_notices.py`.
-> Last generated: 2026-07-21 against the locked dependency tree.
+> Last generated: 2026-09-17 against the locked dependency tree.
 > Entries that have no package metadata (SurrealDB) are maintained in
 > `MANUAL_ENTRIES` in that script.
 >
@@ -34,23 +34,23 @@ LICENSE file in the package itself.
 
 | License | Packages |
 |---|---|
-| MIT | 349 |
-| MIT License | 48 |
-| Apache-2.0 | 21 |
+| MIT | 347 |
+| MIT License | 49 |
+| Apache-2.0 | 20 |
+| BSD License | 19 |
 | Apache Software License | 18 |
-| BSD License | 18 |
 | BSD-3-Clause | 16 |
 | ISC | 8 |
 | BSD-2-Clause | 5 |
-| Python Software Foundation License | 3 |
+| Python Software Foundation License | 4 |
 | Apache License 2.0 | 2 |
 | Apache Software License; BSD License | 2 |
 | ISC License (ISCL) | 2 |
-| LGPL-3.0-or-later | 2 |
 | Mozilla Public License 2.0 (MPL 2.0) | 2 |
 | 0BSD | 1 |
 | Apache Software License; MIT License | 1 |
 | Apache-2.0 AND CNRI-Python | 1 |
+| Apache-2.0 AND LGPL-3.0-or-later | 1 |
 | Apache-2.0 AND MIT | 1 |
 | Apache-2.0 OR BSD-3-Clause | 1 |
 | Apache-2.0 OR MIT | 1 |
@@ -143,7 +143,7 @@ BSL requires.
 | ai-prompter | 0.4.0 | MIT | LUIS NOVO <lfnovo@gmail.com> | - |
 | aiofile | 3.9.0 | Apache Software License | Dmitry Orlov | [link](http://github.com/mosquito/aiofile) |
 | aiohappyeyeballs | 2.6.1 | Python Software Foundation License | J. Nick Koston | [link](https://github.com/aio-libs/aiohappyeyeballs) |
-| aiohttp | 3.14.1 | Apache-2.0 AND MIT | - | [link](https://github.com/aio-libs/aiohttp) |
+| aiohttp | 3.14.3 | Apache-2.0 AND MIT | - | [link](https://github.com/aio-libs/aiohttp) |
 | aiosignal | 1.4.0 | Apache Software License | - | [link](https://github.com/aio-libs/aiosignal) |
 | aiosqlite | 0.22.1 | MIT License | Amethyst Reese <amethyst@n7.gg> | [link](https://aiosqlite.omnilib.dev) |
 | annotated-doc | 0.0.4 | MIT | =?utf-8?q?Sebasti=C3=A1n_Ram=C3=ADrez?= <tiangolo@gmail.com> | [link](https://github.com/fastapi/annotated-doc) |
@@ -165,8 +165,8 @@ BSL requires.
 | charset-normalizer | 3.4.4 | MIT | "Ahmed R. TAHRI" <tahri.ahmed@proton.me> | [link](https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md) |
 | click | 8.3.1 | BSD-3-Clause | - | [link](https://github.com/pallets/click/) |
 | content-core | 2.1.0 | MIT | LUIS NOVO <lfnovo@gmail.com> | - |
-| coverage | 7.14.3 | Apache-2.0 | Ned Batchelder and 257 others | [link](https://github.com/coveragepy/coveragepy) |
-| cryptography | 48.0.1 | Apache-2.0 OR BSD-3-Clause | The Python Cryptographic Authority and individual contributors <cryptography-dev@python.org> | [link](https://github.com/pyca/cryptography) |
+| coverage | 7.14.3 | Apache-2.0 | Ned Batchelder and 263 others | [link](https://github.com/coveragepy/coveragepy) |
+| cryptography | 50.0.1 | Apache-2.0 OR BSD-3-Clause | The Python Cryptographic Authority and individual contributors <cryptography-dev@python.org> | [link](https://github.com/pyca/cryptography) |
 | cssselect | 1.3.0 | BSD License | Ian Bicking | [link](https://github.com/scrapy/cssselect) |
 | cyclopts | 4.5.0 | Apache-2.0 | Brian Pugh | [link](https://github.com/BrianPugh/cyclopts) |
 | decorator | 5.2.1 | BSD License | Michele Simionato <michele.simionato@gmail.com> | - |
@@ -230,7 +230,7 @@ BSL requires.
 | langdetect | 1.0.9 | Apache Software License | Michal Mimino Danilak | [link](https://github.com/Mimino666/langdetect) |
 | langgraph | 1.2.5 | MIT | - | [link](https://docs.langchain.com/oss/python/langgraph/overview) |
 | langgraph-checkpoint | 4.1.1 | MIT | - | [link](https://github.com/langchain-ai/langgraph/tree/main/libs/checkpoint) |
-| langgraph-checkpoint-sqlite | 3.0.3 | MIT | - | [link](https://github.com/langchain-ai/langgraph/tree/main/libs/checkpoint-sqlite) |
+| langgraph-checkpoint-sqlite | 3.1.1 | MIT | - | [link](https://github.com/langchain-ai/langgraph/tree/main/libs/checkpoint-sqlite) |
 | langgraph-prebuilt | 1.1.0 | MIT | - | [link](https://github.com/langchain-ai/langgraph/tree/main/libs/prebuilt) |
 | langgraph-sdk | 0.4.2 | MIT | - | [link](https://github.com/langchain-ai/langgraph/tree/main/libs/sdk-py) |
 | langsmith | 0.9.0 | MIT | LangChain <support@langchain.dev> | [link](https://smith.langchain.com/) |
@@ -273,7 +273,7 @@ BSL requires.
 | proglog | 0.1.12 | MIT | Zulko | [link](https://github.com/Edinburgh-Genome-Foundry/proglog) |
 | propcache | 0.4.1 | Apache Software License | Andrew Svetlov | [link](https://github.com/aio-libs/propcache) |
 | py-key-value-aio | 0.4.4 | Apache Software License | - | - |
-| pyasn1 | 0.6.3 | BSD-2-Clause | Ilya Etingof <etingof@gmail.com> | [link](https://github.com/pyasn1/pyasn1) |
+| pyasn1 | 0.6.4 | BSD-2-Clause | Ilya Etingof <etingof@gmail.com> | [link](https://github.com/pyasn1/pyasn1) |
 | pyasn1_modules | 0.4.2 | BSD License | Ilya Etingof | [link](https://github.com/pyasn1/pyasn1-modules) |
 | pycountry | 26.2.16 | LGPL-2.1-only | Christian Theune | [link](https://github.com/pycountry/pycountry) |
 | pycparser | 3.0 | BSD-3-Clause | Eli Bendersky <eliben@gmail.com> | [link](https://github.com/eliben/pycparser) |
@@ -305,7 +305,6 @@ BSL requires.
 | rpds-py | 0.30.0 | MIT | Julian Berman <Julian+rpds@GrayVines.com> | [link](https://github.com/crate-py/rpds) |
 | rsa | 4.9.1 | Apache Software License | Sybren A. Stüvel | [link](https://stuvel.eu/rsa) |
 | ruff | 0.14.13 | MIT License | "Astral Software Inc." <hey@astral.sh> | [link](https://docs.astral.sh/ruff) |
-| SecretStorage | 3.5.0 | BSD-3-Clause | Dmitry Shachnev <mitya57@gmail.com> | [link](https://github.com/mitya57/secretstorage) |
 | shellingham | 1.5.4 | ISC License (ISCL) | Tzu-ping Chung | [link](https://github.com/sarugaku/shellingham) |
 | six | 1.17.0 | MIT License | Benjamin Peterson | [link](https://github.com/benjaminp/six) |
 | sniffio | 1.3.1 | Apache Software License; MIT License | "Nathaniel J. Smith" <njs@pobox.com> | [link](https://github.com/python-trio/sniffio) |
@@ -343,7 +342,7 @@ BSL requires.
 
 ---
 
-## Frontend dependencies (316)
+## Frontend dependencies (312)
 
 Production dependencies only — build-time-only tooling is not distributed.
 
@@ -355,14 +354,10 @@ Production dependencies only — build-time-only tooling is not distributed.
 | @floating-ui/react-dom | 2.1.4 | MIT | atomiks | [link](https://github.com/floating-ui/floating-ui) |
 | @floating-ui/utils | 0.2.10 | MIT | atomiks | [link](https://github.com/floating-ui/floating-ui) |
 | @hookform/resolvers | 5.1.1 | MIT | bluebill1049 | [link](https://github.com/react-hook-form/resolvers) |
-| @img/colour | 1.0.0 | MIT | - | [link](https://github.com/lovell/colour) |
-| @img/sharp-libvips-linux-x64 | 1.2.4 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
-| @img/sharp-libvips-linuxmusl-x64 | 1.2.4 | LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp-libvips) |
-| @img/sharp-linux-x64 | 0.34.5 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
-| @img/sharp-linuxmusl-x64 | 0.34.5 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
-| @next/env | 16.2.6 | MIT | Next.js Team | [link](https://github.com/vercel/next.js) |
-| @next/swc-linux-x64-gnu | 16.2.6 | MIT | - | [link](https://github.com/vercel/next.js) |
-| @next/swc-linux-x64-musl | 16.2.6 | MIT | - | [link](https://github.com/vercel/next.js) |
+| @img/colour | 1.1.0 | MIT | - | [link](https://github.com/lovell/colour) |
+| @img/sharp-win32-x64 | 0.35.4 | Apache-2.0 AND LGPL-3.0-or-later | Lovell Fuller | [link](https://github.com/lovell/sharp) |
+| @next/env | 16.3.5 | MIT | Next.js Team | [link](https://github.com/vercel/next.js) |
+| @next/swc-win32-x64-msvc | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
 | @radix-ui/number | 1.1.1 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.2 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/primitive | 1.1.3 | MIT | - | [link](https://github.com/radix-ui/primitives) |
@@ -414,7 +409,7 @@ Production dependencies only — build-time-only tooling is not distributed.
 | @radix-ui/react-visually-hidden | 1.2.3 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @radix-ui/rect | 1.1.1 | MIT | - | [link](https://github.com/radix-ui/primitives) |
 | @standard-schema/utils | 0.3.0 | MIT | Fabian Hiller | [link](https://github.com/standard-schema/standard-schema) |
-| @swc/helpers | 0.5.15 | Apache-2.0 | 강동윤 | [link](https://github.com/swc-project/swc) |
+| @swc/helpers | 0.5.23 | Apache-2.0 | 강동윤 | [link](https://github.com/swc-project/swc) |
 | @tailwindcss/typography | 0.5.16 | MIT | - | [link](https://github.com/tailwindlabs/tailwindcss-typography) |
 | @tanstack/query-core | 5.83.0 | MIT | tannerlinsley | [link](https://github.com/TanStack/query) |
 | @tanstack/react-query | 5.83.0 | MIT | tannerlinsley | [link](https://github.com/TanStack/query) |
@@ -441,11 +436,11 @@ Production dependencies only — build-time-only tooling is not distributed.
 | asynckit | 0.4.0 | MIT | Alex Indigo | [link](https://github.com/alexindigo/asynckit) |
 | axios | 1.18.1 | MIT | Matt Zabriskie | [link](https://github.com/axios/axios) |
 | bail | 2.0.2 | MIT | Titus Wormer | [link](https://github.com/wooorm/bail) |
-| baseline-browser-mapping | 2.10.37 | Apache-2.0 | - | [link](https://github.com/web-platform-dx/baseline-browser-mapping) |
+| baseline-browser-mapping | 2.11.24 | Apache-2.0 | - | [link](https://github.com/web-platform-dx/baseline-browser-mapping) |
 | bcp-47-match | 2.0.3 | MIT | Titus Wormer | [link](https://github.com/wooorm/bcp-47-match) |
 | boolbase | 1.0.0 | ISC | Felix Boehm | [link](https://github.com/fb55/boolbase) |
 | call-bind-apply-helpers | 1.0.2 | MIT | Jordan Harband | [link](https://github.com/ljharb/call-bind-apply-helpers) |
-| caniuse-lite | 1.0.30001799 | CC-BY-4.0 | Ben Briggs | [link](https://github.com/browserslist/caniuse-lite) |
+| caniuse-lite | 1.0.30001810 | CC-BY-4.0 | Ben Briggs | [link](https://github.com/browserslist/caniuse-lite) |
 | ccount | 2.0.1 | MIT | Titus Wormer | [link](https://github.com/wooorm/ccount) |
 | character-entities | 2.0.2 | MIT | Titus Wormer | [link](https://github.com/wooorm/character-entities) |
 | character-entities-html4 | 2.1.0 | MIT | Titus Wormer | [link](https://github.com/wooorm/character-entities-html4) |
@@ -583,8 +578,8 @@ Production dependencies only — build-time-only tooling is not distributed.
 | mime-db | 1.52.0 | MIT | - | [link](https://github.com/jshttp/mime-db) |
 | mime-types | 2.1.35 | MIT | - | [link](https://github.com/jshttp/mime-types) |
 | ms | 2.1.3 | MIT | - | [link](https://github.com/vercel/ms) |
-| nanoid | 3.3.11 | MIT | Andrey Sitnik | [link](https://github.com/ai/nanoid) |
-| next | 16.2.6 | MIT | - | [link](https://github.com/vercel/next.js) |
+| nanoid | 3.3.19 | MIT | Andrey Sitnik | [link](https://github.com/ai/nanoid) |
+| next | 16.3.5 | MIT | - | [link](https://github.com/vercel/next.js) |
 | nth-check | 2.1.1 | BSD-2-Clause | Felix Boehm | [link](https://github.com/fb55/nth-check) |
 | parse-entities | 4.0.2 | MIT | Titus Wormer | [link](https://github.com/wooorm/parse-entities) |
 | parse-numeric-range | 1.3.0 | ISC | Euan Kemp | [link](https://github.com/euank/node-parse-numeric-range) |
@@ -628,8 +623,8 @@ Production dependencies only — build-time-only tooling is not distributed.
 | remark-rehype | 11.1.2 | MIT | Titus Wormer | [link](https://github.com/remarkjs/remark-rehype) |
 | remark-stringify | 11.0.0 | MIT | Titus Wormer | [link](https://github.com/remarkjs/remark/tree/main/packages/remark-stringify) |
 | scheduler | 0.27.0 | MIT | - | [link](https://github.com/facebook/react) |
-| semver | 7.7.3 | ISC | GitHub Inc. | [link](https://github.com/npm/node-semver) |
-| sharp | 0.34.5 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
+| semver | 7.8.5 | ISC | GitHub Inc. | [link](https://github.com/npm/node-semver) |
+| sharp | 0.35.4 | Apache-2.0 | Lovell Fuller | [link](https://github.com/lovell/sharp) |
 | sonner | 2.0.6 | MIT | Emil Kowalski | [link](https://github.com/emilkowalski/sonner) |
 | source-map-js | 1.2.1 | BSD-3-Clause | Valentin 7rulnik Semirulnik | [link](https://github.com/7rulnik/source-map-js) |
 | space-separated-tokens | 2.0.2 | MIT | Titus Wormer | [link](https://github.com/wooorm/space-separated-tokens) |
