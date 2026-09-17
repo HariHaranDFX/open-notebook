@@ -104,3 +104,50 @@ async def test_password_provider_disables_auth_when_password_is_unset(monkeypatc
 
     assert provider.auth_enabled() is False
     assert await provider.authenticate_request(make_request_with_auth()) is None
+
+
+# --- UTF-8 non-ASCII password support (upstream lfnovo/open-notebook#1344) ---
+# Starlette decodes HTTP header bytes as latin-1, so a UTF-8 password sent on
+# the wire arrives as a string with each byte mapped to a codepoint. The
+# provider re-encodes the header string as latin-1 to recover the original
+# wire bytes and compares them against the UTF-8-encoded env-var password.
+
+
+def _request_with_wire_bytes(header_bytes: bytes) -> Request:
+    """Build a Request scope with raw header wire bytes (bypasses the
+    helper's UTF-8 re-encoding so we can drive the real starlette
+    latin-1-decoded string that the provider sees at runtime)."""
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/api/x",
+            "headers": [(b"authorization", header_bytes)],
+        }
+    )
+
+
+@pytest.mark.asyncio
+async def test_password_provider_accepts_utf8_non_ascii_password(monkeypatch):
+    password = "pässwörd-中文"
+    monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", password)
+    provider = PasswordAuthProvider()
+
+    # Real client behavior: send UTF-8 bytes on the wire. Starlette decodes
+    # header bytes as latin-1, so the provider sees a per-byte codepoint
+    # string it must re-encode as latin-1 to recover the original bytes.
+    wire = b"Bearer " + password.encode("utf-8")
+    user = await provider.authenticate_request(_request_with_wire_bytes(wire))
+
+    assert user is not None
+    assert user.id == "user:password_local"
+
+
+@pytest.mark.asyncio
+async def test_password_provider_rejects_wrong_utf8_password(monkeypatch):
+    monkeypatch.setenv("OPEN_NOTEBOOK_PASSWORD", "pässwörd")
+    provider = PasswordAuthProvider()
+
+    wire = b"Bearer " + "wröng".encode("utf-8")
+    with pytest.raises(AuthenticationError, match="Invalid password"):
+        await provider.authenticate_request(_request_with_wire_bytes(wire))
