@@ -31,7 +31,8 @@ _MEDIA_EXTS = frozenset(
      ".aac", ".flac", ".ogg", ".wmv"}
 )
 
-# Preferred languages for YouTube transcript selection. content-core's own
+# Default preferred languages for YouTube transcript selection, used when
+# ContentSettings.youtube_preferred_languages is unset. content-core's own
 # default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
 # always intended so non-English videos still resolve a transcript.
 YOUTUBE_PREFERRED_LANGUAGES = [
@@ -44,6 +45,8 @@ YOUTUBE_PREFERRED_LANGUAGES = [
     "fr",
     "hi",
     "ja",
+    "zh-CN",
+    "zh-TW",
 ]
 
 
@@ -324,6 +327,8 @@ async def content_process(state: SourceState) -> dict:
     # previous behavior when settings are unset.
     try:
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        if settings.youtube_preferred_languages:
+            config_kwargs["youtube_languages"] = settings.youtube_preferred_languages
         if settings.default_content_processing_engine_url:
             config_kwargs["url_engine"] = _usable_engine(
                 settings.default_content_processing_engine_url, "url"
