@@ -36,8 +36,12 @@ class PasswordAuthProvider:
         except ValueError:
             raise AuthenticationError("Invalid authorization header format")
 
+        # HTTP header parsing (starlette) decodes bytes as latin-1, so a UTF-8
+        # non-ASCII password comes through with each byte mapped to its own
+        # codepoint. Re-encode the header string as latin-1 to recover the
+        # original wire bytes; the env-var password stays UTF-8. See #1344.
         if not secrets.compare_digest(
-            credentials.encode("utf-8"), self.password.encode("utf-8")
+            credentials.encode("latin-1"), self.password.encode("utf-8")
         ):
             raise AuthenticationError("Invalid password")
 
