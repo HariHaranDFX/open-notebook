@@ -70,6 +70,35 @@ class SearchRequest(BaseModel):
     minimum_score: float = Field(
         0.2, description="Minimum score for vector search", ge=0, le=1
     )
+    # Notebook scope: empty/None = whole knowledge base. Accept both `notebook_id`
+    # (single, backwards-compat with clients that were already sending it) and
+    # `notebook_ids` (multi). Merged by `scope_notebook_ids` before validation.
+    notebook_id: Optional[str] = Field(
+        None, description="Single notebook to scope the search to"
+    )
+    notebook_ids: Optional[List[str]] = Field(
+        None,
+        description="Multiple notebooks to scope the search to; capped at 50",
+        max_length=50,
+    )
+
+    @property
+    def scope_notebook_ids(self) -> List[str]:
+        """Combined + order-preserving-deduped notebook scope.
+
+        Empty strings survive so resolve_notebook_scope rejects them with 400
+        instead of silently widening the scope to everything.
+        """
+        merged: List[str] = []
+        seen: set[str] = set()
+        for nb_id in ([self.notebook_id] if self.notebook_id is not None else []) + (
+            self.notebook_ids or []
+        ):
+            if nb_id in seen:
+                continue
+            seen.add(nb_id)
+            merged.append(nb_id)
+        return merged
 
 
 class SearchResponse(BaseModel):
@@ -83,6 +112,9 @@ class AskRequest(BaseModel):
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")
     final_answer_model: str = Field(..., description="Model ID for final answer")
+    # Notebook scope not yet supported on Ask; see the follow-up PR that wires
+    # the scope into the ask graph. Sending notebook_id / notebook_ids to
+    # /search already works.
 
 
 class AskResponse(BaseModel):
