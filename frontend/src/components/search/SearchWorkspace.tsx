@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
-import { SearchResultRow, parseParentId } from './SearchResultRow'
+import { SearchResultRow, parseResultTarget } from './SearchResultRow'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useModelDefaults } from '@/lib/hooks/use-models'
 import { useResourcePreview } from '@/lib/hooks/use-resource-preview'
@@ -158,7 +158,9 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
               </div>
               <div className="space-y-2">
                 {data.results.map((result, i) => {
-                  const parsed = parseParentId(result.parent_id)
+                  // Match SearchResultRow's target: use result.id so insight
+                  // hits highlight as active when the insight is previewed.
+                  const parsed = parseResultTarget(result.id)
                   const isActive = Boolean(parsed && preview.type === parsed.type && preview.id === parsed.id)
                   return (
                     <SearchResultRow
