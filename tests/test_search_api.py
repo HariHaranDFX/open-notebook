@@ -1,7 +1,15 @@
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
+
+MIGRATIONS_DIR = (
+    Path(__file__).resolve().parent.parent
+    / "open_notebook"
+    / "database"
+    / "migrations"
+)
 
 
 @pytest.fixture
@@ -189,9 +197,6 @@ class TestVectorSearchOrdering:
 
 
 # --- notebook-scoped search + insight->parent (upstream #1331, #1339) ---
-
-from pathlib import Path
-MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "open_notebook" / "database" / "migrations"
 
 
 def _found(*ids: str) -> list[dict]:
