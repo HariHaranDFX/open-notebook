@@ -91,19 +91,27 @@ export function AddExistingSourceDialog({
         minimum_score: 0.01,
       })
 
-      // Since we set search_sources=true and search_notes=false,
-      // the API only returns sources, no need to filter
-      const sources = response.results.map(r => ({
-        id: r.parent_id,
-        title: r.title || 'Untitled',
-        topics: [],
-        asset: null,
-        embedded: false,
-        embedded_chunks: 0,
-        insights_count: 0,
-        created: r.created,
-        updated: r.updated,
-      })) as SourceListResponse[]
+      // Search returns one row per matching CHUNK, so the same source can
+      // appear 2-3 times (title + full-text + insight). Dedupe by parent_id
+      // so the user sees each source once. Regression fix from upstream #1345.
+      const seen = new Set<string>()
+      const sources = response.results
+        .filter(r => {
+          if (seen.has(r.parent_id)) return false
+          seen.add(r.parent_id)
+          return true
+        })
+        .map(r => ({
+          id: r.parent_id,
+          title: r.title || 'Untitled',
+          topics: [],
+          asset: null,
+          embedded: false,
+          embedded_chunks: 0,
+          insights_count: 0,
+          created: r.created,
+          updated: r.updated,
+        })) as SourceListResponse[]
 
       setFilteredSources(sources)
     } catch (error) {

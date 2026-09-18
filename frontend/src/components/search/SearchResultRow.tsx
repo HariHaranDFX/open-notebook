@@ -18,18 +18,26 @@ const TYPE_META: Record<PreviewResourceType, { Icon: typeof FileText; labelKey: 
 const PREVIEW_TYPES: readonly string[] = ['source', 'note', 'source_insight']
 
 /**
- * Parse a search result's `parent_id` (`<type>:<id>`) into a preview target.
+ * Parse a search result's own `id` (`<type>:<id>`) into a preview target.
  * Returns null for orphaned or unknown-type records so the row can be skipped.
+ *
+ * Uses `result.id` (not `parent_id`) so that a hit on a source insight opens
+ * the insight preview itself, not the parent source. For source-body chunk
+ * matches the two are the same shape, so this is a no-op.
  */
-export function parseParentId(parentId: string | null | undefined): { type: PreviewResourceType; id: string } | null {
-  if (!parentId) return null
-  const idx = parentId.indexOf(':')
+export function parseResultTarget(resultId: string | null | undefined): { type: PreviewResourceType; id: string } | null {
+  if (!resultId) return null
+  const idx = resultId.indexOf(':')
   if (idx <= 0) return null
-  const type = parentId.slice(0, idx)
-  const id = parentId.slice(idx + 1)
+  const type = resultId.slice(0, idx)
+  const id = resultId.slice(idx + 1)
   if (!PREVIEW_TYPES.includes(type) || !id) return null
   return { type: type as PreviewResourceType, id }
 }
+
+// Kept for backwards compatibility during a soft migration; callers should
+// switch to parseResultTarget so insight hits open the insight, not the source.
+export const parseParentId = parseResultTarget
 
 interface SearchResultRowProps {
   result: SearchResult
@@ -39,7 +47,9 @@ interface SearchResultRowProps {
 
 export function SearchResultRow({ result, onPreview, isActive = false }: SearchResultRowProps) {
   const { t } = useTranslation()
-  const parsed = parseParentId(result.parent_id)
+  // Use result.id so an insight hit opens the insight (parent_id would open
+  // the parent source instead — regression fixed upstream in #1345).
+  const parsed = parseResultTarget(result.id)
   if (!parsed) return null
 
   const { Icon, labelKey } = TYPE_META[parsed.type]
