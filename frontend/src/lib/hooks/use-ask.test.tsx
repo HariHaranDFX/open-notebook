@@ -130,4 +130,54 @@ describe('useAsk', () => {
 
     expect(signals[0]?.aborted).toBe(true)
   })
+
+  // Backport of upstream lfnovo/open-notebook#1146 — dangling connections
+  // (Docker proxy leaves the socket open past `done`) left the spinner
+  // stuck forever. The idle watchdog aborts and clears isStreaming when no
+  // chunk arrives for STREAM_IDLE_TIMEOUT_MS (aligned to axios timeout).
+  it('aborts and clears isStreaming when the stream goes idle past the watchdog', async () => {
+    vi.useFakeTimers()
+    try {
+      let capturedSignal: AbortSignal | undefined
+      // Stream that opens but never emits. A real fetch would wire the
+      // AbortSignal into its response body; here we mimic that so aborting
+      // the controller propagates as an error to the reader.
+      vi.mocked(searchApi.askKnowledgeBase).mockImplementation(async (_p, signal) => {
+        capturedSignal = signal
+        return new ReadableStream<Uint8Array>({
+          start(streamController) {
+            signal?.addEventListener('abort', () => {
+              streamController.error(
+                Object.assign(new Error('aborted'), { name: 'AbortError' }),
+              )
+            })
+          },
+        })
+      })
+
+      const { result } = renderHook(() => useAsk())
+
+      // Kick off the request; don't await — it never resolves until the
+      // watchdog fires. Advance fake timers past the idle window.
+      let sendPromise: Promise<void>
+      await act(async () => {
+        sendPromise = result.current.sendAsk('q', models)
+      })
+      expect(result.current.isStreaming).toBe(true)
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600_000 + 100)
+      })
+      await act(async () => {
+        await sendPromise!
+      })
+
+      expect(capturedSignal?.aborted).toBe(true)
+      expect(result.current.isStreaming).toBe(false)
+      expect(result.current.cancelled).toBe(true)
+      expect(toast.error).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
