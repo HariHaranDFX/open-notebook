@@ -8,10 +8,15 @@ from loguru import logger
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from api.ownership import filter_search_results_by_owner
 from open_notebook.ai.models import Model, model_manager
-from open_notebook.domain.notebook import text_search, vector_search
+from open_notebook.domain.notebook import (
+    resolve_notebook_scope,
+    text_search,
+    vector_search,
+)
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
+    NotFoundError,
     OpenNotebookError,
 )
 from open_notebook.graphs.ask import graph as ask_graph
@@ -23,6 +28,10 @@ router = APIRouter()
 async def search_knowledge_base(search_request: SearchRequest, request: Request):
     """Search the knowledge base using text or vector search."""
     try:
+        # Validate any requested notebook scope BEFORE model lookups so a
+        # typo returns 400/404 instead of a misleading empty result set.
+        scope = await resolve_notebook_scope(search_request.scope_notebook_ids)
+
         if search_request.type == "vector":
             # Check if embedding model is available for vector search
             if not await model_manager.get_embedding_model():
@@ -37,6 +46,7 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
                 source=search_request.search_sources,
                 note=search_request.search_notes,
                 minimum_score=search_request.minimum_score,
+                notebook_ids=scope or None,
             )
         else:
             # Text search
@@ -45,6 +55,7 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
                 results=search_request.limit,
                 source=search_request.search_sources,
                 note=search_request.search_notes,
+                notebook_ids=scope or None,
             )
 
         results = await filter_search_results_by_owner(results or [], request)
@@ -56,6 +67,8 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
 
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except DatabaseOperationError as e:
         logger.error(f"Database error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
