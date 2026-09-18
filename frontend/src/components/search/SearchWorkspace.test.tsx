@@ -15,6 +15,11 @@ vi.mock('@/components/common/ResourcePreview', () => ({
     <div data-testid="resource-preview">{type}:{id}</div>
   ),
 }))
+// NotebookScopeSelector uses useNotebooks (TanStack Query); these tests don't
+// exercise the selector, so stub it out to keep the render tree small.
+vi.mock('./NotebookScopeSelector', () => ({
+  NotebookScopeSelector: () => <div data-testid="notebook-scope-stub" />,
+}))
 
 const result = {
   id: 'source:abc',

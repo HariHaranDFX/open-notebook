@@ -112,9 +112,30 @@ class AskRequest(BaseModel):
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")
     final_answer_model: str = Field(..., description="Model ID for final answer")
-    # Notebook scope not yet supported on Ask; see the follow-up PR that wires
-    # the scope into the ask graph. Sending notebook_id / notebook_ids to
-    # /search already works.
+    # Notebook scope: same contract + validation as SearchRequest.
+    # None/empty = whole knowledge base. Scope travels through the ask graph
+    # state and reaches every fan-out vector_search.
+    notebook_id: Optional[str] = Field(
+        None, description="Single notebook to scope the ask to"
+    )
+    notebook_ids: Optional[List[str]] = Field(
+        None,
+        description="Multiple notebooks to scope the ask to; capped at 50",
+        max_length=50,
+    )
+
+    @property
+    def scope_notebook_ids(self) -> List[str]:
+        merged: List[str] = []
+        seen: set[str] = set()
+        for nb_id in ([self.notebook_id] if self.notebook_id is not None else []) + (
+            self.notebook_ids or []
+        ):
+            if nb_id in seen:
+                continue
+            seen.add(nb_id)
+            merged.append(nb_id)
+        return merged
 
 
 class AskResponse(BaseModel):

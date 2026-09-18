@@ -6,6 +6,10 @@ export interface SearchRequest {
   search_sources: boolean
   search_notes: boolean
   minimum_score: number
+  // Notebook scope: omit or [] = whole knowledge base. Validated server-side
+  // (see api/routers/search.py); a bad id returns 400/404 before the search
+  // runs, so silent empty results are impossible. Cap 50 per api/models.py.
+  notebook_ids?: string[]
 }
 
 export interface SearchResult {
@@ -35,6 +39,9 @@ export interface AskRequest {
   strategy_model: string
   answer_model: string
   final_answer_model: string
+  // Notebook scope: omit or [] = whole knowledge base. Server validates and
+  // threads through the ask graph state into every fan-out vector_search.
+  notebook_ids?: string[]
 }
 
 export interface AskResponse {

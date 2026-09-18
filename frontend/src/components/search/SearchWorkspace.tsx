@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
+import { NotebookScopeSelector } from './NotebookScopeSelector'
 import { SearchResultRow, parseResultTarget } from './SearchResultRow'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useModelDefaults } from '@/lib/hooks/use-models'
@@ -39,6 +40,7 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
   const [type, setType] = useState<'text' | 'vector'>('text')
   const [searchSources, setSearchSources] = useState(true)
   const [searchNotes, setSearchNotes] = useState(true)
+  const [scopeNotebookIds, setScopeNotebookIds] = useState<string[]>([])
 
   const runSearch = (q: string) => {
     if (!q.trim()) return
@@ -49,6 +51,7 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
       search_sources: searchSources,
       search_notes: searchNotes,
       minimum_score: 0.2,
+      notebook_ids: scopeNotebookIds.length ? scopeNotebookIds : undefined,
     })
   }
 
@@ -132,6 +135,12 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
             {t('searchPage.vectorSearchWarning')}
           </p>
         )}
+
+        <NotebookScopeSelector
+          selectedIds={scopeNotebookIds}
+          onChange={setScopeNotebookIds}
+          disabled={search.isPending}
+        />
       </div>
 
       <div className={cn('grid min-h-0 flex-1 gap-4', previewOpen ? 'lg:grid-cols-2' : 'grid-cols-1')}>

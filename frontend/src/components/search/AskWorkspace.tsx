@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
 import { ResearchWorkbench, type WorkbenchPane } from '@/components/workbench/ResearchWorkbench'
+import { NotebookScopeSelector } from './NotebookScopeSelector'
 import { StreamingResponse } from './StreamingResponse'
 import { AdvancedModelsDialog } from './AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from './SaveToNotebooksDialog'
@@ -46,6 +47,7 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
   const [customModels, setCustomModels] = useState<ModelSet | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showSave, setShowSave] = useState(false)
+  const [scopeNotebookIds, setScopeNotebookIds] = useState<string[]>([])
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model
   const defaultChat = modelDefaults?.default_chat_model
@@ -69,7 +71,7 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
 
   const submit = (q: string) => {
     if (!q.trim() || !models) return
-    void ask.sendAsk(q, models)
+    void ask.sendAsk(q, models, { notebookIds: scopeNotebookIds })
   }
 
   // Auto-run once when arriving with a deep-linked question.
@@ -78,7 +80,7 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
     if (initialQuestion && autoRanRef.current !== initialQuestion && models) {
       autoRanRef.current = initialQuestion
       setQuestion(initialQuestion)
-      void ask.sendAsk(initialQuestion, models)
+      void ask.sendAsk(initialQuestion, models, { notebookIds: scopeNotebookIds })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuestion, defaultChat])
@@ -128,6 +130,11 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
           The field's focus ring stays within the p-4 padding, so it never spills
           outside the panel. */}
       <div className="flex-shrink-0 space-y-2 border-t border-border p-4">
+        <NotebookScopeSelector
+          selectedIds={scopeNotebookIds}
+          onChange={setScopeNotebookIds}
+          disabled={ask.isStreaming || !hasEmbeddingModel}
+        />
         <Label htmlFor="ask-question" className="sr-only">{t('searchPage.question')}</Label>
         <Textarea
           id="ask-question"
