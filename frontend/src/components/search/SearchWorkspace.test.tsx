@@ -100,4 +100,33 @@ describe('SearchWorkspace', () => {
 
     expect(screen.getByTestId('resource-preview')).toHaveTextContent('source:abc')
   })
+
+  it('opens an insight match into the insight preview, not the parent source (upstream #1345)', () => {
+    // A source_insight hit has id=source_insight:X but parent_id=source:Y.
+    // Before the fix, click opened the parent source; users expect the
+    // insight they matched on.
+    const insightResult = {
+      id: 'source_insight:i-1',
+      parent_id: 'source:s-1',
+      title: 'Insight title',
+      final_score: 0.9,
+      matches: [],
+      created: '',
+      updated: '',
+    }
+    const openPreview = vi.fn()
+    vi.mocked(useResourcePreview).mockReturnValue({ type: null, id: null, openPreview, closePreview: vi.fn() } as any)
+    vi.mocked(useSearch).mockReturnValue({
+      mutate: vi.fn(),
+      data: { results: [insightResult], total_count: 1, search_type: 'text' },
+      isPending: false,
+      isError: false,
+    } as any)
+    render(<SearchWorkspace />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Insight title/ }))
+
+    expect(openPreview).toHaveBeenCalledWith('source_insight', 'i-1')
+    expect(openPreview).not.toHaveBeenCalledWith('source', 's-1')
+  })
 })
