@@ -25,6 +25,9 @@ vi.mock('./StreamingResponse', () => ({
   ),
 }))
 vi.mock('./AdvancedModelsDialog', () => ({ AdvancedModelsDialog: () => null }))
+vi.mock('./NotebookScopeSelector', () => ({
+  NotebookScopeSelector: () => <div data-testid="notebook-scope-stub" />,
+}))
 vi.mock('./SaveToNotebooksDialog', () => ({
   SaveToNotebooksDialog: ({ open }: any) => (open ? <div data-testid="save-dialog" /> : null),
 }))
@@ -61,7 +64,11 @@ describe('AskWorkspace', () => {
     fireEvent.change(screen.getByLabelText('common.accessibility.enterQuestion'), { target: { value: 'why?' } })
     fireEvent.click(screen.getByRole('button', { name: 'searchPage.ask' }))
 
-    expect(sendAsk).toHaveBeenCalledWith('why?', { strategy: 'm', answer: 'm', finalAnswer: 'm' })
+    expect(sendAsk).toHaveBeenCalledWith(
+      'why?',
+      { strategy: 'm', answer: 'm', finalAnswer: 'm' },
+      { notebookIds: [] },
+    )
   })
 
   it('shows Cancel while streaming and calls cancel', () => {

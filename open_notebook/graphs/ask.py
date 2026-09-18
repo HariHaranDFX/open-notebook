@@ -23,13 +23,17 @@ from open_notebook.utils.text_utils import extract_text_content
 ASK_MAX_TOKENS = 8192
 
 
-class SubGraphState(TypedDict):
+class SubGraphState(TypedDict, total=False):
     question: str
     term: str
     instructions: str
     results: dict
     answer: str
     ids: list  # Added for provide_answer function
+    # Notebook scope (upstream #1331): None or absent = whole knowledge base.
+    # Threaded from ThreadState through trigger_queries into every fan-out
+    # vector_search call so scoped Ask actually filters.
+    notebook_ids: List[str] | None
 
 
 class Search(BaseModel):
@@ -47,11 +51,13 @@ class Strategy(BaseModel):
     )
 
 
-class ThreadState(TypedDict):
+class ThreadState(TypedDict, total=False):
     question: str
     strategy: Strategy
     answers: Annotated[list, operator.add]
     final_answer: str
+    # Notebook scope: None/absent keeps the previous unscoped behavior.
+    notebook_ids: List[str] | None
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -102,6 +108,9 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
 
 
 async def trigger_queries(state: ThreadState, config: RunnableConfig):
+    # Thread the notebook scope into every fan-out so provide_answer's
+    # vector_search filters to the caller's notebooks.
+    notebook_ids = state.get("notebook_ids")
     return [
         Send(
             "provide_answer",
@@ -109,6 +118,7 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
                 "question": state["question"],
                 "instructions": s.instructions,
                 "term": s.term,
+                "notebook_ids": notebook_ids,
                 # "type": s.type,
             },
         )
@@ -122,7 +132,9 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         # if state["type"] == "text":
         #     results = text_search(state["term"], 10, True, True)
         # else:
-        results = await vector_search(state["term"], 10, True, True)
+        results = await vector_search(
+            state["term"], 10, True, True, notebook_ids=state.get("notebook_ids")
+        )
         if len(results) == 0:
             return {"answers": []}
         payload["results"] = results

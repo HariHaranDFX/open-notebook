@@ -36,8 +36,13 @@ interface AskState {
   cancelled: boolean
 }
 
+export interface AskOptions {
+  /** Notebook scope (optional). Empty or omitted = whole knowledge base. */
+  notebookIds?: string[]
+}
+
 export interface UseAskResult extends AskState {
-  sendAsk: (question: string, models: AskModels) => Promise<void>
+  sendAsk: (question: string, models: AskModels, options?: AskOptions) => Promise<void>
   cancel: () => void
   retry: () => Promise<void>
   reset: () => void
@@ -57,7 +62,7 @@ export function useAsk(): UseAskResult {
   const [state, setState] = useState<AskState>(INITIAL_STATE)
 
   const controllerRef = useRef<AbortController | null>(null)
-  const lastRequestRef = useRef<{ question: string; models: AskModels } | null>(null)
+  const lastRequestRef = useRef<{ question: string; models: AskModels; options?: AskOptions } | null>(null)
   const mountedRef = useRef(true)
   const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -77,7 +82,7 @@ export function useAsk(): UseAskResult {
     }
   }, [clearStreamTimeout])
 
-  const sendAsk = useCallback(async (question: string, models: AskModels) => {
+  const sendAsk = useCallback(async (question: string, models: AskModels, options?: AskOptions) => {
     if (!question.trim()) {
       toast.error(t('apiErrors.pleaseEnterQuestion'))
       return
@@ -87,7 +92,7 @@ export function useAsk(): UseAskResult {
       return
     }
 
-    lastRequestRef.current = { question, models }
+    lastRequestRef.current = { question, models, options }
 
     // Supersede any in-flight request before starting a new one.
     controllerRef.current?.abort()
@@ -153,6 +158,7 @@ export function useAsk(): UseAskResult {
           strategy_model: models.strategy,
           answer_model: models.answer,
           final_answer_model: models.finalAnswer,
+          notebook_ids: options?.notebookIds?.length ? options.notebookIds : undefined,
         },
         controller.signal
       )
@@ -214,7 +220,7 @@ export function useAsk(): UseAskResult {
 
   const retry = useCallback(async () => {
     const last = lastRequestRef.current
-    if (last) await sendAsk(last.question, last.models)
+    if (last) await sendAsk(last.question, last.models, last.options)
   }, [sendAsk])
 
   const reset = useCallback(() => {
