@@ -144,12 +144,12 @@ volumes:
 ### Add Reverse Proxy
 See [Reverse Proxy Guide](../docs/5-CONFIGURATION/reverse-proxy.md)
 
-### Add Basic Auth
+### Enable password protection
 Add to `open_notebook` service environment:
 ```yaml
-- BASIC_AUTH_USERNAME=admin
-- BASIC_AUTH_PASSWORD=your-secure-password
+- OPEN_NOTEBOOK_PASSWORD=your-secure-password
 ```
+When set, the API (and MCP) require this password as a Bearer token. Leave it unset for a dev-only deployment where auth is fully disabled. See [Security](../docs/5-CONFIGURATION/security.md).
 
 ---
 
