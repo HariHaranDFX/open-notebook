@@ -6,6 +6,15 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
 import { AskStreamEvent } from '@/lib/types/search'
+import { API_TIMEOUT_MS } from '@/lib/api/client'
+
+// Idle watchdog for the SSE stream: if no bytes arrive for this long, treat
+// the connection as dangling (Docker/proxy leaves it open without propagating
+// the `done` signal), abort the socket and end the loading state. Aligned to
+// the same budget as axios so slow local models (Ollama, LM Studio) that
+// legitimately take a while between events aren't cut off. `0` disables it.
+// Re-armed on every received chunk — idle, not wall-clock.
+const STREAM_IDLE_TIMEOUT_MS = API_TIMEOUT_MS
 
 interface AskModels {
   strategy: string
@@ -50,14 +59,23 @@ export function useAsk(): UseAskResult {
   const controllerRef = useRef<AbortController | null>(null)
   const lastRequestRef = useRef<{ question: string; models: AskModels } | null>(null)
   const mountedRef = useRef(true)
+  const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearStreamTimeout = useCallback(() => {
+    if (streamTimeoutRef.current) {
+      clearTimeout(streamTimeoutRef.current)
+      streamTimeoutRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
+      clearStreamTimeout()
       controllerRef.current?.abort()
     }
-  }, [])
+  }, [clearStreamTimeout])
 
   const sendAsk = useCallback(async (question: string, models: AskModels) => {
     if (!question.trim()) {
@@ -83,6 +101,20 @@ export function useAsk(): UseAskResult {
     }
 
     setState({ ...INITIAL_STATE, isStreaming: true })
+
+    // Arm/re-arm the idle watchdog against THIS controller. If a superseded
+    // request's timer fires later, controllerRef.current will have moved on
+    // and we don't touch anything.
+    const armStreamTimeout = () => {
+      clearStreamTimeout()
+      if (STREAM_IDLE_TIMEOUT_MS <= 0) return
+      streamTimeoutRef.current = setTimeout(() => {
+        if (controllerRef.current !== controller) return
+        controller.abort()
+        update(prev => (prev.isStreaming ? { ...prev, isStreaming: false } : prev))
+      }, STREAM_IDLE_TIMEOUT_MS)
+    }
+    armStreamTimeout()
 
     const processLine = (line: string) => {
       if (!line.startsWith('data: ')) return
@@ -137,6 +169,10 @@ export function useAsk(): UseAskResult {
         const { done, value } = await reader.read()
         if (done) break
 
+        // Re-arm the idle watchdog on every received chunk — silence, not
+        // wall-clock, is what indicates a dangling connection.
+        armStreamTimeout()
+
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         // Keep the last incomplete line in the buffer.
@@ -147,12 +183,15 @@ export function useAsk(): UseAskResult {
       // A complete final line may arrive without a trailing newline.
       if (buffer.trim()) processLine(buffer)
 
+      clearStreamTimeout()
       update(prev => ({ ...prev, isStreaming: false }))
     } catch (error) {
+      clearStreamTimeout()
       const err = error as { name?: string; message?: string }
 
-      // Cancelled (explicit cancel or superseded) — preserve partial output,
-      // no error toast. Superseded requests are filtered out by `update`.
+      // Cancelled (explicit cancel, superseded, or watchdog abort) — preserve
+      // partial output, no error toast. Superseded requests are filtered by
+      // `update`; the watchdog already set isStreaming=false before aborting.
       if (err?.name === 'AbortError') {
         update(prev => ({ ...prev, isStreaming: false, cancelled: true }))
         return
@@ -166,11 +205,12 @@ export function useAsk(): UseAskResult {
         })
       }
     }
-  }, [t])
+  }, [t, clearStreamTimeout])
 
   const cancel = useCallback(() => {
+    clearStreamTimeout()
     controllerRef.current?.abort()
-  }, [])
+  }, [clearStreamTimeout])
 
   const retry = useCallback(async () => {
     const last = lastRequestRef.current
@@ -178,9 +218,10 @@ export function useAsk(): UseAskResult {
   }, [sendAsk])
 
   const reset = useCallback(() => {
+    clearStreamTimeout()
     controllerRef.current?.abort()
     setState(INITIAL_STATE)
-  }, [])
+  }, [clearStreamTimeout])
 
   return { ...state, sendAsk, cancel, retry, reset }
 }

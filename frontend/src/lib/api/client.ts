@@ -15,12 +15,14 @@ import { getAuthToken } from '@/lib/auth-token'
 const DEFAULT_API_TIMEOUT_MS = 600000 // 600 seconds = 10 minutes
 const rawTimeout = process.env.NEXT_PUBLIC_API_TIMEOUT_MS
 const parsedTimeout = rawTimeout && rawTimeout.trim() !== '' ? Number(rawTimeout) : NaN
-const apiTimeout = Number.isFinite(parsedTimeout) && parsedTimeout >= 0
+// Exported so streaming callers (SSE hooks) can use the same budget as the
+// axios client for their idle-watchdog timers. `0` disables the timeout.
+export const API_TIMEOUT_MS = Number.isFinite(parsedTimeout) && parsedTimeout >= 0
   ? parsedTimeout
   : DEFAULT_API_TIMEOUT_MS
 
 export const apiClient = axios.create({
-  timeout: apiTimeout,
+  timeout: API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
