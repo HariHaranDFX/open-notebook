@@ -63,12 +63,18 @@ describe('InviteFromDirectoryDialog', () => {
       display_name: 'Alice',
       pending: true,
     } satisfies UserPickerItem)
+    // TanStack's UseMutationResult is a discriminated union whose Partial
+    // cannot be satisfied structurally, so cast through unknown at the seam
+    // — matches the pattern in ShareSheet.test.tsx.
     mockUseStubEntraUser.mockReturnValue(
-      asResult<ReturnType<typeof useStubEntraUser>>({
+      {
         mutate: vi.fn(),
         mutateAsync,
         isPending: false,
-      })
+        isError: false,
+        error: null,
+        variables: undefined,
+      } as unknown as ReturnType<typeof useStubEntraUser>
     )
   })
 
