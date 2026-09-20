@@ -40,6 +40,18 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+
+  // Redirect the legacy credentials route to the canonical "Models" route so
+  // existing bookmarks and docs links keep working after the rename (upstream #1313).
+  async redirects() {
+    return [
+      {
+        source: '/settings/api-keys',
+        destination: '/settings/models',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

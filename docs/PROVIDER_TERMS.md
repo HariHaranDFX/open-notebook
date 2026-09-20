@@ -53,7 +53,7 @@ speech-to-text · **TTS**: text-to-speech.
 | PayPerQ (ppq) | LLM, embed, STT, TTS | [site](https://ppq.ai) | <https://ppq.ai> | 🚩 **Small vendor, terms unclear** — verify before enabling |
 | Cohere | LLM, embed | [dashboard](https://dashboard.cohere.com/api-keys) | <https://cohere.com/terms-of-use> | ⚠️ Trial keys are explicitly non-commercial — production key required |
 | Voyage AI | embed | [dashboard](https://dash.voyageai.com/api-keys) | <https://www.voyageai.com/terms-of-service> | ⚠️ Review |
-| ElevenLabs | TTS, STT | [settings](https://elevenlabs.io/app/settings/api-keys) | <https://elevenlabs.io/terms-of-use> | 🚩 **Voice cloning + commercial audio rights** — see below |
+| ElevenLabs | TTS, STT | [settings](https://elevenlabs.io/app/settings/models) | <https://elevenlabs.io/terms-of-use> | 🚩 **Voice cloning + commercial audio rights** — see below |
 | Deepgram | TTS, STT | [console](https://console.deepgram.com/) | <https://deepgram.com/terms> | ⚠️ Review |
 | Ollama | LLM, embed | local | n/a — no service terms | 🚩 **Model weight licences apply instead** — see below |
 | oMLX | LLM, embed | local | n/a — no service terms | 🚩 **Model weight licences apply instead** — see below |

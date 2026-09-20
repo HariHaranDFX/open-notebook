@@ -92,7 +92,7 @@ const getNavigation = (t: TFunction) => [
   {
     title: t('navigation.manage'),
     items: [
-      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, adminOnly: true },
+      { name: t('navigation.models'), href: '/settings/models', icon: Bot, adminOnly: true },
       { name: t('navigation.groups'), href: '/settings/groups', icon: Users, adminOnly: true },
     ],
   },

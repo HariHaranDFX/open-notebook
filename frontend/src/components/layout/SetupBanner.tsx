@@ -78,7 +78,7 @@ export function SetupBanner() {
             asChild
             className="shrink-0 border-amber-500 text-amber-700 hover:bg-amber-100 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-900/30"
           >
-            <Link href="/settings/api-keys">
+            <Link href="/settings/models">
               {t('setupBanner.goToSettings')}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>

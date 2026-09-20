@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Administration routes: `/settings`, `/settings/api-keys`, `/settings/groups`, `/settings/advanced`; `/advanced` remains a working redirect.
+- Administration routes: `/settings`, `/settings/models`, `/settings/groups`, `/settings/advanced`; `/advanced` remains a working redirect.
 - Current role and whether access is owner/direct/group/notebook/open are visible where permissions affect actions.
 - Highest role still wins. Equal-role origin preference is direct user → group → notebook; owner/open remain explicit.
 - Adding origin metadata is additive; existing `access_role` values and all authorization decisions remain unchanged.
@@ -371,7 +371,7 @@ git commit -m "feat(podcasts): gate episode retry/delete on inherited access rol
 - Move: `frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx` to `frontend/src/components/settings/RebuildEmbeddings.tsx`
 - Replace: `frontend/src/app/(dashboard)/advanced/page.tsx` with a server redirect
 - Modify: `frontend/src/app/(dashboard)/settings/page.tsx`
-- Modify: `frontend/src/app/(dashboard)/settings/api-keys/page.tsx`
+- Modify: `frontend/src/app/(dashboard)/settings/models/page.tsx`
 - Modify after WP2b merge: `frontend/src/app/(dashboard)/settings/groups/page.tsx`
 - Modify: `frontend/src/components/layout/AppSidebar.tsx`
 
