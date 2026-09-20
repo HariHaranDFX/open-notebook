@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from surreal_commands import submit_command
 
 from api.auth import AuthMiddleware
 from api.auth.entra import require_entra_config
@@ -90,6 +91,42 @@ MAX_UPLOAD_SIZE_BYTES = get_max_upload_size_bytes()
 DATABASE_STARTUP_RETRY_ATTEMPTS = 12
 DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
 DATABASE_STARTUP_RETRY_MAX_DELAY_SECONDS = 5
+
+# --- WBS 4.20: Entra group sync periodic trigger ----------------------------
+_ENTRA_SYNC_TRUTHY = {"true", "1", "yes"}
+_ENTRA_SYNC_DEFAULT_INTERVAL_MIN = 15.0
+# 1-second floor so tests can drive tight loops; production defaults to 15 min.
+_ENTRA_SYNC_MIN_INTERVAL_SECONDS = 1.0
+
+
+def _entra_group_sync_enabled() -> bool:
+    return (
+        (os.environ.get("ENTRA_GROUP_SYNC_ENABLED") or "").strip().lower()
+        in _ENTRA_SYNC_TRUTHY
+    )
+
+
+def _entra_group_sync_interval_seconds() -> float:
+    raw = os.environ.get("ENTRA_GROUP_SYNC_INTERVAL_MINUTES") or ""
+    try:
+        minutes = float(raw)
+    except ValueError:
+        minutes = _ENTRA_SYNC_DEFAULT_INTERVAL_MIN
+    if minutes <= 0:
+        minutes = _ENTRA_SYNC_DEFAULT_INTERVAL_MIN
+    return max(minutes * 60, _ENTRA_SYNC_MIN_INTERVAL_SECONDS)
+
+
+async def _entra_group_sync_loop() -> None:
+    """Submit the sync command on a fixed cadence until cancelled."""
+    interval = _entra_group_sync_interval_seconds()
+    while True:
+        try:
+            await submit_command("open_notebook", "sync_entra_groups", {})
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"entra_group_sync submit failed: {exc}")
+        await asyncio.sleep(interval)
+# ---------------------------------------------------------------------------
 # Per-probe ceiling so a hung connection cannot exceed the retry budget or
 # block startup indefinitely. A probe that exceeds this is treated as a
 # transient failure and retried like any other unreachable-database attempt.
@@ -230,10 +267,25 @@ async def lifespan(app: FastAPI):
         # Fail fast - don't start the API with an outdated database schema
         raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
 
+    entra_sync_task: asyncio.Task | None = None
+    if _entra_group_sync_enabled():
+        logger.info(
+            f"Entra group sync enabled (interval "
+            f"{_entra_group_sync_interval_seconds() / 60:.1f} min)"
+        )
+        entra_sync_task = asyncio.create_task(_entra_group_sync_loop())
+
     logger.success("API initialization completed successfully")
 
     # Yield control to the application
     yield
+
+    if entra_sync_task is not None:
+        entra_sync_task.cancel()
+        try:
+            await entra_sync_task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
 
     # Shutdown: cleanup if needed
     logger.info("API shutdown complete")
