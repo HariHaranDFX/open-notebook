@@ -1,14 +1,61 @@
-"""App-local user groups (WP2b). Admin-only; Entra sync later."""
+"""App-local user groups (WP2b) + Entra-linked groups (WBS 4.20).
+
+Local groups: admins create + manage members explicitly.
+Entra-linked groups: admins link by OID; membership is managed by the
+background sync command (`commands.entra_group_sync`) and cannot be
+edited through the local admin endpoints (409).
+"""
 
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from surreal_commands import submit_command
 
 from api.auth.deps import require_admin, require_user
+from api.graph_client import GraphAPIError, search_groups
+from api.graph_client import get_group as graph_get_group
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 router = APIRouter()
+
+
+async def _reject_if_entra(group_id: str) -> None:
+    """Refuse mutations on Entra-managed groups so admins do not stomp on the sync."""
+    rows = await repo_query(
+        "SELECT source FROM $gid",
+        {"gid": ensure_record_id(group_id)},
+    )
+    if rows and rows[0].get("source") == "entra":
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This group is managed by Entra sync and cannot be edited here."
+            ),
+        )
+
+
+def _graph_http_exception(exc: GraphAPIError) -> HTTPException:
+    """Turn a Graph failure into a helpful HTTP error.
+
+    401/403 → the Entra app registration is missing the required Application
+    permission or has not been granted admin consent. Emit a message the
+    admin can act on. Other statuses → generic Graph upstream error.
+    """
+    if exc.status_code in (401, 403):
+        return HTTPException(
+            status_code=502,
+            detail=(
+                "Microsoft Graph rejected the request "
+                f"(HTTP {exc.status_code}). Grant the Entra app registration "
+                "the 'GroupMember.Read.All' Application permission and "
+                "admin consent, then try again."
+            ),
+        )
+    return HTTPException(
+        status_code=502,
+        detail=f"Microsoft Graph error (HTTP {exc.status_code}).",
+    )
 
 
 class GroupCreate(BaseModel):
@@ -38,6 +85,16 @@ class GroupResponse(BaseModel):
     source: str = "local"
     entra_group_oid: Optional[str] = None
     member_count: int = 0
+
+
+class EntraGroupCandidate(BaseModel):
+    entra_group_oid: str
+    display_name: str
+    description: Optional[str] = None
+
+
+class EntraLinkRequest(BaseModel):
+    entra_group_oid: str = Field(..., min_length=1)
 
 
 @router.get("/groups", response_model=List[GroupResponse])
@@ -129,6 +186,7 @@ async def get_group(group_id: str, request: Request):
 @router.patch("/groups/{group_id}", response_model=GroupResponse)
 async def update_group(group_id: str, body: GroupUpdate, request: Request):
     require_admin(request)
+    await _reject_if_entra(group_id)
     rows = await repo_query(
         "SELECT * FROM $gid",
         {"gid": ensure_record_id(group_id)},
@@ -211,6 +269,7 @@ async def list_members(group_id: str, request: Request):
 @router.post("/groups/{group_id}/members", response_model=GroupMemberResponse)
 async def add_member(group_id: str, body: GroupMemberAdd, request: Request):
     require_admin(request)
+    await _reject_if_entra(group_id)
     g = await repo_query(
         "SELECT id FROM $gid", {"gid": ensure_record_id(group_id)}
     )
@@ -257,6 +316,7 @@ async def add_member(group_id: str, body: GroupMemberAdd, request: Request):
 @router.delete("/groups/{group_id}/members/{user_id}")
 async def remove_member(group_id: str, user_id: str, request: Request):
     require_admin(request)
+    await _reject_if_entra(group_id)
     await repo_query(
         """
         DELETE user_group_member
@@ -285,3 +345,72 @@ async def list_users_for_picker(request: Request):
         }
         for row in rows or []
     ]
+
+
+# ---------------------------------------------------------------------------
+# WBS 4.20 — Entra-linked groups (admin-only)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/groups/entra/search", response_model=List[EntraGroupCandidate])
+async def entra_group_search(q: str, request: Request):
+    """Typeahead against Microsoft Graph. Returns top matches, mapped."""
+    require_admin(request)
+    query = (q or "").strip()
+    if not query:
+        return []
+    try:
+        results = await search_groups(query)
+    except GraphAPIError as exc:
+        raise _graph_http_exception(exc) from exc
+    return [EntraGroupCandidate(**row) for row in results]
+
+
+@router.post("/groups/entra/link", response_model=GroupResponse)
+async def entra_group_link(body: EntraLinkRequest, request: Request):
+    """Idempotent upsert: link an Entra group into user_group + kick a scoped sync."""
+    require_admin(request)
+    try:
+        snapshot = await graph_get_group(body.entra_group_oid)
+    except GraphAPIError as exc:
+        raise _graph_http_exception(exc) from exc
+
+    existing = await repo_query(
+        "SELECT id FROM user_group WHERE entra_group_oid = $oid",
+        {"oid": body.entra_group_oid},
+    )
+    if existing:
+        gid = str(existing[0]["id"])
+    else:
+        rows = await repo_query(
+            """
+            CREATE user_group SET
+              name = $name,
+              description = $desc,
+              source = 'entra',
+              entra_group_oid = $oid
+            RETURN AFTER
+            """,
+            {
+                "name": snapshot.get("display_name") or "Entra group",
+                "desc": snapshot.get("description"),
+                "oid": body.entra_group_oid,
+            },
+        ) or []
+        if not rows:
+            raise HTTPException(500, detail="Failed to link Entra group")
+        gid = str(rows[0]["id"])
+
+    # Kick a scoped sync so admins see members without waiting for the loop.
+    await submit_command("open_notebook", "sync_entra_groups", {"group_id": gid})
+
+    # Return the current group snapshot (with member_count).
+    return await get_group(gid, request)
+
+
+@router.post("/groups/entra/sync")
+async def entra_group_sync_now(request: Request):
+    """Admin-triggered full sync of every linked Entra group."""
+    require_admin(request)
+    command_id = await submit_command("open_notebook", "sync_entra_groups", {})
+    return {"command_id": str(command_id)}

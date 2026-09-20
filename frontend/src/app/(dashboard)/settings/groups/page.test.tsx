@@ -10,6 +10,9 @@ import {
   useGroupMembers,
   useAddGroupMember,
   useRemoveGroupMember,
+  useSyncEntraGroups,
+  useLinkEntraGroup,
+  useEntraGroupSearch,
 } from '@/lib/hooks/use-sharing'
 import type { GroupResponse, GroupMemberResponse, UserPickerItem } from '@/lib/api/sharing'
 
@@ -33,6 +36,11 @@ const dict: Record<string, string> = {
   'groups.removeMember': 'Remove',
   'groups.selectUser': 'Select user',
   'groups.deleteConfirm': 'Delete this group?',
+  'groups.linkEntra': 'Link Entra group',
+  'groups.syncEntra': 'Sync now',
+  'groups.syncedFromEntra': 'Synced from Entra',
+  'groups.linkedFromEntra': 'Linked from Entra',
+  'groups.syncManaged': 'Members are managed by Entra sync',
   'common.actions': 'Actions',
   'common.cancel': 'Cancel',
   'common.save': 'Save',
@@ -63,6 +71,9 @@ vi.mock('@/lib/hooks/use-sharing', () => ({
   useGroupMembers: vi.fn(),
   useAddGroupMember: vi.fn(),
   useRemoveGroupMember: vi.fn(),
+  useSyncEntraGroups: vi.fn(),
+  useLinkEntraGroup: vi.fn(),
+  useEntraGroupSearch: vi.fn(),
 }))
 
 // Real Select is a Radix popover jsdom can't drive; swap in a native <select>.
@@ -96,6 +107,9 @@ const mockUseDeleteGroup = vi.mocked(useDeleteGroup)
 const mockUseGroupMembers = vi.mocked(useGroupMembers)
 const mockUseAddGroupMember = vi.mocked(useAddGroupMember)
 const mockUseRemoveGroupMember = vi.mocked(useRemoveGroupMember)
+const mockUseSyncEntraGroups = vi.mocked(useSyncEntraGroups)
+const mockUseLinkEntraGroup = vi.mocked(useLinkEntraGroup)
+const mockUseEntraGroupSearch = vi.mocked(useEntraGroupSearch)
 
 const asResult = <T,>(value: Partial<T>) => value as T
 
@@ -146,6 +160,20 @@ describe('GroupsPage', () => {
     mockUseDeleteGroup.mockReturnValue(deleteGroup as unknown as ReturnType<typeof useDeleteGroup>)
     mockUseAddGroupMember.mockReturnValue(addMember as unknown as ReturnType<typeof useAddGroupMember>)
     mockUseRemoveGroupMember.mockReturnValue(removeMember as unknown as ReturnType<typeof useRemoveGroupMember>)
+    mockUseSyncEntraGroups.mockReturnValue(
+      mutationStub() as unknown as ReturnType<typeof useSyncEntraGroups>
+    )
+    mockUseLinkEntraGroup.mockReturnValue(
+      mutationStub() as unknown as ReturnType<typeof useLinkEntraGroup>
+    )
+    mockUseEntraGroupSearch.mockReturnValue(
+      asResult<ReturnType<typeof useEntraGroupSearch>>({
+        data: [],
+        isFetching: false,
+        isSuccess: true,
+        fetchStatus: 'idle',
+      })
+    )
   })
 
   it('lists groups with their descriptions and member counts', () => {
@@ -214,5 +242,59 @@ describe('GroupsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(createGroup.mutateAsync).toHaveBeenCalledWith({ name: 'Marketing', description: undefined })
+  })
+
+  describe('Entra-linked groups (WBS 4.20)', () => {
+    const entraGroup: GroupResponse = {
+      id: 'group:entra1',
+      name: 'Engineering (Entra)',
+      description: null,
+      source: 'entra',
+      entra_group_oid: 'oid-1',
+      member_count: 5,
+    }
+
+    it('shows the Link Entra group control in the header', () => {
+      render(<GroupsPage />)
+      expect(screen.getByRole('button', { name: 'Link Entra group' })).toBeInTheDocument()
+    })
+
+    it('does NOT show Sync now when there are no Entra-linked groups', () => {
+      render(<GroupsPage />)
+      expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument()
+    })
+
+    it('shows Sync now once at least one Entra group is linked', () => {
+      mockUseGroups.mockReturnValue(
+        asResult<ReturnType<typeof useGroups>>({ data: [...groups, entraGroup], isLoading: false })
+      )
+      render(<GroupsPage />)
+      expect(screen.getByRole('button', { name: 'Sync now' })).toBeInTheDocument()
+    })
+
+    it('labels Entra rows with the Linked-from-Entra badge', () => {
+      mockUseGroups.mockReturnValue(
+        asResult<ReturnType<typeof useGroups>>({ data: [entraGroup], isLoading: false })
+      )
+      render(<GroupsPage />)
+      expect(screen.getByTestId('entra-badge')).toHaveTextContent('Linked from Entra')
+    })
+
+    it('hides the add-member bar + remove controls for an Entra group and shows the managed hint', () => {
+      mockUseGroups.mockReturnValue(
+        asResult<ReturnType<typeof useGroups>>({ data: [entraGroup], isLoading: false })
+      )
+      render(<GroupsPage />)
+      fireEvent.click(screen.getByRole('button', { name: /Engineering \(Entra\)/ }))
+
+      expect(screen.getByTestId('entra-managed-hint')).toHaveTextContent(
+        'Members are managed by Entra sync'
+      )
+      expect(screen.getByTestId('entra-detail-badge')).toHaveTextContent('Synced from Entra')
+      expect(
+        screen.queryByRole('button', { name: /^Remove/ })
+      ).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument()
+    })
   })
 })

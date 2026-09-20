@@ -15,11 +15,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import {
   useGroups, useCreateGroup, useDeleteGroup, useGroupMembers,
-  useAddGroupMember, useRemoveGroupMember, useUsers,
+  useAddGroupMember, useRemoveGroupMember, useUsers, useSyncEntraGroups,
 } from '@/lib/hooks/use-sharing'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { Plus, Users, X, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Plus, Users, X, MoreHorizontal, Trash2, RefreshCw, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LinkEntraGroupDialog } from './LinkEntraGroupDialog'
 
 function initials(name: string) {
   return (
@@ -40,11 +41,13 @@ export default function GroupsPage() {
   const deleteGroup = useDeleteGroup()
 
   const [createOpen, setCreateOpen] = useState(false)
+  const [linkEntraOpen, setLinkEntraOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [memberUserId, setMemberUserId] = useState('')
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
+  const syncEntra = useSyncEntraGroups()
 
   const { data: members, isLoading: membersLoading } = useGroupMembers(selectedGroupId ?? '', !!selectedGroupId)
   const addMember = useAddGroupMember(selectedGroupId ?? '')
@@ -54,6 +57,8 @@ export default function GroupsPage() {
   const memberIds = new Set(members?.map((m) => m.user_id) ?? [])
   const availableUsers = users?.filter((u) => !memberIds.has(u.id)) ?? []
   const memberCount = members?.length ?? selectedGroup?.member_count ?? 0
+  const isEntraGroup = selectedGroup?.source === 'entra'
+  const hasEntraGroup = (groups ?? []).some((g) => g.source === 'entra')
 
   const handleCreate = async () => {
     if (!name.trim()) return
@@ -84,10 +89,41 @@ export default function GroupsPage() {
                 <Badge variant="secondary" className="tabular-nums">
                   {t('groups.groupCount', { count: groups?.length ?? 0 })}
                 </Badge>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="size-4" />
-                  {t('groups.create')}
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  {hasEntraGroup && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => syncEntra.mutate()}
+                          disabled={syncEntra.isPending}
+                          aria-label={t('groups.syncEntra')}
+                        >
+                          <RefreshCw className={cn('size-4', syncEntra.isPending && 'animate-spin')} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">{t('groups.syncEntra')}</TooltipContent>
+                    </Tooltip>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setLinkEntraOpen(true)}
+                        aria-label={t('groups.linkEntra')}
+                      >
+                        <Link2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{t('groups.linkEntra')}</TooltipContent>
+                  </Tooltip>
+                  <Button size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="size-4" />
+                    {t('groups.create')}
+                  </Button>
+                </div>
               </div>
               {!groups?.length ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-10 text-center md:py-0">
@@ -127,6 +163,15 @@ export default function GroupsPage() {
                               </span>
                             )}
                           </span>
+                          {group.source === 'entra' && (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0"
+                              data-testid="entra-badge"
+                            >
+                              {t('groups.linkedFromEntra')}
+                            </Badge>
+                          )}
                           <Badge variant="secondary" className="shrink-0 tabular-nums">
                             {group.member_count}
                           </Badge>
@@ -150,7 +195,14 @@ export default function GroupsPage() {
                   <div className="flex h-14 items-center justify-between gap-3 border-b border-border px-4">
                     <div className="min-w-0">
                       <h2 className="truncate text-[15px] font-medium">{selectedGroup.name}</h2>
-                      <Badge variant="secondary" className="mt-0.5 tabular-nums">{t('groups.memberCount', { count: memberCount })}</Badge>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary" className="tabular-nums">{t('groups.memberCount', { count: memberCount })}</Badge>
+                        {isEntraGroup && (
+                          <Badge variant="outline" data-testid="entra-detail-badge">
+                            {t('groups.syncedFromEntra')}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <DropdownMenu>
                       <Tooltip>
@@ -196,20 +248,22 @@ export default function GroupsPage() {
                                   <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
                                 )}
                               </span>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={`${t('groups.removeMember')} ${label}`}
-                                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                                    onClick={() => removeMember.mutate(m.user_id)}
-                                  >
-                                    <X className="size-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top">{t('groups.removeMember')}</TooltipContent>
-                              </Tooltip>
+                              {!isEntraGroup && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`${t('groups.removeMember')} ${label}`}
+                                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                                      onClick={() => removeMember.mutate(m.user_id)}
+                                    >
+                                      <X className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">{t('groups.removeMember')}</TooltipContent>
+                                </Tooltip>
+                              )}
                             </li>
                           )
                         })}
@@ -217,30 +271,36 @@ export default function GroupsPage() {
                     )}
                   </div>
 
-                  <div className="flex gap-2 border-t border-border px-4 py-3">
-                    <Select value={memberUserId || undefined} onValueChange={setMemberUserId}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder={t('groups.selectUser')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableUsers.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>
-                            {u.display_name || u.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        if (!memberUserId) return
-                        addMember.mutate(memberUserId, { onSuccess: () => setMemberUserId('') })
-                      }}
-                      disabled={!memberUserId || addMember.isPending}
-                    >
-                      {t('groups.addMember')}
-                    </Button>
-                  </div>
+                  {isEntraGroup ? (
+                    <div className="border-t border-border px-4 py-3 text-center text-sm text-muted-foreground" data-testid="entra-managed-hint">
+                      {t('groups.syncManaged')}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2 border-t border-border px-4 py-3">
+                      <Select value={memberUserId || undefined} onValueChange={setMemberUserId}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder={t('groups.selectUser')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableUsers.map((u) => (
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.display_name || u.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (!memberUserId) return
+                          addMember.mutate(memberUserId, { onSuccess: () => setMemberUserId('') })
+                        }}
+                        disabled={!memberUserId || addMember.isPending}
+                      >
+                        {t('groups.addMember')}
+                      </Button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -287,6 +347,12 @@ export default function GroupsPage() {
         }}
         isLoading={deleteGroup.isPending}
         confirmVariant="destructive"
+      />
+
+      <LinkEntraGroupDialog
+        open={linkEntraOpen}
+        onOpenChange={setLinkEntraOpen}
+        onLinked={(gid) => setSelectedGroupId(gid)}
       />
     </>
   )

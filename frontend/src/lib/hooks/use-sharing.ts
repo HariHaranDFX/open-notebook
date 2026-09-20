@@ -4,6 +4,7 @@ import {
   type GrantCreate,
   type GrantRole,
   type GroupCreate,
+  type LinkEntraGroupRequest,
   type ResourceType,
 } from '@/lib/api/sharing'
 import { QUERY_KEYS } from '@/lib/api/query-client'
@@ -188,6 +189,66 @@ export function useUpdateGrant(resourceType: ResourceType, resourceId: string) {
       toast({
         title: t('common.success'),
         description: t('sharing.grantUpdated'),
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// WBS 4.20 — Entra-linked groups (admin-only)
+
+export function useEntraGroupSearch(query: string) {
+  const trimmed = query.trim()
+  return useQuery({
+    queryKey: ['entra-groups', 'search', trimmed],
+    queryFn: () => sharingApi.searchEntraGroups(trimmed),
+    enabled: trimmed.length > 0,
+    retry: false,
+  })
+}
+
+export function useLinkEntraGroup() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (body: LinkEntraGroupRequest) => sharingApi.linkEntraGroup(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.groups })
+      toast({
+        title: t('common.success'),
+        description: t('groups.linkEntraSuccess'),
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useSyncEntraGroups() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: () => sharingApi.syncEntraGroups(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.groups })
+      toast({
+        title: t('common.success'),
+        description: t('groups.syncStarted'),
       })
     },
     onError: (error: unknown) => {

@@ -47,6 +47,16 @@ export interface GroupCreate {
   description?: string | null
 }
 
+export interface EntraGroupCandidate {
+  entra_group_oid: string
+  display_name: string
+  description?: string | null
+}
+
+export interface LinkEntraGroupRequest {
+  entra_group_oid: string
+}
+
 export const sharingApi = {
   listUsers: async () => {
     const response = await apiClient.get<UserPickerItem[]>('/users')
@@ -137,6 +147,30 @@ export const sharingApi = {
   ) => {
     const response = await apiClient.delete(
       `/${resourceType}s/${resourceId}/grants/${grantId}`
+    )
+    return response.data
+  },
+
+  // WBS 4.20 — Entra-linked groups (admin-only)
+  searchEntraGroups: async (query: string) => {
+    const response = await apiClient.get<EntraGroupCandidate[]>(
+      '/groups/entra/search',
+      { params: { q: query } }
+    )
+    return response.data
+  },
+
+  linkEntraGroup: async (body: LinkEntraGroupRequest) => {
+    const response = await apiClient.post<GroupResponse>(
+      '/groups/entra/link',
+      body
+    )
+    return response.data
+  },
+
+  syncEntraGroups: async () => {
+    const response = await apiClient.post<{ command_id: string }>(
+      '/groups/entra/sync'
     )
     return response.data
   },
