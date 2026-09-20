@@ -51,6 +51,8 @@ export const esES = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Fuente",
     notebook: "Cuaderno",
     podcast: "Podcast",

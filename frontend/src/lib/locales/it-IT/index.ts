@@ -51,6 +51,8 @@ export const itIT = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",

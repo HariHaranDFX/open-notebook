@@ -49,6 +49,8 @@ export const enUS = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",

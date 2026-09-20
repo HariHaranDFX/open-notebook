@@ -51,6 +51,8 @@ export const ruRU = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Источник",
     notebook: "Блокнот",
     podcast: "Подкаст",

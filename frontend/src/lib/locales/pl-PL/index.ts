@@ -51,6 +51,8 @@ export const plPL = {
     german: "Niemiecki",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Źródło",
     notebook: "Notatnik",
     podcast: "Podcast",

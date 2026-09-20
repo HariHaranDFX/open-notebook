@@ -42,6 +42,8 @@ const LANGUAGE_OPTIONS = [
   ['de-DE', 'common.german'],
   ['pl-PL', 'common.polish'],
   ['tr-TR', 'common.turkish'],
+  ['th-TH', 'common.thai'],
+  ['ar-SA', 'common.arabic'],
 ] as const
 
 function isLanguageActive(code: string, language?: string) {

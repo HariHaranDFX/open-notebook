@@ -51,6 +51,8 @@ export const zhTW = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",
