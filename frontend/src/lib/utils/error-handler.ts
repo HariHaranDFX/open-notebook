@@ -60,6 +60,11 @@ export const ERROR_MAP: Record<string, string> = {
   "CSRF origin check failed": "apiErrors.csrfFailed",
   "Not authenticated": "apiErrors.unauthorized",
   "This group is managed by Entra sync and cannot be edited here.": "apiErrors.entraGroupManaged",
+  // Matches both the 401/403 (consent needed) and other Graph upstream detail
+  // strings emitted by _graph_http_exception in api/routers/groups.py, via the
+  // startsWith fallback in mappedKey().
+  "Microsoft Graph rejected the request": "apiErrors.entraGraphAuth",
+  "Microsoft Graph error": "apiErrors.entraGraphError",
 };
 
 function mappedKey(message: string): string | undefined {

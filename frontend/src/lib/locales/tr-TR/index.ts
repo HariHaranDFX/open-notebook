@@ -214,6 +214,8 @@ export const trTR = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Bu grup Entra eşitlemesi tarafından yönetiliyor ve buradan düzenlenemez.",
+    entraGraphAuth: "Entra uygulama kaydında gerekli Graph izni eksik. Bir yöneticiden 'GroupMember.Read.All' (Uygulama) iznini yönetici onayıyla vermesini isteyin ve tekrar deneyin.",
+    entraGraphError: "Microsoft Graph'e ulaşılamıyor veya bir hata döndürdü. Kısa süre içinde tekrar deneyin.",
   },
   connectionErrors: {
     apiTitle: "API Sunucusuna Bağlanılamıyor",

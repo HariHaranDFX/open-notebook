@@ -214,6 +214,8 @@ export const zhCN = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "此组由 Entra 同步管理,无法在此处编辑。",
+    entraGraphAuth: "Entra 应用注册缺少必需的 Graph 权限。请管理员授予 'GroupMember.Read.All'(应用程序)权限并批准管理员同意,然后重试。",
+    entraGraphError: "无法访问 Microsoft Graph 或返回错误。请稍后重试。",
   },
   connectionErrors: {
     apiTitle: "无法连接到 API 服务器",

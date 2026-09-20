@@ -217,6 +217,8 @@ export const deDE = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Diese Gruppe wird von der Entra-Synchronisierung verwaltet und kann hier nicht bearbeitet werden.",
+    entraGraphAuth: "Der Entra-App-Registrierung fehlt die erforderliche Graph-Berechtigung. Bitten Sie einen Administrator, 'GroupMember.Read.All' (Anwendung) mit Administratoreinwilligung zu erteilen, und versuchen Sie es erneut.",
+    entraGraphError: "Microsoft Graph ist nicht erreichbar oder hat einen Fehler zurückgegeben. Versuchen Sie es in Kürze erneut.",
   },
   connectionErrors: {
     apiTitle: "Keine Verbindung zum API-Server möglich",

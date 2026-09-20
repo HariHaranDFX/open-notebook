@@ -100,10 +100,15 @@ Optional. Lets an admin link Microsoft Entra security groups so membership
 changes in Entra flow into Open Notebook's ACL without re-sharing every
 resource.
 
-1. In the same Entra app registration used for OIDC, add the **Application**
-   permission `GroupMember.Read.All` and grant **admin consent**. No user
-   ever needs to consent to Graph scopes — the API calls Graph with the
-   application's own client credentials.
+1. In the same Entra app registration used for OIDC, open **API permissions**,
+   add **Microsoft Graph → Application permissions → `GroupMember.Read.All`**,
+   and click **Grant admin consent for &lt;tenant&gt;**. Both steps are required —
+   adding the permission without granting admin consent still yields
+   `Authorization_RequestDenied` from Graph, and the Link Entra group typeahead
+   will surface a 502 with an actionable message ("Grant the Entra app
+   registration the 'GroupMember.Read.All' Application permission and admin
+   consent, then try again"). No user ever needs to consent to Graph
+   scopes — the API calls Graph with the application's own client credentials.
 2. Set the environment variables below, then restart the API and worker.
 
 | Variable | Required | Default | Description |

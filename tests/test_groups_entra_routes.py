@@ -78,6 +78,47 @@ def test_search_forbidden_for_non_admin(monkeypatch):
     assert r.status_code == 403
 
 
+def test_search_graph_403_returns_502_with_permission_hint(monkeypatch):
+    """Regression: prior code let GraphAPIError bubble as 500. Must be actionable 502."""
+    from api.graph_client import GraphAPIError
+
+    def raise_auth(*_a, **_kw):
+        raise GraphAPIError(403, "search", '{"error":"Authorization_RequestDenied"}')
+
+    with patch("api.routers.groups.search_groups", new=AsyncMock(side_effect=raise_auth)):
+        r = _client(monkeypatch).get("/api/groups/entra/search?q=dfx")
+    assert r.status_code == 502
+    detail = r.json()["detail"]
+    assert "Microsoft Graph rejected the request" in detail
+    assert "GroupMember.Read.All" in detail
+
+
+def test_search_graph_500_returns_generic_502(monkeypatch):
+    from api.graph_client import GraphAPIError
+
+    def raise_upstream(*_a, **_kw):
+        raise GraphAPIError(500, "search", "internal error")
+
+    with patch("api.routers.groups.search_groups", new=AsyncMock(side_effect=raise_upstream)):
+        r = _client(monkeypatch).get("/api/groups/entra/search?q=x")
+    assert r.status_code == 502
+    assert "Microsoft Graph error" in r.json()["detail"]
+
+
+def test_link_graph_403_returns_502(monkeypatch):
+    from api.graph_client import GraphAPIError
+
+    def raise_auth(*_a, **_kw):
+        raise GraphAPIError(403, "get_group", "denied")
+
+    with patch("api.routers.groups.graph_get_group", new=AsyncMock(side_effect=raise_auth)):
+        r = _client(monkeypatch).post(
+            "/api/groups/entra/link", json={"entra_group_oid": "e1"}
+        )
+    assert r.status_code == 502
+    assert "GroupMember.Read.All" in r.json()["detail"]
+
+
 def test_search_empty_query_returns_empty_list_without_graph_call(monkeypatch):
     with patch(
         "api.routers.groups.search_groups",

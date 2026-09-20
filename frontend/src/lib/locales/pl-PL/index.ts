@@ -214,6 +214,8 @@ export const plPL = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Ta grupa jest zarządzana przez synchronizację Entra i nie może być edytowana tutaj.",
+    entraGraphAuth: "Rejestracja aplikacji Entra nie ma wymaganego uprawnienia Graph. Poproś administratora o przyznanie 'GroupMember.Read.All' (Aplikacja) ze zgodą administratora i spróbuj ponownie.",
+    entraGraphError: "Microsoft Graph jest nieosiągalny lub zwrócił błąd. Spróbuj ponownie za chwilę.",
   },
   connectionErrors: {
     apiTitle: "Nie można połączyć się z serwerem API",

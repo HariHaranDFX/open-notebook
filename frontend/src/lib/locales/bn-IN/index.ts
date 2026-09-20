@@ -214,6 +214,8 @@ export const bnIN = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "এই গ্রুপটি Entra সিঙ্ক দ্বারা পরিচালিত এবং এখানে সম্পাদনা করা যাবে না।",
+    entraGraphAuth: "Entra অ্যাপ রেজিস্ট্রেশনে প্রয়োজনীয় Graph অনুমতি নেই। একজন প্রশাসককে 'GroupMember.Read.All' (অ্যাপ্লিকেশন) অ্যাডমিন সম্মতি সহ প্রদান করতে বলুন এবং আবার চেষ্টা করুন।",
+    entraGraphError: "Microsoft Graph-এ পৌঁছানো যাচ্ছে না বা একটি ত্রুটি ফিরিয়ে দিয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
   },
   connectionErrors: {
     apiTitle: "API সার্ভারে সংযোগ করতে অক্ষম",

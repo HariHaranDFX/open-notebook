@@ -21,6 +21,21 @@ _GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 _TOKEN_CACHE: Optional[tuple[str, float]] = None
 
 
+class GraphAPIError(RuntimeError):
+    """Raised when Microsoft Graph returns a non-2xx.
+
+    Carries the HTTP status so callers can distinguish
+    consent/permission problems (401/403) from transient upstream
+    failures (5xx) and craft actionable messages.
+    """
+
+    def __init__(self, status_code: int, action: str, body: str) -> None:
+        self.status_code = status_code
+        self.action = action
+        self.body = body
+        super().__init__(f"Graph {action} failed: {status_code} {body}")
+
+
 def _reset_token_cache() -> None:
     """Test-only helper — clears the module-level token cache."""
     global _TOKEN_CACHE
@@ -59,9 +74,7 @@ async def acquire_graph_token(client: httpx.AsyncClient) -> str:
         timeout=10,
     )
     if resp.status_code != 200:
-        raise RuntimeError(
-            f"Graph token request failed: {resp.status_code} {resp.text}"
-        )
+        raise GraphAPIError(resp.status_code, "token request", resp.text)
     payload = resp.json()
     token = payload["access_token"]
     ttl = int(payload.get("expires_in", 3600))
@@ -97,9 +110,7 @@ async def search_groups(query: str, *, limit: int = 25) -> list[dict[str, Any]]:
             extra_headers={"ConsistencyLevel": "eventual"},
         )
     if resp.status_code != 200:
-        raise RuntimeError(
-            f"Graph search failed: {resp.status_code} {resp.text}"
-        )
+        raise GraphAPIError(resp.status_code, "search", resp.text)
     return [
         {
             "entra_group_oid": row.get("id", ""),
@@ -119,9 +130,7 @@ async def get_group(entra_group_oid: str) -> dict[str, Any]:
             params={"$select": "id,displayName,description"},
         )
     if resp.status_code != 200:
-        raise RuntimeError(
-            f"Graph get_group failed: {resp.status_code} {resp.text}"
-        )
+        raise GraphAPIError(resp.status_code, "get_group", resp.text)
     row = resp.json()
     return {
         "entra_group_oid": row.get("id", ""),
@@ -144,9 +153,7 @@ async def list_group_member_oids(entra_group_oid: str) -> list[str]:
             )
             resp = await _authed_get(client, url, params=params)
             if resp.status_code != 200:
-                raise RuntimeError(
-                    f"Graph list members failed: {resp.status_code} {resp.text}"
-                )
+                raise GraphAPIError(resp.status_code, "list members", resp.text)
             payload = resp.json()
             for row in payload.get("value", []):
                 if row.get("@odata.type") == "#microsoft.graph.user":

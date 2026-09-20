@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from surreal_commands import submit_command
 
 from api.auth.deps import require_admin, require_user
+from api.graph_client import GraphAPIError
 from api.graph_client import get_group as graph_get_group
 from api.graph_client import search_groups
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -33,6 +34,29 @@ async def _reject_if_entra(group_id: str) -> None:
                 "This group is managed by Entra sync and cannot be edited here."
             ),
         )
+
+
+def _graph_http_exception(exc: GraphAPIError) -> HTTPException:
+    """Turn a Graph failure into a helpful HTTP error.
+
+    401/403 → the Entra app registration is missing the required Application
+    permission or has not been granted admin consent. Emit a message the
+    admin can act on. Other statuses → generic Graph upstream error.
+    """
+    if exc.status_code in (401, 403):
+        return HTTPException(
+            status_code=502,
+            detail=(
+                "Microsoft Graph rejected the request "
+                f"(HTTP {exc.status_code}). Grant the Entra app registration "
+                "the 'GroupMember.Read.All' Application permission and "
+                "admin consent, then try again."
+            ),
+        )
+    return HTTPException(
+        status_code=502,
+        detail=f"Microsoft Graph error (HTTP {exc.status_code}).",
+    )
 
 
 class GroupCreate(BaseModel):
@@ -336,7 +360,10 @@ async def entra_group_search(q: str, request: Request):
     query = (q or "").strip()
     if not query:
         return []
-    results = await search_groups(query)
+    try:
+        results = await search_groups(query)
+    except GraphAPIError as exc:
+        raise _graph_http_exception(exc) from exc
     return [EntraGroupCandidate(**row) for row in results]
 
 
@@ -344,7 +371,10 @@ async def entra_group_search(q: str, request: Request):
 async def entra_group_link(body: EntraLinkRequest, request: Request):
     """Idempotent upsert: link an Entra group into user_group + kick a scoped sync."""
     require_admin(request)
-    snapshot = await graph_get_group(body.entra_group_oid)
+    try:
+        snapshot = await graph_get_group(body.entra_group_oid)
+    except GraphAPIError as exc:
+        raise _graph_http_exception(exc) from exc
 
     existing = await repo_query(
         "SELECT id FROM user_group WHERE entra_group_oid = $oid",

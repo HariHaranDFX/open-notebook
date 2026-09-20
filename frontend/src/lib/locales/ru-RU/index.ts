@@ -214,6 +214,8 @@ export const ruRU = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Эта группа управляется синхронизацией Entra и не может быть отредактирована здесь.",
+    entraGraphAuth: "У регистрации приложения Entra нет необходимого разрешения Graph. Попросите администратора предоставить 'GroupMember.Read.All' (приложение) с администраторским согласием и повторите попытку.",
+    entraGraphError: "Microsoft Graph недоступен или вернул ошибку. Повторите попытку позже.",
   },
   connectionErrors: {
     apiTitle: "Не удаётся подключиться к API-серверу",

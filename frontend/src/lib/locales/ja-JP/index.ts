@@ -214,6 +214,8 @@ export const jaJP = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "このグループは Entra 同期によって管理されており、ここでは編集できません。",
+    entraGraphAuth: "Entra アプリ登録に必要な Graph 権限がありません。管理者に 'GroupMember.Read.All'(アプリケーション)権限と管理者の同意を付与してもらい、再度お試しください。",
+    entraGraphError: "Microsoft Graph に接続できないか、エラーを返しました。しばらくしてからお試しください。",
   },
   connectionErrors: {
     apiTitle: "APIサーバーに接続できません",

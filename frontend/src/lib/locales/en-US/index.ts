@@ -212,6 +212,8 @@ export const enUS = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "This group is managed by Entra sync and cannot be edited here.",
+    entraGraphAuth: "The Entra app registration is missing the required Graph permission. Ask an administrator to grant 'GroupMember.Read.All' (Application) with admin consent, then try again.",
+    entraGraphError: "Microsoft Graph is unreachable or returned an error. Try again shortly.",
   },
   connectionErrors: {
     apiTitle: "Unable to Connect to API Server",

@@ -214,6 +214,8 @@ export const arSA = {
     transformationDefaultPromptAdmin: "يمكن للمسؤول فقط تعديل موجه التحويل الافتراضي.",
     csrfFailed: "فشل التحقق الأمني. يرجى التحديث والمحاولة مرة أخرى.",
     entraGroupManaged: "تتم إدارة هذه المجموعة بواسطة مزامنة Entra ولا يمكن تعديلها هنا.",
+    entraGraphAuth: "تسجيل تطبيق Entra يفتقر إلى إذن Graph المطلوب. اطلب من المسؤول منح إذن 'GroupMember.Read.All' (تطبيق) مع موافقة المسؤول، ثم حاول مرة أخرى.",
+    entraGraphError: "لا يمكن الوصول إلى Microsoft Graph أو أنه أرجع خطأ. حاول مرة أخرى بعد قليل.",
   },
   connectionErrors: {
     apiTitle: "تعذر الاتصال بخادم API",
