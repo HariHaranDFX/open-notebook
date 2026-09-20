@@ -41,7 +41,7 @@ app/layout.tsx
 | `/podcasts` | `AppShell` → `PageFrame` → `PageHeader` → Episodes/Templates tabs → `EpisodesTab` or `TemplatesTab`; global Create Podcast opens the generation sheet. |
 | `/podcasts/[id]` | `AppShell` → episode loading/error boundary → `EpisodeDetail` with playback, summary, outline, transcript, and common details. |
 | `/transformations` | `AppShell` → `PageFrame` → `PageHeader` → Library/Playground tabs → `TransformationsList`, `TransformationEditorDialog`, `DefaultPromptEditor`, or `TransformationPlayground`. |
-| `/settings/api-keys` | settings `AppShell` + `AdminOnly` → model defaults, credentials, provider discovery/sync, testing, and credential/model sheets. |
+| `/settings/models` | settings `AppShell` + `AdminOnly` → model defaults, credentials, provider discovery/sync, testing, and credential/model sheets. |
 | `/settings/groups` | settings `AppShell` + `AdminOnly` → group list/detail, membership controls, and create/delete dialogs. |
 
 General settings and Advanced tools are not routes. `SettingsDialogProvider` renders one global `SettingsDialog`; its General tab contains `SettingsForm`, while Advanced contains `SystemInfo` and `RebuildEmbeddings`.
@@ -104,7 +104,7 @@ Feature hooks map directly to API domains: notebooks/notes, sources/insights, no
 | API error copy/disclosure | `lib/utils/error-handler.ts` | locale keys, 4xx actionability, 5xx/network secrecy. |
 | Customer identity | `config/brand*.json`, `brand-config.ts`, `BrandProvider.tsx` | startup validation, metadata, both themes, contrast. |
 | General/Advanced settings | `SettingsDialog.tsx` and `settings/components/SettingsForm.tsx` | admin gate, API settings hook, narrow-sheet layout. |
-| Models and credentials | `/settings/api-keys/page.tsx` plus `components/settings/` | provider registry, encryption readiness, dialog tests. |
+| Models and credentials | `/settings/models/page.tsx` plus `components/settings/` | provider registry, encryption readiness, dialog tests. |
 | Sharing and groups | `components/sharing/`, `use-sharing.ts`, `/settings/groups/page.tsx` | viewer/editor/owner/admin permissions and 403 state. |
 | Any visible copy | `src/lib/locales/en-US/index.ts` | all other locale files and locale parity test. |
 

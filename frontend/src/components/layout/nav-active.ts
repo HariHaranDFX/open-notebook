@@ -1,4 +1,4 @@
-/** Longest matching nav href wins (avoids /settings lighting up on /settings/api-keys). */
+/** Longest matching nav href wins (avoids /settings lighting up on /settings/models). */
 export function isNavItemActive(
   pathname: string | null | undefined,
   href: string,

@@ -24,7 +24,7 @@ Provider tree in `app/layout.tsx` (outermost → innermost): BrandProvider → E
 - **Libraries:** `/notebooks` and `/sources` use `AppShell`, `PageFrame`, `PageHeader`, and the shared library toolbar.
 - **Research workspaces:** `/notebooks/[id]` and `/sources/[id]` compose feature panes through `ResearchWorkbench`; `/search` switches between Ask and Search without discarding query state.
 - **Output studios:** `/podcasts`, `/podcasts/[id]`, and `/transformations` keep library, editor, playback, and playground concerns in their feature folders.
-- **Administration:** `/settings/api-keys` and `/settings/groups` are admin-only routes nested under the settings layout. General settings and Advanced tools are sections of the global `SettingsDialog`, opened from the account menu or command palette; they are intentionally not duplicate pages.
+- **Administration:** `/settings/models` and `/settings/groups` are admin-only routes nested under the settings layout. General settings and Advanced tools are sections of the global `SettingsDialog`, opened from the account menu or command palette; they are intentionally not duplicate pages.
 
 The root route and authenticated dashboard root redirect to `/notebooks`. Route groups organize source files only and do not change public URLs. See [FRONTEND_MAP.md](../FRONTEND_MAP.md) for the page-to-component and data-flow map.
 
