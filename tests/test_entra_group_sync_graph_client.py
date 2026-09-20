@@ -6,6 +6,7 @@ Uses httpx.MockTransport (built into httpx) — no new dev dep.
 from __future__ import annotations
 
 import time
+from typing import Callable
 from unittest.mock import patch
 
 import httpx
@@ -118,7 +119,7 @@ _GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 _TOKEN_URL = "https://login.microsoftonline.com/tenant-1/oauth2/v2.0/token"
 
 
-def _auth_and(url_map: dict) -> "callable":
+def _auth_and(url_map: dict) -> Callable[[httpx.Request], httpx.Response]:
     """Handler factory: returns 200/tok for the token URL, otherwise dispatches by path."""
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -179,7 +180,7 @@ async def test_search_groups_returns_top_matches_mapped():
 
 @pytest.mark.asyncio
 async def test_search_groups_sends_consistency_level_eventual_header():
-    seen_headers = {}
+    seen_headers: dict[str, str] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         if str(request.url).startswith(_TOKEN_URL):
