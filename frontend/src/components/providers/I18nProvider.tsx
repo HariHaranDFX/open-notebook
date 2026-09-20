@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import '@/lib/i18n'
 import { LanguageLoadingOverlay } from '@/components/common/LanguageLoadingOverlay'
+import { rtlLocales, type LanguageCode } from '@/lib/locales'
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false)
@@ -16,6 +17,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = activeLanguage
+    document.documentElement.dir = rtlLocales.has(activeLanguage as LanguageCode) ? 'rtl' : 'ltr'
   }, [activeLanguage])
 
   // Avoid hydration mismatch by waiting for mount

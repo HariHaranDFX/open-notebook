@@ -18,6 +18,7 @@ describe('I18nProvider', () => {
   beforeEach(() => {
     language = 'en-US'
     document.documentElement.lang = 'en'
+    document.documentElement.dir = ''
   })
 
   it('keeps the document language synchronized with the active locale', async () => {
@@ -29,5 +30,21 @@ describe('I18nProvider', () => {
     rerender(<I18nProvider>content</I18nProvider>)
 
     await waitFor(() => expect(document.documentElement.lang).toBe('zh-CN'))
+  })
+
+  it('sets dir=rtl for RTL locales and dir=ltr otherwise', async () => {
+    const { rerender } = render(<I18nProvider>content</I18nProvider>)
+
+    await waitFor(() => expect(document.documentElement.dir).toBe('ltr'))
+
+    language = 'ar-SA'
+    rerender(<I18nProvider>content</I18nProvider>)
+
+    await waitFor(() => expect(document.documentElement.dir).toBe('rtl'))
+
+    language = 'en-US'
+    rerender(<I18nProvider>content</I18nProvider>)
+
+    await waitFor(() => expect(document.documentElement.dir).toBe('ltr'))
   })
 })

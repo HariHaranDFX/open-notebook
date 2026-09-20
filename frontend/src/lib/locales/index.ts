@@ -43,6 +43,12 @@ export type Language = {
   label: string;
 };
 
+// Locales that render right-to-left. Consumed by I18nProvider to set the
+// `dir` attribute on <html>; Tailwind v4's `rtl:` variant and browsers'
+// native bidi rendering both key off that. Add Hebrew, Farsi, etc. here
+// when they land.
+export const rtlLocales: ReadonlySet<LanguageCode> = new Set(['ar-SA'])
+
 export const languages: Language[] = [
   { code: 'en-US', label: 'English' },
   { code: 'tr-TR', label: 'Türkçe' },
