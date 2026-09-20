@@ -59,6 +59,7 @@ export const ERROR_MAP: Record<string, string> = {
   "Only an administrator can edit the default transformation prompt": "apiErrors.transformationDefaultPromptAdmin",
   "CSRF origin check failed": "apiErrors.csrfFailed",
   "Not authenticated": "apiErrors.unauthorized",
+  "This group is managed by Entra sync and cannot be edited here.": "apiErrors.entraGroupManaged",
 };
 
 function mappedKey(message: string): string | undefined {
