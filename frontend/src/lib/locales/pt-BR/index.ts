@@ -51,6 +51,8 @@ export const ptBR = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Fonte",
     notebook: "Caderno",
     podcast: "Podcast",

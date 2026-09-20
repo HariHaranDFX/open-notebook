@@ -51,6 +51,8 @@ export const frFR = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Source",
     notebook: "Carnet",
     podcast: "Podcast",

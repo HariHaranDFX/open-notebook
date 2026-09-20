@@ -112,6 +112,8 @@ const languageOptions = [
   ['de-DE', 'common.german'],
   ['pl-PL', 'common.polish'],
   ['tr-TR', 'common.turkish'],
+  ['th-TH', 'common.thai'],
+  ['ar-SA', 'common.arabic'],
 ] as const
 
 type CreateTarget = 'source' | 'notebook' | 'podcast'

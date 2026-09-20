@@ -54,6 +54,8 @@ export const deDE = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Quelle",
     notebook: "Notebook",
     podcast: "Podcast",

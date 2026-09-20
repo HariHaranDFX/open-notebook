@@ -51,6 +51,8 @@ export const trTR = {
     german: "Deutsch",
     polish: "Polski",
     turkish: "Türkçe",
+    thai: "ไทย",
+    arabic: "العربية",
     source: "Kaynak",
     notebook: "Defter",
     podcast: "Podcast",
