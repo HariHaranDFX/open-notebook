@@ -28,9 +28,11 @@ Identity and login remain in [AUTH.md](AUTH.md). Tenancy remains Model A
 ## Groups
 
 - **App-local groups (`user_group.source = 'local'`):** admins create groups
-  and add members from users who have **signed in at least once** (rows in
-  the `user` table). The picker does not list the full Entra directory —
-  that is WBS 4.21.
+  and add members from users who have signed in at least once **or** who
+  the admin invites via the tenant directory picker (WBS 4.21 — see
+  [AUTH.md § Directory picker](AUTH.md#directory-picker-wbs-421)). JIT-
+  stubbed rows are badged **"Never signed in"** until the invited user
+  actually logs in.
 - **Entra-linked groups (`user_group.source = 'entra'`, WBS 4.20):** admins
   link a Microsoft Entra security group by picking it from a Graph
   typeahead in **Settings → Groups → Link Entra group**. Membership is
@@ -47,8 +49,8 @@ Tracked in the commercialization WBS workbook and `scripts/wbs_tasks.py`:
 
 | WBS | Item | Status | Notes |
 |---|---|---|---|
-| **4.20** | **Entra ID group sync** | ✅ Done | Ships behind `ENTRA_GROUP_SYNC_ENABLED`. See [AUTH.md § Entra group sync](AUTH.md#entra-group-sync-wbs-420). Direct members only; unknown Entra members auto-attach at first login. |
-| **4.21** | **Full org directory user picker (Graph) + JIT-stub Entra group members** | Pending (High) | Today: only users who signed in ≥ once (`GET /api/users`); WBS 4.20 sync also skips Entra group members with no local user row. Later: Graph directory search + JIT-stub `user` rows (during sync and on first grant) carrying `entra_oid`/`email`/`display_name`, upserted on first Entra login. |
+| **4.20** | **Entra ID group sync** | ✅ Done | Ships behind `ENTRA_GROUP_SYNC_ENABLED`. See [AUTH.md § Entra group sync](AUTH.md#entra-group-sync-wbs-420). Direct members only. Since 4.21 landed, previously-unknown Entra group members are JIT-stubbed instead of skipped. |
+| **4.21** | **Full org directory user picker (Graph) + JIT-stub Entra group members** | ✅ Done | `GET /api/users/directory` typeahead + `POST /api/users/from-entra` (forgery-validated against Graph) drive the "Invite from directory" affordance in both the share dialog and the Groups admin page. Requires `User.Read.All` (Application) with admin consent. |
 | **4.22** | **Public links, editor reshare, ownership transfer** | Pending (Medium) | Explicitly out of WP2b. Public/link share off by default forever unless product re-opens; editor reshare and ownership transfer need separate design. |
 | **4.23** | **Entra ID group-membership webhooks (Graph change notifications)** | Pending (Medium) | Live push-based membership updates via `POST /api/graph/webhook`; replaces the 15-minute polling loop for near-real-time propagation. Needs publicly-reachable HTTPS callback, `clientState` HMAC validation, subscription lifecycle + ~3-day auto-renewal, replay-dedupe. Deliberately split from 4.20 so subscription lifecycle gets its own security review. Falls back to the polling loop when the subscription is missing/invalid. |
 
@@ -58,7 +60,9 @@ Do **not** mix these into WP3 white-label work.
 
 | Endpoint | Who |
 |---|---|
-| `GET /api/users` | Authenticated — share/group picker |
+| `GET /api/users` | Authenticated — share/group picker (`pending=true` for stubs) |
+| `GET /api/users/directory?q=…` | Authenticated — tenant directory typeahead (WBS 4.21) |
+| `POST /api/users/from-entra` | Authenticated — JIT-stub a tenant user by OID (WBS 4.21) |
 | `GET/POST/PATCH/DELETE /api/groups…` | Admin |
 | `GET/POST/PATCH/DELETE /api/notebooks/{id}/grants` | Owner or admin |
 | `GET/POST/PATCH/DELETE /api/sources/{id}/grants` | Owner or admin |

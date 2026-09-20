@@ -296,6 +296,12 @@ export const esES = {
     roleLabel: "Rol",
     revokeConfirmTitle: "{{resource}} — ¿revocar el acceso de {{principal}}?",
     revokeConfirmDescription: "Esto elimina su concesión directa como {{role}}. Es posible que aún tenga acceso a través de un grupo, un cuaderno vinculado u otra concesión.",
+    inviteFromDirectory: "Invitar desde el directorio",
+    inviteFromDirectoryDescription: "Busca a un compañero de tu organización que aún no haya iniciado sesión.",
+    searchDirectory: "Buscar en el directorio",
+    searchDirectoryPlaceholder: "Escribe un nombre o correo…",
+    noDirectoryResults: "Sin coincidencias en el directorio",
+    neverSignedIn: "Nunca ha iniciado sesión",
   },
   groups: {
     groupCount: "{{count}} grupos",
@@ -328,6 +334,7 @@ export const esES = {
     linkEntraSuccess: "Grupo de Entra vinculado",
     syncStarted: "Sincronización iniciada",
     syncManaged: "Los miembros los gestiona la sincronización de Entra",
+    neverSignedIn: "Nunca ha iniciado sesión",
   },
   notebooks: {
     title: "Cuadernos",

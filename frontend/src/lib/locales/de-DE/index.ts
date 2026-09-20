@@ -299,6 +299,12 @@ export const deDE = {
     roleLabel: "Rolle",
     revokeConfirmTitle: "{{resource}} — Zugriff von {{principal}} entziehen?",
     revokeConfirmDescription: "Dies entfernt die direkte Freigabe als {{role}}. Zugriff über eine Gruppe, ein verknüpftes Notebook oder eine andere Freigabe kann weiterhin bestehen.",
+    inviteFromDirectory: "Aus Verzeichnis einladen",
+    inviteFromDirectoryDescription: "Finde eine Kollegin oder einen Kollegen im Unternehmen, die sich noch nicht angemeldet haben.",
+    searchDirectory: "Verzeichnis durchsuchen",
+    searchDirectoryPlaceholder: "Name oder E-Mail eingeben…",
+    noDirectoryResults: "Keine Treffer im Verzeichnis",
+    neverSignedIn: "Noch nie angemeldet",
   },
   groups: {
     groupCount: "{{count}} Gruppen",
@@ -331,6 +337,7 @@ export const deDE = {
     linkEntraSuccess: "Entra-Gruppe verknüpft",
     syncStarted: "Synchronisierung gestartet",
     syncManaged: "Mitglieder werden von der Entra-Synchronisierung verwaltet",
+    neverSignedIn: "Noch nie angemeldet",
   },
   notebooks: {
     title: "Notebooks",

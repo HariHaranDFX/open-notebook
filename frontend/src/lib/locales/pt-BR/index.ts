@@ -296,6 +296,12 @@ export const ptBR = {
     roleLabel: "Função",
     revokeConfirmTitle: "{{resource}} — revogar o acesso de {{principal}}?",
     revokeConfirmDescription: "Isso remove a concessão direta como {{role}}. A pessoa ainda pode ter acesso por meio de um grupo, um caderno vinculado ou outra concessão.",
+    inviteFromDirectory: "Convidar do diretório",
+    inviteFromDirectoryDescription: "Encontre um colega da sua organização que ainda não fez login.",
+    searchDirectory: "Buscar no diretório",
+    searchDirectoryPlaceholder: "Digite um nome ou e-mail…",
+    noDirectoryResults: "Sem correspondências no diretório",
+    neverSignedIn: "Nunca fez login",
   },
   groups: {
     groupCount: "{{count}} grupos",
@@ -328,6 +334,7 @@ export const ptBR = {
     linkEntraSuccess: "Grupo do Entra vinculado",
     syncStarted: "Sincronização iniciada",
     syncManaged: "Os membros são gerenciados pela sincronização do Entra",
+    neverSignedIn: "Nunca fez login",
   },
   notebooks: {
     title: "Cadernos",

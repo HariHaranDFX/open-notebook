@@ -8,6 +8,19 @@ export interface UserPickerItem {
   id: string
   email: string
   display_name: string
+  // WBS 4.21 — true when the row was JIT-stubbed (directory picker or
+  // Entra group sync) and has never signed in.
+  pending?: boolean
+}
+
+export interface DirectoryUserCandidate {
+  entra_oid: string
+  email: string
+  display_name: string
+}
+
+export interface StubUserFromEntraRequest {
+  entra_oid: string
 }
 
 export interface GroupResponse {
@@ -23,6 +36,7 @@ export interface GroupMemberResponse {
   user_id: string
   email: string
   display_name: string
+  pending?: boolean
 }
 
 export interface GrantResponse {
@@ -171,6 +185,23 @@ export const sharingApi = {
   syncEntraGroups: async () => {
     const response = await apiClient.post<{ command_id: string }>(
       '/groups/entra/sync'
+    )
+    return response.data
+  },
+
+  // WBS 4.21 — Tenant directory picker + JIT-stub user provisioning
+  searchDirectoryUsers: async (query: string) => {
+    const response = await apiClient.get<DirectoryUserCandidate[]>(
+      '/users/directory',
+      { params: { q: query } }
+    )
+    return response.data
+  },
+
+  stubEntraUser: async (body: StubUserFromEntraRequest) => {
+    const response = await apiClient.post<UserPickerItem>(
+      '/users/from-entra',
+      body
     )
     return response.data
   },

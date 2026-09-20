@@ -296,6 +296,12 @@ export const plPL = {
     roleLabel: "Rola",
     revokeConfirmTitle: "{{resource}} — odebrać dostęp użytkownikowi {{principal}}?",
     revokeConfirmDescription: "Spowoduje to usunięcie bezpośredniego uprawnienia {{role}}. Dostęp poprzez grupę, powiązany notatnik lub inne uprawnienie może nadal obowiązywać.",
+    inviteFromDirectory: "Zaproś z katalogu",
+    inviteFromDirectoryDescription: "Znajdź współpracownika z Twojej organizacji, który jeszcze się nie zalogował.",
+    searchDirectory: "Szukaj w katalogu",
+    searchDirectoryPlaceholder: "Wpisz imię lub adres e-mail…",
+    noDirectoryResults: "Brak dopasowań w katalogu",
+    neverSignedIn: "Nigdy się nie zalogował(a)",
   },
   groups: {
     groupCount: "Grupy: {{count}}",
@@ -328,6 +334,7 @@ export const plPL = {
     linkEntraSuccess: "Grupa Entra połączona",
     syncStarted: "Synchronizacja rozpoczęta",
     syncManaged: "Członkowie są zarządzani przez synchronizację Entra",
+    neverSignedIn: "Nigdy się nie zalogował(a)",
   },
   notebooks: {
     title: "Notatniki",

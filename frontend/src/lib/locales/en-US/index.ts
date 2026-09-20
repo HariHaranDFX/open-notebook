@@ -294,6 +294,12 @@ export const enUS = {
     roleLabel: "Role",
     revokeConfirmTitle: "{{resource}} — revoke {{principal}}'s access?",
     revokeConfirmDescription: "This removes their direct {{role}} grant. They may still have access through a group, a linked notebook, or another grant.",
+    inviteFromDirectory: "Invite from directory",
+    inviteFromDirectoryDescription: "Find a colleague in your organization who hasn't signed in yet.",
+    searchDirectory: "Search directory",
+    searchDirectoryPlaceholder: "Type a name or email…",
+    noDirectoryResults: "No matches in the directory",
+    neverSignedIn: "Never signed in",
   },
   groups: {
     groupCount: "{{count}} groups",
@@ -326,6 +332,7 @@ export const enUS = {
     linkEntraSuccess: "Entra group linked",
     syncStarted: "Sync started",
     syncManaged: "Members are managed by Entra sync",
+    neverSignedIn: "Never signed in",
   },
   notebooks: {
     title: "Notebooks",

@@ -296,6 +296,12 @@ export const zhCN = {
     roleLabel: "角色",
     revokeConfirmTitle: "{{resource}} — 撤销 {{principal}} 的访问权限？",
     revokeConfirmDescription: "这将移除其直接的{{role}}授权。对方可能仍可通过群组、关联的笔记本或其他授权获得访问权限。",
+    inviteFromDirectory: "从目录邀请",
+    inviteFromDirectoryDescription: "查找组织中尚未登录的同事。",
+    searchDirectory: "搜索目录",
+    searchDirectoryPlaceholder: "输入姓名或邮箱…",
+    noDirectoryResults: "目录中没有匹配项",
+    neverSignedIn: "从未登录",
   },
   groups: {
     groupCount: "{{count}} 个群组",
@@ -328,6 +334,7 @@ export const zhCN = {
     linkEntraSuccess: "Entra 组已关联",
     syncStarted: "同步已启动",
     syncManaged: "成员由 Entra 同步管理",
+    neverSignedIn: "从未登录",
   },
   notebooks: {
     title: "笔记本",

@@ -296,6 +296,12 @@ export const itIT = {
     roleLabel: "Ruolo",
     revokeConfirmTitle: "{{resource}} — revocare l'accesso di {{principal}}?",
     revokeConfirmDescription: "Questo rimuove la concessione diretta come {{role}}. Potrebbe comunque avere accesso tramite un gruppo, un quaderno collegato o un'altra concessione.",
+    inviteFromDirectory: "Invita dalla rubrica",
+    inviteFromDirectoryDescription: "Trova un collega della tua organizzazione che non ha ancora effettuato l'accesso.",
+    searchDirectory: "Cerca nella rubrica",
+    searchDirectoryPlaceholder: "Digita un nome o un'email…",
+    noDirectoryResults: "Nessuna corrispondenza nella rubrica",
+    neverSignedIn: "Mai effettuato l'accesso",
   },
   groups: {
     groupCount: "{{count}} gruppi",
@@ -328,6 +334,7 @@ export const itIT = {
     linkEntraSuccess: "Gruppo Entra collegato",
     syncStarted: "Sincronizzazione avviata",
     syncManaged: "I membri sono gestiti dalla sincronizzazione Entra",
+    neverSignedIn: "Mai effettuato l'accesso",
   },
   notebooks: {
     title: "Quaderni",

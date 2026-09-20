@@ -296,6 +296,12 @@ export const frFR = {
     roleLabel: "Rôle",
     revokeConfirmTitle: "{{resource}} — révoquer l'accès de {{principal}} ?",
     revokeConfirmDescription: "Cela supprime son partage direct en tant que {{role}}. Un accès via un groupe, un carnet lié ou un autre partage peut subsister.",
+    inviteFromDirectory: "Inviter depuis l'annuaire",
+    inviteFromDirectoryDescription: "Trouvez un collègue de votre organisation qui ne s'est pas encore connecté.",
+    searchDirectory: "Rechercher dans l'annuaire",
+    searchDirectoryPlaceholder: "Saisissez un nom ou un e-mail…",
+    noDirectoryResults: "Aucune correspondance dans l'annuaire",
+    neverSignedIn: "Jamais connecté",
   },
   groups: {
     groupCount: "{{count}} groupes",
@@ -328,6 +334,7 @@ export const frFR = {
     linkEntraSuccess: "Groupe Entra lié",
     syncStarted: "Synchronisation démarrée",
     syncManaged: "Les membres sont gérés par la synchronisation Entra",
+    neverSignedIn: "Jamais connecté",
   },
   notebooks: {
     title: "Carnets",

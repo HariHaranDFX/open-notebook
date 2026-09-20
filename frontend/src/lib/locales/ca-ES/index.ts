@@ -296,6 +296,12 @@ export const caES = {
     roleLabel: "Rol",
     revokeConfirmTitle: "{{resource}} — revocar l'accés de {{principal}}?",
     revokeConfirmDescription: "Això elimina la seva concessió directa com a {{role}}. Encara pot tenir accés mitjançant un grup, un quadern vinculat o una altra concessió.",
+    inviteFromDirectory: "Convida des del directori",
+    inviteFromDirectoryDescription: "Cerca un col·lega de la teva organització que encara no ha iniciat sessió.",
+    searchDirectory: "Cerca al directori",
+    searchDirectoryPlaceholder: "Escriu un nom o correu…",
+    noDirectoryResults: "Cap coincidència al directori",
+    neverSignedIn: "Mai ha iniciat sessió",
   },
   groups: {
     groupCount: "{{count}} grups",
@@ -328,6 +334,7 @@ export const caES = {
     linkEntraSuccess: "Grup d'Entra vinculat",
     syncStarted: "Sincronització iniciada",
     syncManaged: "Els membres els gestiona la sincronització d'Entra",
+    neverSignedIn: "Mai ha iniciat sessió",
   },
   notebooks: {
     title: "Quaderns",

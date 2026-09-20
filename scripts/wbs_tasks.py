@@ -1303,10 +1303,10 @@ Schema already reserved in migration 28.""",
         'Carry-forward / Sharing Follow-through',
         'Full org directory user picker (Graph) + JIT-stub Entra group members',
         """Purpose: let owners/admins pick any user in the Entra tenant, not only people who have already signed into the app, AND surface Entra group members that have never signed in yet.
-Why deferred: WP2b picker uses GET /api/users (JIT-provisioned DB rows only) to avoid Graph scopes and pending-grant edge cases. WBS 4.20 sync currently skips Entra group members with no local user row for the same reason.
-Steps: (1) add Graph User.Read.All permission + admin consent alongside 4.20's GroupMember.Read.All; (2) tenant-directory typeahead endpoint for the share/group picker; (3) JIT-stub user rows created either during sync (for Entra group members) or on first grant (for direct shares), carrying entra_oid + email + display_name and role='user'; (4) at first Entra login, upsert (not insert) so the stub attaches cleanly; (5) audit share-owner/admin UX for stub users (avatar, badge showing 'never signed in'); (6) document privacy/consent posture in AUTH.md + SHARING.md.""",
+Why deferred (pre-4.21): WP2b picker used GET /api/users (JIT-provisioned DB rows only) to avoid Graph scopes and pending-grant edge cases. WBS 4.20 sync skipped Entra group members with no local user row for the same reason.
+Delivered (PR feat/wbs-4.21-directory-picker): (1) Graph User.Read.All permission documented alongside 4.20's GroupMember.Read.All; (2) GET /api/users/directory tenant-directory typeahead + POST /api/users/from-entra JIT-stub endpoint (both authenticated, not admin-only; from-entra validates the OID against Graph before insert to prevent forgery); (3) commands/entra_group_sync.py now stubs previously-skipped members via list_users_by_oids chunked at 15; (4) upsert-at-first-login already exercised by existing EntraOIDCProvider test; (5) InviteFromDirectoryDialog wired into Groups admin page and ShareSheet, "Never signed in" badge on stub users; (6) AUTH.md § Directory picker + SHARING.md updated; env vars documented (no new env — reuses Entra client credentials).""",
         'Directory-backed share/group member picker; Entra group members visible before first login',
-        'Pending',
+        'Done',
         'High',
         '4.19',
         24,

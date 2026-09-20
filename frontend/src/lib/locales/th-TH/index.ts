@@ -296,6 +296,12 @@ export const thTH = {
     roleLabel: "บทบาท",
     revokeConfirmTitle: "{{resource}} — เพิกถอนการเข้าถึงของ {{principal}}?",
     revokeConfirmDescription: "การดำเนินการนี้จะลบสิทธิ์ {{role}} โดยตรง พวกเขาอาจยังคงเข้าถึงได้ผ่านกลุ่ม สมุดบันทึกที่เชื่อมโยง หรือสิทธิ์อื่น",
+    inviteFromDirectory: "เชิญจากไดเรกทอรี",
+    inviteFromDirectoryDescription: "ค้นหาเพื่อนร่วมงานในองค์กรของคุณที่ยังไม่ได้เข้าสู่ระบบ",
+    searchDirectory: "ค้นหาในไดเรกทอรี",
+    searchDirectoryPlaceholder: "พิมพ์ชื่อหรืออีเมล…",
+    noDirectoryResults: "ไม่พบผลลัพธ์ในไดเรกทอรี",
+    neverSignedIn: "ไม่เคยเข้าสู่ระบบ",
   },
   groups: {
     groupCount: "{{count}} กลุ่ม",
@@ -328,6 +334,7 @@ export const thTH = {
     linkEntraSuccess: "เชื่อมโยงกลุ่ม Entra แล้ว",
     syncStarted: "เริ่มการซิงค์แล้ว",
     syncManaged: "สมาชิกถูกจัดการโดยการซิงค์ Entra",
+    neverSignedIn: "ไม่เคยเข้าสู่ระบบ",
   },
   notebooks: {
     title: "สมุดบันทึก",

@@ -296,6 +296,12 @@ export const jaJP = {
     roleLabel: "役割",
     revokeConfirmTitle: "{{resource}} — {{principal}}のアクセスを取り消しますか?",
     revokeConfirmDescription: "直接付与された{{role}}権限が削除されます。グループやリンクされたノートブック、その他の権限によるアクセスは引き続き有効な場合があります。",
+    inviteFromDirectory: "ディレクトリから招待",
+    inviteFromDirectoryDescription: "組織内でまだサインインしていない同僚を探します。",
+    searchDirectory: "ディレクトリを検索",
+    searchDirectoryPlaceholder: "名前またはメールアドレスを入力…",
+    noDirectoryResults: "ディレクトリに一致するユーザーがいません",
+    neverSignedIn: "未サインイン",
   },
   groups: {
     groupCount: "{{count}} 個のグループ",
@@ -328,6 +334,7 @@ export const jaJP = {
     linkEntraSuccess: "Entra グループをリンクしました",
     syncStarted: "同期を開始しました",
     syncManaged: "メンバーは Entra 同期によって管理されます",
+    neverSignedIn: "未サインイン",
   },
   notebooks: {
     title: "ノートブック",

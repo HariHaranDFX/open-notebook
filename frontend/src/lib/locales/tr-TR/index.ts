@@ -296,6 +296,12 @@ export const trTR = {
     roleLabel: "Rol",
     revokeConfirmTitle: "{{resource}} — {{principal}} kullanıcısının erişimi iptal edilsin mi?",
     revokeConfirmDescription: "Bu, doğrudan {{role}} yetkisini kaldırır. Bir grup, bağlı bir defter veya başka bir yetki üzerinden erişim devam edebilir.",
+    inviteFromDirectory: "Dizinden davet et",
+    inviteFromDirectoryDescription: "Kuruluşunuzda henüz oturum açmamış bir iş arkadaşı bulun.",
+    searchDirectory: "Dizinde ara",
+    searchDirectoryPlaceholder: "Ad veya e-posta yazın…",
+    noDirectoryResults: "Dizinde eşleşme yok",
+    neverSignedIn: "Hiç oturum açmadı",
   },
   groups: {
     groupCount: "{{count}} grup",
@@ -328,6 +334,7 @@ export const trTR = {
     linkEntraSuccess: "Entra grubu bağlandı",
     syncStarted: "Eşitleme başlatıldı",
     syncManaged: "Üyeler Entra eşitlemesi tarafından yönetilir",
+    neverSignedIn: "Hiç oturum açmadı",
   },
   notebooks: {
     title: "Defterler",

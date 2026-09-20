@@ -72,6 +72,14 @@ vi.mock('@/lib/hooks/use-sharing', () => ({
   useCreateGrant: vi.fn(),
   useUpdateGrant: vi.fn(),
   useDeleteGrant: vi.fn(),
+  // WBS 4.21 — InviteFromDirectoryDialog is rendered (closed) as part of the
+  // ShareSheet tree, so its hooks must resolve to something safe.
+  useDirectoryUserSearch: vi.fn(() => ({ data: [], isFetching: false })),
+  useStubEntraUser: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }))
 
 // The real Select is a Radix popover (button + portal listbox) that jsdom

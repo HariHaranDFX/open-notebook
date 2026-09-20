@@ -85,6 +85,7 @@ export function useAuth() {
     role,
     user,
     error,
+    provider,
     login: handleLogin,
     logout: handleLogout
   }

@@ -18,9 +18,11 @@ import {
   useAddGroupMember, useRemoveGroupMember, useUsers, useSyncEntraGroups,
 } from '@/lib/hooks/use-sharing'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { Plus, Users, X, MoreHorizontal, Trash2, RefreshCw, Link2 } from 'lucide-react'
+import { Plus, Users, X, MoreHorizontal, Trash2, RefreshCw, Link2, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LinkEntraGroupDialog } from './LinkEntraGroupDialog'
+import { InviteFromDirectoryDialog } from '@/components/sharing/InviteFromDirectoryDialog'
+import { useAuth } from '@/lib/hooks/use-auth'
 
 function initials(name: string) {
   return (
@@ -42,12 +44,15 @@ export default function GroupsPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [linkEntraOpen, setLinkEntraOpen] = useState(false)
+  const [inviteDirectoryOpen, setInviteDirectoryOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [memberUserId, setMemberUserId] = useState('')
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
   const syncEntra = useSyncEntraGroups()
+  const { provider } = useAuth()
+  const canInviteFromDirectory = provider === 'entra'
 
   const { data: members, isLoading: membersLoading } = useGroupMembers(selectedGroupId ?? '', !!selectedGroupId)
   const addMember = useAddGroupMember(selectedGroupId ?? '')
@@ -243,7 +248,18 @@ export default function GroupsPage() {
                                 {initials(label)}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">{m.display_name || m.email}</span>
+                                <span className="flex items-center gap-2">
+                                  <span className="block truncate text-sm font-medium">{m.display_name || m.email}</span>
+                                  {m.pending && (
+                                    <Badge
+                                      variant="outline"
+                                      className="shrink-0"
+                                      data-testid={`never-signed-in-${m.user_id}`}
+                                    >
+                                      {t('groups.neverSignedIn')}
+                                    </Badge>
+                                  )}
+                                </span>
                                 {m.display_name && m.email && (
                                   <span className="block truncate text-xs text-muted-foreground">{m.email}</span>
                                 )}
@@ -276,15 +292,16 @@ export default function GroupsPage() {
                       {t('groups.syncManaged')}
                     </div>
                   ) : (
-                    <div className="flex gap-2 border-t border-border px-4 py-3">
+                    <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
                       <Select value={memberUserId || undefined} onValueChange={setMemberUserId}>
-                        <SelectTrigger className="flex-1">
+                        <SelectTrigger className="min-w-0 flex-1">
                           <SelectValue placeholder={t('groups.selectUser')} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableUsers.map((u) => (
                             <SelectItem key={u.id} value={u.id}>
                               {u.display_name || u.email}
+                              {u.pending ? ` — ${t('groups.neverSignedIn')}` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -299,6 +316,23 @@ export default function GroupsPage() {
                       >
                         {t('groups.addMember')}
                       </Button>
+                      {canInviteFromDirectory && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => setInviteDirectoryOpen(true)}
+                              aria-label={t('sharing.inviteFromDirectory')}
+                            >
+                              <UserPlus className="size-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            {t('sharing.inviteFromDirectory')}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   )}
                 </>
@@ -353,6 +387,20 @@ export default function GroupsPage() {
         open={linkEntraOpen}
         onOpenChange={setLinkEntraOpen}
         onLinked={(gid) => setSelectedGroupId(gid)}
+      />
+
+      <InviteFromDirectoryDialog
+        open={inviteDirectoryOpen}
+        onOpenChange={setInviteDirectoryOpen}
+        onInvited={(userId) => {
+          // Auto-add to the currently-selected group so the invite is
+          // an end-to-end action, not just a stub in the users table.
+          if (selectedGroupId) {
+            addMember.mutate(userId)
+          } else {
+            setMemberUserId(userId)
+          }
+        }}
       />
     </>
   )

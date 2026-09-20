@@ -6,6 +6,7 @@ background sync command (`commands.entra_group_sync`) and cannot be
 edited through the local admin endpoints (409).
 """
 
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -13,8 +14,9 @@ from pydantic import BaseModel, Field
 from surreal_commands import submit_command
 
 from api.auth.deps import require_admin, require_user
-from api.graph_client import GraphAPIError, search_groups
+from api.graph_client import GraphAPIError, search_groups, search_users
 from api.graph_client import get_group as graph_get_group
+from api.graph_client import get_user as graph_get_user
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 router = APIRouter()
@@ -76,6 +78,10 @@ class GroupMemberResponse(BaseModel):
     user_id: str
     email: str
     display_name: str
+    # WBS 4.21 — true when the user was JIT-stubbed (directory picker or
+    # Entra group sync) and has never signed in. Drives the "Never signed
+    # in" chip in the admin UI.
+    pending: bool = False
 
 
 class GroupResponse(BaseModel):
@@ -95,6 +101,44 @@ class EntraGroupCandidate(BaseModel):
 
 class EntraLinkRequest(BaseModel):
     entra_group_oid: str = Field(..., min_length=1)
+
+
+class DirectoryUserCandidate(BaseModel):
+    entra_oid: str
+    email: str
+    display_name: str
+
+
+class StubUserFromEntraRequest(BaseModel):
+    entra_oid: str = Field(..., min_length=1)
+
+
+class UserPickerItem(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    pending: bool = False
+
+
+async def _pending_user_ids(user_ids: list[str]) -> set[str]:
+    """Return the subset of user_ids that have never signed in.
+
+    A user is "pending" iff no `auth_session` row references them. Two
+    small queries: fetch every session pointing at any of the input ids,
+    then set-diff.
+    """
+    if not user_ids:
+        return set()
+    rids = [ensure_record_id(uid) for uid in user_ids]
+    rows = (
+        await repo_query(
+            "SELECT user FROM auth_session WHERE user IN $ids",
+            {"ids": rids},
+        )
+        or []
+    )
+    seen = {str(row["user"]) for row in rows if row.get("user")}
+    return {uid for uid in user_ids if uid not in seen}
 
 
 @router.get("/groups", response_model=List[GroupResponse])
@@ -241,6 +285,7 @@ async def list_members(group_id: str, request: Request):
         {"gid": ensure_record_id(group_id)},
     )
     out: list[GroupMemberResponse] = []
+    resolved: list[tuple[str, str, str]] = []
     for row in rows or []:
         uid = str(row.get("user_id", ""))
         if not uid:
@@ -256,11 +301,15 @@ async def list_members(group_id: str, request: Request):
             if users:
                 email = users[0].get("email", "")
                 display_name = users[0].get("display_name", "")
+        resolved.append((uid, str(email or ""), str(display_name or "")))
+    pending = await _pending_user_ids([uid for uid, _, _ in resolved])
+    for uid, email, display_name in resolved:
         out.append(
             GroupMemberResponse(
                 user_id=uid,
-                email=str(email or ""),
-                display_name=str(display_name or ""),
+                email=email,
+                display_name=display_name,
+                pending=uid in pending,
             )
         )
     return out
@@ -330,19 +379,28 @@ async def remove_member(group_id: str, user_id: str, request: Request):
     return {"message": "Member removed"}
 
 
-@router.get("/users")
+@router.get("/users", response_model=List[UserPickerItem])
 async def list_users_for_picker(request: Request):
-    """Users who have signed in at least once (share/group picker)."""
+    """Local users for share/group pickers.
+
+    Includes users that have never signed in — JIT-stubbed via directory
+    picker (WBS 4.21) or Entra group sync — with `pending=true` so the UI
+    can badge them. Pre-4.21 behavior (signed-in users only) is preserved
+    for real users; stubs are additive.
+    """
     require_user(request)
     rows = await repo_query(
         "SELECT id, email, display_name FROM user ORDER BY email ASC"
     )
+    ids = [str(row.get("id", "")) for row in rows or [] if row.get("id")]
+    pending = await _pending_user_ids(ids)
     return [
-        {
-            "id": str(row.get("id", "")),
-            "email": row.get("email", ""),
-            "display_name": row.get("display_name", ""),
-        }
+        UserPickerItem(
+            id=str(row.get("id", "")),
+            email=row.get("email", ""),
+            display_name=row.get("display_name", ""),
+            pending=str(row.get("id", "")) in pending,
+        )
         for row in rows or []
     ]
 
@@ -414,3 +472,127 @@ async def entra_group_sync_now(request: Request):
     require_admin(request)
     command_id = await submit_command("open_notebook", "sync_entra_groups", {})
     return {"command_id": str(command_id)}
+
+
+# ---------------------------------------------------------------------------
+# WBS 4.21 — Tenant directory picker + JIT-stub user provisioning
+# ---------------------------------------------------------------------------
+
+
+@router.get("/users/directory", response_model=List[DirectoryUserCandidate])
+async def directory_user_search(q: str, request: Request):
+    """Tenant-wide typeahead against Microsoft Graph.
+
+    Any signed-in user may call this so owners can share with colleagues
+    who have never opened the app. Requires the Entra app registration to
+    hold the `User.Read.All` Application permission with admin consent.
+    """
+    require_user(request)
+    query = (q or "").strip()
+    if not query:
+        return []
+    try:
+        results = await search_users(query)
+    except GraphAPIError as exc:
+        raise _graph_http_exception(exc) from exc
+    return [DirectoryUserCandidate(**row) for row in results]
+
+
+@router.post("/users/from-entra", response_model=UserPickerItem)
+async def stub_user_from_entra(body: StubUserFromEntraRequest, request: Request):
+    """Return (or create) a local `user` row for an Entra directory hit.
+
+    Idempotent. Callable by any signed-in user because sharing with
+    colleagues is not an admin-only capability. Forgery is prevented by
+    validating the OID against Graph before insert — the request cannot
+    supply an arbitrary email; whatever Graph returns is what we store.
+    On first real login, `EntraOIDCProvider._upsert_user` finds this row
+    by `entra_oid` and updates it in place (no duplicate).
+    """
+    caller = require_user(request)
+
+    # 1. Fast path — already have a row for this OID.
+    existing = await repo_query(
+        "SELECT id, email, display_name FROM user WHERE entra_oid = $oid LIMIT 1",
+        {"oid": body.entra_oid},
+    )
+    if existing:
+        row = existing[0]
+        uid = str(row.get("id", ""))
+        pending = await _pending_user_ids([uid])
+        return UserPickerItem(
+            id=uid,
+            email=row.get("email", ""),
+            display_name=row.get("display_name", ""),
+            pending=uid in pending,
+        )
+
+    # 2. Validate against Graph before writing anything.
+    try:
+        profile = await graph_get_user(body.entra_oid)
+    except GraphAPIError as exc:
+        # 404 → the client sent a bad OID; surface as 400 rather than 502.
+        if exc.status_code == 404:
+            raise HTTPException(400, detail="No such user in directory") from exc
+        raise _graph_http_exception(exc) from exc
+
+    email = profile.get("email") or ""
+    display_name = profile.get("display_name") or email
+    if not email:
+        # Rare: guest with no mail and no UPN — refuse rather than write junk.
+        raise HTTPException(400, detail="Directory user has no email address")
+
+    # 3. Second fast path — a real user already exists by email but lacks
+    #    entra_oid (e.g. hand-created row from a prior flow). Patch it.
+    by_email = await repo_query(
+        "SELECT id, email, display_name, entra_oid FROM user WHERE email = $email LIMIT 1",
+        {"email": email},
+    )
+    if by_email:
+        row = by_email[0]
+        uid = str(row.get("id", ""))
+        if not row.get("entra_oid"):
+            await repo_query(
+                "UPDATE $uid SET entra_oid = $oid",
+                {"uid": ensure_record_id(uid), "oid": body.entra_oid},
+            )
+        pending = await _pending_user_ids([uid])
+        return UserPickerItem(
+            id=uid,
+            email=row.get("email", ""),
+            display_name=row.get("display_name", ""),
+            pending=uid in pending,
+        )
+
+    # 4. Create the stub. `client_id` mirrors what EntraOIDCProvider stamps
+    #    at login time (single-tenant Model A — see docs/TENANCY.md).
+    client_id = getattr(caller, "client_id", None) or os.getenv("CLIENT_ID", "default")
+    rows = (
+        await repo_query(
+            """
+            CREATE user SET
+              email = $email,
+              display_name = $display_name,
+              entra_oid = $oid,
+              role = 'user',
+              client_id = $client_id
+            RETURN AFTER
+            """,
+            {
+                "email": email,
+                "display_name": display_name,
+                "oid": body.entra_oid,
+                "client_id": client_id,
+            },
+        )
+        or []
+    )
+    if not rows:
+        raise HTTPException(500, detail="Failed to stub user")
+    created = rows[0]
+    return UserPickerItem(
+        id=str(created.get("id", "")),
+        email=created.get("email", ""),
+        display_name=created.get("display_name", ""),
+        pending=True,
+    )

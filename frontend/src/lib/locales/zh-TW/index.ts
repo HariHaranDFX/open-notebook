@@ -296,6 +296,12 @@ export const zhTW = {
     roleLabel: "角色",
     revokeConfirmTitle: "{{resource}} — 撤銷 {{principal}} 的存取權限？",
     revokeConfirmDescription: "這將移除其直接的{{role}}授權。對方可能仍可透過群組、關聯的筆記本或其他授權取得存取權限。",
+    inviteFromDirectory: "從目錄邀請",
+    inviteFromDirectoryDescription: "尋找組織中尚未登入的同事。",
+    searchDirectory: "搜尋目錄",
+    searchDirectoryPlaceholder: "輸入姓名或電子郵件…",
+    noDirectoryResults: "目錄中沒有相符的結果",
+    neverSignedIn: "從未登入",
   },
   groups: {
     groupCount: "{{count}} 個群組",
@@ -328,6 +334,7 @@ export const zhTW = {
     linkEntraSuccess: "Entra 群組已連結",
     syncStarted: "同步已開始",
     syncManaged: "成員由 Entra 同步管理",
+    neverSignedIn: "從未登入",
   },
   notebooks: {
     title: "筆記本",

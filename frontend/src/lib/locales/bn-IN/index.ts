@@ -296,6 +296,12 @@ export const bnIN = {
     roleLabel: "ভূমিকা",
     revokeConfirmTitle: "{{resource}} — {{principal}}-এর অ্যাক্সেস বাতিল করবেন?",
     revokeConfirmDescription: "এটি তাদের সরাসরি {{role}} অনুমতি সরিয়ে দেবে। একটি গ্রুপ, লিঙ্ক করা নোটবুক বা অন্য অনুমতির মাধ্যমে তাদের অ্যাক্সেস এখনও থাকতে পারে।",
+    inviteFromDirectory: "ডিরেক্টরি থেকে আমন্ত্রণ",
+    inviteFromDirectoryDescription: "আপনার প্রতিষ্ঠানে এমন সহকর্মী খুঁজুন যিনি এখনও সাইন ইন করেননি।",
+    searchDirectory: "ডিরেক্টরি অনুসন্ধান",
+    searchDirectoryPlaceholder: "নাম বা ইমেল টাইপ করুন…",
+    noDirectoryResults: "ডিরেক্টরিতে কোনো মিল নেই",
+    neverSignedIn: "কখনো সাইন ইন করেননি",
   },
   groups: {
     groupCount: "{{count}} টি গ্রুপ",
@@ -328,6 +334,7 @@ export const bnIN = {
     linkEntraSuccess: "Entra গ্রুপ লিঙ্ক হয়েছে",
     syncStarted: "সিঙ্ক শুরু হয়েছে",
     syncManaged: "সদস্যরা Entra সিঙ্ক দ্বারা পরিচালিত",
+    neverSignedIn: "কখনো সাইন ইন করেননি",
   },
   notebooks: {
     title: "নোটবুকগুলি",

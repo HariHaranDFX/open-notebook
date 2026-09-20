@@ -296,6 +296,12 @@ export const ruRU = {
     roleLabel: "Роль",
     revokeConfirmTitle: "{{resource}} — отозвать доступ у {{principal}}?",
     revokeConfirmDescription: "Это удалит прямой доступ с ролью «{{role}}». Доступ через группу, связанный блокнот или другое разрешение может сохраниться.",
+    inviteFromDirectory: "Пригласить из каталога",
+    inviteFromDirectoryDescription: "Найдите коллегу из вашей организации, который ещё не входил в систему.",
+    searchDirectory: "Поиск в каталоге",
+    searchDirectoryPlaceholder: "Введите имя или e-mail…",
+    noDirectoryResults: "Совпадений в каталоге нет",
+    neverSignedIn: "Никогда не входил",
   },
   groups: {
     groupCount: "Групп: {{count}}",
@@ -328,6 +334,7 @@ export const ruRU = {
     linkEntraSuccess: "Группа Entra связана",
     syncStarted: "Синхронизация запущена",
     syncManaged: "Участниками управляет синхронизация Entra",
+    neverSignedIn: "Никогда не входил",
   },
   notebooks: {
     title: "Блокноты",

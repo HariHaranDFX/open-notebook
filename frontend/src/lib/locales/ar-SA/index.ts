@@ -296,6 +296,12 @@ export const arSA = {
     roleLabel: "الدور",
     revokeConfirmTitle: "{{resource}} — إلغاء وصول {{principal}}؟",
     revokeConfirmDescription: "يؤدي هذا إلى إزالة منحة {{role}} المباشرة الخاصة بهم. قد لا يزال لديهم حق الوصول من خلال مجموعة أو دفتر ملاحظات مرتبط أو منحة أخرى.",
+    inviteFromDirectory: "دعوة من الدليل",
+    inviteFromDirectoryDescription: "ابحث عن زميل في مؤسستك لم يسجّل الدخول بعد.",
+    searchDirectory: "البحث في الدليل",
+    searchDirectoryPlaceholder: "اكتب اسمًا أو بريدًا إلكترونيًا…",
+    noDirectoryResults: "لا توجد تطابقات في الدليل",
+    neverSignedIn: "لم يسجّل الدخول مطلقًا",
   },
   groups: {
     groupCount: "{{count}} مجموعة",
@@ -328,6 +334,7 @@ export const arSA = {
     linkEntraSuccess: "تم ربط مجموعة Entra",
     syncStarted: "بدأت المزامنة",
     syncManaged: "تتم إدارة الأعضاء بواسطة مزامنة Entra",
+    neverSignedIn: "لم يسجّل الدخول مطلقًا",
   },
   notebooks: {
     title: "دفاتر الملاحظات",
