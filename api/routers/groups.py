@@ -13,9 +13,8 @@ from pydantic import BaseModel, Field
 from surreal_commands import submit_command
 
 from api.auth.deps import require_admin, require_user
-from api.graph_client import GraphAPIError
+from api.graph_client import GraphAPIError, search_groups
 from api.graph_client import get_group as graph_get_group
-from api.graph_client import search_groups
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 router = APIRouter()

@@ -48,8 +48,9 @@ Tracked in the commercialization WBS workbook and `scripts/wbs_tasks.py`:
 | WBS | Item | Status | Notes |
 |---|---|---|---|
 | **4.20** | **Entra ID group sync** | ✅ Done | Ships behind `ENTRA_GROUP_SYNC_ENABLED`. See [AUTH.md § Entra group sync](AUTH.md#entra-group-sync-wbs-420). Direct members only; unknown Entra members auto-attach at first login. |
-| **4.21** | **Full org directory user picker** | Pending (High) | Today: only users who signed in ≥ once (`GET /api/users`). Later: Graph directory search + pending grant / JIT stub. |
+| **4.21** | **Full org directory user picker (Graph) + JIT-stub Entra group members** | Pending (High) | Today: only users who signed in ≥ once (`GET /api/users`); WBS 4.20 sync also skips Entra group members with no local user row. Later: Graph directory search + JIT-stub `user` rows (during sync and on first grant) carrying `entra_oid`/`email`/`display_name`, upserted on first Entra login. |
 | **4.22** | **Public links, editor reshare, ownership transfer** | Pending (Medium) | Explicitly out of WP2b. Public/link share off by default forever unless product re-opens; editor reshare and ownership transfer need separate design. |
+| **4.23** | **Entra ID group-membership webhooks (Graph change notifications)** | Pending (Medium) | Live push-based membership updates via `POST /api/graph/webhook`; replaces the 15-minute polling loop for near-real-time propagation. Needs publicly-reachable HTTPS callback, `clientState` HMAC validation, subscription lifecycle + ~3-day auto-renewal, replay-dedupe. Deliberately split from 4.20 so subscription lifecycle gets its own security review. Falls back to the polling loop when the subscription is missing/invalid. |
 
 Do **not** mix these into WP3 white-label work.
 

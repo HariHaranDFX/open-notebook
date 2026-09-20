@@ -76,7 +76,11 @@ Open items carried forward (not WP2 blockers unless noted):
   `ENTRA_GROUP_SYNC_ENABLED`, direct members only, unknown Entra members
   auto-attach at first login; see
   [AUTH.md § Entra group sync](docs/AUTH.md#entra-group-sync-wbs-420).
-  Still pending: WBS 4.21 (full org directory user picker via Graph),
-  WBS 4.22 (public links, editor reshare, ownership transfer).
+  Still pending: WBS 4.21 (Graph directory picker + JIT-stub Entra group
+  members — closes the "skipped unknown" gap in 4.20's sync), WBS 4.22
+  (public links, editor reshare, ownership transfer), WBS 4.23 (Graph
+  change-notification webhooks — live push updates replacing 4.20's
+  15-minute polling loop; deliberately split so subscription lifecycle
+  gets its own security review).
 
 @AGENTS.md
