@@ -1283,7 +1283,7 @@ Why deferred: WP2b ships collaboration with local groups; Graph sync needs Group
 Steps: (1) Graph app permissions + consent; (2) import/link Entra groups into user_group with source=entra and entra_group_oid; (3) sync membership into user_group_member; (4) refresh on schedule or webhook; (5) document in SHARING.md/AUTH.md.
 Schema already reserved in migration 28.""",
         'Entra-backed groups with live membership',
-        'Pending',
+        'Done',
         'High',
         '4.19',
         24,
@@ -1296,7 +1296,7 @@ Schema already reserved in migration 28.""",
         None,
         'Admin can link an Entra group; membership changes in Entra reflect in ACL without re-sharing',
         'Main post-WP2b goal for groups; do not rebuild ACL for this',
-        'user_group.source / entra_group_oid; docs/SHARING.md',
+        'user_group.source / entra_group_oid; docs/SHARING.md; api/graph_client.py; commands/entra_group_sync.py',
     ),
     (
         '4.21',

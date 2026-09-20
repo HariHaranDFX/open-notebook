@@ -91,5 +91,41 @@ allocate to users and app-local groups. Roles are `viewer` and `editor`.
 See [SHARING.md](SHARING.md) and
 [PDR-003](7-DEVELOPMENT/decisions/PDR-003-per-user-ownership-and-sharing.md).
 
-**Deferred (WBS 4.20–4.22, not in WP2b):** Entra ID group sync; full org
-directory user picker; public links / editor reshare / ownership transfer.
+**Deferred (WBS 4.21–4.22, not in WP2b):** full org directory user picker;
+public links / editor reshare / ownership transfer.
+
+## Entra group sync (WBS 4.20)
+
+Optional. Lets an admin link Microsoft Entra security groups so membership
+changes in Entra flow into Open Notebook's ACL without re-sharing every
+resource.
+
+1. In the same Entra app registration used for OIDC, add the **Application**
+   permission `GroupMember.Read.All` and grant **admin consent**. No user
+   ever needs to consent to Graph scopes — the API calls Graph with the
+   application's own client credentials.
+2. Set the environment variables below, then restart the API and worker.
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `ENTRA_GROUP_SYNC_ENABLED` | For group sync | `false` | Master switch. Must be `true`/`1`/`yes` to activate the sync loop and the new routes' work. |
+| `ENTRA_GROUP_SYNC_INTERVAL_MINUTES` | No | `15` | Cadence of the periodic sync loop. Floored at ~1 second for tests; production defaults to 15 min. |
+
+Reuses the existing `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, and
+`ENTRA_CLIENT_SECRET`.
+
+Admins then use **Settings → Groups → Link Entra group** to pick a group
+from a Graph typeahead search. The group is upserted into `user_group`
+with `source='entra'`, and a scoped sync runs immediately so members appear
+without waiting for the loop. From then on the periodic loop keeps
+membership in sync.
+
+**Limitations (v1):**
+- Direct-member expansion only — nested / transitive groups are not
+  walked. If your Entra directory relies on group-of-groups membership,
+  flatten those groups or add each sub-group individually.
+- Entra members without a local `user` row (never signed in) are skipped
+  and auto-attach at first login — that is WBS 4.21's scope.
+- Deleting a `source='entra'` group from Open Notebook unlinks it locally
+  (cascades to resource grants + members) but does not touch anything in
+  Entra.
