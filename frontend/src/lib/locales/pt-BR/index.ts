@@ -215,7 +215,7 @@ export const ptBR = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Este grupo é gerenciado pela sincronização do Entra e não pode ser editado aqui.",
     entraCredentialInvalid: "As credenciais do aplicativo Entra conectado são inválidas ou expiraram. Peça a um operador para atualizá-las.",
-    entraPermissionDenied: "O Microsoft Graph recusou a solicitação. Peça ao administrador do tenant para conceder ao Open Notebook a permissão necessária e confirmar o consentimento administrativo — ambos são necessários.",
+    entraPermissionDenied: "O Microsoft Graph recusou a solicitação. Peça ao administrador do tenant para conceder ao aplicativo conectado a permissão necessária e confirmar o consentimento administrativo — ambos são necessários.",
     entraGraphUpstream: "O Microsoft Graph está inacessível ou retornou um erro. Tente novamente em breve.",
     entraSyncDisabled: "A sincronização de grupos do Entra não está habilitada nesta implantação. Peça a um operador para habilitá-la antes de executar uma sincronização manual.",
   },

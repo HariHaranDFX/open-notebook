@@ -218,7 +218,7 @@ export const deDE = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Diese Gruppe wird von der Entra-Synchronisierung verwaltet und kann hier nicht bearbeitet werden.",
     entraCredentialInvalid: "Die Anmeldeinformationen der verbundenen Entra-App sind ungültig oder abgelaufen. Bitten Sie einen Operator, sie zu aktualisieren.",
-    entraPermissionDenied: "Microsoft Graph hat die Anforderung abgelehnt. Bitten Sie den Tenant-Administrator, Open Notebook die erforderliche Berechtigung zu erteilen und die Administratoreinwilligung zu bestätigen — beides ist erforderlich.",
+    entraPermissionDenied: "Microsoft Graph hat die Anforderung abgelehnt. Bitten Sie den Tenant-Administrator, der verbundenen Anwendung die erforderliche Berechtigung zu erteilen und die Administratoreinwilligung zu bestätigen — beides ist erforderlich.",
     entraGraphUpstream: "Microsoft Graph ist nicht erreichbar oder hat einen Fehler zurückgegeben. Versuchen Sie es in Kürze erneut.",
     entraSyncDisabled: "Die Entra-Gruppensynchronisierung ist in dieser Bereitstellung nicht aktiviert. Bitten Sie einen Operator, sie zu aktivieren, bevor Sie eine manuelle Synchronisierung ausführen.",
   },

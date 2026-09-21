@@ -215,7 +215,7 @@ export const esES = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Este grupo lo gestiona la sincronización de Entra y no se puede editar aquí.",
     entraCredentialInvalid: "Las credenciales de la aplicación de Entra conectada no son válidas o han caducado. Pide a un operador que las actualice.",
-    entraPermissionDenied: "Microsoft Graph rechazó la solicitud. Pide al administrador del tenant que otorgue a Open Notebook el permiso necesario y confirme el consentimiento del administrador — ambos son obligatorios.",
+    entraPermissionDenied: "Microsoft Graph rechazó la solicitud. Pide al administrador del tenant que otorgue a la aplicación conectada el permiso necesario y confirme el consentimiento del administrador — ambos son obligatorios.",
     entraGraphUpstream: "Microsoft Graph no está accesible o devolvió un error. Vuelve a intentarlo en breve.",
     entraSyncDisabled: "La sincronización de grupos de Entra no está habilitada en este despliegue. Pide a un operador que la habilite antes de ejecutar una sincronización manual.",
   },

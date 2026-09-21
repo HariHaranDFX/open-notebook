@@ -215,7 +215,7 @@ export const trTR = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Bu grup Entra eşitlemesi tarafından yönetiliyor ve buradan düzenlenemez.",
     entraCredentialInvalid: "Bağlı Entra uygulamasının kimlik bilgileri geçersiz veya süresi dolmuş. Bir operatörden bunları yenilemesini isteyin.",
-    entraPermissionDenied: "Microsoft Graph isteği reddetti. Kiracı yöneticisinden Open Notebook'a gerekli izni vermesini ve yönetici onayını onaylamasını isteyin — her ikisi de gereklidir.",
+    entraPermissionDenied: "Microsoft Graph isteği reddetti. Kiracı yöneticisinden bağlı uygulamaya gerekli izni vermesini ve yönetici onayını onaylamasını isteyin — her ikisi de gereklidir.",
     entraGraphUpstream: "Microsoft Graph'e ulaşılamıyor veya bir hata döndürdü. Kısa süre içinde tekrar deneyin.",
     entraSyncDisabled: "Entra grup eşitlemesi bu dağıtımda etkin değil. Manuel eşitleme çalıştırmadan önce bir operatörden etkinleştirmesini isteyin.",
   },

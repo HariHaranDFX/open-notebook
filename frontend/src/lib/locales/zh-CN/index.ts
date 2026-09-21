@@ -215,7 +215,7 @@ export const zhCN = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "此组由 Entra 同步管理,无法在此处编辑。",
     entraCredentialInvalid: "连接的 Entra 应用凭据无效或已过期。请操作员刷新它们。",
-    entraPermissionDenied: "Microsoft Graph 拒绝了请求。请租户管理员向 Open Notebook 授予所需权限并确认管理员同意 — 两者都需要。",
+    entraPermissionDenied: "Microsoft Graph 拒绝了请求。请租户管理员向已连接的应用授予所需权限并确认管理员同意 — 两者都需要。",
     entraGraphUpstream: "无法访问 Microsoft Graph 或返回错误。请稍后重试。",
     entraSyncDisabled: "此部署未启用 Entra 群组同步。运行手动同步前请操作员启用。",
   },

@@ -215,7 +215,7 @@ export const jaJP = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "このグループは Entra 同期によって管理されており、ここでは編集できません。",
     entraCredentialInvalid: "接続された Entra アプリの資格情報が無効か期限切れです。運用担当者に更新を依頼してください。",
-    entraPermissionDenied: "Microsoft Graph が要求を拒否しました。テナント管理者に Open Notebook へ必要な権限を付与し、管理者の同意を確認してもらってください。両方が必要です。",
+    entraPermissionDenied: "Microsoft Graph が要求を拒否しました。テナント管理者に、連携アプリへ必要な権限を付与し、管理者の同意を確認してもらってください。両方が必要です。",
     entraGraphUpstream: "Microsoft Graph に接続できないか、エラーを返しました。しばらくしてからお試しください。",
     entraSyncDisabled: "この展開では Entra グループ同期が有効化されていません。手動同期を実行する前に運用担当者に有効化を依頼してください。",
   },

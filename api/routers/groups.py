@@ -83,8 +83,8 @@ def _graph_http_exception(exc: GraphAPIError) -> HTTPException:
             status_code=502,
             detail=(
                 "Microsoft Graph refused the request. Ask the tenant "
-                f"administrator to grant Open Notebook {permission} and "
-                "confirm admin consent — both are required."
+                f"administrator to grant {permission} to the connected app "
+                "and confirm admin consent — both are required."
             ),
         )
     return HTTPException(

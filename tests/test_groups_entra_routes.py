@@ -295,6 +295,8 @@ def test_link_forbidden_for_non_admin(monkeypatch):
 
 
 def test_sync_admin_only_and_returns_command_id(monkeypatch):
+    # WBS 4.21 gates this endpoint on the sync-enabled flag; enable it here.
+    monkeypatch.setenv("ENTRA_GROUP_SYNC_ENABLED", "true")
     with patch(
         "api.routers.groups.submit_command",
         new=AsyncMock(return_value="cmd-42"),

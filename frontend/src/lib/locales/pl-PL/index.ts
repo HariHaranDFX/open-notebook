@@ -215,7 +215,7 @@ export const plPL = {
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Ta grupa jest zarządzana przez synchronizację Entra i nie może być edytowana tutaj.",
     entraCredentialInvalid: "Poświadczenia połączonej aplikacji Entra są nieprawidłowe lub wygasły. Poproś operatora o ich odświeżenie.",
-    entraPermissionDenied: "Microsoft Graph odrzucił żądanie. Poproś administratora dzierżawy o przyznanie Open Notebook wymaganego uprawnienia i potwierdzenie zgody administratora — wymagane są oba.",
+    entraPermissionDenied: "Microsoft Graph odrzucił żądanie. Poproś administratora dzierżawy o przyznanie połączonej aplikacji wymaganego uprawnienia i potwierdzenie zgody administratora — wymagane są oba.",
     entraGraphUpstream: "Microsoft Graph jest nieosiągalny lub zwrócił błąd. Spróbuj ponownie za chwilę.",
     entraSyncDisabled: "Synchronizacja grup Entra nie jest włączona w tym wdrożeniu. Poproś operatora o włączenie jej przed uruchomieniem ręcznej synchronizacji.",
   },
