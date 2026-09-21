@@ -266,3 +266,24 @@ async def _stub_unknown_members(
 
     unresolved = [oid for oid in oids if oid not in stubbed]
     return stubbed, unresolved
+
+
+# Pydantic v2 quirk: surreal_commands wraps this command in a LangChain
+# RunnableLambda whose auto-generated input schema carries a forward
+# reference to ExecutionContext (a plain dataclass on the CommandInput
+# parent). Without an explicit rebuild, the first submit_command call
+# raises "class not fully defined" and the API lifespan sync loop
+# swallows the exception. Rebuilding here — after registration — is
+# safe and idempotent.
+try:
+    from surreal_commands.core.registry import registry as _cmd_registry
+
+    _item = _cmd_registry.get_command_by_id("open_notebook.sync_entra_groups")
+    if _item is not None:
+        _item.input_schema.model_rebuild()
+except Exception as _exc:  # noqa: BLE001
+    # Best-effort: never break module import if the library layout changes.
+    logger.debug(
+        f"sync_entra_groups input schema rebuild skipped: "
+        f"{_exc.__class__.__name__}"
+    )

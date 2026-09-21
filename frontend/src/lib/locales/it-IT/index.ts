@@ -214,8 +214,10 @@ export const itIT = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Questo gruppo è gestito dalla sincronizzazione Entra e non può essere modificato qui.",
-    entraGraphAuth: "La registrazione dell'app Entra non ha l'autorizzazione Graph richiesta. Chiedi a un amministratore di concedere 'GroupMember.Read.All' (Applicazione) con consenso amministratore, poi riprova.",
-    entraGraphError: "Microsoft Graph non è raggiungibile o ha restituito un errore. Riprova a breve.",
+    entraCredentialInvalid: "Le credenziali dell'app Entra connessa non sono valide o sono scadute. Chiedi a un operatore di aggiornarle.",
+    entraPermissionDenied: "Microsoft Graph ha rifiutato la richiesta. Chiedi all'amministratore del tenant di concedere a Open Notebook l'autorizzazione richiesta e di confermare il consenso amministratore — entrambi sono necessari.",
+    entraGraphUpstream: "Microsoft Graph non è raggiungibile o ha restituito un errore. Riprova a breve.",
+    entraSyncDisabled: "La sincronizzazione dei gruppi Entra non è abilitata su questa distribuzione. Chiedi a un operatore di abilitarla prima di eseguire una sincronizzazione manuale.",
   },
   connectionErrors: {
     apiTitle: "Impossibile connettersi al server API",
@@ -302,6 +304,7 @@ export const itIT = {
     searchDirectoryPlaceholder: "Digita un nome o un'email…",
     noDirectoryResults: "Nessuna corrispondenza nella rubrica",
     neverSignedIn: "Mai effettuato l'accesso",
+    showingTopResults: "Mostrando i primi {{count}} — digita per filtrare",
   },
   groups: {
     groupCount: "{{count}} gruppi",
@@ -335,6 +338,7 @@ export const itIT = {
     syncStarted: "Sincronizzazione avviata",
     syncManaged: "I membri sono gestiti dalla sincronizzazione Entra",
     neverSignedIn: "Mai effettuato l'accesso",
+    showingTopResults: "Mostrando i primi {{count}} — digita per filtrare",
   },
   notebooks: {
     title: "Quaderni",

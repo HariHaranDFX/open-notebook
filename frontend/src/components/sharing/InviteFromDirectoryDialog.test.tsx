@@ -20,10 +20,17 @@ const dict: Record<string, string> = {
   'sharing.searchDirectory': 'Search directory',
   'sharing.searchDirectoryPlaceholder': 'Type a name or email…',
   'sharing.noDirectoryResults': 'No matches in the directory',
+  'sharing.showingTopResults': 'Showing top {{count}} — type to filter',
 }
 
-function t(key: string): string {
-  return dict[key] ?? key
+function t(key: string, options?: Record<string, unknown>): string {
+  let str = dict[key] ?? key
+  if (options) {
+    for (const [k, v] of Object.entries(options)) {
+      str = str.replaceAll(`{{${k}}}`, String(v))
+    }
+  }
+  return str
 }
 
 vi.mock('@/lib/hooks/use-translation', () => ({
@@ -78,15 +85,29 @@ describe('InviteFromDirectoryDialog', () => {
     )
   })
 
-  it('renders the placeholder before the user types', () => {
+  it('renders the input placeholder while the dialog is open', () => {
     render(
       <InviteFromDirectoryDialog open={true} onOpenChange={vi.fn()} />
     )
-    // The placeholder text appears both in the input and in the results-area
-    // guidance — assert on the latter with the input matcher.
     expect(
       screen.getByPlaceholderText('Type a name or email…')
     ).toBeInTheDocument()
+  })
+
+  it('shows the browse-mode hint when the input is empty but Graph returned rows', () => {
+    // Empty query + non-empty results = "browse mode" (WBS 4.21 top-25 fetch).
+    mockUseDirectoryUserSearch.mockReturnValue(
+      asResult<ReturnType<typeof useDirectoryUserSearch>>({
+        data: candidates,
+        isFetching: false,
+      })
+    )
+    render(
+      <InviteFromDirectoryDialog open={true} onOpenChange={vi.fn()} />
+    )
+    expect(screen.getByTestId('directory-browse-hint')).toHaveTextContent(
+      /Showing top 2 — type to filter/
+    )
   })
 
   it('shows directory results and disables submit until one is picked', async () => {

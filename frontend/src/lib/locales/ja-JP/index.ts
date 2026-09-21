@@ -214,8 +214,10 @@ export const jaJP = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "このグループは Entra 同期によって管理されており、ここでは編集できません。",
-    entraGraphAuth: "Entra アプリ登録に必要な Graph 権限がありません。管理者に 'GroupMember.Read.All'(アプリケーション)権限と管理者の同意を付与してもらい、再度お試しください。",
-    entraGraphError: "Microsoft Graph に接続できないか、エラーを返しました。しばらくしてからお試しください。",
+    entraCredentialInvalid: "接続された Entra アプリの資格情報が無効か期限切れです。運用担当者に更新を依頼してください。",
+    entraPermissionDenied: "Microsoft Graph が要求を拒否しました。テナント管理者に Open Notebook へ必要な権限を付与し、管理者の同意を確認してもらってください。両方が必要です。",
+    entraGraphUpstream: "Microsoft Graph に接続できないか、エラーを返しました。しばらくしてからお試しください。",
+    entraSyncDisabled: "この展開では Entra グループ同期が有効化されていません。手動同期を実行する前に運用担当者に有効化を依頼してください。",
   },
   connectionErrors: {
     apiTitle: "APIサーバーに接続できません",
@@ -302,6 +304,7 @@ export const jaJP = {
     searchDirectoryPlaceholder: "名前またはメールアドレスを入力…",
     noDirectoryResults: "ディレクトリに一致するユーザーがいません",
     neverSignedIn: "未サインイン",
+    showingTopResults: "上位 {{count}} 件を表示中 — 絞り込むには入力してください",
   },
   groups: {
     groupCount: "{{count}} 個のグループ",
@@ -335,6 +338,7 @@ export const jaJP = {
     syncStarted: "同期を開始しました",
     syncManaged: "メンバーは Entra 同期によって管理されます",
     neverSignedIn: "未サインイン",
+    showingTopResults: "上位 {{count}} 件を表示中 — 絞り込むには入力してください",
   },
   notebooks: {
     title: "ノートブック",

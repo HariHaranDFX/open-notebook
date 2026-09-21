@@ -158,6 +158,28 @@ async def test_get_user_returns_mapped_shape_and_404_raises():
 
 
 @pytest.mark.asyncio
+async def test_search_users_empty_query_uses_orderby_browse_mode():
+    """Empty query → $orderby=displayName instead of $search. Powers the
+    "show first 25 by default" affordance in the picker dialog."""
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url).startswith(_TOKEN_URL):
+            return httpx.Response(200, json={"access_token": "tok", "expires_in": 3600})
+        captured["query"] = str(request.url)
+        return httpx.Response(200, json={"value": []})
+
+    with patch("api.graph_client.httpx.AsyncClient", _factory(handler)):
+        await search_users("   ")  # whitespace-only counts as empty
+
+    from urllib.parse import unquote
+
+    decoded = unquote(captured["query"])
+    assert "$orderby=displayName" in decoded
+    assert "$search" not in decoded
+
+
+@pytest.mark.asyncio
 async def test_list_users_by_oids_chunks_at_15():
     """Graph URL limit — verify we send exactly ceil(len/15) requests."""
     seen_queries: list[str] = []

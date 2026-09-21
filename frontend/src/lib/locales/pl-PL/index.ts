@@ -214,8 +214,10 @@ export const plPL = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Ta grupa jest zarządzana przez synchronizację Entra i nie może być edytowana tutaj.",
-    entraGraphAuth: "Rejestracja aplikacji Entra nie ma wymaganego uprawnienia Graph. Poproś administratora o przyznanie 'GroupMember.Read.All' (Aplikacja) ze zgodą administratora i spróbuj ponownie.",
-    entraGraphError: "Microsoft Graph jest nieosiągalny lub zwrócił błąd. Spróbuj ponownie za chwilę.",
+    entraCredentialInvalid: "Poświadczenia połączonej aplikacji Entra są nieprawidłowe lub wygasły. Poproś operatora o ich odświeżenie.",
+    entraPermissionDenied: "Microsoft Graph odrzucił żądanie. Poproś administratora dzierżawy o przyznanie Open Notebook wymaganego uprawnienia i potwierdzenie zgody administratora — wymagane są oba.",
+    entraGraphUpstream: "Microsoft Graph jest nieosiągalny lub zwrócił błąd. Spróbuj ponownie za chwilę.",
+    entraSyncDisabled: "Synchronizacja grup Entra nie jest włączona w tym wdrożeniu. Poproś operatora o włączenie jej przed uruchomieniem ręcznej synchronizacji.",
   },
   connectionErrors: {
     apiTitle: "Nie można połączyć się z serwerem API",
@@ -302,6 +304,7 @@ export const plPL = {
     searchDirectoryPlaceholder: "Wpisz imię lub adres e-mail…",
     noDirectoryResults: "Brak dopasowań w katalogu",
     neverSignedIn: "Nigdy się nie zalogował(a)",
+    showingTopResults: "Pokazuję pierwsze {{count}} — wpisz, aby filtrować",
   },
   groups: {
     groupCount: "Grupy: {{count}}",
@@ -335,6 +338,7 @@ export const plPL = {
     syncStarted: "Synchronizacja rozpoczęta",
     syncManaged: "Członkowie są zarządzani przez synchronizację Entra",
     neverSignedIn: "Nigdy się nie zalogował(a)",
+    showingTopResults: "Pokazuję pierwsze {{count}} — wpisz, aby filtrować",
   },
   notebooks: {
     title: "Notatniki",

@@ -214,8 +214,10 @@ export const trTR = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Bu grup Entra eşitlemesi tarafından yönetiliyor ve buradan düzenlenemez.",
-    entraGraphAuth: "Entra uygulama kaydında gerekli Graph izni eksik. Bir yöneticiden 'GroupMember.Read.All' (Uygulama) iznini yönetici onayıyla vermesini isteyin ve tekrar deneyin.",
-    entraGraphError: "Microsoft Graph'e ulaşılamıyor veya bir hata döndürdü. Kısa süre içinde tekrar deneyin.",
+    entraCredentialInvalid: "Bağlı Entra uygulamasının kimlik bilgileri geçersiz veya süresi dolmuş. Bir operatörden bunları yenilemesini isteyin.",
+    entraPermissionDenied: "Microsoft Graph isteği reddetti. Kiracı yöneticisinden Open Notebook'a gerekli izni vermesini ve yönetici onayını onaylamasını isteyin — her ikisi de gereklidir.",
+    entraGraphUpstream: "Microsoft Graph'e ulaşılamıyor veya bir hata döndürdü. Kısa süre içinde tekrar deneyin.",
+    entraSyncDisabled: "Entra grup eşitlemesi bu dağıtımda etkin değil. Manuel eşitleme çalıştırmadan önce bir operatörden etkinleştirmesini isteyin.",
   },
   connectionErrors: {
     apiTitle: "API Sunucusuna Bağlanılamıyor",
@@ -302,6 +304,7 @@ export const trTR = {
     searchDirectoryPlaceholder: "Ad veya e-posta yazın…",
     noDirectoryResults: "Dizinde eşleşme yok",
     neverSignedIn: "Hiç oturum açmadı",
+    showingTopResults: "İlk {{count}} sonuç gösteriliyor — filtrelemek için yazın",
   },
   groups: {
     groupCount: "{{count}} grup",
@@ -335,6 +338,7 @@ export const trTR = {
     syncStarted: "Eşitleme başlatıldı",
     syncManaged: "Üyeler Entra eşitlemesi tarafından yönetilir",
     neverSignedIn: "Hiç oturum açmadı",
+    showingTopResults: "İlk {{count}} sonuç gösteriliyor — filtrelemek için yazın",
   },
   notebooks: {
     title: "Defterler",

@@ -214,8 +214,10 @@ export const esES = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Este grupo lo gestiona la sincronización de Entra y no se puede editar aquí.",
-    entraGraphAuth: "El registro de aplicación de Entra no tiene el permiso de Graph necesario. Pide a un administrador que conceda 'GroupMember.Read.All' (Aplicación) con consentimiento del administrador y vuelve a intentarlo.",
-    entraGraphError: "Microsoft Graph no está accesible o devolvió un error. Vuelve a intentarlo en breve.",
+    entraCredentialInvalid: "Las credenciales de la aplicación de Entra conectada no son válidas o han caducado. Pide a un operador que las actualice.",
+    entraPermissionDenied: "Microsoft Graph rechazó la solicitud. Pide al administrador del tenant que otorgue a Open Notebook el permiso necesario y confirme el consentimiento del administrador — ambos son obligatorios.",
+    entraGraphUpstream: "Microsoft Graph no está accesible o devolvió un error. Vuelve a intentarlo en breve.",
+    entraSyncDisabled: "La sincronización de grupos de Entra no está habilitada en este despliegue. Pide a un operador que la habilite antes de ejecutar una sincronización manual.",
   },
   connectionErrors: {
     apiTitle: "No se puede conectar al servidor API",
@@ -302,6 +304,7 @@ export const esES = {
     searchDirectoryPlaceholder: "Escribe un nombre o correo…",
     noDirectoryResults: "Sin coincidencias en el directorio",
     neverSignedIn: "Nunca ha iniciado sesión",
+    showingTopResults: "Mostrando los primeros {{count}} — escribe para filtrar",
   },
   groups: {
     groupCount: "{{count}} grupos",
@@ -335,6 +338,7 @@ export const esES = {
     syncStarted: "Sincronización iniciada",
     syncManaged: "Los miembros los gestiona la sincronización de Entra",
     neverSignedIn: "Nunca ha iniciado sesión",
+    showingTopResults: "Mostrando los primeros {{count}} — escribe para filtrar",
   },
   notebooks: {
     title: "Cuadernos",

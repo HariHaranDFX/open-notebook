@@ -37,27 +37,81 @@ async def _reject_if_entra(group_id: str) -> None:
         )
 
 
+_USER_ACTIONS = {"search users", "get_user", "list_users_by_oids"}
+_GROUP_ACTIONS = {"search", "get_group", "list members"}
+
+
+def _permission_for(action: str) -> str:
+    """Return a human-readable label for the permission the given action needs.
+
+    Kept intentionally free of Microsoft's raw permission slugs — admins
+    read this in a toast and shouldn't need to translate "GroupMember.
+    Read.All" back into intent.
+    """
+    if action in _USER_ACTIONS:
+        return "the tenant directory permission"
+    if action in _GROUP_ACTIONS:
+        return "the group membership permission"
+    return "the required Microsoft Graph permission"
+
+
 def _graph_http_exception(exc: GraphAPIError) -> HTTPException:
     """Turn a Graph failure into a helpful HTTP error.
 
-    401/403 → the Entra app registration is missing the required Application
-    permission or has not been granted admin consent. Emit a message the
-    admin can act on. Other statuses → generic Graph upstream error.
+    We distinguish three failure modes so the admin sees the right cue:
+    - 401 → the tenant refused our credentials; the app registration
+      secret is invalid or expired.
+    - 403 → the app can talk to Graph but is missing the specific
+      Application permission this action needs. Microsoft returns the
+      same code whether the permission was never added OR was added but
+      never granted admin consent, so we surface both possibilities in
+      one line and let the admin check both.
+    - anything else → generic upstream error, no actionable hint.
     """
-    if exc.status_code in (401, 403):
+    if exc.status_code == 401:
         return HTTPException(
             status_code=502,
             detail=(
-                "Microsoft Graph rejected the request "
-                f"(HTTP {exc.status_code}). Grant the Entra app registration "
-                "the 'GroupMember.Read.All' Application permission and "
-                "admin consent, then try again."
+                "Microsoft Graph did not accept the connected Entra app's "
+                "credentials. Ask an operator to verify the app's client "
+                "secret has not expired or been rotated."
+            ),
+        )
+    if exc.status_code == 403:
+        permission = _permission_for(exc.action)
+        return HTTPException(
+            status_code=502,
+            detail=(
+                "Microsoft Graph refused the request. Ask the tenant "
+                f"administrator to grant Open Notebook {permission} and "
+                "confirm admin consent — both are required."
             ),
         )
     return HTTPException(
         status_code=502,
-        detail=f"Microsoft Graph error (HTTP {exc.status_code}).",
+        detail=(
+            "Microsoft Graph returned an upstream error "
+            f"(HTTP {exc.status_code}). Try again in a moment."
+        ),
     )
+
+
+def _require_sync_enabled() -> None:
+    """Refuse manual-sync when the operator has not turned the feature on.
+
+    The scheduled loop is off in that case too, so a "Sync now" click
+    would silently do nothing. Fail fast with a 409 and human wording
+    (no env-var names — that belongs in docs, not a toast).
+    """
+    flag = os.environ.get("ENTRA_GROUP_SYNC_ENABLED", "").strip().lower()
+    if flag not in ("true", "1", "yes"):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Entra group sync is not enabled on this deployment. "
+                "Ask an operator to enable it before running a manual sync."
+            ),
+        )
 
 
 class GroupCreate(BaseModel):
@@ -411,14 +465,15 @@ async def list_users_for_picker(request: Request):
 
 
 @router.get("/groups/entra/search", response_model=List[EntraGroupCandidate])
-async def entra_group_search(q: str, request: Request):
-    """Typeahead against Microsoft Graph. Returns top matches, mapped."""
+async def entra_group_search(request: Request, q: str = ""):
+    """Typeahead against Microsoft Graph.
+
+    Empty `q` returns the first 25 groups alphabetically so the picker
+    isn't blank on open. Any non-empty query switches to $search.
+    """
     require_admin(request)
-    query = (q or "").strip()
-    if not query:
-        return []
     try:
-        results = await search_groups(query)
+        results = await search_groups(q)
     except GraphAPIError as exc:
         raise _graph_http_exception(exc) from exc
     return [EntraGroupCandidate(**row) for row in results]
@@ -470,6 +525,7 @@ async def entra_group_link(body: EntraLinkRequest, request: Request):
 async def entra_group_sync_now(request: Request):
     """Admin-triggered full sync of every linked Entra group."""
     require_admin(request)
+    _require_sync_enabled()
     command_id = await submit_command("open_notebook", "sync_entra_groups", {})
     return {"command_id": str(command_id)}
 
@@ -480,19 +536,18 @@ async def entra_group_sync_now(request: Request):
 
 
 @router.get("/users/directory", response_model=List[DirectoryUserCandidate])
-async def directory_user_search(q: str, request: Request):
+async def directory_user_search(request: Request, q: str = ""):
     """Tenant-wide typeahead against Microsoft Graph.
 
     Any signed-in user may call this so owners can share with colleagues
-    who have never opened the app. Requires the Entra app registration to
-    hold the `User.Read.All` Application permission with admin consent.
+    who have never opened the app. Empty `q` returns the first 25 users
+    alphabetically so the picker isn't blank on open. Requires the Entra
+    app registration to hold the tenant directory permission with admin
+    consent.
     """
     require_user(request)
-    query = (q or "").strip()
-    if not query:
-        return []
     try:
-        results = await search_users(query)
+        results = await search_users(q)
     except GraphAPIError as exc:
         raise _graph_http_exception(exc) from exc
     return [DirectoryUserCandidate(**row) for row in results]

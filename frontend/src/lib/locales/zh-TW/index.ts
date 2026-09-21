@@ -214,8 +214,10 @@ export const zhTW = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "此群組由 Entra 同步管理,無法在此處編輯。",
-    entraGraphAuth: "Entra 應用程式註冊缺少必要的 Graph 權限。請管理員授予 'GroupMember.Read.All'(應用程式)權限並批准管理員同意,然後重試。",
-    entraGraphError: "無法連線至 Microsoft Graph 或已回傳錯誤。請稍後重試。",
+    entraCredentialInvalid: "已連線的 Entra 應用程式憑證無效或已過期。請操作員重新整理。",
+    entraPermissionDenied: "Microsoft Graph 拒絕了此要求。請租用戶管理員授予 Open Notebook 所需權限並確認管理員同意 — 兩者皆為必要。",
+    entraGraphUpstream: "無法連線至 Microsoft Graph 或已回傳錯誤。請稍後重試。",
+    entraSyncDisabled: "此部署未啟用 Entra 群組同步。執行手動同步前請操作員啟用。",
   },
   connectionErrors: {
     apiTitle: "無法連線到 API 伺服器",
@@ -302,6 +304,7 @@ export const zhTW = {
     searchDirectoryPlaceholder: "輸入姓名或電子郵件…",
     noDirectoryResults: "目錄中沒有相符的結果",
     neverSignedIn: "從未登入",
+    showingTopResults: "顯示前 {{count}} 筆 — 輸入以篩選",
   },
   groups: {
     groupCount: "{{count}} 個群組",
@@ -335,6 +338,7 @@ export const zhTW = {
     syncStarted: "同步已開始",
     syncManaged: "成員由 Entra 同步管理",
     neverSignedIn: "從未登入",
+    showingTopResults: "顯示前 {{count}} 筆 — 輸入以篩選",
   },
   notebooks: {
     title: "筆記本",

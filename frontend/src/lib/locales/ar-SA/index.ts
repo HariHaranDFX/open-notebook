@@ -214,8 +214,10 @@ export const arSA = {
     transformationDefaultPromptAdmin: "يمكن للمسؤول فقط تعديل موجه التحويل الافتراضي.",
     csrfFailed: "فشل التحقق الأمني. يرجى التحديث والمحاولة مرة أخرى.",
     entraGroupManaged: "تتم إدارة هذه المجموعة بواسطة مزامنة Entra ولا يمكن تعديلها هنا.",
-    entraGraphAuth: "تسجيل تطبيق Entra يفتقر إلى إذن Graph المطلوب. اطلب من المسؤول منح إذن 'GroupMember.Read.All' (تطبيق) مع موافقة المسؤول، ثم حاول مرة أخرى.",
-    entraGraphError: "لا يمكن الوصول إلى Microsoft Graph أو أنه أرجع خطأ. حاول مرة أخرى بعد قليل.",
+    entraCredentialInvalid: "بيانات اعتماد تطبيق Entra المتصل غير صالحة أو منتهية الصلاحية. اطلب من المشغّل تحديثها.",
+    entraPermissionDenied: "رفض Microsoft Graph الطلب. اطلب من مسؤول المستأجر منح Open Notebook الإذن المطلوب وتأكيد موافقة المسؤول — كلاهما مطلوب.",
+    entraGraphUpstream: "لا يمكن الوصول إلى Microsoft Graph أو أنه أرجع خطأ. حاول مرة أخرى بعد قليل.",
+    entraSyncDisabled: "مزامنة مجموعات Entra غير مفعّلة في هذا النشر. اطلب من المشغّل تفعيلها قبل تشغيل مزامنة يدوية.",
   },
   connectionErrors: {
     apiTitle: "تعذر الاتصال بخادم API",
@@ -302,6 +304,7 @@ export const arSA = {
     searchDirectoryPlaceholder: "اكتب اسمًا أو بريدًا إلكترونيًا…",
     noDirectoryResults: "لا توجد تطابقات في الدليل",
     neverSignedIn: "لم يسجّل الدخول مطلقًا",
+    showingTopResults: "عرض أول {{count}} — اكتب للتصفية",
   },
   groups: {
     groupCount: "{{count}} مجموعة",
@@ -335,6 +338,7 @@ export const arSA = {
     syncStarted: "بدأت المزامنة",
     syncManaged: "تتم إدارة الأعضاء بواسطة مزامنة Entra",
     neverSignedIn: "لم يسجّل الدخول مطلقًا",
+    showingTopResults: "عرض أول {{count}} — اكتب للتصفية",
   },
   notebooks: {
     title: "دفاتر الملاحظات",

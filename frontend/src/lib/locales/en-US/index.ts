@@ -212,8 +212,10 @@ export const enUS = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "This group is managed by Entra sync and cannot be edited here.",
-    entraGraphAuth: "The Entra app registration is missing the required Graph permission. Ask an administrator to grant 'GroupMember.Read.All' (Application) with admin consent, then try again.",
-    entraGraphError: "Microsoft Graph is unreachable or returned an error. Try again shortly.",
+    entraCredentialInvalid: "The connected Entra app's credentials are invalid or expired. Ask an operator to refresh them.",
+    entraPermissionDenied: "Microsoft Graph refused the request. Ask the tenant administrator to grant the required permission to Open Notebook and confirm admin consent — both are required.",
+    entraGraphUpstream: "Microsoft Graph is unreachable or returned an error. Try again shortly.",
+    entraSyncDisabled: "Entra group sync is not enabled on this deployment. Ask an operator to enable it before running a manual sync.",
   },
   connectionErrors: {
     apiTitle: "Unable to Connect to API Server",
@@ -300,6 +302,7 @@ export const enUS = {
     searchDirectoryPlaceholder: "Type a name or email…",
     noDirectoryResults: "No matches in the directory",
     neverSignedIn: "Never signed in",
+    showingTopResults: "Showing top {{count}} — type to filter",
   },
   groups: {
     groupCount: "{{count}} groups",
@@ -333,6 +336,7 @@ export const enUS = {
     syncStarted: "Sync started",
     syncManaged: "Members are managed by Entra sync",
     neverSignedIn: "Never signed in",
+    showingTopResults: "Showing top {{count}} — type to filter",
   },
   notebooks: {
     title: "Notebooks",

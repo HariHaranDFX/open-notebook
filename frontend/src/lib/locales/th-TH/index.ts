@@ -214,8 +214,10 @@ export const thTH = {
     transformationDefaultPromptAdmin: "เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถแก้ไขพรอมต์การแปลงเริ่มต้นได้",
     csrfFailed: "การตรวจสอบความปลอดภัยล้มเหลว โปรดรีเฟรชและลองอีกครั้ง",
     entraGroupManaged: "กลุ่มนี้ถูกจัดการโดยการซิงค์ Entra และไม่สามารถแก้ไขได้ที่นี่",
-    entraGraphAuth: "การลงทะเบียนแอป Entra ขาดสิทธิ์ Graph ที่จำเป็น ขอให้ผู้ดูแลระบบให้สิทธิ์ 'GroupMember.Read.All' (แอปพลิเคชัน) พร้อมความยินยอมของผู้ดูแลระบบ แล้วลองอีกครั้ง",
-    entraGraphError: "ไม่สามารถเข้าถึง Microsoft Graph หรือส่งกลับข้อผิดพลาด โปรดลองอีกครั้งในไม่ช้า",
+    entraCredentialInvalid: "ข้อมูลรับรองของแอป Entra ที่เชื่อมต่อไม่ถูกต้องหรือหมดอายุ ขอให้ผู้ดูแลระบบรีเฟรช",
+    entraPermissionDenied: "Microsoft Graph ปฏิเสธคำขอ โปรดขอให้ผู้ดูแลระบบผู้เช่ามอบสิทธิ์ที่จำเป็นให้ Open Notebook และยืนยันความยินยอมของผู้ดูแลระบบ — จำเป็นทั้งสองอย่าง",
+    entraGraphUpstream: "ไม่สามารถเข้าถึง Microsoft Graph หรือส่งกลับข้อผิดพลาด โปรดลองอีกครั้งในไม่ช้า",
+    entraSyncDisabled: "การซิงค์กลุ่ม Entra ไม่ได้เปิดใช้งานในการปรับใช้นี้ ขอให้ผู้ดูแลระบบเปิดใช้งานก่อนเรียกใช้การซิงค์ด้วยตนเอง",
   },
   connectionErrors: {
     apiTitle: "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ API ได้",
@@ -302,6 +304,7 @@ export const thTH = {
     searchDirectoryPlaceholder: "พิมพ์ชื่อหรืออีเมล…",
     noDirectoryResults: "ไม่พบผลลัพธ์ในไดเรกทอรี",
     neverSignedIn: "ไม่เคยเข้าสู่ระบบ",
+    showingTopResults: "แสดง {{count}} รายการแรก — พิมพ์เพื่อกรอง",
   },
   groups: {
     groupCount: "{{count}} กลุ่ม",
@@ -335,6 +338,7 @@ export const thTH = {
     syncStarted: "เริ่มการซิงค์แล้ว",
     syncManaged: "สมาชิกถูกจัดการโดยการซิงค์ Entra",
     neverSignedIn: "ไม่เคยเข้าสู่ระบบ",
+    showingTopResults: "แสดง {{count}} รายการแรก — พิมพ์เพื่อกรอง",
   },
   notebooks: {
     title: "สมุดบันทึก",

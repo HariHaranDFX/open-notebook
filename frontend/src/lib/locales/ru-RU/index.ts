@@ -214,8 +214,10 @@ export const ruRU = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Эта группа управляется синхронизацией Entra и не может быть отредактирована здесь.",
-    entraGraphAuth: "У регистрации приложения Entra нет необходимого разрешения Graph. Попросите администратора предоставить 'GroupMember.Read.All' (приложение) с администраторским согласием и повторите попытку.",
-    entraGraphError: "Microsoft Graph недоступен или вернул ошибку. Повторите попытку позже.",
+    entraCredentialInvalid: "Учётные данные подключённого приложения Entra недействительны или истекли. Попросите оператора обновить их.",
+    entraPermissionDenied: "Microsoft Graph отклонил запрос. Попросите администратора тенанта предоставить Open Notebook требуемое разрешение и подтвердить согласие администратора — необходимы оба действия.",
+    entraGraphUpstream: "Microsoft Graph недоступен или вернул ошибку. Повторите попытку позже.",
+    entraSyncDisabled: "Синхронизация групп Entra не включена в этом развёртывании. Попросите оператора включить её перед запуском ручной синхронизации.",
   },
   connectionErrors: {
     apiTitle: "Не удаётся подключиться к API-серверу",
@@ -302,6 +304,7 @@ export const ruRU = {
     searchDirectoryPlaceholder: "Введите имя или e-mail…",
     noDirectoryResults: "Совпадений в каталоге нет",
     neverSignedIn: "Никогда не входил",
+    showingTopResults: "Показаны первые {{count}} — начните ввод для фильтрации",
   },
   groups: {
     groupCount: "Групп: {{count}}",
@@ -335,6 +338,7 @@ export const ruRU = {
     syncStarted: "Синхронизация запущена",
     syncManaged: "Участниками управляет синхронизация Entra",
     neverSignedIn: "Никогда не входил",
+    showingTopResults: "Показаны первые {{count}} — начните ввод для фильтрации",
   },
   notebooks: {
     title: "Блокноты",

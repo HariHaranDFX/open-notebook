@@ -45,7 +45,9 @@ export function InviteFromDirectoryDialog({
   const [debounced, setDebounced] = useState('')
   const [selectedOid, setSelectedOid] = useState<string | null>(null)
   const stub = useStubEntraUser()
-  const search = useDirectoryUserSearch(debounced)
+  // Enabled only while the dialog is open — an empty query returns the
+  // first 25 tenant users alphabetically (browse mode).
+  const search = useDirectoryUserSearch(debounced, open)
 
   useEffect(() => {
     if (!open) {
@@ -100,15 +102,20 @@ export function InviteFromDirectoryDialog({
               <div className="flex justify-center py-8">
                 <LoadingSpinner />
               </div>
-            ) : !debounced ? (
-              <p className="p-4 text-center text-sm text-muted-foreground">
-                {t('sharing.searchDirectoryPlaceholder')}
-              </p>
             ) : results.length === 0 ? (
               <p className="p-4 text-center text-sm text-muted-foreground">
                 {t('sharing.noDirectoryResults')}
               </p>
             ) : (
+              <>
+                {!debounced && (
+                  <p
+                    className="border-b border-border/60 bg-muted/30 p-2 text-center text-xs text-muted-foreground"
+                    data-testid="directory-browse-hint"
+                  >
+                    {t('sharing.showingTopResults', { count: results.length })}
+                  </p>
+                )}
               <ul
                 role="radiogroup"
                 aria-label={t('sharing.searchDirectory')}
@@ -142,6 +149,7 @@ export function InviteFromDirectoryDialog({
                   )
                 })}
               </ul>
+              </>
             )}
           </div>
         </div>

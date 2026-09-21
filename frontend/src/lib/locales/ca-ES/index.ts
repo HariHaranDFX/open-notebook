@@ -214,8 +214,10 @@ export const caES = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Aquest grup el gestiona la sincronització d'Entra i no es pot editar des d'aquí.",
-    entraGraphAuth: "El registre d'aplicació d'Entra no té el permís necessari de Graph. Demana a un administrador que atorgui 'GroupMember.Read.All' (Aplicació) amb consentiment d'administrador i torna-ho a provar.",
-    entraGraphError: "Microsoft Graph no és accessible o ha retornat un error. Torna-ho a provar més tard.",
+    entraCredentialInvalid: "Les credencials de l'aplicació d'Entra connectada no són vàlides o han caducat. Demana a un operador que les actualitzi.",
+    entraPermissionDenied: "Microsoft Graph ha rebutjat la sol·licitud. Demana a l'administrador del tenant que atorgui a Open Notebook el permís necessari i confirmi el consentiment d'administrador — cal tots dos.",
+    entraGraphUpstream: "Microsoft Graph no és accessible o ha retornat un error. Torna-ho a provar més tard.",
+    entraSyncDisabled: "La sincronització de grups d'Entra no està activada en aquest desplegament. Demana a un operador que l'activi abans d'executar una sincronització manual.",
   },
   connectionErrors: {
     apiTitle: "No es pot connectar al servidor de l'API",
@@ -302,6 +304,7 @@ export const caES = {
     searchDirectoryPlaceholder: "Escriu un nom o correu…",
     noDirectoryResults: "Cap coincidència al directori",
     neverSignedIn: "Mai ha iniciat sessió",
+    showingTopResults: "S'estan mostrant els {{count}} primers — escriu per filtrar",
   },
   groups: {
     groupCount: "{{count}} grups",
@@ -335,6 +338,7 @@ export const caES = {
     syncStarted: "Sincronització iniciada",
     syncManaged: "Els membres els gestiona la sincronització d'Entra",
     neverSignedIn: "Mai ha iniciat sessió",
+    showingTopResults: "S'estan mostrant els {{count}} primers — escriu per filtrar",
   },
   notebooks: {
     title: "Quaderns",

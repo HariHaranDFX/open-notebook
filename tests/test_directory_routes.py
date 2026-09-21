@@ -66,16 +66,22 @@ def test_directory_search_returns_mapped_hits(monkeypatch):
     assert r.json() == payload
 
 
-def test_directory_search_empty_query_returns_empty_without_calling_graph(monkeypatch):
-    mock = AsyncMock()
-    with patch("api.routers.groups.search_users", new=mock):
+def test_directory_search_empty_query_now_browses_top_25(monkeypatch):
+    """Empty query used to short-circuit; the fix routes it to Graph for
+    browse-mode top-25 alphabetically."""
+    with patch(
+        "api.routers.groups.search_users",
+        new=AsyncMock(return_value=[]),
+    ) as mock_search:
         r = _client(monkeypatch).get("/api/users/directory?q=%20")
     assert r.status_code == 200
     assert r.json() == []
-    mock.assert_not_called()
+    mock_search.assert_awaited_once()
 
 
-def test_directory_search_graph_403_returns_502_with_hint(monkeypatch):
+def test_directory_search_graph_403_names_directory_permission(monkeypatch):
+    """403 on the user flow → names the tenant-directory permission, not the
+    group-membership one (previous shared-hint bug)."""
     def raise_auth(*_a, **_kw):
         raise GraphAPIError(403, "search users", "denied")
 
@@ -83,10 +89,12 @@ def test_directory_search_graph_403_returns_502_with_hint(monkeypatch):
         r = _client(monkeypatch).get("/api/users/directory?q=x")
     assert r.status_code == 502
     detail = r.json()["detail"]
-    assert "Microsoft Graph rejected" in detail
-    # The router's 401/403 hint is shared with the group-sync path; it
-    # names GroupMember.Read.All. Directory picker docs also list
-    # User.Read.All — verified in AUTH.md, not in the toast.
+    assert "Microsoft Graph refused the request" in detail
+    assert "tenant directory permission" in detail
+    assert "admin consent" in detail
+    # Never leak the Microsoft slugs into the UI toast; those live in AUTH.md.
+    assert "User.Read.All" not in detail
+    assert "GroupMember.Read.All" not in detail
 
 
 # ---------------------------------------------------------------------------

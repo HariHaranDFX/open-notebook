@@ -214,8 +214,10 @@ export const frFR = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Ce groupe est géré par la synchronisation Entra et ne peut pas être modifié ici.",
-    entraGraphAuth: "L'inscription d'application Entra ne dispose pas de la permission Graph requise. Demandez à un administrateur d'accorder 'GroupMember.Read.All' (Application) avec le consentement administrateur, puis réessayez.",
-    entraGraphError: "Microsoft Graph est injoignable ou a renvoyé une erreur. Réessayez sous peu.",
+    entraCredentialInvalid: "Les identifiants de l'application Entra connectée sont invalides ou expirés. Demandez à un opérateur de les actualiser.",
+    entraPermissionDenied: "Microsoft Graph a refusé la demande. Demandez à l'administrateur du tenant d'accorder à Open Notebook l'autorisation requise et de confirmer le consentement administrateur — les deux sont nécessaires.",
+    entraGraphUpstream: "Microsoft Graph est injoignable ou a renvoyé une erreur. Réessayez sous peu.",
+    entraSyncDisabled: "La synchronisation des groupes Entra n'est pas activée sur ce déploiement. Demandez à un opérateur de l'activer avant de lancer une synchronisation manuelle.",
   },
   connectionErrors: {
     apiTitle: "Impossible de se connecter au serveur API",
@@ -302,6 +304,7 @@ export const frFR = {
     searchDirectoryPlaceholder: "Saisissez un nom ou un e-mail…",
     noDirectoryResults: "Aucune correspondance dans l'annuaire",
     neverSignedIn: "Jamais connecté",
+    showingTopResults: "Affichage des {{count}} premiers — tapez pour filtrer",
   },
   groups: {
     groupCount: "{{count}} groupes",
@@ -335,6 +338,7 @@ export const frFR = {
     syncStarted: "Synchronisation démarrée",
     syncManaged: "Les membres sont gérés par la synchronisation Entra",
     neverSignedIn: "Jamais connecté",
+    showingTopResults: "Affichage des {{count}} premiers — tapez pour filtrer",
   },
   notebooks: {
     title: "Carnets",

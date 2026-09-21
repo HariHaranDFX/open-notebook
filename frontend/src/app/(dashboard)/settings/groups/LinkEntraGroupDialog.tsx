@@ -29,7 +29,9 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
   const [debounced, setDebounced] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
   const link = useLinkEntraGroup()
-  const search = useEntraGroupSearch(debounced)
+  // Enabled only while the dialog is open — an empty query is a valid
+  // "browse mode" fetch (backend returns the first 25 alphabetically).
+  const search = useEntraGroupSearch(debounced, open)
 
   // Reset internal state whenever the dialog is closed.
   useEffect(() => {
@@ -82,15 +84,17 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
               <div className="flex justify-center py-8">
                 <LoadingSpinner />
               </div>
-            ) : !debounced ? (
-              <p className="p-4 text-center text-sm text-muted-foreground">
-                {t('groups.searchEntraPlaceholder')}
-              </p>
             ) : results.length === 0 ? (
               <p className="p-4 text-center text-sm text-muted-foreground">
                 {t('groups.noEntraResults')}
               </p>
             ) : (
+              <>
+                {!debounced && (
+                  <p className="border-b border-border/60 bg-muted/30 p-2 text-center text-xs text-muted-foreground" data-testid="browse-hint">
+                    {t('groups.showingTopResults', { count: results.length })}
+                  </p>
+                )}
               <ul role="radiogroup" aria-label={t('groups.searchEntraGroups')}>
                 {results.map((candidate) => {
                   const active = selected === candidate.entra_group_oid
@@ -121,6 +125,7 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
                   )
                 })}
               </ul>
+              </>
             )}
           </div>
         </div>

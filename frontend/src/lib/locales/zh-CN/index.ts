@@ -214,8 +214,10 @@ export const zhCN = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "此组由 Entra 同步管理,无法在此处编辑。",
-    entraGraphAuth: "Entra 应用注册缺少必需的 Graph 权限。请管理员授予 'GroupMember.Read.All'(应用程序)权限并批准管理员同意,然后重试。",
-    entraGraphError: "无法访问 Microsoft Graph 或返回错误。请稍后重试。",
+    entraCredentialInvalid: "连接的 Entra 应用凭据无效或已过期。请操作员刷新它们。",
+    entraPermissionDenied: "Microsoft Graph 拒绝了请求。请租户管理员向 Open Notebook 授予所需权限并确认管理员同意 — 两者都需要。",
+    entraGraphUpstream: "无法访问 Microsoft Graph 或返回错误。请稍后重试。",
+    entraSyncDisabled: "此部署未启用 Entra 群组同步。运行手动同步前请操作员启用。",
   },
   connectionErrors: {
     apiTitle: "无法连接到 API 服务器",
@@ -302,6 +304,7 @@ export const zhCN = {
     searchDirectoryPlaceholder: "输入姓名或邮箱…",
     noDirectoryResults: "目录中没有匹配项",
     neverSignedIn: "从未登录",
+    showingTopResults: "显示前 {{count}} 项 — 输入以筛选",
   },
   groups: {
     groupCount: "{{count}} 个群组",
@@ -335,6 +338,7 @@ export const zhCN = {
     syncStarted: "同步已启动",
     syncManaged: "成员由 Entra 同步管理",
     neverSignedIn: "从未登录",
+    showingTopResults: "显示前 {{count}} 项 — 输入以筛选",
   },
   notebooks: {
     title: "笔记本",

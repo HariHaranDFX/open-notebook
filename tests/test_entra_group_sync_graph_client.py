@@ -179,6 +179,33 @@ async def test_search_groups_returns_top_matches_mapped():
 
 
 @pytest.mark.asyncio
+async def test_search_groups_empty_query_uses_orderby_browse_mode():
+    """Empty query → $orderby=displayName top 25 for the browse-by-default
+    picker (WBS 4.21 fix)."""
+    captured: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url).startswith(_TOKEN_URL):
+            return httpx.Response(
+                200, json={"access_token": "tok", "expires_in": 3600}
+            )
+        captured["query"] = str(request.url)
+        return httpx.Response(200, json={"value": []})
+
+    with patch(
+        "api.graph_client.httpx.AsyncClient",
+        _factory(handler),
+    ):
+        await search_groups("")
+
+    from urllib.parse import unquote
+
+    decoded = unquote(captured["query"])
+    assert "$orderby=displayName" in decoded
+    assert "$search" not in decoded
+
+
+@pytest.mark.asyncio
 async def test_search_groups_sends_consistency_level_eventual_header():
     seen_headers: dict[str, str] = {}
 

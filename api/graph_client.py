@@ -99,16 +99,32 @@ async def _authed_get(
 
 
 async def search_groups(query: str, *, limit: int = 25) -> list[dict[str, Any]]:
-    """Typeahead against `/groups?$search`, top `limit` matches, mapped shape."""
+    """Typeahead against `/groups`, top `limit` matches, mapped shape.
+
+    An empty query switches to browse mode: `$orderby=displayName` returns
+    the first `limit` groups alphabetically so the UI can seed the picker
+    with something to look at instead of a blank list.
+    """
+    q = (query or "").strip()
+    if q:
+        params = {
+            "$search": f'"displayName:{q}"',
+            "$top": str(limit),
+            "$select": "id,displayName,description",
+        }
+    else:
+        # ConsistencyLevel: eventual is still required by Graph for
+        # $orderby against the directory data set.
+        params = {
+            "$orderby": "displayName",
+            "$top": str(limit),
+            "$select": "id,displayName,description",
+        }
     async with httpx.AsyncClient() as client:
         resp = await _authed_get(
             client,
             f"{_GRAPH_BASE}/groups",
-            params={
-                "$search": f'"displayName:{query}"',
-                "$top": str(limit),
-                "$select": "id,displayName,description",
-            },
+            params=params,
             extra_headers={"ConsistencyLevel": "eventual"},
         )
     if resp.status_code != 200:
@@ -151,20 +167,30 @@ def _user_row(row: dict[str, Any]) -> dict[str, Any]:
 
 
 async def search_users(query: str, *, limit: int = 25) -> list[dict[str, Any]]:
-    """Typeahead against `/users?$search`, top `limit` matches, mapped shape.
+    """Typeahead against `/users`, top `limit` matches, mapped shape.
 
     Searches both displayName and mail so admins can paste an address.
+    An empty query switches to browse mode: `$orderby=displayName`
+    returns the first `limit` users alphabetically.
     """
-    search_expr = f'"displayName:{query}" OR "mail:{query}"'
+    q = (query or "").strip()
+    if q:
+        params = {
+            "$search": f'"displayName:{q}" OR "mail:{q}"',
+            "$top": str(limit),
+            "$select": "id,mail,userPrincipalName,displayName",
+        }
+    else:
+        params = {
+            "$orderby": "displayName",
+            "$top": str(limit),
+            "$select": "id,mail,userPrincipalName,displayName",
+        }
     async with httpx.AsyncClient() as client:
         resp = await _authed_get(
             client,
             f"{_GRAPH_BASE}/users",
-            params={
-                "$search": search_expr,
-                "$top": str(limit),
-                "$select": "id,mail,userPrincipalName,displayName",
-            },
+            params=params,
             extra_headers={"ConsistencyLevel": "eventual"},
         )
     if resp.status_code != 200:

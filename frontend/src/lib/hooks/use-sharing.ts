@@ -204,12 +204,15 @@ export function useUpdateGrant(resourceType: ResourceType, resourceId: string) {
 
 // WBS 4.20 — Entra-linked groups (admin-only)
 
-export function useEntraGroupSearch(query: string) {
+// Fires whenever `enabled` is true — an empty query is a valid "browse
+// mode" call now (backend returns the first 25 groups alphabetically).
+// Callers gate on dialog open state so we don't hit Graph on page mount.
+export function useEntraGroupSearch(query: string, enabled = true) {
   const trimmed = query.trim()
   return useQuery({
     queryKey: ['entra-groups', 'search', trimmed],
     queryFn: () => sharingApi.searchEntraGroups(trimmed),
-    enabled: trimmed.length > 0,
+    enabled,
     retry: false,
   })
 }
@@ -240,12 +243,12 @@ export function useLinkEntraGroup() {
 
 // WBS 4.21 — tenant directory picker + JIT-stub
 
-export function useDirectoryUserSearch(query: string) {
+export function useDirectoryUserSearch(query: string, enabled = true) {
   const trimmed = query.trim()
   return useQuery({
     queryKey: ['directory-users', 'search', trimmed],
     queryFn: () => sharingApi.searchDirectoryUsers(trimmed),
-    enabled: trimmed.length > 0,
+    enabled,
     retry: false,
   })
 }

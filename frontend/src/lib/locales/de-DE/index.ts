@@ -217,8 +217,10 @@ export const deDE = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Diese Gruppe wird von der Entra-Synchronisierung verwaltet und kann hier nicht bearbeitet werden.",
-    entraGraphAuth: "Der Entra-App-Registrierung fehlt die erforderliche Graph-Berechtigung. Bitten Sie einen Administrator, 'GroupMember.Read.All' (Anwendung) mit Administratoreinwilligung zu erteilen, und versuchen Sie es erneut.",
-    entraGraphError: "Microsoft Graph ist nicht erreichbar oder hat einen Fehler zurückgegeben. Versuchen Sie es in Kürze erneut.",
+    entraCredentialInvalid: "Die Anmeldeinformationen der verbundenen Entra-App sind ungültig oder abgelaufen. Bitten Sie einen Operator, sie zu aktualisieren.",
+    entraPermissionDenied: "Microsoft Graph hat die Anforderung abgelehnt. Bitten Sie den Tenant-Administrator, Open Notebook die erforderliche Berechtigung zu erteilen und die Administratoreinwilligung zu bestätigen — beides ist erforderlich.",
+    entraGraphUpstream: "Microsoft Graph ist nicht erreichbar oder hat einen Fehler zurückgegeben. Versuchen Sie es in Kürze erneut.",
+    entraSyncDisabled: "Die Entra-Gruppensynchronisierung ist in dieser Bereitstellung nicht aktiviert. Bitten Sie einen Operator, sie zu aktivieren, bevor Sie eine manuelle Synchronisierung ausführen.",
   },
   connectionErrors: {
     apiTitle: "Keine Verbindung zum API-Server möglich",
@@ -305,6 +307,7 @@ export const deDE = {
     searchDirectoryPlaceholder: "Name oder E-Mail eingeben…",
     noDirectoryResults: "Keine Treffer im Verzeichnis",
     neverSignedIn: "Noch nie angemeldet",
+    showingTopResults: "Zeige die ersten {{count}} — tippen zum Filtern",
   },
   groups: {
     groupCount: "{{count}} Gruppen",
@@ -338,6 +341,7 @@ export const deDE = {
     syncStarted: "Synchronisierung gestartet",
     syncManaged: "Mitglieder werden von der Entra-Synchronisierung verwaltet",
     neverSignedIn: "Noch nie angemeldet",
+    showingTopResults: "Zeige die ersten {{count}} — tippen zum Filtern",
   },
   notebooks: {
     title: "Notebooks",

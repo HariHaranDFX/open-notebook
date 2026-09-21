@@ -214,8 +214,10 @@ export const ptBR = {
     transformationDefaultPromptAdmin: "Only an administrator can edit the default transformation prompt.",
     csrfFailed: "Security check failed. Please refresh and try again.",
     entraGroupManaged: "Este grupo é gerenciado pela sincronização do Entra e não pode ser editado aqui.",
-    entraGraphAuth: "O registro de aplicativo do Entra está sem a permissão necessária do Graph. Peça a um administrador para conceder 'GroupMember.Read.All' (Aplicativo) com consentimento administrativo e tente novamente.",
-    entraGraphError: "O Microsoft Graph está inacessível ou retornou um erro. Tente novamente em breve.",
+    entraCredentialInvalid: "As credenciais do aplicativo Entra conectado são inválidas ou expiraram. Peça a um operador para atualizá-las.",
+    entraPermissionDenied: "O Microsoft Graph recusou a solicitação. Peça ao administrador do tenant para conceder ao Open Notebook a permissão necessária e confirmar o consentimento administrativo — ambos são necessários.",
+    entraGraphUpstream: "O Microsoft Graph está inacessível ou retornou um erro. Tente novamente em breve.",
+    entraSyncDisabled: "A sincronização de grupos do Entra não está habilitada nesta implantação. Peça a um operador para habilitá-la antes de executar uma sincronização manual.",
   },
   connectionErrors: {
     apiTitle: "Não foi possível conectar ao servidor da API",
@@ -302,6 +304,7 @@ export const ptBR = {
     searchDirectoryPlaceholder: "Digite um nome ou e-mail…",
     noDirectoryResults: "Sem correspondências no diretório",
     neverSignedIn: "Nunca fez login",
+    showingTopResults: "Mostrando os primeiros {{count}} — digite para filtrar",
   },
   groups: {
     groupCount: "{{count}} grupos",
@@ -335,6 +338,7 @@ export const ptBR = {
     syncStarted: "Sincronização iniciada",
     syncManaged: "Os membros são gerenciados pela sincronização do Entra",
     neverSignedIn: "Nunca fez login",
+    showingTopResults: "Mostrando os primeiros {{count}} — digite para filtrar",
   },
   notebooks: {
     title: "Cadernos",
