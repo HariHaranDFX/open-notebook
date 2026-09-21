@@ -337,6 +337,7 @@ export const enUS = {
     syncManaged: "Members are managed by Entra sync",
     neverSignedIn: "Never signed in",
     showingTopResults: "Showing top {{count}} — type to filter",
+    localGroup: "Local group",
   },
   notebooks: {
     title: "Notebooks",

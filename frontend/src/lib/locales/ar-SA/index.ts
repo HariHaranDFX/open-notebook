@@ -339,6 +339,7 @@ export const arSA = {
     syncManaged: "تتم إدارة الأعضاء بواسطة مزامنة Entra",
     neverSignedIn: "لم يسجّل الدخول مطلقًا",
     showingTopResults: "عرض أول {{count}} — اكتب للتصفية",
+    localGroup: "مجموعة محلية",
   },
   notebooks: {
     title: "دفاتر الملاحظات",

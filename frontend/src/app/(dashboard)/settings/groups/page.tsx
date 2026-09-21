@@ -80,7 +80,17 @@ export default function GroupsPage() {
   return (
     <>
       <PageFrame width="content" className="flex min-h-full flex-col">
-        <PageHeader eyebrow={t('navigation.settings')} title={t('groups.title')} description={t('groups.description')} />
+        <PageHeader
+          eyebrow={t('navigation.settings')}
+          title={t('groups.title')}
+          description={t('groups.description')}
+          primaryAction={
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              {t('groups.create')}
+            </Button>
+          }
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-16">
@@ -124,10 +134,6 @@ export default function GroupsPage() {
                     </TooltipTrigger>
                     <TooltipContent side="top">{t('groups.linkEntra')}</TooltipContent>
                   </Tooltip>
-                  <Button size="sm" onClick={() => setCreateOpen(true)}>
-                    <Plus className="size-4" />
-                    {t('groups.create')}
-                  </Button>
                 </div>
               </div>
               {!groups?.length ? (
@@ -167,16 +173,24 @@ export default function GroupsPage() {
                                 {group.description}
                               </span>
                             )}
+                            {group.source === 'entra' ? (
+                              <Badge
+                                variant="outline"
+                                className="mt-1"
+                                data-testid="entra-badge"
+                              >
+                                {t('groups.linkedFromEntra')}
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="secondary"
+                                className="mt-1"
+                                data-testid="local-badge"
+                              >
+                                {t('groups.localGroup')}
+                              </Badge>
+                            )}
                           </span>
-                          {group.source === 'entra' && (
-                            <Badge
-                              variant="outline"
-                              className="shrink-0"
-                              data-testid="entra-badge"
-                            >
-                              {t('groups.linkedFromEntra')}
-                            </Badge>
-                          )}
                           <Badge variant="secondary" className="shrink-0 tabular-nums">
                             {group.member_count}
                           </Badge>

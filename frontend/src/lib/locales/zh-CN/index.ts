@@ -339,6 +339,7 @@ export const zhCN = {
     syncManaged: "成员由 Entra 同步管理",
     neverSignedIn: "从未登录",
     showingTopResults: "显示前 {{count}} 项 — 输入以筛选",
+    localGroup: "本地群组",
   },
   notebooks: {
     title: "笔记本",

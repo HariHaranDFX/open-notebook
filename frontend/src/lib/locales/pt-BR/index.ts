@@ -339,6 +339,7 @@ export const ptBR = {
     syncManaged: "Os membros são gerenciados pela sincronização do Entra",
     neverSignedIn: "Nunca fez login",
     showingTopResults: "Mostrando os primeiros {{count}} — digite para filtrar",
+    localGroup: "Grupo local",
   },
   notebooks: {
     title: "Cadernos",

@@ -342,6 +342,7 @@ export const deDE = {
     syncManaged: "Mitglieder werden von der Entra-Synchronisierung verwaltet",
     neverSignedIn: "Noch nie angemeldet",
     showingTopResults: "Zeige die ersten {{count}} — tippen zum Filtern",
+    localGroup: "Lokale Gruppe",
   },
   notebooks: {
     title: "Notebooks",

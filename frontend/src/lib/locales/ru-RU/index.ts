@@ -339,6 +339,7 @@ export const ruRU = {
     syncManaged: "Участниками управляет синхронизация Entra",
     neverSignedIn: "Никогда не входил",
     showingTopResults: "Показаны первые {{count}} — начните ввод для фильтрации",
+    localGroup: "Локальная группа",
   },
   notebooks: {
     title: "Блокноты",

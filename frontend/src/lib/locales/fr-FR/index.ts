@@ -339,6 +339,7 @@ export const frFR = {
     syncManaged: "Les membres sont gérés par la synchronisation Entra",
     neverSignedIn: "Jamais connecté",
     showingTopResults: "Affichage des {{count}} premiers — tapez pour filtrer",
+    localGroup: "Groupe local",
   },
   notebooks: {
     title: "Carnets",

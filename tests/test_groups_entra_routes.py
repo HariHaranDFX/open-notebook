@@ -225,9 +225,9 @@ def test_link_creates_row_and_submits_scoped_sync(monkeypatch):
         "api.routers.groups.repo_query",
         new=AsyncMock(side_effect=fake_repo_query),
     ), patch(
-        "api.routers.groups.submit_command",
-        new=MagicMock(return_value="cmd-1"),
-    ) as submit:
+        "api.routers.groups.sync_entra_groups_command",
+        new=AsyncMock(),
+    ) as inline_sync:
         r = _client(monkeypatch).post(
             "/api/groups/entra/link", json={"entra_group_oid": "e1"}
         )
@@ -236,8 +236,13 @@ def test_link_creates_row_and_submits_scoped_sync(monkeypatch):
     body = r.json()
     assert body["source"] == "entra"
     assert body["entra_group_oid"] == "e1"
-    # submit_command is synchronous — the scoped sync was kicked off.
-    submit.assert_called_once()
+    # Scoped sync ran INLINE so the response reflects populated members
+    # — no more "no members" until the worker catches up.
+    inline_sync.assert_awaited_once()
+    await_args = inline_sync.await_args
+    assert await_args is not None  # narrows for mypy
+    (input_arg,) = await_args.args
+    assert input_arg.group_id == "user_group:new"
 
 
 def test_link_is_idempotent(monkeypatch):
@@ -272,8 +277,8 @@ def test_link_is_idempotent(monkeypatch):
         "api.routers.groups.repo_query",
         new=AsyncMock(side_effect=fake_repo_query),
     ), patch(
-        "api.routers.groups.submit_command",
-        new=MagicMock(return_value="cmd-2"),
+        "api.routers.groups.sync_entra_groups_command",
+        new=AsyncMock(),
     ):
         r = _client(monkeypatch).post(
             "/api/groups/entra/link", json={"entra_group_oid": "e1"}
@@ -288,6 +293,63 @@ def test_link_forbidden_for_non_admin(monkeypatch):
         "/api/groups/entra/link", json={"entra_group_oid": "e1"}
     )
     assert r.status_code == 403
+
+
+def test_link_still_succeeds_when_inline_sync_fails(monkeypatch):
+    """If the scoped sync raises, the group row is already in place —
+    the periodic loop will pick it up on its next tick. Never bounce
+    the admin's Link click over a transient Graph hiccup."""
+
+    async def fake_repo_query(query, params=None):
+        q = " ".join(query.split()).lower()
+        if "select id from user_group where entra_group_oid" in q:
+            return []
+        if q.startswith("create user_group"):
+            return [
+                {
+                    "id": "user_group:new",
+                    "name": "Eng",
+                    "description": None,
+                    "source": "entra",
+                    "entra_group_oid": "e1",
+                }
+            ]
+        if q.startswith("select * from") and "$gid" in q:
+            return [
+                {
+                    "id": "user_group:new",
+                    "name": "Eng",
+                    "description": None,
+                    "source": "entra",
+                    "entra_group_oid": "e1",
+                }
+            ]
+        if "select count()" in q:
+            return [{"c": 0}]
+        return []
+
+    with patch(
+        "api.routers.groups.graph_get_group",
+        new=AsyncMock(
+            return_value={
+                "entra_group_oid": "e1",
+                "display_name": "Eng",
+                "description": None,
+            }
+        ),
+    ), patch(
+        "api.routers.groups.repo_query",
+        new=AsyncMock(side_effect=fake_repo_query),
+    ), patch(
+        "api.routers.groups.sync_entra_groups_command",
+        new=AsyncMock(side_effect=RuntimeError("Graph 500 mid-sync")),
+    ):
+        r = _client(monkeypatch).post(
+            "/api/groups/entra/link", json={"entra_group_oid": "e1"}
+        )
+
+    assert r.status_code == 200
+    assert r.json()["id"] == "user_group:new"
 
 
 # ---------------------------------------------------------------------------

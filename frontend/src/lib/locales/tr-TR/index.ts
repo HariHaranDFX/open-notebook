@@ -339,6 +339,7 @@ export const trTR = {
     syncManaged: "Üyeler Entra eşitlemesi tarafından yönetilir",
     neverSignedIn: "Hiç oturum açmadı",
     showingTopResults: "İlk {{count}} sonuç gösteriliyor — filtrelemek için yazın",
+    localGroup: "Yerel grup",
   },
   notebooks: {
     title: "Defterler",

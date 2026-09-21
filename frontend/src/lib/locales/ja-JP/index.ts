@@ -339,6 +339,7 @@ export const jaJP = {
     syncManaged: "メンバーは Entra 同期によって管理されます",
     neverSignedIn: "未サインイン",
     showingTopResults: "上位 {{count}} 件を表示中 — 絞り込むには入力してください",
+    localGroup: "ローカルグループ",
   },
   notebooks: {
     title: "ノートブック",

@@ -339,6 +339,7 @@ export const esES = {
     syncManaged: "Los miembros los gestiona la sincronización de Entra",
     neverSignedIn: "Nunca ha iniciado sesión",
     showingTopResults: "Mostrando los primeros {{count}} — escribe para filtrar",
+    localGroup: "Grupo local",
   },
   notebooks: {
     title: "Cuadernos",

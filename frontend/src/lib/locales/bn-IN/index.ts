@@ -339,6 +339,7 @@ export const bnIN = {
     syncManaged: "সদস্যরা Entra সিঙ্ক দ্বারা পরিচালিত",
     neverSignedIn: "কখনো সাইন ইন করেননি",
     showingTopResults: "প্রথম {{count}} দেখানো হচ্ছে — ফিল্টার করতে টাইপ করুন",
+    localGroup: "স্থানীয় গ্রুপ",
   },
   notebooks: {
     title: "নোটবুকগুলি",
