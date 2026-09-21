@@ -325,7 +325,7 @@ export const thTH = {
     deleteSuccess: "ลบกลุ่มแล้ว",
     memberAdded: "เพิ่มสมาชิกแล้ว",
     memberRemoved: "ลบสมาชิกแล้ว",
-    deleteConfirm: "ลบกลุ่มนี้หรือไม่?",
+    deleteConfirm: "ลบกลุ่มนี้",
     selectUser: "เลือกผู้ใช้",
     linkEntra: "เชื่อมโยงกลุ่ม Entra",
     syncEntra: "ซิงค์ตอนนี้",

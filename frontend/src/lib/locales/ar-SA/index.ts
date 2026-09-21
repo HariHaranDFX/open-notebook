@@ -325,7 +325,7 @@ export const arSA = {
     deleteSuccess: "تم حذف المجموعة",
     memberAdded: "تمت إضافة العضو",
     memberRemoved: "تمت إزالة العضو",
-    deleteConfirm: "حذف هذه المجموعة؟",
+    deleteConfirm: "حذف هذه المجموعة",
     selectUser: "اختر المستخدم",
     linkEntra: "ربط مجموعة Entra",
     syncEntra: "مزامنة الآن",

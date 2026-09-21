@@ -325,7 +325,7 @@ export const ruRU = {
     deleteSuccess: "Группа удалена",
     memberAdded: "Участник добавлен",
     memberRemoved: "Участник удалён",
-    deleteConfirm: "Удалить эту группу?",
+    deleteConfirm: "Удалить эту группу",
     selectUser: "Выберите пользователя",
     linkEntra: "Связать группу Entra",
     syncEntra: "Синхронизировать сейчас",

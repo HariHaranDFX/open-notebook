@@ -11,8 +11,6 @@ members (deleted account, Graph fetch failed) are counted as skipped.
 No schema change (uses fields already reserved in migration 28).
 """
 
-from __future__ import annotations
-
 import os
 from typing import Any, Optional
 
@@ -26,6 +24,17 @@ from api.graph_client import (
     list_users_by_oids,
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
+
+# NOTE: this module deliberately does NOT `from __future__ import annotations`.
+# surreal_commands wraps `sync_entra_groups_command` in a LangChain
+# RunnableLambda and calls `get_input_schema()` on it; that inspection
+# resolves the `input_data: SyncEntraGroupsInput` type at introspection
+# time. With PEP 563 postponed annotations, LangChain cannot resolve the
+# string "SyncEntraGroupsInput" from within its own module and falls
+# back to a `RootModel[...]` wrapper, which then rejects the kwargs
+# `submit_command` passes it (`RootModel` only accepts `root=`).
+# Keep annotations as live classes here so `submit_command(app, cmd, {"group_id": ...})`
+# validates against the real BaseModel instead of the RootModel fallback.
 
 
 class SyncEntraGroupsInput(CommandInput):
@@ -266,24 +275,3 @@ async def _stub_unknown_members(
 
     unresolved = [oid for oid in oids if oid not in stubbed]
     return stubbed, unresolved
-
-
-# Pydantic v2 quirk: surreal_commands wraps this command in a LangChain
-# RunnableLambda whose auto-generated input schema carries a forward
-# reference to ExecutionContext (a plain dataclass on the CommandInput
-# parent). Without an explicit rebuild, the first submit_command call
-# raises "class not fully defined" and the API lifespan sync loop
-# swallows the exception. Rebuilding here — after registration — is
-# safe and idempotent.
-try:
-    from surreal_commands.core.registry import registry as _cmd_registry
-
-    _item = _cmd_registry.get_command_by_id("open_notebook.sync_entra_groups")
-    if _item is not None:
-        _item.input_schema.model_rebuild()
-except Exception as _exc:  # noqa: BLE001
-    # Best-effort: never break module import if the library layout changes.
-    logger.debug(
-        f"sync_entra_groups input schema rebuild skipped: "
-        f"{_exc.__class__.__name__}"
-    )

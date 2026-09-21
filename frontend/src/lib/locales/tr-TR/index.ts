@@ -325,7 +325,7 @@ export const trTR = {
     deleteSuccess: "Grup silindi",
     memberAdded: "Üye eklendi",
     memberRemoved: "Üye kaldırıldı",
-    deleteConfirm: "Bu grup silinsin mi?",
+    deleteConfirm: "Bu grubu sil",
     selectUser: "Kullanıcı seç",
     linkEntra: "Entra grubunu bağla",
     syncEntra: "Şimdi eşitle",

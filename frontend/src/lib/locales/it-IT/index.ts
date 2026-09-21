@@ -325,7 +325,7 @@ export const itIT = {
     deleteSuccess: "Gruppo eliminato",
     memberAdded: "Membro aggiunto",
     memberRemoved: "Membro rimosso",
-    deleteConfirm: "Eliminare questo gruppo?",
+    deleteConfirm: "Eliminare questo gruppo",
     selectUser: "Seleziona utente",
     linkEntra: "Collega gruppo Entra",
     syncEntra: "Sincronizza ora",

@@ -325,7 +325,7 @@ export const frFR = {
     deleteSuccess: "Groupe supprimé",
     memberAdded: "Membre ajouté",
     memberRemoved: "Membre retiré",
-    deleteConfirm: "Supprimer ce groupe ?",
+    deleteConfirm: "Supprimer ce groupe",
     selectUser: "Choisir un utilisateur",
     linkEntra: "Lier un groupe Entra",
     syncEntra: "Synchroniser maintenant",

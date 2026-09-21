@@ -325,7 +325,7 @@ export const zhTW = {
     deleteSuccess: "群組已刪除",
     memberAdded: "成員已新增",
     memberRemoved: "成員已移除",
-    deleteConfirm: "刪除此群組？",
+    deleteConfirm: "刪除此群組",
     selectUser: "選擇使用者",
     linkEntra: "連結 Entra 群組",
     syncEntra: "立即同步",

@@ -325,7 +325,7 @@ export const bnIN = {
     deleteSuccess: "গ্রুপ মুছে ফেলা হয়েছে",
     memberAdded: "সদস্য যোগ হয়েছে",
     memberRemoved: "সদস্য সরানো হয়েছে",
-    deleteConfirm: "এই গ্রুপ মুছবেন?",
+    deleteConfirm: "এই গ্রুপ মুছুন",
     selectUser: "ব্যবহারকারী নির্বাচন",
     linkEntra: "Entra গ্রুপ লিঙ্ক করুন",
     syncEntra: "এখন সিঙ্ক করুন",

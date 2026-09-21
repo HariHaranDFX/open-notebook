@@ -325,7 +325,7 @@ export const caES = {
     deleteSuccess: "Grup eliminat",
     memberAdded: "Membre afegit",
     memberRemoved: "Membre eliminat",
-    deleteConfirm: "Eliminar aquest grup?",
+    deleteConfirm: "Eliminar aquest grup",
     selectUser: "Selecciona usuari",
     linkEntra: "Vincula un grup d'Entra",
     syncEntra: "Sincronitza ara",

@@ -6,7 +6,7 @@ Covers env-var parsing, opt-in default, interval floor, and clean cancel.
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -61,7 +61,8 @@ async def test_loop_submits_command_and_respects_cancel(monkeypatch):
             return
         await asyncio.Event().wait()
 
-    submit = AsyncMock(return_value="cmd-1")
+    # submit_command is synchronous — use MagicMock, not AsyncMock.
+    submit = MagicMock(return_value="cmd-1")
     with patch("api.main.submit_command", submit), patch(
         "api.main.asyncio.sleep", new=instant_sleep
     ):
@@ -73,7 +74,7 @@ async def test_loop_submits_command_and_respects_cancel(monkeypatch):
         with pytest.raises(asyncio.CancelledError):
             await task
 
-    assert submit.await_count >= 1
+    assert submit.call_count >= 1
 
 
 @pytest.mark.asyncio
@@ -88,7 +89,7 @@ async def test_loop_swallows_submit_errors_and_keeps_running():
             fired_twice.set()
             await asyncio.Event().wait()
 
-    submit = AsyncMock(side_effect=[RuntimeError("boom"), "cmd-ok"])
+    submit = MagicMock(side_effect=[RuntimeError("boom"), "cmd-ok"])
     with patch("api.main.submit_command", submit), patch(
         "api.main.asyncio.sleep", new=instant_sleep
     ):
@@ -100,4 +101,4 @@ async def test_loop_swallows_submit_errors_and_keeps_running():
         with pytest.raises(asyncio.CancelledError):
             await task
 
-    assert submit.await_count >= 2
+    assert submit.call_count >= 2

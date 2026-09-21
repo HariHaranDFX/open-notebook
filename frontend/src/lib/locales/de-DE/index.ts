@@ -328,7 +328,7 @@ export const deDE = {
     deleteSuccess: "Gruppe gelöscht",
     memberAdded: "Mitglied hinzugefügt",
     memberRemoved: "Mitglied entfernt",
-    deleteConfirm: "Diese Gruppe löschen?",
+    deleteConfirm: "Diese Gruppe löschen",
     selectUser: "Benutzer wählen",
     linkEntra: "Entra-Gruppe verknüpfen",
     syncEntra: "Jetzt synchronisieren",

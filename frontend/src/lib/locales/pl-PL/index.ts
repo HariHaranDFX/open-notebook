@@ -325,7 +325,7 @@ export const plPL = {
     deleteSuccess: "Usunięto grupę",
     memberAdded: "Dodano członka",
     memberRemoved: "Usunięto członka",
-    deleteConfirm: "Usunąć tę grupę?",
+    deleteConfirm: "Usuń tę grupę",
     selectUser: "Wybierz użytkownika",
     linkEntra: "Połącz grupę Entra",
     syncEntra: "Synchronizuj teraz",

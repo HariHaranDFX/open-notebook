@@ -325,7 +325,7 @@ export const zhCN = {
     deleteSuccess: "群组已删除",
     memberAdded: "成员已添加",
     memberRemoved: "成员已移除",
-    deleteConfirm: "删除此群组？",
+    deleteConfirm: "删除此群组",
     selectUser: "选择用户",
     linkEntra: "关联 Entra 组",
     syncEntra: "立即同步",
