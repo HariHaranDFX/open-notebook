@@ -325,7 +325,7 @@ export const ptBR = {
     deleteSuccess: "Grupo excluído",
     memberAdded: "Membro adicionado",
     memberRemoved: "Membro removido",
-    deleteConfirm: "Excluir este grupo?",
+    deleteConfirm: "Excluir este grupo",
     selectUser: "Selecionar usuário",
     linkEntra: "Vincular grupo do Entra",
     syncEntra: "Sincronizar agora",

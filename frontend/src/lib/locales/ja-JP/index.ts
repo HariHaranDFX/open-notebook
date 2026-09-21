@@ -325,7 +325,7 @@ export const jaJP = {
     deleteSuccess: "グループを削除しました",
     memberAdded: "メンバーを追加しました",
     memberRemoved: "メンバーを削除しました",
-    deleteConfirm: "このグループを削除しますか？",
+    deleteConfirm: "このグループを削除",
     selectUser: "ユーザーを選択",
     linkEntra: "Entra グループをリンク",
     syncEntra: "今すぐ同期",

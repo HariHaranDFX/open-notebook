@@ -6,7 +6,7 @@ tests/test_source_file_cleanup.py — no real auth stack required.
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
@@ -167,7 +167,7 @@ def test_sync_when_enabled_submits_command(monkeypatch):
     monkeypatch.setenv("ENTRA_GROUP_SYNC_ENABLED", "true")
     with patch(
         "api.routers.groups.submit_command",
-        new=AsyncMock(return_value="cmd:1"),
+        new=MagicMock(return_value="cmd:1"),
     ):
         r = _client(monkeypatch).post("/api/groups/entra/sync")
     assert r.status_code == 200
@@ -226,7 +226,7 @@ def test_link_creates_row_and_submits_scoped_sync(monkeypatch):
         new=AsyncMock(side_effect=fake_repo_query),
     ), patch(
         "api.routers.groups.submit_command",
-        new=AsyncMock(return_value="cmd-1"),
+        new=MagicMock(return_value="cmd-1"),
     ) as submit:
         r = _client(monkeypatch).post(
             "/api/groups/entra/link", json={"entra_group_oid": "e1"}
@@ -236,7 +236,8 @@ def test_link_creates_row_and_submits_scoped_sync(monkeypatch):
     body = r.json()
     assert body["source"] == "entra"
     assert body["entra_group_oid"] == "e1"
-    submit.assert_awaited_once()  # scoped sync kicked off
+    # submit_command is synchronous — the scoped sync was kicked off.
+    submit.assert_called_once()
 
 
 def test_link_is_idempotent(monkeypatch):
@@ -272,7 +273,7 @@ def test_link_is_idempotent(monkeypatch):
         new=AsyncMock(side_effect=fake_repo_query),
     ), patch(
         "api.routers.groups.submit_command",
-        new=AsyncMock(return_value="cmd-2"),
+        new=MagicMock(return_value="cmd-2"),
     ):
         r = _client(monkeypatch).post(
             "/api/groups/entra/link", json={"entra_group_oid": "e1"}
@@ -299,7 +300,7 @@ def test_sync_admin_only_and_returns_command_id(monkeypatch):
     monkeypatch.setenv("ENTRA_GROUP_SYNC_ENABLED", "true")
     with patch(
         "api.routers.groups.submit_command",
-        new=AsyncMock(return_value="cmd-42"),
+        new=MagicMock(return_value="cmd-42"),
     ):
         r = _client(monkeypatch).post("/api/groups/entra/sync")
     assert r.status_code == 200

@@ -325,7 +325,7 @@ export const esES = {
     deleteSuccess: "Grupo eliminado",
     memberAdded: "Miembro añadido",
     memberRemoved: "Miembro eliminado",
-    deleteConfirm: "¿Eliminar este grupo?",
+    deleteConfirm: "Eliminar este grupo",
     selectUser: "Seleccionar usuario",
     linkEntra: "Vincular grupo de Entra",
     syncEntra: "Sincronizar ahora",

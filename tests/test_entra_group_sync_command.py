@@ -16,6 +16,29 @@ from commands.entra_group_sync import (
 )
 
 
+def test_registered_input_schema_is_the_real_class_not_a_root_model_wrapper():
+    """Regression: if `commands/entra_group_sync.py` gets a
+    `from __future__ import annotations` back, LangChain can no longer
+    resolve the `SyncEntraGroupsInput` type at introspection time and
+    falls back to a `RootModel` wrapper. That wrapper rejects the
+    `**kwargs` shape `submit_command` uses to validate arguments — the
+    UI then shows a 500 on both link and sync. Locking the shape here.
+    """
+    from surreal_commands.core.registry import registry
+
+    item = registry.get_command_by_id("open_notebook.sync_entra_groups")
+    assert item is not None
+    schema = item.input_schema
+    # Must be the actual class, not the LangChain RootModel fallback.
+    assert schema is SyncEntraGroupsInput, (
+        f"Expected SyncEntraGroupsInput, got {schema!r}. "
+        "Did `from __future__ import annotations` sneak back into the module?"
+    )
+    # And it must accept kwargs directly (not `root=...`).
+    schema(group_id="g:1")
+    schema()  # all fields have defaults
+
+
 class _FakeExecutionContext:
     command_id = "test-cmd"
 

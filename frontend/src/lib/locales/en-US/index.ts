@@ -323,7 +323,7 @@ export const enUS = {
     deleteSuccess: "Group deleted",
     memberAdded: "Member added",
     memberRemoved: "Member removed",
-    deleteConfirm: "Delete this group?",
+    deleteConfirm: "Delete this group",
     selectUser: "Select user",
     linkEntra: "Link Entra group",
     syncEntra: "Sync now",

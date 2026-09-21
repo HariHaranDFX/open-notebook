@@ -515,7 +515,8 @@ async def entra_group_link(body: EntraLinkRequest, request: Request):
         gid = str(rows[0]["id"])
 
     # Kick a scoped sync so admins see members without waiting for the loop.
-    await submit_command("open_notebook", "sync_entra_groups", {"group_id": gid})
+    # `submit_command` is synchronous — do not await (it returns RecordID).
+    submit_command("open_notebook", "sync_entra_groups", {"group_id": gid})
 
     # Return the current group snapshot (with member_count).
     return await get_group(gid, request)
@@ -526,7 +527,8 @@ async def entra_group_sync_now(request: Request):
     """Admin-triggered full sync of every linked Entra group."""
     require_admin(request)
     _require_sync_enabled()
-    command_id = await submit_command("open_notebook", "sync_entra_groups", {})
+    # `submit_command` is synchronous — do not await (it returns RecordID).
+    command_id = submit_command("open_notebook", "sync_entra_groups", {})
     return {"command_id": str(command_id)}
 
 

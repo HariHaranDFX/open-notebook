@@ -118,11 +118,16 @@ def _entra_group_sync_interval_seconds() -> float:
 
 
 async def _entra_group_sync_loop() -> None:
-    """Submit the sync command on a fixed cadence until cancelled."""
+    """Submit the sync command on a fixed cadence until cancelled.
+
+    `submit_command` is synchronous (returns a `RecordID` directly) —
+    the surreal_commands library exposes the async form as
+    `submit_command_async`. Do not await it.
+    """
     interval = _entra_group_sync_interval_seconds()
     while True:
         try:
-            await submit_command("open_notebook", "sync_entra_groups", {})
+            submit_command("open_notebook", "sync_entra_groups", {})
         except Exception as exc:  # noqa: BLE001
             logger.warning(f"entra_group_sync submit failed: {exc}")
         await asyncio.sleep(interval)
