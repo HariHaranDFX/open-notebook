@@ -339,6 +339,7 @@ export const itIT = {
     syncManaged: "I membri sono gestiti dalla sincronizzazione Entra",
     neverSignedIn: "Mai effettuato l'accesso",
     showingTopResults: "Mostrando i primi {{count}} — digita per filtrare",
+    localGroup: "Gruppo locale",
   },
   notebooks: {
     title: "Quaderni",

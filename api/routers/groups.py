@@ -17,6 +17,10 @@ from api.auth.deps import require_admin, require_user
 from api.graph_client import GraphAPIError, search_groups, search_users
 from api.graph_client import get_group as graph_get_group
 from api.graph_client import get_user as graph_get_user
+from commands.entra_group_sync import (
+    SyncEntraGroupsInput,
+    sync_entra_groups_command,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 router = APIRouter()
@@ -514,11 +518,27 @@ async def entra_group_link(body: EntraLinkRequest, request: Request):
             raise HTTPException(500, detail="Failed to link Entra group")
         gid = str(rows[0]["id"])
 
-    # Kick a scoped sync so admins see members without waiting for the loop.
-    # `submit_command` is synchronous — do not await (it returns RecordID).
-    submit_command("open_notebook", "sync_entra_groups", {"group_id": gid})
+    # Run the scoped sync INLINE (not via submit_command) so the response
+    # already reflects real membership. Otherwise the returned snapshot
+    # shows member_count=0 until the worker picks up the queued command
+    # — admins would see "no members" and have to click Sync manually,
+    # which is exactly what they did before this ran. A per-group sync
+    # is fast (one Graph call + a bulk stub lookup at most) and matches
+    # the way admins expect Link to behave.
+    try:
+        await sync_entra_groups_command(SyncEntraGroupsInput(group_id=gid))
+    except Exception as exc:  # noqa: BLE001
+        # Never fail the link over a sync hiccup — the row is in place,
+        # the next periodic sync (or a manual click) will populate it.
+        # Counts only — never emails — per SHARING.md logging rule.
+        import logging
 
-    # Return the current group snapshot (with member_count).
+        logging.getLogger(__name__).warning(
+            f"entra_group_link inline sync failed gid={gid} "
+            f"err={exc.__class__.__name__}"
+        )
+
+    # Return the current group snapshot (with populated member_count).
     return await get_group(gid, request)
 
 

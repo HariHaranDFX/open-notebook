@@ -339,6 +339,7 @@ export const zhTW = {
     syncManaged: "成員由 Entra 同步管理",
     neverSignedIn: "從未登入",
     showingTopResults: "顯示前 {{count}} 筆 — 輸入以篩選",
+    localGroup: "本機群組",
   },
   notebooks: {
     title: "筆記本",

@@ -339,6 +339,7 @@ export const caES = {
     syncManaged: "Els membres els gestiona la sincronització d'Entra",
     neverSignedIn: "Mai ha iniciat sessió",
     showingTopResults: "S'estan mostrant els {{count}} primers — escriu per filtrar",
+    localGroup: "Grup local",
   },
   notebooks: {
     title: "Quaderns",

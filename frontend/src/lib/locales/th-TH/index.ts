@@ -339,6 +339,7 @@ export const thTH = {
     syncManaged: "สมาชิกถูกจัดการโดยการซิงค์ Entra",
     neverSignedIn: "ไม่เคยเข้าสู่ระบบ",
     showingTopResults: "แสดง {{count}} รายการแรก — พิมพ์เพื่อกรอง",
+    localGroup: "กลุ่มในเครื่อง",
   },
   notebooks: {
     title: "สมุดบันทึก",

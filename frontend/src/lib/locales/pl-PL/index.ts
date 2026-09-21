@@ -339,6 +339,7 @@ export const plPL = {
     syncManaged: "Członkowie są zarządzani przez synchronizację Entra",
     neverSignedIn: "Nigdy się nie zalogował(a)",
     showingTopResults: "Pokazuję pierwsze {{count}} — wpisz, aby filtrować",
+    localGroup: "Grupa lokalna",
   },
   notebooks: {
     title: "Notatniki",
