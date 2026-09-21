@@ -12,6 +12,7 @@ No schema change (uses fields already reserved in migration 28).
 """
 
 import os
+import time
 from typing import Any, Optional
 
 from loguru import logger
@@ -62,73 +63,144 @@ class SyncEntraGroupsOutput(CommandOutput):
 async def sync_entra_groups_command(
     input_data: SyncEntraGroupsInput,
 ) -> SyncEntraGroupsOutput:
-    if input_data.group_id:
-        rows = (
+    """Sync Entra group membership with clear, staged logs.
+
+    Log shape matches `commands/embedding_commands.py::rebuild_embeddings`
+    so operators grepping the worker log see the same start/progress/done
+    story here as for every other background command.
+    """
+    start_time = time.time()
+    scope = (
+        f"group_id={input_data.group_id}"
+        if input_data.group_id
+        else "all"
+    )
+
+    try:
+        logger.info("=" * 60)
+        logger.info(f"Starting Entra group sync (scope={scope})")
+        logger.info("=" * 60)
+
+        if input_data.group_id:
+            rows = (
+                await repo_query(
+                    "SELECT id, entra_group_oid, name FROM $gid "
+                    "WHERE source = 'entra'",
+                    {"gid": ensure_record_id(input_data.group_id)},
+                )
+                or []
+            )
+        else:
+            rows = (
+                await repo_query(
+                    "SELECT id, entra_group_oid, name FROM user_group "
+                    "WHERE source = 'entra'"
+                )
+                or []
+            )
+
+        logger.info(f"Found {len(rows)} Entra-linked group(s) to sync")
+
+        # Explicit no-op branch so silence never means "did it even run".
+        if not rows:
+            elapsed = time.time() - start_time
+            logger.info(
+                f"Nothing to sync — no groups have source='entra' "
+                f"(elapsed={elapsed:.2f}s)"
+            )
+            logger.info("=" * 60)
+            return SyncEntraGroupsOutput(success=True)
+
+        totals = {
+            "groups_synced": 0,
+            "members_added": 0,
+            "members_removed": 0,
+            "members_stubbed": 0,
+            "members_skipped_unknown": 0,
+        }
+        failed_fetches = 0
+
+        for row in rows:
+            gid = str(row.get("id", ""))
+            entra_oid = row.get("entra_group_oid")
+            name = row.get("name") or "(unnamed)"
+            if not gid or not entra_oid:
+                logger.warning(
+                    f"Skipping malformed row gid={gid} — missing entra_group_oid"
+                )
+                continue
+
+            logger.info(f"Syncing group '{name}' gid={gid} oid={entra_oid}")
+            try:
+                snapshot = await get_group(entra_oid)
+                member_oids = await list_group_member_oids(entra_oid)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    f"  Graph fetch failed for gid={gid}: "
+                    f"{exc.__class__.__name__}: {exc}"
+                )
+                failed_fetches += 1
+                continue
+
+            logger.info(
+                f"  Graph returned {len(member_oids)} member(s); reconciling…"
+            )
+            # Snapshot the display name/description so admins see rename edits
+            # without waiting for the next full sync.
             await repo_query(
-                "SELECT id, entra_group_oid, name FROM $gid "
-                "WHERE source = 'entra'",
-                {"gid": ensure_record_id(input_data.group_id)},
+                "UPDATE $gid SET name = $name, description = $desc",
+                {
+                    "gid": ensure_record_id(gid),
+                    "name": snapshot.get("display_name") or row.get("name") or "",
+                    "desc": snapshot.get("description"),
+                },
             )
-            or []
-        )
-    else:
-        rows = (
-            await repo_query(
-                "SELECT id, entra_group_oid, name FROM user_group "
-                "WHERE source = 'entra'"
+
+            added, removed, stubbed, skipped = await _reconcile_members(
+                gid, member_oids
             )
-            or []
-        )
+            totals["groups_synced"] += 1
+            totals["members_added"] += added
+            totals["members_removed"] += removed
+            totals["members_stubbed"] += stubbed
+            totals["members_skipped_unknown"] += skipped
 
-    totals = {
-        "groups_synced": 0,
-        "members_added": 0,
-        "members_removed": 0,
-        "members_stubbed": 0,
-        "members_skipped_unknown": 0,
-    }
+            # Two-tone per-group summary — "no changes" reads clearer than
+            # a line of zeros. Counts only, never emails.
+            if added or removed or stubbed or skipped:
+                logger.info(
+                    f"  → gid={gid} added={added} removed={removed} "
+                    f"stubbed={stubbed} skipped_unknown={skipped}"
+                )
+            else:
+                logger.info(f"  → gid={gid} no changes")
 
-    for row in rows:
-        gid = str(row.get("id", ""))
-        entra_oid = row.get("entra_group_oid")
-        if not gid or not entra_oid:
-            continue
-        try:
-            snapshot = await get_group(entra_oid)
-            member_oids = await list_group_member_oids(entra_oid)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning(
-                f"entra_group_sync gid={gid} failed to fetch: "
-                f"{exc.__class__.__name__}"
-            )
-            continue
-
-        # Snapshot the display name/description so admins see rename edits
-        # without waiting for the next full sync.
-        await repo_query(
-            "UPDATE $gid SET name = $name, description = $desc",
-            {
-                "gid": ensure_record_id(gid),
-                "name": snapshot.get("display_name") or row.get("name") or "",
-                "desc": snapshot.get("description"),
-            },
-        )
-
-        added, removed, stubbed, skipped = await _reconcile_members(
-            gid, member_oids
-        )
-        totals["groups_synced"] += 1
-        totals["members_added"] += added
-        totals["members_removed"] += removed
-        totals["members_stubbed"] += stubbed
-        totals["members_skipped_unknown"] += skipped
-        # Counts only -- never emails, per SHARING.md logging rule.
+        elapsed = time.time() - start_time
+        logger.info("=" * 60)
+        logger.info("Entra group sync DONE")
+        logger.info(f"  Groups synced: {totals['groups_synced']}/{len(rows)}")
+        logger.info(f"  Members added: {totals['members_added']}")
+        logger.info(f"  Members removed: {totals['members_removed']}")
+        logger.info(f"  Members stubbed: {totals['members_stubbed']}")
         logger.info(
-            f"entra_group_sync gid={gid} added={added} removed={removed} "
-            f"stubbed={stubbed} skipped_unknown={skipped}"
+            f"  Members skipped (unknown): {totals['members_skipped_unknown']}"
         )
+        logger.info(f"  Failed per-group fetches: {failed_fetches}")
+        logger.info(f"  Elapsed: {elapsed:.2f}s")
+        logger.info("=" * 60)
+        return SyncEntraGroupsOutput(success=True, **totals)
 
-    return SyncEntraGroupsOutput(success=True, **totals)
+    except Exception as exc:  # noqa: BLE001
+        elapsed = time.time() - start_time
+        logger.error(
+            f"Entra group sync FAILED after {elapsed:.2f}s: "
+            f"{exc.__class__.__name__}: {exc}"
+        )
+        logger.exception(exc)
+        return SyncEntraGroupsOutput(
+            success=False,
+            error_message=f"{exc.__class__.__name__}: {exc}",
+        )
 
 
 async def _reconcile_members(

@@ -6,6 +6,7 @@ background sync command (`commands.entra_group_sync`) and cannot be
 edited through the local admin endpoints (409).
 """
 
+import logging
 import os
 from typing import List, Optional
 
@@ -23,6 +24,7 @@ from commands.entra_group_sync import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -518,6 +520,10 @@ async def entra_group_link(body: EntraLinkRequest, request: Request):
             raise HTTPException(500, detail="Failed to link Entra group")
         gid = str(rows[0]["id"])
 
+    logger.info(
+        f"Entra group linked (gid={gid}, oid={body.entra_group_oid}); "
+        f"running inline sync…"
+    )
     # Run the scoped sync INLINE (not via submit_command) so the response
     # already reflects real membership. Otherwise the returned snapshot
     # shows member_count=0 until the worker picks up the queued command
@@ -531,9 +537,7 @@ async def entra_group_link(body: EntraLinkRequest, request: Request):
         # Never fail the link over a sync hiccup — the row is in place,
         # the next periodic sync (or a manual click) will populate it.
         # Counts only — never emails — per SHARING.md logging rule.
-        import logging
-
-        logging.getLogger(__name__).warning(
+        logger.warning(
             f"entra_group_link inline sync failed gid={gid} "
             f"err={exc.__class__.__name__}"
         )
@@ -549,6 +553,7 @@ async def entra_group_sync_now(request: Request):
     _require_sync_enabled()
     # `submit_command` is synchronous — do not await (it returns RecordID).
     command_id = submit_command("open_notebook", "sync_entra_groups", {})
+    logger.info(f"Entra sync triggered by admin (command={command_id})")
     return {"command_id": str(command_id)}
 
 
