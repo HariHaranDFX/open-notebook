@@ -258,3 +258,123 @@ async def test_sync_graph_wide_failure_treats_all_unknown_as_skipped(monkeypatch
     assert result.members_stubbed == 0
     assert result.members_skipped_unknown == 3
     assert result.members_added == 0
+
+
+# ---------------------------------------------------------------------------
+# Staged log observability — locks the wording admins grep for in the worker
+# log. If someone silently deletes a phrase, these tests catch it. Same
+# loguru→sink pattern used in tests/test_background_retry_visibility.py.
+# ---------------------------------------------------------------------------
+
+
+def _capture_logs(level: str = "INFO"):
+    """Return (messages, remover) — call remover() in a finally to detach."""
+    from loguru import logger
+
+    messages: list[str] = []
+    sink_id = logger.add(
+        lambda message: messages.append(str(message)), level=level
+    )
+    return messages, lambda: logger.remove(sink_id)
+
+
+@pytest.mark.asyncio
+async def test_sync_logs_start_and_done_banners_and_totals():
+    """Every run prints a Start banner, a DONE block, and the totals — so
+    'did it even run?' is never in doubt."""
+    linked = [
+        {"id": "user_group:g1", "entra_group_oid": "eoid-1", "name": "Eng"}
+    ]
+
+    async def fake_repo_query(query, params=None):
+        q = " ".join(query.split()).lower()
+        if "select" in q and "user_group" in q and "source = 'entra'" in q:
+            return linked
+        if "select" in q and "from user" in q and "entra_oid in" in q:
+            return []
+        if q.startswith("select user_id from user_group_member"):
+            return []
+        return []
+
+    messages, remover = _capture_logs()
+    try:
+        with (
+            patch(
+                "commands.entra_group_sync.get_group",
+                new=AsyncMock(
+                    return_value={
+                        "entra_group_oid": "eoid-1",
+                        "display_name": "Eng",
+                        "description": None,
+                    }
+                ),
+            ),
+            patch(
+                "commands.entra_group_sync.list_group_member_oids",
+                new=AsyncMock(return_value=[]),
+            ),
+            patch(
+                "commands.entra_group_sync.repo_query",
+                new=AsyncMock(side_effect=fake_repo_query),
+            ),
+        ):
+            result = await sync_entra_groups_command(_input())
+    finally:
+        remover()
+
+    assert result.success is True
+    joined = "\n".join(messages)
+    assert "Starting Entra group sync (scope=all)" in joined
+    assert "Found 1 Entra-linked group(s) to sync" in joined
+    assert "Syncing group 'Eng' gid=user_group:g1" in joined
+    assert "Entra group sync DONE" in joined
+    assert "Groups synced: 1/1" in joined
+    assert "Elapsed:" in joined
+
+
+@pytest.mark.asyncio
+async def test_sync_logs_nothing_to_sync_when_zero_groups():
+    """The silent-run-with-no-groups case (currently just prints nothing)
+    must explicitly say so — that's the whole reason we added these logs."""
+    messages, remover = _capture_logs()
+    try:
+        with patch(
+            "commands.entra_group_sync.repo_query",
+            new=AsyncMock(return_value=[]),
+        ):
+            result = await sync_entra_groups_command(_input())
+    finally:
+        remover()
+
+    assert result.success is True
+    joined = "\n".join(messages)
+    assert "Found 0 Entra-linked group(s) to sync" in joined
+    assert "Nothing to sync — no groups have source='entra'" in joined
+    # No per-group phase line — nothing to iterate.
+    assert "Syncing group" not in joined
+    # No DONE banner in the no-op branch — the "Nothing to sync" line
+    # already carries elapsed and the closing banner.
+    assert "Entra group sync DONE" not in joined
+
+
+@pytest.mark.asyncio
+async def test_sync_logs_failed_and_returns_success_false_on_uncaught_error():
+    """An uncaught exception surfaces as `success=False` + `error_message`
+    on the output, with an ERROR log line naming the exception. Regression
+    guard against a silent crash."""
+    messages, remover = _capture_logs(level="ERROR")
+    try:
+        with patch(
+            "commands.entra_group_sync.repo_query",
+            new=AsyncMock(side_effect=RuntimeError("db unavailable")),
+        ):
+            result = await sync_entra_groups_command(_input())
+    finally:
+        remover()
+
+    assert result.success is False
+    assert result.error_message is not None
+    assert "RuntimeError" in result.error_message
+    joined = "\n".join(messages)
+    assert "Entra group sync FAILED" in joined
+    assert "RuntimeError" in joined
