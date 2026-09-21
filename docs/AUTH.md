@@ -91,8 +91,14 @@ allocate to users and app-local groups. Roles are `viewer` and `editor`.
 See [SHARING.md](SHARING.md) and
 [PDR-003](7-DEVELOPMENT/decisions/PDR-003-per-user-ownership-and-sharing.md).
 
-**Deferred (WBS 4.21–4.22, not in WP2b):** full org directory user picker;
-public links / editor reshare / ownership transfer.
+**Directory picker (WBS 4.21):** shipped. Any signed-in user can search
+the tenant directory and invite colleagues who have never opened the app;
+JIT-stubbed rows carry `entra_oid + email + display_name` and collapse
+into the user's real row on first login. See the
+[Directory picker](#directory-picker-wbs-421) section below.
+
+**Deferred (WBS 4.22, not in WP2b):** public links / editor reshare /
+ownership transfer.
 
 ## Entra group sync (WBS 4.20)
 
@@ -102,13 +108,13 @@ resource.
 
 1. In the same Entra app registration used for OIDC, open **API permissions**,
    add **Microsoft Graph → Application permissions → `GroupMember.Read.All`**,
-   and click **Grant admin consent for &lt;tenant&gt;**. Both steps are required —
-   adding the permission without granting admin consent still yields
-   `Authorization_RequestDenied` from Graph, and the Link Entra group typeahead
-   will surface a 502 with an actionable message ("Grant the Entra app
-   registration the 'GroupMember.Read.All' Application permission and admin
-   consent, then try again"). No user ever needs to consent to Graph
-   scopes — the API calls Graph with the application's own client credentials.
+   and click **Grant admin consent for &lt;tenant&gt;**. Both steps are required.
+   Missing either surfaces a **502 with a permission-specific message** in
+   the UI — for group flows the toast reads _"Microsoft Graph refused the
+   request. Ask the tenant administrator to grant Open Notebook the group
+   membership permission and confirm admin consent — both are required."_
+   No user ever needs to consent to Graph scopes; the API calls Graph with
+   the application's own client credentials.
 2. Set the environment variables below, then restart the API and worker.
 
 | Variable | Required | Default | Description |
@@ -129,8 +135,54 @@ membership in sync.
 - Direct-member expansion only — nested / transitive groups are not
   walked. If your Entra directory relies on group-of-groups membership,
   flatten those groups or add each sub-group individually.
-- Entra members without a local `user` row (never signed in) are skipped
-  and auto-attach at first login — that is WBS 4.21's scope.
+- With WBS 4.21 shipped, the sync now JIT-stubs unknown members via
+  Graph so they appear in `user_group_member` immediately. Only members
+  the tenant Graph cannot resolve (deleted account, permission gap)
+  fall into `members_skipped_unknown`.
 - Deleting a `source='entra'` group from Open Notebook unlinks it locally
   (cascades to resource grants + members) but does not touch anything in
   Entra.
+
+## Directory picker (WBS 4.21)
+
+The share dialog and the Groups admin page can invite any tenant user,
+even one who has never opened the app.
+
+1. In the same Entra app registration, open **API permissions**, add
+   **Microsoft Graph → Application permissions → `User.Read.All`**, and
+   click **Grant admin consent for &lt;tenant&gt;**. Both steps are required
+   (same pattern as `GroupMember.Read.All` above). Missing either
+   surfaces a 502 whose message names **the tenant directory permission**
+   — the UI wording is deliberately generic so admins reading a toast
+   don't have to memorize Microsoft's slug. If group sync is already
+   configured, the tenant admin can grant both permissions in a single
+   Entra visit.
+2. No new environment variable — the picker uses the existing Entra
+   client credentials.
+
+### Error messages you may see (and what each one means)
+
+| Toast wording (start of the message) | HTTP | Cause |
+| --- | --- | --- |
+| _"Microsoft Graph refused the request … group membership permission …"_ | 502 | For a group flow (Link Entra group, sync). Either the `GroupMember.Read.All` Application permission is missing OR admin consent for it has not been clicked. |
+| _"Microsoft Graph refused the request … tenant directory permission …"_ | 502 | For a user flow (Invite from directory, from-entra stub). Either the `User.Read.All` Application permission is missing OR admin consent has not been clicked. |
+| _"Microsoft Graph did not accept the connected Entra app's credentials …"_ | 502 | Client secret rotated, expired, or wrong. Refresh it in the app registration and update the deployment. |
+| _"Microsoft Graph returned an upstream error …"_ | 502 | 5xx from Graph. Transient — retry shortly. |
+| _"Entra group sync is not enabled on this deployment …"_ | 409 | An admin clicked "Sync now" while the sync toggle is off. Enable it and retry. |
+
+The toast wording never includes Microsoft's raw permission slugs
+(`GroupMember.Read.All` / `User.Read.All`) or environment variable names
+(`ENTRA_GROUP_SYNC_ENABLED`) — that plumbing belongs in this doc, not in
+a UI banner.
+
+The picker calls Graph on demand — nothing is stored beyond the local
+`user` row created when an admin/owner confirms the invite. That row
+carries `entra_oid + email + display_name` and role `user`; on the
+invited user's first real login, `EntraOIDCProvider._upsert_user`
+matches by `entra_oid`, updates the same row, and no duplicate is
+created. Until then the UI badges those users as **"Never signed in"**.
+
+**Privacy note:** Graph typeahead runs per keystroke (debounced 300 ms
+client-side) and is only made against the tenant directory the Entra
+app registration is scoped to. Nothing is logged beyond counts and
+Graph error status codes.

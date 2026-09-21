@@ -2,11 +2,13 @@
 
 Client-credentials flow against the existing Entra app registration
 (ENTRA_TENANT_ID / ENTRA_CLIENT_ID / ENTRA_CLIENT_SECRET). Requires the
-`GroupMember.Read.All` application permission with admin consent.
+`GroupMember.Read.All` application permission for group sync (WBS 4.20)
+and `User.Read.All` for the directory picker and JIT-stub flow (WBS 4.21),
+both granted admin consent.
 
 Nothing here runs unless the caller (sync command or admin route) invokes
 it; deployments that leave ENTRA_GROUP_SYNC_ENABLED unset never call these
-functions.
+functions, and the directory picker only runs on-demand.
 """
 
 from __future__ import annotations
@@ -97,16 +99,32 @@ async def _authed_get(
 
 
 async def search_groups(query: str, *, limit: int = 25) -> list[dict[str, Any]]:
-    """Typeahead against `/groups?$search`, top `limit` matches, mapped shape."""
+    """Typeahead against `/groups`, top `limit` matches, mapped shape.
+
+    An empty query switches to browse mode: `$orderby=displayName` returns
+    the first `limit` groups alphabetically so the UI can seed the picker
+    with something to look at instead of a blank list.
+    """
+    q = (query or "").strip()
+    if q:
+        params = {
+            "$search": f'"displayName:{q}"',
+            "$top": str(limit),
+            "$select": "id,displayName,description",
+        }
+    else:
+        # ConsistencyLevel: eventual is still required by Graph for
+        # $orderby against the directory data set.
+        params = {
+            "$orderby": "displayName",
+            "$top": str(limit),
+            "$select": "id,displayName,description",
+        }
     async with httpx.AsyncClient() as client:
         resp = await _authed_get(
             client,
             f"{_GRAPH_BASE}/groups",
-            params={
-                "$search": f'"displayName:{query}"',
-                "$top": str(limit),
-                "$select": "id,displayName,description",
-            },
+            params=params,
             extra_headers={"ConsistencyLevel": "eventual"},
         )
     if resp.status_code != 200:
@@ -137,6 +155,91 @@ async def get_group(entra_group_oid: str) -> dict[str, Any]:
         "display_name": row.get("displayName", ""),
         "description": row.get("description"),
     }
+
+
+def _user_row(row: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a Graph user row. Guest accounts often lack `mail`."""
+    return {
+        "entra_oid": row.get("id", ""),
+        "email": row.get("mail") or row.get("userPrincipalName") or "",
+        "display_name": row.get("displayName", ""),
+    }
+
+
+async def search_users(query: str, *, limit: int = 25) -> list[dict[str, Any]]:
+    """Typeahead against `/users`, top `limit` matches, mapped shape.
+
+    Searches both displayName and mail so admins can paste an address.
+    An empty query switches to browse mode: `$orderby=displayName`
+    returns the first `limit` users alphabetically.
+    """
+    q = (query or "").strip()
+    if q:
+        params = {
+            "$search": f'"displayName:{q}" OR "mail:{q}"',
+            "$top": str(limit),
+            "$select": "id,mail,userPrincipalName,displayName",
+        }
+    else:
+        params = {
+            "$orderby": "displayName",
+            "$top": str(limit),
+            "$select": "id,mail,userPrincipalName,displayName",
+        }
+    async with httpx.AsyncClient() as client:
+        resp = await _authed_get(
+            client,
+            f"{_GRAPH_BASE}/users",
+            params=params,
+            extra_headers={"ConsistencyLevel": "eventual"},
+        )
+    if resp.status_code != 200:
+        raise GraphAPIError(resp.status_code, "search users", resp.text)
+    return [_user_row(row) for row in resp.json().get("value", [])]
+
+
+async def get_user(entra_oid: str) -> dict[str, Any]:
+    """Fetch a single user's mapped profile. Raises GraphAPIError on 404."""
+    async with httpx.AsyncClient() as client:
+        resp = await _authed_get(
+            client,
+            f"{_GRAPH_BASE}/users/{entra_oid}",
+            params={"$select": "id,mail,userPrincipalName,displayName"},
+        )
+    if resp.status_code != 200:
+        raise GraphAPIError(resp.status_code, "get_user", resp.text)
+    return _user_row(resp.json())
+
+
+async def list_users_by_oids(oids: list[str]) -> list[dict[str, Any]]:
+    """Bulk-resolve OIDs to mapped profiles, chunked to stay under Graph's URL limit.
+
+    Individual chunk failures are logged upstream by the caller (see
+    `commands/entra_group_sync.py`); this function raises `GraphAPIError`
+    on the first non-2xx so the caller can decide whether to retry.
+    """
+    if not oids:
+        return []
+    chunk_size = 15
+    out: list[dict[str, Any]] = []
+    async with httpx.AsyncClient() as client:
+        for start in range(0, len(oids), chunk_size):
+            chunk = oids[start : start + chunk_size]
+            filter_expr = "id in (" + ",".join(f"'{oid}'" for oid in chunk) + ")"
+            resp = await _authed_get(
+                client,
+                f"{_GRAPH_BASE}/users",
+                params={
+                    "$filter": filter_expr,
+                    "$select": "id,mail,userPrincipalName,displayName",
+                    "$top": str(len(chunk)),
+                },
+            )
+            if resp.status_code != 200:
+                raise GraphAPIError(resp.status_code, "list_users_by_oids", resp.text)
+            for row in resp.json().get("value", []):
+                out.append(_user_row(row))
+    return out
 
 
 async def list_group_member_oids(entra_group_oid: str) -> list[str]:

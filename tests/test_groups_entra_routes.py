@@ -78,8 +78,8 @@ def test_search_forbidden_for_non_admin(monkeypatch):
     assert r.status_code == 403
 
 
-def test_search_graph_403_returns_502_with_permission_hint(monkeypatch):
-    """Regression: prior code let GraphAPIError bubble as 500. Must be actionable 502."""
+def test_search_graph_403_returns_502_with_group_permission_hint(monkeypatch):
+    """403 on the group flow → names the group-membership permission."""
     from api.graph_client import GraphAPIError
 
     def raise_auth(*_a, **_kw):
@@ -89,11 +89,30 @@ def test_search_graph_403_returns_502_with_permission_hint(monkeypatch):
         r = _client(monkeypatch).get("/api/groups/entra/search?q=dfx")
     assert r.status_code == 502
     detail = r.json()["detail"]
-    assert "Microsoft Graph rejected the request" in detail
-    assert "GroupMember.Read.All" in detail
+    assert "Microsoft Graph refused the request" in detail
+    assert "group membership permission" in detail
+    assert "admin consent" in detail
+    # The raw Microsoft slug is intentionally NOT in the toast (admins get
+    # a plain description; the slug lives in docs/AUTH.md).
+    assert "GroupMember.Read.All" not in detail
 
 
-def test_search_graph_500_returns_generic_502(monkeypatch):
+def test_search_graph_401_names_credential_failure(monkeypatch):
+    """401 → the app credentials are the problem, not a missing permission."""
+    from api.graph_client import GraphAPIError
+
+    def raise_creds(*_a, **_kw):
+        raise GraphAPIError(401, "search", "unauthorized")
+
+    with patch("api.routers.groups.search_groups", new=AsyncMock(side_effect=raise_creds)):
+        r = _client(monkeypatch).get("/api/groups/entra/search?q=x")
+    assert r.status_code == 502
+    detail = r.json()["detail"]
+    assert "credentials" in detail
+    assert "client secret" in detail
+
+
+def test_search_graph_500_returns_generic_upstream(monkeypatch):
     from api.graph_client import GraphAPIError
 
     def raise_upstream(*_a, **_kw):
@@ -102,10 +121,10 @@ def test_search_graph_500_returns_generic_502(monkeypatch):
     with patch("api.routers.groups.search_groups", new=AsyncMock(side_effect=raise_upstream)):
         r = _client(monkeypatch).get("/api/groups/entra/search?q=x")
     assert r.status_code == 502
-    assert "Microsoft Graph error" in r.json()["detail"]
+    assert "Microsoft Graph returned an upstream error" in r.json()["detail"]
 
 
-def test_link_graph_403_returns_502(monkeypatch):
+def test_link_graph_403_returns_502_with_group_hint(monkeypatch):
     from api.graph_client import GraphAPIError
 
     def raise_auth(*_a, **_kw):
@@ -116,18 +135,43 @@ def test_link_graph_403_returns_502(monkeypatch):
             "/api/groups/entra/link", json={"entra_group_oid": "e1"}
         )
     assert r.status_code == 502
-    assert "GroupMember.Read.All" in r.json()["detail"]
+    detail = r.json()["detail"]
+    assert "group membership permission" in detail
 
 
-def test_search_empty_query_returns_empty_list_without_graph_call(monkeypatch):
+def test_search_empty_query_now_browses_top_25(monkeypatch):
+    """Empty query used to short-circuit; WBS 4.21 fix routes it to Graph
+    for a browse-mode fetch of the first ~25 groups alphabetically."""
     with patch(
         "api.routers.groups.search_groups",
-        new=AsyncMock(),
+        new=AsyncMock(return_value=[]),
     ) as mock_search:
         r = _client(monkeypatch).get("/api/groups/entra/search?q=%20%20")
     assert r.status_code == 200
     assert r.json() == []
-    mock_search.assert_not_called()
+    mock_search.assert_awaited_once()
+
+
+def test_sync_requires_sync_enabled_env(monkeypatch):
+    """Manual /sync fails cleanly with a human message when disabled."""
+    monkeypatch.delenv("ENTRA_GROUP_SYNC_ENABLED", raising=False)
+    r = _client(monkeypatch).post("/api/groups/entra/sync")
+    assert r.status_code == 409
+    detail = r.json()["detail"]
+    assert "not enabled" in detail
+    # Never surface the raw env var name — that lives in docs, not the UI.
+    assert "ENTRA_GROUP_SYNC_ENABLED" not in detail
+
+
+def test_sync_when_enabled_submits_command(monkeypatch):
+    monkeypatch.setenv("ENTRA_GROUP_SYNC_ENABLED", "true")
+    with patch(
+        "api.routers.groups.submit_command",
+        new=AsyncMock(return_value="cmd:1"),
+    ):
+        r = _client(monkeypatch).post("/api/groups/entra/sync")
+    assert r.status_code == 200
+    assert r.json() == {"command_id": "cmd:1"}
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +295,8 @@ def test_link_forbidden_for_non_admin(monkeypatch):
 
 
 def test_sync_admin_only_and_returns_command_id(monkeypatch):
+    # WBS 4.21 gates this endpoint on the sync-enabled flag; enable it here.
+    monkeypatch.setenv("ENTRA_GROUP_SYNC_ENABLED", "true")
     with patch(
         "api.routers.groups.submit_command",
         new=AsyncMock(return_value="cmd-42"),

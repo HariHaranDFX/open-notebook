@@ -60,11 +60,13 @@ export const ERROR_MAP: Record<string, string> = {
   "CSRF origin check failed": "apiErrors.csrfFailed",
   "Not authenticated": "apiErrors.unauthorized",
   "This group is managed by Entra sync and cannot be edited here.": "apiErrors.entraGroupManaged",
-  // Matches both the 401/403 (consent needed) and other Graph upstream detail
-  // strings emitted by _graph_http_exception in api/routers/groups.py, via the
-  // startsWith fallback in mappedKey().
-  "Microsoft Graph rejected the request": "apiErrors.entraGraphAuth",
-  "Microsoft Graph error": "apiErrors.entraGraphError",
+  // WBS 4.21 error shapes emitted by _graph_http_exception + _require_sync_enabled
+  // in api/routers/groups.py; matched via the startsWith fallback in mappedKey()
+  // so the same detail with a trailing sentence still resolves.
+  "Microsoft Graph did not accept the connected Entra app's credentials": "apiErrors.entraCredentialInvalid",
+  "Microsoft Graph refused the request": "apiErrors.entraPermissionDenied",
+  "Microsoft Graph returned an upstream error": "apiErrors.entraGraphUpstream",
+  "Entra group sync is not enabled on this deployment": "apiErrors.entraSyncDisabled",
 };
 
 function mappedKey(message: string): string | undefined {

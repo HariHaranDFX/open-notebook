@@ -59,11 +59,25 @@ describe('Entra group hooks', () => {
     expect(result.current.data?.[0].entra_group_oid).toBe('e1')
   })
 
-  it('useEntraGroupSearch is idle for empty / whitespace query', async () => {
-    const { result } = renderHook(() => useEntraGroupSearch('   '), {
+  it('useEntraGroupSearch fires on empty query too (browse mode) and skips when disabled', async () => {
+    // Empty query is now a valid "browse-top-25" call — the hook fires
+    // whenever `enabled` is true (default) so the picker seeds the list
+    // on open.
+    ;(sharingApi.searchEntraGroups as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    renderHook(() => useEntraGroupSearch('   '), {
       wrapper: wrapper(),
     })
-    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
+    await waitFor(() =>
+      expect(sharingApi.searchEntraGroups).toHaveBeenCalledWith('')
+    )
+
+    // But callers that pass `enabled=false` (e.g. dialog closed) skip
+    // Graph entirely — no wasted calls on page mount.
+    ;(sharingApi.searchEntraGroups as ReturnType<typeof vi.fn>).mockClear()
+    const disabled = renderHook(() => useEntraGroupSearch('   ', false), {
+      wrapper: wrapper(),
+    })
+    await waitFor(() => expect(disabled.result.current.fetchStatus).toBe('idle'))
     expect(sharingApi.searchEntraGroups).not.toHaveBeenCalled()
   })
 

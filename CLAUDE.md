@@ -73,14 +73,16 @@ Open items carried forward (not WP2 blockers unless noted):
   `.png` without Docling enabled.
 - **Sharing follow-ons after WP2b** (see [SHARING.md](docs/SHARING.md)):
   WBS 4.20 (Entra ID group sync) shipped 2026-09-20 — opt-in via
-  `ENTRA_GROUP_SYNC_ENABLED`, direct members only, unknown Entra members
-  auto-attach at first login; see
+  `ENTRA_GROUP_SYNC_ENABLED`, direct members only; see
   [AUTH.md § Entra group sync](docs/AUTH.md#entra-group-sync-wbs-420).
-  Still pending: WBS 4.21 (Graph directory picker + JIT-stub Entra group
-  members — closes the "skipped unknown" gap in 4.20's sync), WBS 4.22
-  (public links, editor reshare, ownership transfer), WBS 4.23 (Graph
-  change-notification webhooks — live push updates replacing 4.20's
-  15-minute polling loop; deliberately split so subscription lifecycle
-  gets its own security review).
+  WBS 4.21 (directory picker + JIT-stub) shipped 2026-09-21 — adds
+  `User.Read.All` permission (admin consent), `GET /api/users/directory`
+  typeahead, `POST /api/users/from-entra` JIT-stub, and closes the
+  "skipped unknown" gap in 4.20's sync; see
+  [AUTH.md § Directory picker](docs/AUTH.md#directory-picker-wbs-421).
+  Still pending: WBS 4.22 (public links, editor reshare, ownership
+  transfer), WBS 4.23 (Graph change-notification webhooks — live push
+  updates replacing 4.20's 15-minute polling loop; deliberately split so
+  subscription lifecycle gets its own security review).
 
 @AGENTS.md

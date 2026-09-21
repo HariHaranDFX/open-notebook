@@ -74,6 +74,14 @@ vi.mock('@/lib/hooks/use-sharing', () => ({
   useSyncEntraGroups: vi.fn(),
   useLinkEntraGroup: vi.fn(),
   useEntraGroupSearch: vi.fn(),
+  useDirectoryUserSearch: vi.fn(() => ({ data: [], isFetching: false })),
+  useStubEntraUser: vi.fn(() => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false })),
+}))
+
+// Password provider by default so the "Invite from directory" button
+// stays hidden in every WBS 4.20-era test. The WBS 4.21 test flips it.
+vi.mock('@/lib/hooks/use-auth', () => ({
+  useAuth: () => ({ provider: 'password', isAdmin: true }),
 }))
 
 // Real Select is a Radix popover jsdom can't drive; swap in a native <select>.
@@ -295,6 +303,28 @@ describe('GroupsPage', () => {
         screen.queryByRole('button', { name: /^Remove/ })
       ).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Add' })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Directory picker + pending users (WBS 4.21)', () => {
+    it('badges a stub member as never-signed-in', () => {
+      const stubMembers: GroupMemberResponse[] = [
+        {
+          user_id: 'user:stub',
+          email: 'ghost@atlas.co',
+          display_name: 'Ghost User',
+          pending: true,
+        },
+      ]
+      mockUseGroupMembers.mockReturnValue(
+        asResult<ReturnType<typeof useGroupMembers>>({
+          data: stubMembers,
+          isLoading: false,
+        })
+      )
+      render(<GroupsPage />)
+      fireEvent.click(screen.getByRole('button', { name: /Research team/ }))
+      expect(screen.getByTestId('never-signed-in-user:stub')).toBeInTheDocument()
     })
   })
 })

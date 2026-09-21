@@ -50,7 +50,8 @@ import { useTranslation } from '@/lib/hooks/use-translation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { describeAccess } from '@/lib/utils/access-role';
 import { getApiErrorMessage } from '@/lib/utils/error-handler';
-import { Trash2 } from 'lucide-react';
+import { InviteFromDirectoryDialog } from '@/components/sharing/InviteFromDirectoryDialog';
+import { Trash2, UserPlus } from 'lucide-react';
 
 interface ShareSheetProps {
   resourceType: ResourceType;
@@ -70,12 +71,14 @@ export function ShareSheet({
   accessSummary,
 }: ShareSheetProps) {
   const { t } = useTranslation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, provider } = useAuth();
   const [principalType, setPrincipalType] = useState<PrincipalType>('user');
   const [principalId, setPrincipalId] = useState('');
   const [role, setRole] = useState<GrantRole>('viewer');
+  const [inviteDirectoryOpen, setInviteDirectoryOpen] = useState(false);
   const [grantPendingRevoke, setGrantPendingRevoke] =
     useState<GrantResponse | null>(null);
+  const canInviteFromDirectory = provider === 'entra';
 
   const { data: grants, isLoading } = useGrants(
     resourceType,
@@ -337,10 +340,28 @@ export function ShareSheet({
                       : users?.map((u) => (
                           <SelectItem key={u.id} value={u.id}>
                             {u.display_name || u.email}
+                            {u.pending ? ` — ${t('sharing.neverSignedIn')}` : ''}
                           </SelectItem>
                         ))}
                   </SelectContent>
                 </Select>
+                {effectiveType === 'user' && canInviteFromDirectory && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setInviteDirectoryOpen(true)}
+                        aria-label={t('sharing.inviteFromDirectory')}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {t('sharing.inviteFromDirectory')}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
               <div className="flex gap-2">
                 <Select
@@ -403,6 +424,18 @@ export function ShareSheet({
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <InviteFromDirectoryDialog
+        open={inviteDirectoryOpen}
+        onOpenChange={setInviteDirectoryOpen}
+        onInvited={(userId) => {
+          // Preselect the freshly-stubbed user in the picker so the admin
+          // can pick a role and hit Add — one confirmation before we
+          // create the grant.
+          setPrincipalType('user');
+          setPrincipalId(userId);
+        }}
+      />
 
       <AlertDialog
         open={!!grantPendingRevoke}

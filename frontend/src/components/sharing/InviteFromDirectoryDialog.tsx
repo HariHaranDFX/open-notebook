@@ -1,48 +1,62 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { useEntraGroupSearch, useLinkEntraGroup } from '@/lib/hooks/use-sharing'
+import {
+  useDirectoryUserSearch,
+  useStubEntraUser,
+} from '@/lib/hooks/use-sharing'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 
 /**
- * WBS 4.20 — admin dialog that lets the operator pick a Microsoft Entra
- * security group by name and link it into user_group. Kicks a scoped sync
- * on submit so members appear without waiting for the periodic loop.
+ * WBS 4.21 — dialog for owners/admins to pick any user in the Entra
+ * tenant (not just people who have already signed into the app). On
+ * confirm, JIT-stubs the local `user` row and hands the local id back
+ * to the caller so add-member / create-grant flow keeps working
+ * unchanged.
  */
-interface LinkEntraGroupDialogProps {
+interface InviteFromDirectoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onLinked?: (groupId: string) => void
+  onInvited?: (userId: string) => void
 }
 
 const DEBOUNCE_MS = 300
 
-export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntraGroupDialogProps) {
+export function InviteFromDirectoryDialog({
+  open,
+  onOpenChange,
+  onInvited,
+}: InviteFromDirectoryDialogProps) {
   const { t } = useTranslation()
   const [rawQuery, setRawQuery] = useState('')
   const [debounced, setDebounced] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
-  const link = useLinkEntraGroup()
-  // Enabled only while the dialog is open — an empty query is a valid
-  // "browse mode" fetch (backend returns the first 25 alphabetically).
-  const search = useEntraGroupSearch(debounced, open)
+  const [selectedOid, setSelectedOid] = useState<string | null>(null)
+  const stub = useStubEntraUser()
+  // Enabled only while the dialog is open — an empty query returns the
+  // first 25 tenant users alphabetically (browse mode).
+  const search = useDirectoryUserSearch(debounced, open)
 
-  // Reset internal state whenever the dialog is closed.
   useEffect(() => {
     if (!open) {
       setRawQuery('')
       setDebounced('')
-      setSelected(null)
+      setSelectedOid(null)
     }
   }, [open])
 
-  // Debounce the input so we don't blast Graph on every keystroke.
   useEffect(() => {
     const handle = setTimeout(() => setDebounced(rawQuery), DEBOUNCE_MS)
     return () => clearTimeout(handle)
@@ -51,10 +65,10 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
   const results = search.data ?? []
 
   const handleSubmit = async () => {
-    if (!selected) return
+    if (!selectedOid) return
     try {
-      const linked = await link.mutateAsync({ entra_group_oid: selected })
-      onLinked?.(linked.id)
+      const stubbed = await stub.mutateAsync({ entra_oid: selectedOid })
+      onInvited?.(stubbed.id)
       onOpenChange(false)
     } catch {
       // Toast handled by the hook's onError.
@@ -65,17 +79,21 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t('groups.linkEntra')}</DialogTitle>
-          <DialogDescription>{t('groups.searchEntraGroups')}</DialogDescription>
+          <DialogTitle>{t('sharing.inviteFromDirectory')}</DialogTitle>
+          <DialogDescription>
+            {t('sharing.inviteFromDirectoryDescription')}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="entra-group-search">{t('groups.searchEntraGroups')}</Label>
+            <Label htmlFor="directory-user-search">
+              {t('sharing.searchDirectory')}
+            </Label>
             <Input
-              id="entra-group-search"
+              id="directory-user-search"
               value={rawQuery}
               onChange={(e) => setRawQuery(e.target.value)}
-              placeholder={t('groups.searchEntraPlaceholder')}
+              placeholder={t('sharing.searchDirectoryPlaceholder')}
               autoFocus
             />
           </div>
@@ -86,25 +104,31 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
               </div>
             ) : results.length === 0 ? (
               <p className="p-4 text-center text-sm text-muted-foreground">
-                {t('groups.noEntraResults')}
+                {t('sharing.noDirectoryResults')}
               </p>
             ) : (
               <>
                 {!debounced && (
-                  <p className="border-b border-border/60 bg-muted/30 p-2 text-center text-xs text-muted-foreground" data-testid="browse-hint">
-                    {t('groups.showingTopResults', { count: results.length })}
+                  <p
+                    className="border-b border-border/60 bg-muted/30 p-2 text-center text-xs text-muted-foreground"
+                    data-testid="directory-browse-hint"
+                  >
+                    {t('sharing.showingTopResults', { count: results.length })}
                   </p>
                 )}
-              <ul role="radiogroup" aria-label={t('groups.searchEntraGroups')}>
+              <ul
+                role="radiogroup"
+                aria-label={t('sharing.searchDirectory')}
+              >
                 {results.map((candidate) => {
-                  const active = selected === candidate.entra_group_oid
+                  const active = selectedOid === candidate.entra_oid
                   return (
-                    <li key={candidate.entra_group_oid}>
+                    <li key={candidate.entra_oid}>
                       <button
                         type="button"
                         role="radio"
                         aria-checked={active}
-                        onClick={() => setSelected(candidate.entra_group_oid)}
+                        onClick={() => setSelectedOid(candidate.entra_oid)}
                         className={cn(
                           'flex w-full items-start gap-2 border-b border-border/60 px-3 py-2 text-left last:border-b-0',
                           active ? 'bg-accent' : 'hover:bg-muted/60'
@@ -112,11 +136,11 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium">
-                            {candidate.display_name}
+                            {candidate.display_name || candidate.email}
                           </span>
-                          {candidate.description && (
+                          {candidate.display_name && candidate.email && (
                             <span className="block truncate text-xs text-muted-foreground">
-                              {candidate.description}
+                              {candidate.email}
                             </span>
                           )}
                         </span>
@@ -133,8 +157,13 @@ export function LinkEntraGroupDialog({ open, onOpenChange, onLinked }: LinkEntra
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!selected || link.isPending}>
-            {link.isPending ? t('common.saving') : t('groups.linkEntra')}
+          <Button
+            onClick={handleSubmit}
+            disabled={!selectedOid || stub.isPending}
+          >
+            {stub.isPending
+              ? t('common.saving')
+              : t('sharing.inviteFromDirectory')}
           </Button>
         </DialogFooter>
       </DialogContent>
