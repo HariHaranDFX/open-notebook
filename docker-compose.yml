@@ -42,6 +42,15 @@ services:
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
 
+      # Original uploads default to the durable /app/data volume below. To use
+      # SharePoint Embedded, set the selector and all SHAREPOINT_STORAGE_* values
+      # in .env; these app-only credentials are separate from connector auth.
+      - OPEN_NOTEBOOK_ORIGINAL_FILE_STORE=${OPEN_NOTEBOOK_ORIGINAL_FILE_STORE:-filesystem}
+      - SHAREPOINT_STORAGE_TENANT_ID=${SHAREPOINT_STORAGE_TENANT_ID:-}
+      - SHAREPOINT_STORAGE_CLIENT_ID=${SHAREPOINT_STORAGE_CLIENT_ID:-}
+      - SHAREPOINT_STORAGE_CLIENT_SECRET=${SHAREPOINT_STORAGE_CLIENT_SECRET:-}
+      - SHAREPOINT_STORAGE_CONTAINER_ID=${SHAREPOINT_STORAGE_CONTAINER_ID:-}
+
       # OPTIONAL: heavy extraction runtimes, installed on first startup when
       # enabled (downloads are cached on the ./notebook_data volume, so only the
       # first boot is slow). See docs/5-CONFIGURATION/environment-reference.md.

@@ -31,6 +31,7 @@ from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.original_file_policy import OriginalFileDeletionReason
+from open_notebook.storage.original_files import reference_from_asset
 
 CleanupScope = Literal["mine", "all"]
 
@@ -94,7 +95,7 @@ async def cleanup_original_files_command(
             continue
 
         asset = source.asset
-        if asset is None or not asset.file_path:
+        if reference_from_asset(asset) is None:
             skipped += 1
             continue
 

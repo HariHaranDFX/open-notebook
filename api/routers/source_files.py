@@ -93,13 +93,14 @@ async def _query_eligible_sources(
 
     Eligibility:
     - source's asset has ``original_file_action = 'delete_after_processing'``
-    - ``file_path`` is still present (not already deleted)
+    - a legacy ``file_path`` or provider/key reference is still present
     - ``full_text`` is not None (processing completed)
     - scope filter: ``mine`` narrows to the requester's own sources.
     """
     where_parts = [
         "asset.original_file_action = 'delete_after_processing'",
-        "asset.file_path != NONE",
+        "(asset.file_path != NONE OR "
+        "(asset.original_file_store != NONE AND asset.original_file_key != NONE))",
         "full_text != NONE",
     ]
     binds: dict = {}

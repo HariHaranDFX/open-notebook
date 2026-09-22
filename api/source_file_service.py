@@ -38,6 +38,7 @@ from open_notebook.domain.original_file_policy import (
 from open_notebook.storage.original_files import (
     OriginalFileRef,
     OriginalFileStore,
+    get_original_file_store,
     reference_from_asset,
 )
 
@@ -289,32 +290,30 @@ async def delete_original_file(
     """Idempotently delete the original file backing ``source``.
 
     Returns one of ``"deleted"``, ``"already_deleted"``, ``"missing"``,
-    or ``"unsafe"``. Callers pass the loaded ``Source`` (never a raw
-    request path); this helper resolves the stored path, verifies
-    containment beneath ``UPLOADS_FOLDER``, and never touches anything
-    else on disk.
+    ``"unsafe"``, ``"error"``, or ``"not_applicable"``. Only the asset's
+    recorded provider reference is used; legacy paths require containment.
 
-    Two-phase write so a crashed unlink is recoverable:
+    Two-phase write so a failed provider delete is recoverable:
 
     1. Set ``original_deletion_started_at`` + ``original_deleted_reason``
        and save.
-    2. Unlink the file.
-    3. Clear ``file_path`` and set ``original_deleted_at`` and save.
+    2. Delete through the provider (failures retain the intent and reference).
+    3. Clear storage references, set ``original_deleted_at``, and save.
 
     On retry: a source with a start marker and an absent file finalizes
     step 3; a source with ``original_deleted_at`` already set returns
-    ``already_deleted``. A missing file WITHOUT a start marker is
-    reported as ``missing`` (not called an application deletion).
+    ``already_deleted``. Assets with no reference or marker return ``missing``.
     """
     asset = source.asset
     if asset is None:
         return "not_applicable"
 
     # Already recorded as deleted — nothing to do.
-    if asset.original_deleted_at is not None and asset.file_path is None:
+    ref = reference_from_asset(asset)
+    if asset.original_deleted_at is not None and ref is None:
         return "already_deleted"
 
-    if not asset.file_path:
+    if ref is None:
         # No path to delete; if we started, finalize as missing.
         if asset.original_deletion_started_at is not None:
             asset.original_deleted_at = datetime.now(timezone.utc)
@@ -322,38 +321,38 @@ async def delete_original_file(
             return "already_deleted"
         return "missing"
 
-    safe_path = _resolve_contained_upload_path(asset.file_path)
-    if safe_path is None:
+    if (
+        ref.legacy_file_path
+        and _resolve_contained_upload_path(ref.legacy_file_path) is None
+    ):
         logger.warning(
             "Refusing to delete file outside uploads root for source "
             f"{source.id}"
         )
         return "unsafe"
 
-    # Phase 1: record the intent so a crash between unlink and save is recoverable.
+    # Phase 1: persist intent before any provider call, including configuration.
     if asset.original_deletion_started_at is None:
         asset.original_deletion_started_at = datetime.now(timezone.utc)
         asset.original_deleted_reason = reason
         await source.save()
 
-    # Phase 2: unlink. Missing-on-disk is fine — we'll still finalize.
-    unlinked = False
-    if safe_path.exists() and safe_path.is_file():
-        try:
-            safe_path.unlink()
-            unlinked = True
-        except OSError as e:
-            # Retain state so a retry can attempt again. Do NOT clear
-            # file_path or set original_deleted_at — the file may still
-            # be on disk.
-            logger.warning(
-                f"Failed to unlink original file for source {source.id}: {e}"
-            )
+    # Phase 2: a missing object is safe to finalize after a partial failure.
+    try:
+        store = get_original_file_store(ref.provider)
+        existed = await store.exists(ref)
+        if existed and not await store.delete(ref):
             return "error"
+    except Exception:
+        logger.warning(f"Failed to delete original file for source {source.id}")
+        return "error"
 
     # Phase 3: finalize.
     asset.file_path = None
+    asset.original_file_store = None
+    asset.original_file_key = None
+    asset.original_file_etag = None
     asset.original_deleted_at = datetime.now(timezone.utc)
     await source.save()
 
-    return "deleted" if unlinked else "already_deleted"
+    return "deleted" if existed else "already_deleted"
