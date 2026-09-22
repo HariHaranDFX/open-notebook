@@ -553,7 +553,9 @@ async def save_source(state: SourceState) -> dict:
                 f"Source {source.id} has no text content to embed, skipping vectorization"
             )
 
-    return {"source": source}
+    # The durable Source retains its original-file reference for retries and
+    # downloads. Graph state and transformation inputs do not need it.
+    return {"source": source.model_copy(update={"asset": None})}
 
 
 def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[Send]:

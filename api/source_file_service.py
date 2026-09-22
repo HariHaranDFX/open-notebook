@@ -41,6 +41,52 @@ from open_notebook.storage.original_files import (
     reference_from_asset,
 )
 
+_SOURCE_COMMAND_RESULT_FIELDS = frozenset(
+    {"success", "source_id", "embedded_chunks", "insights_created", "processing_time"}
+)
+
+
+def _contains_storage_internal(value: object) -> bool:
+    """Detect provider metadata or temporary paths in a command payload."""
+    if isinstance(value, dict):
+        return any(
+            key in {"original_file_store", "original_file_key", "original_file_etag", "file_path"}
+            or _contains_storage_internal(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_storage_internal(item) for item in value)
+    if isinstance(value, str):
+        lowered = value.lower()
+        return (
+            "original_file_" in lowered
+            or "/tmp/" in lowered
+            or "\\temp\\" in lowered
+        )
+    return False
+
+
+def build_public_command_status(status_data: dict) -> dict:
+    """Redact only command status payloads containing source-storage internals."""
+    if not _contains_storage_internal(status_data):
+        return status_data
+
+    result = status_data.get("result")
+    return {
+        key: status_data.get(key)
+        for key in ("job_id", "status", "created", "updated")
+    } | {
+        "result": (
+            {key: result[key] for key in _SOURCE_COMMAND_RESULT_FIELDS if key in result}
+            if isinstance(result, dict)
+            else None
+        ),
+        "error_message": "Source processing failed"
+        if status_data.get("error_message")
+        else None,
+        "progress": None,
+    }
+
 
 @asynccontextmanager
 async def stage_upload(upload: UploadFile) -> AsyncIterator[Path]:

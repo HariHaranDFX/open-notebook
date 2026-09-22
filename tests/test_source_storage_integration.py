@@ -14,7 +14,7 @@ from starlette.datastructures import UploadFile
 from api.routers import sources
 from commands import source_commands
 from open_notebook.domain.notebook import Asset, Source
-from open_notebook.graphs.source import save_source
+from open_notebook.graphs.source import save_source, trigger_transformations
 from open_notebook.storage.original_files import StoredOriginal
 
 
@@ -205,10 +205,17 @@ async def test_worker_materializes_only_during_graph_and_preserves_original(
         assert source.asset.file_path is None
         if graph_fails:
             raise RuntimeError("extraction failed")
-        return await save_source({
+        graph_result = await save_source({
             **state,
             "extraction": SimpleNamespace(content="extracted text", title="Report"),
         })
+        graph_source = graph_result["source"]
+        assert graph_source.asset is None
+        send = trigger_transformations(
+            {"source": graph_source, "apply_transformations": [SimpleNamespace()]}, None
+        )[0]
+        assert send.arg["source"].asset is None
+        return graph_result
 
     monkeypatch.setattr(source_commands.source_graph, "ainvoke", AsyncMock(side_effect=run_graph))
     command = source_commands.SourceProcessingInput(
@@ -422,3 +429,54 @@ def test_rejected_upload_removes_stage_without_saving_original(
     assert staged and not staged[0].exists()
     provider_store.save.assert_not_awaited()
     provider_store.delete.assert_not_awaited()
+
+
+def test_generic_command_status_hides_source_storage_internals(client, monkeypatch):
+    """The generic command endpoint must not bypass source response redaction."""
+    private = "opaque-private-key C:\\Users\\worker\\AppData\\Local\\Temp\\extract"
+    monkeypatch.setattr(
+        "api.routers.commands.CommandService.get_command_status",
+        AsyncMock(
+            return_value={
+                "job_id": "command:storage-test",
+                "status": "failed",
+                "result": {
+                    "success": False,
+                    "source_id": "source:storage-test",
+                    "original_file_key": "opaque-private-key",
+                    "file_path": "C:\\Users\\worker\\AppData\\Local\\Temp\\extract",
+                    "raw": private,
+                },
+                "error_message": f"Graph failed: {private}",
+                "progress": {"input": {"original_file_key": "opaque-private-key"}},
+            }
+        ),
+    )
+
+    response = client.get("/api/commands/jobs/command:storage-test")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["result"] == {"success": False, "source_id": "source:storage-test"}
+    assert response.json()["error_message"] == "Source processing failed"
+    for private_value in ("opaque-private-key", "AppData", "Graph failed"):
+        assert private_value not in response.text
+
+
+def test_generic_command_status_keeps_non_sensitive_diagnostics(client, monkeypatch):
+    monkeypatch.setattr(
+        "api.routers.commands.CommandService.get_command_status",
+        AsyncMock(
+            return_value={
+                "job_id": "command:ordinary-test",
+                "status": "failed",
+                "result": {"output": "useful diagnostic"},
+                "error_message": "ordinary failure detail",
+            }
+        ),
+    )
+
+    response = client.get("/api/commands/jobs/command:ordinary-test")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["result"] == {"output": "useful diagnostic"}
+    assert response.json()["error_message"] == "ordinary failure detail"

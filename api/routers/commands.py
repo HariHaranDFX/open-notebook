@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from surreal_commands import registry
 
 from api.command_service import CommandService
+from api.source_file_service import build_public_command_status
 from open_notebook.exceptions import OpenNotebookError
 
 router = APIRouter()
@@ -96,7 +97,7 @@ async def get_command_job_status(job_id: str):
     """Get the status of a specific command job"""
     try:
         status_data = await CommandService.get_command_status(job_id)
-        return CommandJobStatusResponse(**status_data)
+        return CommandJobStatusResponse(**build_public_command_status(status_data))
 
     except HTTPException:
         raise

@@ -168,7 +168,12 @@ async def process_source_command(
                 }
             )
 
-        processed_source = result["source"]
+        # Graph state intentionally returns a redacted Source so provider
+        # references cannot reach transformations or command result payloads.
+        # Reload the durable record for retention and result handling.
+        processed_source = await Source.get(str(result["source"].id))
+        if processed_source is None:
+            raise ValueError(f"Source '{input_data.source_id}' not found after processing")
 
         # 4. Retention governance (Task 3): now that the graph succeeded and
         # ``full_text`` has been persisted, delete the original upload if
