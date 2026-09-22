@@ -340,6 +340,9 @@ class Asset(BaseModel):
     # safe asset mapper (introduced in Task 4). URL/text sources leave it
     # None.
     file_path: Optional[str] = None
+    original_file_store: Optional[str] = None
+    original_file_key: Optional[str] = None
+    original_file_etag: Optional[str] = None
     url: Optional[str] = None
     # Original-upload metadata (Task 1 of retention governance). URL and
     # pasted-text sources leave every ``original_*`` field None.

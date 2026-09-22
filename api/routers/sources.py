@@ -2,6 +2,7 @@ import asyncio
 import os
 from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import quote
 
 from content_core import check_file_support
 from fastapi import (
@@ -14,7 +15,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from loguru import logger
 from pydantic import ValidationError
 from surreal_commands import execute_command_sync, submit_command
@@ -51,7 +52,12 @@ from api.pagination import (
     encode_cursor,
     fingerprint_filters,
 )
-from api.source_file_service import build_public_asset_model
+from api.source_file_service import (
+    build_public_asset_model,
+    build_public_processing_info,
+    materialize_original_file,
+    stage_upload,
+)
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -64,6 +70,12 @@ from open_notebook.exceptions import (
     UnsupportedTypeException,
 )
 from open_notebook.graphs.source import default_source_title
+from open_notebook.storage.original_files import (
+    OriginalFileRef,
+    StoredOriginal,
+    get_original_file_store,
+    reference_from_asset,
+)
 
 router = APIRouter()
 
@@ -119,7 +131,8 @@ SOURCE_SORT_FIELDS = {
 }
 
 SOURCE_TYPE_EXPRESSION = (
-    "IF asset.file_path != NONE THEN 'file' "
+    "IF asset.file_path != NONE OR "
+    "(asset.original_file_store != NONE AND asset.original_file_key != NONE) THEN 'file' "
     "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
 )
 
@@ -202,31 +215,11 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
             counter += 1
 
 
-def _write_uploaded_file(filename: str, content: bytes) -> str:
-    """Sync filesystem work for save_uploaded_file() - run via asyncio.to_thread
-    so a large upload doesn't block the event loop for other requests."""
-    file_path = generate_unique_filename(filename, UPLOADS_FOLDER)
-    try:
-        with open(file_path, "wb") as f:
-            f.write(content)
-
-        logger.info(f"Saved uploaded file to: {file_path}")
-        return file_path
-    except Exception as e:
-        logger.error(f"Failed to save uploaded file: {e}")
-        # Clean up partial file if it exists
-        if os.path.exists(file_path):
-            os.unlink(file_path)
-        raise
-
-
-async def save_uploaded_file(upload_file: UploadFile) -> str:
-    """Save uploaded file to uploads folder and return file path."""
-    if not upload_file.filename:
-        raise ValueError("No filename provided")
-
-    content = await upload_file.read()
-    return await asyncio.to_thread(_write_uploaded_file, upload_file.filename, content)
+async def save_uploaded_file(upload_file: UploadFile) -> StoredOriginal:
+    """Preflight a staged upload, then save it to the configured provider."""
+    async with stage_upload(upload_file) as path:
+        await _assert_file_supported(str(path))
+        return await get_original_file_store().save(path, path.name)
 
 
 def parse_source_form_data(
@@ -423,7 +416,7 @@ async def get_sources(
                     # Status fields from fetched command
                     command_id=command_id,
                     status=status,
-                    processing_info=processing_info,
+                    processing_info=build_public_processing_info(processing_info, row.get("asset")),
                     access_role=summary.role if summary else None,
                     access_summary=summary,
                 )
@@ -482,7 +475,7 @@ async def _build_source_list_response(
         updated=str(row["updated"]),
         command_id=command_id,
         status=status,
-        processing_info=processing_info,
+        processing_info=build_public_processing_info(processing_info, row.get("asset")),
         access_role=summary.role if summary else None,
         access_summary=summary,
     )
@@ -668,28 +661,27 @@ def _source_to_response(
         "updated": str(source.updated),
     }
     fields.update(extras)
+    if "processing_info" in fields:
+        fields["processing_info"] = build_public_processing_info(fields["processing_info"], source.asset)
     return SourceResponse(**fields)
 
 
-def _cleanup_uploaded_file(
-    file_path: Optional[str], upload_file: Optional[UploadFile]
-) -> None:
-    """Best-effort removal of a file this request uploaded, after a failure.
-
-    Only removes files we created ourselves (an upload_file was provided) -
-    never a caller-supplied file_path."""
-    if file_path and upload_file:
+async def _cleanup_uploaded_file(stored: Optional[StoredOriginal]) -> None:
+    """Compensate a durable save when creating or queueing the source fails."""
+    if stored:
         try:
-            os.unlink(file_path)
+            await get_original_file_store(stored.provider).delete(
+                OriginalFileRef(stored.provider, stored.key, stored.etag)
+            )
         except Exception:
-            pass
+            logger.warning("Failed to clean up original file after source creation failed")
 
 
 async def _build_content_state(
     source_data: SourceCreate,
-    file_path: Optional[str],
     original_file_action: Optional[str] = None,
     original_filename: Optional[str] = None,
+    stored: Optional[StoredOriginal] = None,
 ) -> dict[str, Any]:
     """Validate the type-specific input and build the content_state passed to
     the processing command. The SSRF and LFI guards live here."""
@@ -706,8 +698,21 @@ async def _build_content_state(
             raise HTTPException(status_code=400, detail=str(e))
         content_state["url"] = source_data.url
     elif source_data.type == "upload":
-        # Use uploaded file path or provided file_path (backward compatibility)
-        final_file_path = file_path or source_data.file_path
+        if stored is not None:
+            return {
+                **Asset(
+                    file_path=stored.file_path,
+                    original_file_store=stored.provider,
+                    original_file_key=stored.key,
+                    original_file_etag=stored.etag,
+                    original_filename=original_filename,
+                    original_size_bytes=stored.size_bytes,
+                    original_file_action=original_file_action,
+                ).model_dump(exclude_none=True),
+                "delete_source": source_data.delete_source,
+            }
+        # Legacy JSON file_path remains contained beneath the uploads root.
+        final_file_path = source_data.file_path
         if not final_file_path:
             raise HTTPException(
                 status_code=400,
@@ -763,10 +768,7 @@ async def _create_source_async_path(
     source_data: SourceCreate,
     content_state: dict[str, Any],
     transformation_ids: List[str],
-    file_path: Optional[str],
     user: Optional[AuthenticatedUser],
-    original_filename: Optional[str] = None,
-    original_file_action: Optional[str] = None,
 ) -> SourceResponse:
     """ASYNC PATH: Create source record first, then queue command."""
     logger.info("Using async processing path")
@@ -776,25 +778,7 @@ async def _create_source_async_path(
     if source_data.type == "link":
         source_asset = Asset(url=source_data.url)
     elif source_data.type == "upload":
-        stored_path = file_path or source_data.file_path
-        # Snapshot upload metadata for retention governance. Legacy JSON
-        # requests that only carry a file_path derive the filename from
-        # the basename (containment already checked in _build_content_state).
-        display_filename = original_filename or (
-            Path(stored_path).name if stored_path else None
-        )
-        size = None
-        if stored_path:
-            try:
-                size = Path(stored_path).stat().st_size
-            except OSError:
-                size = None
-        source_asset = Asset(
-            file_path=stored_path,
-            original_filename=display_filename,
-            original_size_bytes=size,
-            original_file_action=original_file_action,
-        )
+        source_asset = Asset(**content_state)
     else:
         source_asset = None
 
@@ -890,6 +874,7 @@ async def _create_source_sync_path(
         source = Source(
             title=source_data.title or default_source_title(content_state),
             topics=[],
+            asset=Asset(**content_state) if source_data.type in {"link", "upload"} else None,
             user_id=user.id if user else None,
             client_id=user.client_id if user else None,
         )
@@ -929,7 +914,11 @@ async def _create_source_sync_path(
                 pass
             raise HTTPException(
                 status_code=500,
-                detail=f"Processing failed: {_truncate_error(result.error_message)}",
+                detail=(
+                    "Source processing failed"
+                    if content_state.get("original_file_store")
+                    else f"Processing failed: {_truncate_error(result.error_message)}"
+                ),
             )
 
         # Get the processed source
@@ -967,8 +956,7 @@ async def create_source(
     source_data, upload_file = form_data
     user = current_user_optional(request)
 
-    # Initialize file_path before try block so exception handlers can reference it
-    file_path = None
+    stored = None
 
     try:
         # Verify all specified notebooks exist and are editable by the current
@@ -986,7 +974,9 @@ async def create_source(
         # Handle file upload if provided
         if upload_file and source_data.type == "upload":
             try:
-                file_path = await save_uploaded_file(upload_file)
+                stored = await save_uploaded_file(upload_file)
+            except OpenNotebookError:
+                raise
             except Exception as e:
                 logger.error(f"File upload failed: {e}")
                 raise HTTPException(status_code=400, detail="File upload failed")
@@ -1018,9 +1008,9 @@ async def create_source(
         # Prepare content_state for processing (type validation + SSRF/LFI guards)
         content_state = await _build_content_state(
             source_data,
-            file_path,
             original_file_action=original_file_action,
             original_filename=original_filename,
+            stored=stored,
         )
 
         # Validate transformations exist
@@ -1038,10 +1028,7 @@ async def create_source(
                 source_data,
                 content_state,
                 transformation_ids,
-                file_path,
                 user,
-                original_filename=original_filename,
-                original_file_action=original_file_action,
             )
         return await _create_source_sync_path(
             source_data, content_state, transformation_ids, user
@@ -1049,20 +1036,20 @@ async def create_source(
 
     except HTTPException:
         # Clean up uploaded file on HTTP exceptions if we created it
-        _cleanup_uploaded_file(file_path, upload_file)
+        await _cleanup_uploaded_file(stored)
         raise
     except InvalidInputError as e:
         # Clean up uploaded file on validation errors if we created it
-        _cleanup_uploaded_file(file_path, upload_file)
+        await _cleanup_uploaded_file(stored)
         raise HTTPException(status_code=400, detail=str(e))
     except OpenNotebookError:
         # Clean up uploaded file before the global handlers map the error
-        _cleanup_uploaded_file(file_path, upload_file)
+        await _cleanup_uploaded_file(stored)
         raise
     except Exception as e:
         logger.error(f"Error creating source: {str(e)}")
         # Clean up uploaded file on unexpected errors if we created it
-        _cleanup_uploaded_file(file_path, upload_file)
+        await _cleanup_uploaded_file(stored)
         raise HTTPException(status_code=500, detail="Error creating source")
 
 
@@ -1074,11 +1061,19 @@ async def create_source_json(source_data: SourceCreate, request: Request):
     return await create_source(request, form_data)
 
 
-async def _resolve_source_file(source_id: str, request: Request) -> tuple[str, str]:
+async def _resolve_source_file(
+    source_id: str, request: Request
+) -> tuple[str | OriginalFileRef, str]:
     source = await Source.get(source_id)
     await assert_can_view_source_or_404(
         source.user_id, source_id, request, "Source not found"
     )
+
+    ref = reference_from_asset(source.asset)
+    if ref is not None and ref.legacy_file_path is None:
+        if not await get_original_file_store(ref.provider).exists(ref):
+            raise HTTPException(status_code=404, detail="Original file not found")
+        return ref, source.asset.original_filename or "original-file"
 
     file_path = source.asset.file_path if source.asset else None
     if not file_path:
@@ -1159,10 +1154,16 @@ async def get_source(source_id: str, request: Request):
             [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []
         )
 
+        ref = reference_from_asset(source.asset)
+        file_available = (
+            await get_original_file_store(ref.provider).exists(ref)
+            if ref is not None and ref.legacy_file_path is None
+            else _is_source_file_available(source)
+        )
         return _source_to_response(
             source,
             embedded_chunks=embedded_chunks,
-            file_available=_is_source_file_available(source),
+            file_available=file_available,
             # Status fields
             command_id=str(source.command) if source.command else None,
             status=status,
@@ -1203,6 +1204,14 @@ async def download_source_file(source_id: str, request: Request):
     """Download the original file associated with an uploaded source."""
     try:
         resolved_path, filename = await _resolve_source_file(source_id, request)
+        if isinstance(resolved_path, OriginalFileRef):
+            return StreamingResponse(
+                get_original_file_store(resolved_path.provider).iter_bytes(resolved_path),
+                media_type="application/octet-stream",
+                headers={
+                    "Content-Disposition": "attachment; filename*=utf-8''" + quote(filename, safe=""),
+                },
+            )
         return FileResponse(
             path=resolved_path,
             filename=filename,
@@ -1239,7 +1248,9 @@ async def get_source_status(source_id: str, request: Request):
         # Get command status and processing info
         try:
             status = await source.get_status()
-            processing_info = await source.get_processing_progress()
+            processing_info = build_public_processing_info(
+                await source.get_processing_progress(), source.asset
+            )
 
             # Generate descriptive message based on status
             if status == "completed":
@@ -1386,7 +1397,18 @@ async def retry_source_processing(source_id: str, request: Request):
         # Prepare content_state based on source asset
         content_state = {}
         if source.asset:
-            if source.asset.file_path:
+            ref = reference_from_asset(source.asset)
+            if ref is not None and ref.legacy_file_path is None:
+                store = get_original_file_store(ref.provider)
+                if not await store.exists(ref):
+                    raise HTTPException(status_code=404, detail="Original file not found")
+                async with materialize_original_file(store, ref, source.asset.original_filename) as path:
+                    await _assert_file_supported(str(path))
+                content_state = {
+                    **source.asset.model_dump(exclude_none=True, exclude={"file_path"}),
+                    "delete_source": False,
+                }
+            elif source.asset.file_path:
                 # Don't re-queue a retry for a file content-core can't extract.
                 await _assert_file_supported(source.asset.file_path)
                 content_state = {

@@ -13,10 +13,16 @@ domain internals directly.
 
 from __future__ import annotations
 
+import asyncio
+import os
+import shutil
+import tempfile
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import AsyncIterator, Optional
 
+from fastapi import UploadFile
 from loguru import logger
 
 from api.models import AssetModel, SourceCreate
@@ -29,6 +35,44 @@ from open_notebook.domain.original_file_policy import (
     OriginalFileStatus,
     resolve_original_file_action,
 )
+from open_notebook.storage.original_files import (
+    OriginalFileRef,
+    OriginalFileStore,
+    reference_from_asset,
+)
+
+
+@asynccontextmanager
+async def stage_upload(upload: UploadFile) -> AsyncIterator[Path]:
+    """Stage bounded upload chunks in a private directory, cleaned on every exit."""
+    filename = Path(upload.filename or "").name
+    if filename in {"", ".", ".."}:
+        raise ValueError("No filename provided")
+    with tempfile.TemporaryDirectory(prefix="open-notebook-upload-") as directory:
+        path = Path(directory) / filename
+        with path.open("wb") as target:
+            while chunk := await upload.read(1024 * 1024):
+                await asyncio.to_thread(target.write, chunk)
+        yield path
+
+
+@asynccontextmanager
+async def materialize_original_file(
+    store: OriginalFileStore, ref: OriginalFileRef, filename: Optional[str]
+) -> AsyncIterator[Path]:
+    """Keep the upload's extension for extractors when a provider uses opaque temp names."""
+    async with store.materialize(ref) as path:
+        suffix = Path(filename or "").suffix
+        if not suffix or path.suffix == suffix:
+            yield path
+            return
+        with tempfile.TemporaryDirectory(prefix="open-notebook-extract-") as directory:
+            named_path = Path(directory) / f"original{suffix}"
+            try:
+                await asyncio.to_thread(os.link, path, named_path)
+            except OSError:
+                await asyncio.to_thread(shutil.copyfile, path, named_path)
+            yield named_path
 
 
 async def resolve_action_for_source_create(
@@ -110,7 +154,7 @@ def _derive_original_file_status(asset: Asset) -> OriginalFileStatus:
     """
     if asset.original_deleted_at is not None:
         return "deleted"
-    if asset.file_path:
+    if reference_from_asset(asset):
         return "retained"
     if asset.original_filename:
         # Snapshot exists but no on-disk path — treat as missing.
@@ -172,6 +216,23 @@ def build_public_asset_model(
         original_deleted_reason=asset.original_deleted_reason,
         original_file_status=_derive_original_file_status(asset),
     )
+
+
+def build_public_processing_info(info: Optional[dict], asset: Optional[Asset | dict]) -> Optional[dict]:
+    """Keep provider-backed command errors and raw result payloads server-side."""
+    if not isinstance(asset, (Asset, dict)):
+        return info
+    provider = asset.get("original_file_store") if isinstance(asset, dict) else asset.original_file_store
+    if not provider or not info:
+        return info
+    public = {
+        key: info[key]
+        for key in ("status", "started_at", "completed_at", "async", "queued", "retry")
+        if key in info
+    }
+    if "error" in info:
+        public["error"] = "Source processing failed" if info["error"] else None
+    return public
 
 
 def _resolve_contained_upload_path(file_path: str) -> Optional[Path]:

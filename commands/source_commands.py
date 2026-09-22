@@ -1,14 +1,20 @@
 import time
+from contextlib import AsyncExitStack
 from typing import Any, Dict, List, Optional
 
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
+from api.source_file_service import materialize_original_file
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
+from open_notebook.storage.original_files import (
+    get_original_file_store,
+    reference_from_asset,
+)
 
 try:
     from open_notebook.graphs.source import source_graph
@@ -134,15 +140,33 @@ async def process_source_command(
         # Execute source_graph with all notebooks.
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
-        result = await source_graph.ainvoke(  # type: ignore[call-overload]
-            {
-                "content_state": input_data.content_state,
-                "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
-                "apply_transformations": transformations,
-                "embed": input_data.embed,
-                "source_id": input_data.source_id,  # Add the source_id to the state
-            }
-        )
+        content_state = dict(input_data.content_state)
+        ref = reference_from_asset(source.asset)
+        async with AsyncExitStack() as stack:
+            if ref is not None and ref.legacy_file_path is None:
+                # Provider details belong on the persisted Asset, never in
+                # the extractor state or its result/error payloads.
+                for field in (
+                    "original_file_store",
+                    "original_file_key",
+                    "original_file_etag",
+                ):
+                    content_state.pop(field, None)
+                path = await stack.enter_async_context(
+                    materialize_original_file(
+                        get_original_file_store(ref.provider), ref, source.asset.original_filename
+                    )
+                )
+                content_state["file_path"] = str(path)
+            result = await source_graph.ainvoke(  # type: ignore[call-overload]
+                {
+                    "content_state": content_state,
+                    "notebook_ids": input_data.notebook_ids,
+                    "apply_transformations": transformations,
+                    "embed": input_data.embed,
+                    "source_id": input_data.source_id,
+                }
+            )
 
         processed_source = result["source"]
 

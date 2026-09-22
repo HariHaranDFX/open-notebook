@@ -7,7 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.notebook import Source
+from open_notebook.domain.notebook import Asset, Source
+from open_notebook.storage.original_files import StoredOriginal
 
 
 @pytest.fixture
@@ -73,7 +74,10 @@ class TestAsyncSourceAssetPersistence:
     ):
         """POST /sources with type=upload and async_processing=true persists Asset(file_path=...)."""
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
+        mock_upload.return_value = StoredOriginal(
+            "filesystem", "video.mp4", 12,
+            file_path=os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4"),
+        )
         mock_submit.return_value = "command:123"
 
         saved_sources = []
@@ -153,8 +157,9 @@ class TestDefaultTitleFromInput:
         self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, client
     ):
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = os.path.join(
-            os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"
+        mock_upload.return_value = StoredOriginal(
+            "filesystem", "quarterly-report.pdf", 4,
+            file_path=os.path.join(os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"),
         )
         mock_submit.return_value = "command:123"
 
@@ -259,7 +264,7 @@ class TestRetrySourceProcessing:
         source.title = "My source"
         source.topics = []
         source.full_text = None
-        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.asset = Asset(url="https://example.com/post")
         source.save = AsyncMock()
         source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
@@ -303,7 +308,7 @@ class TestRetrySourceProcessing:
         source.title = "My source"
         source.topics = []
         source.full_text = None
-        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.asset = Asset(url="https://example.com/post")
         source.save = AsyncMock()
         source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
