@@ -140,6 +140,43 @@ def test_multipart_upload_stages_bounded_chunks_and_queues_opaque_reference(
     assert "original_file_store" not in response.text
 
 
+@pytest.mark.parametrize("operation", ["upload", "retry"])
+def test_preflight_failure_keeps_private_paths_and_errors_out_of_logs(
+    client, saved_sources, remote_source, provider_store, monkeypatch, operation
+):
+    paths = []
+
+    async def fail_preflight(path):
+        paths.append(str(path))
+        raise OSError(f"Private extractor diagnostic for {path}: opaque-private-key")
+
+    monkeypatch.setattr(sources, "check_file_support", fail_preflight)
+    monkeypatch.setattr(sources, "repo_query", AsyncMock(return_value=[]))
+    submit = AsyncMock(return_value="command:preflight-test")
+    monkeypatch.setattr(sources.CommandService, "submit_command_job", submit)
+    logs = []
+    sink = logger.add(logs.append, format="{message}", level="DEBUG")
+    try:
+        if operation == "upload":
+            response = client.post(
+                "/api/sources", data={"type": "upload", "async_processing": "true"},
+                files={"file": ("report.txt", b"original bytes", "text/plain")},
+            )
+        else:
+            response = client.post("/api/sources/source:storage-test/retry")
+    finally:
+        logger.remove(sink)
+
+    assert response.status_code == 200, response.text
+    submit.assert_awaited_once()
+    assert len(paths) == 1
+    diagnostic = "".join(logs)
+    assert "Pre-flight file-support check skipped" in diagnostic
+    assert paths[0] not in diagnostic
+    assert "Private extractor diagnostic" not in diagnostic
+    assert "opaque-private-key" not in diagnostic
+
+
 def test_head_and_download_use_recorded_provider_and_preserve_filename(
     client, remote_source, provider_store, monkeypatch
 ):
