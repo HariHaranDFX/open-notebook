@@ -8,10 +8,12 @@ import shutil
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncContextManager, AsyncIterator, Protocol
+from typing import TYPE_CHECKING, AsyncContextManager, AsyncIterator, Protocol
 
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.notebook import Asset
+
+if TYPE_CHECKING:
+    from open_notebook.domain.notebook import Asset
 
 
 @dataclass(frozen=True)
@@ -132,8 +134,19 @@ class FilesystemOriginalFileStore:
 
 
 def get_original_file_store(provider: str | None = None) -> OriginalFileStore:
-    if provider in {None, "filesystem"}:
+    selected = (
+        provider
+        or os.environ.get("OPEN_NOTEBOOK_ORIGINAL_FILE_STORE")
+        or "filesystem"
+    )
+    if selected == "filesystem":
         return FilesystemOriginalFileStore()
+    if selected == "sharepoint_embedded":
+        from open_notebook.storage.sharepoint_embedded import (
+            SharePointEmbeddedOriginalFileStore,
+        )
+
+        return SharePointEmbeddedOriginalFileStore()
     raise ValueError("Unknown original file store")
 
 
