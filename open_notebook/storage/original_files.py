@@ -90,11 +90,15 @@ class FilesystemOriginalFileStore:
         self.uploads_folder.mkdir(parents=True, exist_ok=True)
         destination = self._reserve_path(filename)
         try:
-            os.replace(staged_path, destination)
-        except OSError:
-            with staged_path.open("rb") as staged, destination.open("wb") as target:
-                shutil.copyfileobj(staged, target)
-            staged_path.unlink()
+            try:
+                os.replace(staged_path, destination)
+            except OSError:
+                with staged_path.open("rb") as staged, destination.open("wb") as target:
+                    shutil.copyfileobj(staged, target)
+                staged_path.unlink()
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
         return StoredOriginal(
             provider=self.provider,
             key=destination.relative_to(self.uploads_folder).as_posix(),
