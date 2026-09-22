@@ -105,13 +105,20 @@ class SharePointEmbeddedOriginalFileStore:
         return {"Authorization": f"Bearer {await self._token(client)}"}
 
     @staticmethod
-    def _raise_for_response(response: httpx.Response) -> None:
+    def _raise_for_graph(response: httpx.Response) -> None:
         if response.status_code in {401, 403}:
             raise AuthenticationError("SharePoint storage authentication failed")
-        if response.is_error:
+        if not 200 <= response.status_code < 300:
             raise ExternalServiceError(
                 f"SharePoint storage request failed ({response.status_code})"
             )
+
+    @staticmethod
+    def _retry_after(response: httpx.Response) -> float:
+        try:
+            return max(float(response.headers.get("Retry-After", "0")), 0)
+        except (TypeError, ValueError):
+            return 0
 
     @staticmethod
     def _object_name(filename: str) -> str:
@@ -135,7 +142,9 @@ class SharePointEmbeddedOriginalFileStore:
         async with httpx.AsyncClient(follow_redirects=False) as client:
             headers = await self._authorized_headers(client)
             headers["Content-Length"] = str(size)
-            for attempt in range(3):
+            throttled = False
+            server_error_retries = 0
+            while True:
                 try:
                     response = await client.put(
                         url,
@@ -145,19 +154,20 @@ class SharePointEmbeddedOriginalFileStore:
                     )
                 except httpx.HTTPError:
                     raise NetworkError("SharePoint storage upload failed") from None
-                if response.status_code != 429 and not 500 <= response.status_code < 600:
+                if response.status_code == 429:
+                    if throttled:
+                        break
+                    throttled = True
+                elif 500 <= response.status_code < 600:
+                    if server_error_retries == 2:
+                        break
+                    server_error_retries += 1
+                else:
                     break
-                if attempt == 2:
-                    break
-                try:
-                    delay = min(
-                        max(float(response.headers.get("Retry-After", "0")), 0), 5
-                    )
-                except ValueError:
-                    delay = 0
+                delay = self._retry_after(response)
                 await response.aclose()
                 await asyncio.sleep(delay)
-        self._raise_for_response(response)
+        self._raise_for_graph(response)
         try:
             payload = response.json()
             key = payload["id"]
@@ -207,12 +217,12 @@ class SharePointEmbeddedOriginalFileStore:
                             response.headers.get("Location", "")
                         )
                     else:
-                        self._raise_for_response(response)
+                        self._raise_for_graph(response)
                         async for chunk in response.aiter_bytes():
                             yield chunk
                         return
                 async with client.stream("GET", location, timeout=None) as download:
-                    self._raise_for_response(download)
+                    self._raise_for_graph(download)
                     async for chunk in download.aiter_bytes():
                         yield chunk
             except httpx.HTTPError:
@@ -243,7 +253,7 @@ class SharePointEmbeddedOriginalFileStore:
                 raise NetworkError("SharePoint storage lookup failed") from None
         if response.status_code == 404:
             return False
-        self._raise_for_response(response)
+        self._raise_for_graph(response)
         return True
 
     async def delete(self, ref: OriginalFileRef) -> bool:
@@ -258,5 +268,5 @@ class SharePointEmbeddedOriginalFileStore:
                 raise NetworkError("SharePoint storage deletion failed") from None
         if response.status_code == 404:
             return True
-        self._raise_for_response(response)
+        self._raise_for_graph(response)
         return True

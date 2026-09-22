@@ -100,6 +100,74 @@ async def test_store_rejects_non_microsoft_download_redirect(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_store_rejects_second_download_redirect(monkeypatch):
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return httpx.Response(
+                200, json={"access_token": "storage-token", "expires_in": 3600}
+            )
+        if request.url.host == "graph.microsoft.com":
+            return httpx.Response(
+                302,
+                headers={
+                    "Location": "https://storage.sharepoint.com/download/first"
+                },
+            )
+        return httpx.Response(
+            302,
+            headers={"Location": "https://storage.sharepoint.com/download/second"},
+        )
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def client_factory(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client_factory)
+    ref = OriginalFileRef("sharepoint_embedded", "managed-item")
+
+    with pytest.raises(ExternalServiceError, match="302"):
+        b"".join(
+            [
+                chunk
+                async for chunk in SharePointEmbeddedOriginalFileStore().iter_bytes(
+                    ref
+                )
+            ]
+        )
+
+
+@pytest.mark.asyncio
+async def test_store_rejects_redirected_existence_and_delete(monkeypatch):
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return httpx.Response(
+                200, json={"access_token": "storage-token", "expires_in": 3600}
+            )
+        return httpx.Response(
+            302, headers={"Location": "https://storage.sharepoint.com/item"}
+        )
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def client_factory(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client_factory)
+    store = SharePointEmbeddedOriginalFileStore()
+    ref = OriginalFileRef(store.provider, "managed-item")
+
+    with pytest.raises(ExternalServiceError, match="302"):
+        await store.exists(ref)
+    with pytest.raises(ExternalServiceError, match="302"):
+        await store.delete(ref)
+
+
+@pytest.mark.asyncio
 async def test_store_checks_existence_and_cleans_materialized_file(monkeypatch):
     async def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "login.microsoftonline.com":
@@ -236,6 +304,10 @@ async def test_store_retries_one_throttled_upload(tmp_path, monkeypatch):
     staged = tmp_path / "staged"
     staged.write_bytes(b"retry me")
     attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float):
+        sleep_calls.append(delay)
 
     async def handler(request: httpx.Request) -> httpx.Response:
         nonlocal attempts
@@ -247,7 +319,7 @@ async def test_store_retries_one_throttled_upload(tmp_path, monkeypatch):
         assert request.method == "PUT"
         assert await request.aread() == b"retry me"
         if attempts == 1:
-            return httpx.Response(429, headers={"Retry-After": "0"})
+            return httpx.Response(429, headers={"Retry-After": "2"})
         return httpx.Response(201, json={"id": "managed-item", "eTag": "etag-1"})
 
     transport = httpx.MockTransport(handler)
@@ -258,11 +330,54 @@ async def test_store_retries_one_throttled_upload(tmp_path, monkeypatch):
         return real_client(*args, **kwargs)
 
     monkeypatch.setattr(httpx, "AsyncClient", client_factory)
+    monkeypatch.setattr(
+        "open_notebook.storage.sharepoint_embedded.asyncio.sleep", fake_sleep
+    )
 
     stored = await SharePointEmbeddedOriginalFileStore().save(staged, "report.txt")
 
     assert stored.key == "managed-item"
     assert attempts == 2
+    assert sleep_calls == [2.0]
+
+
+@pytest.mark.asyncio
+async def test_store_only_retries_throttled_upload_once(tmp_path, monkeypatch):
+    staged = tmp_path / "staged"
+    staged.write_bytes(b"retry me")
+    attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float):
+        sleep_calls.append(delay)
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        if request.url.host == "login.microsoftonline.com":
+            return httpx.Response(
+                200, json={"access_token": "storage-token", "expires_in": 3600}
+            )
+        attempts += 1
+        await request.aread()
+        return httpx.Response(429, headers={"Retry-After": "1"})
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def client_factory(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client_factory)
+    monkeypatch.setattr(
+        "open_notebook.storage.sharepoint_embedded.asyncio.sleep", fake_sleep
+    )
+
+    with pytest.raises(ExternalServiceError, match="429"):
+        await SharePointEmbeddedOriginalFileStore().save(staged, "report.txt")
+
+    assert attempts == 2
+    assert sleep_calls == [1.0]
 
 
 @pytest.mark.asyncio
