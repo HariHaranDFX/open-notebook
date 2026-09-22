@@ -1,5 +1,6 @@
 """Deletion boundaries for Open Notebook-owned originals."""
 
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -11,6 +12,47 @@ from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import ConfigurationError, FileOperationError
 from open_notebook.storage.original_files import OriginalFileRef
+
+
+@pytest.mark.asyncio
+async def test_finalization_uses_asset_rebuilt_by_phase_one_save(monkeypatch):
+    source = Source(
+        id="source:real-save",
+        asset=Asset(
+            original_file_store="sharepoint_embedded",
+            original_file_key="managed-copy",
+            original_file_etag="etag",
+        ),
+    )
+    writes = []
+
+    async def repo_update(_table, _id, data):
+        persisted = deepcopy(data)
+        writes.append(persisted)
+        response = deepcopy(persisted)
+        response.pop("updated", None)
+        return [response]
+
+    monkeypatch.setattr("open_notebook.domain.base.repo_update", repo_update)
+    store = AsyncMock()
+    store.exists.return_value = True
+    store.delete.return_value = True
+    monkeypatch.setattr(
+        source_file_service, "get_original_file_store", lambda _provider: store
+    )
+
+    assert (
+        await source_file_service.delete_original_file(source, reason="source_owner")
+        == "deleted"
+    )
+
+    assert len(writes) == 2
+    assert writes[0]["asset"]["original_file_key"] == "managed-copy"
+    assert writes[0]["asset"]["original_deletion_started_at"] is not None
+    assert writes[1]["asset"]["original_file_key"] is None
+    assert writes[1]["asset"]["original_deleted_at"] is not None
+    assert source.asset.original_file_key is None
+    assert source.asset.original_deleted_at is not None
 
 
 @pytest.fixture

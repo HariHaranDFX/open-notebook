@@ -337,6 +337,13 @@ async def delete_original_file(
         asset.original_deleted_reason = reason
         await source.save()
 
+    asset = source.asset
+    if asset is None or reference_from_asset(asset) != ref:
+        logger.warning(
+            f"Original file reference changed while deleting source {source.id}"
+        )
+        return "error"
+
     # Phase 2: a missing object is safe to finalize after a partial failure.
     try:
         store = get_original_file_store(ref.provider)
