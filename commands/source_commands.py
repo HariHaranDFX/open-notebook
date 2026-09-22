@@ -6,7 +6,10 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
-from api.source_file_service import materialize_original_file
+from api.source_file_service import (
+    materialize_original_file,
+    redact_source_processing_error,
+)
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
@@ -101,6 +104,7 @@ async def process_source_command(
     Process source content using the source_graph workflow
     """
     start_time = time.time()
+    provider_backed = bool(input_data.content_state.get("original_file_store"))
 
     try:
         logger.info(f"Starting source processing for source: {input_data.source_id}")
@@ -123,6 +127,9 @@ async def process_source_command(
         source = await Source.get(input_data.source_id)
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
+        provider_backed = provider_backed or bool(
+            source.asset and source.asset.original_file_store
+        )
 
         # Update source with command reference
         source.command = (
@@ -133,6 +140,25 @@ async def process_source_command(
         await source.save()
 
         logger.info(f"Updated source {source.id} with command reference")
+
+        # A retention intent is written only after the whole graph succeeds.
+        # Resume it before materializing: DELETE may have succeeded while the
+        # final database save (or result collection) failed on the last attempt.
+        asset = source.asset
+        if (
+            source.full_text
+            and asset
+            and asset.original_file_action == "delete_after_processing"
+            and asset.original_deletion_started_at is not None
+            and asset.original_deleted_reason == "retention_policy"
+        ):
+            await _maybe_delete_original_after_success(source)
+            return SourceProcessingOutput(
+                success=True,
+                source_id=str(source.id),
+                insights_created=len(await source.get_insights()),
+                processing_time=time.time() - start_time,
+            )
 
         # 3. Process source with all notebooks
         logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
@@ -217,7 +243,10 @@ async def process_source_command(
         # here (not just ValueError) keeps the log wording honest -- password-
         # protected PDF and missing-ffmpeg errors are permanent, not
         # transient.
-        logger.error(f"Source processing failed (permanent): {e}")
+        error = redact_source_processing_error(e) if provider_backed else e
+        logger.error(f"Source processing failed (permanent): {error}")
+        if provider_backed:
+            raise error from None
         raise
     except Exception as e:
         # Transient failure - will be retried by surreal-commands. Split by
@@ -231,10 +260,13 @@ async def process_source_command(
             "transaction" in str(e).lower() or "conflict" in str(e).lower()
         )
         log = logger.debug if is_transaction_conflict else logger.warning
+        error = redact_source_processing_error(e) if provider_backed else e
         log(
             f"Transient error processing source {input_data.source_id}: "
-            f"{type(e).__name__}: {e}"
+            f"{type(error).__name__}: {error}"
         )
+        if provider_backed:
+            raise error from None
         raise
 
 

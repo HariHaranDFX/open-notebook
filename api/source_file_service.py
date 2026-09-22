@@ -35,6 +35,7 @@ from open_notebook.domain.original_file_policy import (
     OriginalFileStatus,
     resolve_original_file_action,
 )
+from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
 from open_notebook.storage.original_files import (
     OriginalFileRef,
     OriginalFileStore,
@@ -45,6 +46,14 @@ from open_notebook.storage.original_files import (
 _SOURCE_COMMAND_RESULT_FIELDS = frozenset(
     {"success", "source_id", "embedded_chunks", "insights_created", "processing_time"}
 )
+
+
+def redact_source_processing_error(error: Exception) -> Exception:
+    """Remove extractor internals while preserving the command's stop-on classes."""
+    for error_type in (ValueError, ConfigurationError, ContextLengthExceededError):
+        if isinstance(error, error_type):
+            return error_type("Source processing failed")
+    return RuntimeError("Source processing failed")
 
 
 def build_public_command_status(status_data: dict) -> dict:
@@ -249,11 +258,8 @@ def build_public_asset_model(
 
 
 def build_public_processing_info(info: Optional[dict], asset: Optional[Asset | dict]) -> Optional[dict]:
-    """Keep provider-backed command errors and raw result payloads server-side."""
-    if not isinstance(asset, (Asset, dict)):
-        return info
-    provider = asset.get("original_file_store") if isinstance(asset, dict) else asset.original_file_store
-    if not provider or not info:
+    """Keep source command internals private even after deletion clears the asset."""
+    if not info:
         return info
     public = {
         key: info[key]

@@ -498,7 +498,7 @@ async def save_source(state: SourceState) -> dict:
         # persisted provider reference (and any durable filesystem path).
         file_path=(
             existing_asset.file_path
-            if existing_asset and existing_asset.original_file_store
+            if existing_asset is not None
             else content_state.get("file_path")
         ),
         original_file_store=(existing_asset.original_file_store if existing_asset else None),

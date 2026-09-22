@@ -56,6 +56,7 @@ from api.source_file_service import (
     build_public_asset_model,
     build_public_processing_info,
     materialize_original_file,
+    redact_source_processing_error,
     stage_upload,
 )
 from commands.source_commands import SourceProcessingInput
@@ -906,7 +907,12 @@ async def _create_source_sync_path(
         )
 
         if not result.is_success():
-            logger.error(f"Sync processing failed: {result.error_message}")
+            message = (
+                "Source processing failed"
+                if content_state.get("original_file_store")
+                else f"Processing failed: {_truncate_error(result.error_message)}"
+            )
+            logger.error(f"Sync processing failed: {message}")
             # Clean up source record
             try:
                 await source.delete()
@@ -914,11 +920,7 @@ async def _create_source_sync_path(
                 pass
             raise HTTPException(
                 status_code=500,
-                detail=(
-                    "Source processing failed"
-                    if content_state.get("original_file_store")
-                    else f"Processing failed: {_truncate_error(result.error_message)}"
-                ),
+                detail=message,
             )
 
         # Get the processed source
@@ -940,6 +942,14 @@ async def _create_source_sync_path(
         )
 
     except Exception as e:
+        if content_state.get("original_file_store"):
+            error = (
+                HTTPException(status_code=e.status_code, detail="Source processing failed")
+                if isinstance(e, HTTPException)
+                else redact_source_processing_error(e)
+            )
+            logger.error(f"Sync processing failed: {error}")
+            raise error from None
         logger.error(f"Sync processing failed: {e}")
         # The uploaded file (if any) is cleaned up by create_source's handlers
         raise

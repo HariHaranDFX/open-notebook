@@ -342,15 +342,15 @@ class TestGetSourceNotFound:
 
 
 class TestGetSourceStatusMessage:
-    """GET /sources/{id}/status used to hardcode message="Source processing failed"
-    for every failure, throwing away the real error the worker had already saved
-    on the command record. Result: the UI card said "failed" with no reason.
-    The endpoint must forward the worker's error text as the message when the
-    status is `failed`."""
+    """Status messages must not disclose arbitrary persisted worker errors.
+
+    Original-file deletion clears provider metadata, so error redaction applies
+    regardless of the current asset rather than forwarding raw command text.
+    """
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
-    async def test_failed_status_surfaces_worker_error_message(
+    async def test_failed_status_redacts_worker_error_message(
         self, mock_get, client
     ):
         source = MagicMock()
@@ -363,7 +363,7 @@ class TestGetSourceStatusMessage:
                 "status": "failed",
                 "started_at": None,
                 "completed_at": None,
-                "error": "This PDF is password-protected. Remove the password and re-upload.",
+                "error": "Cannot extract C:/private/original.pdf opaque-storage-key",
                 "result": None,
             }
         )
@@ -374,9 +374,10 @@ class TestGetSourceStatusMessage:
         assert response.status_code == 200
         body = response.json()
         assert body["status"] == "failed"
-        assert body["message"] == (
-            "This PDF is password-protected. Remove the password and re-upload."
-        )
+        assert body["message"] == "Source processing failed"
+        assert body["processing_info"]["error"] == "Source processing failed"
+        assert "C:/private/original.pdf" not in response.text
+        assert "opaque-storage-key" not in response.text
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)

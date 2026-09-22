@@ -1,6 +1,7 @@
 """Original-file storage at the ingestion, worker, and download boundaries."""
 
 import asyncio
+import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,11 +10,13 @@ from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
+from loguru import logger
 from starlette.datastructures import UploadFile
 
 from api.routers import sources
 from commands import source_commands
 from open_notebook.domain.notebook import Asset, Source
+from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
 from open_notebook.graphs.source import save_source, trigger_transformations
 from open_notebook.storage.original_files import StoredOriginal
 
@@ -228,7 +231,7 @@ async def test_worker_materializes_only_during_graph_and_preserves_original(
         notebook_ids=[], transformations=[], embed=False,
     )
     if graph_fails:
-        with pytest.raises(RuntimeError, match="extraction failed"):
+        with pytest.raises(RuntimeError, match="Source processing failed"):
             await source_commands.process_source_command(command)
     else:
         result = await source_commands.process_source_command(command)
@@ -324,6 +327,41 @@ def test_sync_upload_runs_worker_without_persisting_temporary_path(
     provider_store.delete.assert_not_awaited()
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error_type", [None, RuntimeError, ValueError, ConfigurationError, ContextLengthExceededError])
+async def test_sync_processing_redacts_command_failures_in_logs_and_exceptions(
+    saved_sources, monkeypatch, error_type
+):
+    from api.models import SourceCreate
+
+    private = "opaque-private-key C:/private/extract/original.txt"
+
+    def execute(*args, **kwargs):
+        if error_type:
+            raise error_type(private)
+        return SimpleNamespace(is_success=lambda: False, error_message=private)
+
+    monkeypatch.setattr(sources, "execute_command_sync", execute)
+    state = {"original_file_store": "sharepoint_embedded", "original_file_key": "opaque-private-key"}
+    logs = []
+    sink = logger.add(logs.append, format="{message}")
+    try:
+        with pytest.raises(Exception) as caught:
+            await sources._create_source_sync_path(
+                SourceCreate(type="upload", notebooks=[]), state, [], None
+            )
+    finally:
+        logger.remove(sink)
+    if error_type:
+        stop_on = (ValueError, ConfigurationError, ContextLengthExceededError)
+        assert isinstance(caught.value, stop_on) == issubclass(error_type, stop_on)
+    else:
+        assert caught.value.status_code == 500
+    diagnostic = "".join(logs) + "".join(traceback.format_exception(caught.value))
+    assert "opaque-private-key" not in diagnostic
+    assert "C:/private/extract/original.txt" not in diagnostic
+
+
 @pytest.mark.parametrize("failure", ["source_save", "notebook_link", "queue", "sync"])
 def test_failed_source_creation_compensates_durable_original_save(
     client, saved_sources, provider_store, monkeypatch, failure
@@ -360,9 +398,18 @@ def test_failed_source_creation_compensates_durable_original_save(
 
 
 @pytest.mark.parametrize("endpoint", ["/sources/source:storage-test", "/sources/source:storage-test/status", "/sources", "/sources/library"])
+@pytest.mark.parametrize("original_deleted", [False, True])
 def test_provider_processing_errors_never_expose_storage_internals(
-    client, remote_source, provider_store, monkeypatch, endpoint
+    client, saved_sources, remote_source, provider_store, monkeypatch, endpoint, original_deleted
 ):
+    if original_deleted:
+        from api import source_file_service
+
+        monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: provider_store)
+        assert asyncio.run(source_file_service.delete_original_file(
+            remote_source, reason="source_owner"
+        )) == "deleted"
+        assert remote_source.asset.original_file_store is None
     error = "Graph raw body secret credential opaque-private-key /tmp/private-file"
     remote_source.command = "command:failed"
     monkeypatch.setattr(Source, "get_status", AsyncMock(return_value="failed"))
@@ -527,3 +574,140 @@ async def test_command_status_reads_trusted_command_metadata(monkeypatch):
     assert status["command_app"] == "open_notebook"
     assert status["command_name"] == "process_source"
     assert metadata.await_args.args[0] == "SELECT app, name FROM $job_id"
+
+
+@pytest.mark.asyncio
+async def test_worker_retry_finalizes_retention_after_remote_delete_and_save_failure(
+    remote_source, monkeypatch, tmp_path
+):
+    from api import source_file_service
+
+    remote_source.asset.original_file_action = "delete_after_processing"
+    persisted = remote_source.model_copy(deep=True)
+    fail_final_save = True
+
+    async def save(source):
+        nonlocal persisted, fail_final_save
+        if source.asset.original_deleted_at and fail_final_save:
+            fail_final_save = False
+            raise RuntimeError("final save failed")
+        persisted = source.model_copy(deep=True)
+
+    monkeypatch.setattr(Source, "save", save)
+    monkeypatch.setattr(Source, "get", AsyncMock(side_effect=lambda _: persisted.model_copy(deep=True)))
+    monkeypatch.setattr(Source, "get_insights", AsyncMock(return_value=[{"id": "insight:one"}]))
+    original = tmp_path / "original.txt"
+    original.write_text("original bytes")
+
+    @asynccontextmanager
+    async def materialize(ref):
+        if not original.exists():
+            raise FileNotFoundError("original already deleted")
+        yield original
+
+    async def delete(ref):
+        original.unlink()
+        return True
+
+    store = SimpleNamespace(
+        materialize=materialize, delete=AsyncMock(side_effect=delete),
+        exists=AsyncMock(side_effect=lambda _: original.exists()),
+    )
+    monkeypatch.setattr(source_commands, "get_original_file_store", lambda _: store)
+    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: store)
+
+    async def run_graph(state):
+        return await save_source({
+            **state, "extraction": SimpleNamespace(content="extracted text", title="Report")
+        })
+
+    graph = AsyncMock(side_effect=run_graph)
+    monkeypatch.setattr(source_commands.source_graph, "ainvoke", graph)
+    command = source_commands.SourceProcessingInput(
+        source_id=remote_source.id, content_state={}, notebook_ids=[],
+        transformations=[], embed=False,
+    )
+    with pytest.raises(RuntimeError, match="Source processing failed"):
+        await source_commands.process_source_command(command)
+    assert not original.exists()
+    assert persisted.asset.original_deletion_started_at is not None
+    assert persisted.asset.original_deleted_at is None
+
+    for _ in range(2):
+        result = await source_commands.process_source_command(command)
+        assert result.success
+        assert result.insights_created == 1
+    assert persisted.asset.original_deleted_at is not None
+    assert persisted.asset.original_file_key is None
+    assert persisted.full_text == "extracted text"
+    graph.assert_awaited_once()
+    store.delete.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_extraction_save_keeps_original_deleted_during_materialization(
+    saved_sources, remote_source, provider_store, monkeypatch
+):
+    from api import source_file_service
+    from open_notebook.storage.original_files import reference_from_asset
+
+    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: provider_store)
+    async with source_file_service.materialize_original_file(
+        provider_store, reference_from_asset(remote_source.asset), "report.txt"
+    ) as path:
+        # Another request deletes the original while extraction is in flight.
+        assert await source_file_service.delete_original_file(
+            remote_source, reason="source_owner"
+        ) == "deleted"
+        await save_source({
+            "source_id": remote_source.id,
+            "content_state": {"file_path": str(path)},
+            "extraction": SimpleNamespace(content="extracted text", title="Report"),
+            "embed": False,
+        })
+    assert remote_source.full_text == "extracted text"
+    assert remote_source.asset.file_path is None
+    assert remote_source.asset.original_file_store is None
+    assert remote_source.asset.original_file_key is None
+    assert remote_source.asset.original_deleted_at is not None
+    assert remote_source.asset.original_deleted_reason == "source_owner"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error_type", [FileNotFoundError, ValueError, ConfigurationError, ContextLengthExceededError])
+async def test_worker_redacts_extractor_errors_without_changing_retry_classification(
+    saved_sources, remote_source, provider_store, monkeypatch, error_type
+):
+    from open_notebook.graphs import source as source_graph_module
+
+    monkeypatch.setattr(source_commands, "get_original_file_store", lambda _: provider_store)
+    monkeypatch.setattr(source_graph_module.ContentSettings, "get_instance", AsyncMock(
+        return_value=source_graph_module.ContentSettings()
+    ))
+    monkeypatch.setattr(source_graph_module.ModelManager, "get_defaults", AsyncMock(
+        return_value=SimpleNamespace(default_speech_to_text_model=None)
+    ))
+    paths = []
+
+    async def extract(**kwargs):
+        paths.append(kwargs["file_path"])
+        raise error_type(f"Cannot extract {kwargs['file_path']} opaque-private-key")
+
+    monkeypatch.setattr(source_graph_module, "extract_content", extract)
+    logs = []
+    sink = logger.add(logs.append, format="{message}")
+    try:
+        with pytest.raises(Exception) as caught:
+            await source_commands.process_source_command(source_commands.SourceProcessingInput(
+                source_id=remote_source.id, content_state={}, notebook_ids=[],
+                transformations=[], embed=False,
+            ))
+    finally:
+        logger.remove(sink)
+    assert len(paths) == 1
+    stop_on = (ValueError, ConfigurationError, ContextLengthExceededError)
+    assert isinstance(caught.value, stop_on) == issubclass(error_type, stop_on)
+    diagnostic = "".join(logs) + "".join(traceback.format_exception(caught.value))
+    assert paths[0] not in diagnostic
+    assert "opaque-private-key" not in diagnostic
+    assert not provider_store.materialized.exists()
