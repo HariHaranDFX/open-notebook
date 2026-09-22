@@ -439,6 +439,8 @@ def test_generic_command_status_hides_source_storage_internals(client, monkeypat
         AsyncMock(
             return_value={
                 "job_id": "command:storage-test",
+                "command_app": "open_notebook",
+                "command_name": "process_source",
                 "status": "failed",
                 "result": {
                     "success": False,
@@ -468,6 +470,8 @@ def test_generic_command_status_keeps_non_sensitive_diagnostics(client, monkeypa
         AsyncMock(
             return_value={
                 "job_id": "command:ordinary-test",
+                "command_app": "open_notebook",
+                "command_name": "generate_podcast",
                 "status": "failed",
                 "result": {"output": "useful diagnostic"},
                 "error_message": "ordinary failure detail",
@@ -480,3 +484,46 @@ def test_generic_command_status_keeps_non_sensitive_diagnostics(client, monkeypa
     assert response.status_code == 200, response.text
     assert response.json()["result"] == {"output": "useful diagnostic"}
     assert response.json()["error_message"] == "ordinary failure detail"
+
+
+def test_generic_source_command_status_hides_error_only_failure(client, monkeypatch):
+    opaque_id = "01JNPZ6B5MZFT4Z4M0QFJ72CFP"
+    monkeypatch.setattr(
+        "api.routers.commands.CommandService.get_command_status",
+        AsyncMock(
+            return_value={
+                "job_id": "command:storage-error-only",
+                "command_app": "open_notebook",
+                "command_name": "process_source",
+                "status": "failed",
+                "result": None,
+                "error_message": f"Failed to read item {opaque_id}",
+            }
+        ),
+    )
+
+    response = client.get("/api/commands/jobs/command:storage-error-only")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["result"] is None
+    assert response.json()["error_message"] == "Source processing failed"
+    assert opaque_id not in response.text
+
+
+@pytest.mark.asyncio
+async def test_command_status_reads_trusted_command_metadata(monkeypatch):
+    from api import command_service
+
+    monkeypatch.setattr(
+        command_service,
+        "get_command_status",
+        AsyncMock(return_value=SimpleNamespace(status="failed", result=None, error_message="opaque")),
+    )
+    metadata = AsyncMock(return_value=[{"app": "open_notebook", "name": "process_source"}])
+    monkeypatch.setattr(command_service, "repo_query", metadata)
+
+    status = await command_service.CommandService.get_command_status("command:storage-test")
+
+    assert status["command_app"] == "open_notebook"
+    assert status["command_name"] == "process_source"
+    assert metadata.await_args.args[0] == "SELECT app, name FROM $job_id"

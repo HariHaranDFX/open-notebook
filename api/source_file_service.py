@@ -46,29 +46,12 @@ _SOURCE_COMMAND_RESULT_FIELDS = frozenset(
 )
 
 
-def _contains_storage_internal(value: object) -> bool:
-    """Detect provider metadata or temporary paths in a command payload."""
-    if isinstance(value, dict):
-        return any(
-            key in {"original_file_store", "original_file_key", "original_file_etag", "file_path"}
-            or _contains_storage_internal(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, list):
-        return any(_contains_storage_internal(item) for item in value)
-    if isinstance(value, str):
-        lowered = value.lower()
-        return (
-            "original_file_" in lowered
-            or "/tmp/" in lowered
-            or "\\temp\\" in lowered
-        )
-    return False
-
-
 def build_public_command_status(status_data: dict) -> dict:
-    """Redact only command status payloads containing source-storage internals."""
-    if not _contains_storage_internal(status_data):
+    """Map every persisted source-processing command status to safe fields."""
+    if (
+        status_data.get("command_app") != "open_notebook"
+        or status_data.get("command_name") != "process_source"
+    ):
         return status_data
 
     result = status_data.get("result")
