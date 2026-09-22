@@ -29,6 +29,7 @@ from api.routers import (
     capabilities,
     chat,
     config,
+    connectors,
     credentials,
     embedding,
     embedding_rebuild,
@@ -463,6 +464,7 @@ async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(connectors.router, prefix="/api", tags=["connectors"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(groups.router, prefix="/api", tags=["groups"])
 app.include_router(grants.router, prefix="/api", tags=["grants"])
