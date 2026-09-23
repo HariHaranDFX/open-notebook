@@ -215,6 +215,59 @@ async def test_docling_catch_all_cannot_make_executable_importable(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_csv_and_tsv_use_content_core_extensions_not_host_mime(monkeypatch):
+    import mimetypes
+
+    import content_core.extraction as extraction
+    from content_core.config import ContentCoreConfig
+
+    from open_notebook.connectors import sharepoint as sharepoint_module
+    from open_notebook.connectors import sharepoint_auth
+
+    host_mimes = {
+        ".csv": "application/vnd.ms-excel",
+        ".tsv": "text/tab-separated-values",
+        ".exe": "application/x-msdos-program",
+    }
+    monkeypatch.setattr(
+        mimetypes,
+        "guess_type",
+        lambda name: (host_mimes[next(ext for ext in host_mimes if name.endswith(ext))], None),
+    )
+    monkeypatch.setattr(extraction, "DOCLING_AVAILABLE", True)
+    monkeypatch.setattr(extraction, "extract_docling", object())
+    monkeypatch.setattr(
+        sharepoint_module,
+        "get_default_config",
+        lambda: ContentCoreConfig(document_engine="docling"),
+    )
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "value": [
+                    {"id": "csv", "name": "data.csv", "file": {}},
+                    {"id": "tsv", "name": "data.tsv", "file": {}},
+                    {"id": "exe", "name": "payload.exe", "file": {}},
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        children = await sharepoint_module.SharePointConnector(
+            "user:alice", client
+        ).list_children("drive")
+
+    assert [item.importable for item in children] == [True, True, False]
+
+
+@pytest.mark.asyncio
 async def test_iter_documents_walks_folders_and_downloads_supported_files(
     monkeypatch,
 ):

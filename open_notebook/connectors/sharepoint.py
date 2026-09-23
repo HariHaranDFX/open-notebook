@@ -1,13 +1,14 @@
 """Read-only Microsoft Graph client using an owner's delegated token."""
 
-import mimetypes
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urljoin, urlsplit
 
 import httpx
 from content_core import ConfigurationError as ContentCoreConfigurationError
 from content_core.config import get_default_config
+from content_core.content.identification import FileDetector
 from content_core.extraction import (
     DOCLING_SUPPORTED,
     SUPPORTED_EPUB_TYPES,
@@ -33,6 +34,7 @@ from open_notebook.exceptions import (
 
 GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
 MAX_LIST_ITEMS = 1000
+EXTENSION_MIME_TYPES = FileDetector().extension_mapping
 SUPPORTED_MIME_TYPES = frozenset(
     (
         *SUPPORTED_PDF_TYPES,
@@ -177,7 +179,7 @@ class SharePointConnector:
 
     @staticmethod
     def _is_importable(name: str) -> bool:
-        mime, _ = mimetypes.guess_type(name)
+        mime = EXTENSION_MIME_TYPES.get(Path(name).suffix.lower())
         if not mime or not (
             mime in SUPPORTED_MIME_TYPES
             or mime.startswith("audio/")
