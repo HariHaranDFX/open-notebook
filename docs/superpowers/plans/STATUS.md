@@ -34,6 +34,24 @@ should contain. When a plan lands or its verdict changes, update the row here.
 
 ---
 
+## 🧪 Implemented on an isolated branch, not shipped to `main`
+
+| Plan | Branch status | Evidence / remaining validation |
+|---|---|---|
+| [2026-09-22-original-file-storage-providers.md](2026-09-22-original-file-storage-providers.md) | `codex/wp5-sharepoint`: implemented, not merged | Default filesystem and optional app-only SharePoint Embedded `OriginalFileStore`; managed-copy lifecycle, retention/deletion, and provider-boundary tests. See [storage setup](../../ORIGINAL_FILE_STORAGE.md). |
+| [2026-09-22-wp5-sharepoint-connector.md](2026-09-22-wp5-sharepoint-connector.md) | `codex/wp5-sharepoint`: Tasks 1–5 implemented, not merged | Separate delegated read-only SharePoint import; one/file/folder batch flow, reusable Sources, multi-notebook links, 16 locales, owner-scoped records, encrypted connector tokens, safe local-only deletion. Automated verification and final live Entra/SharePoint validation are recorded below. |
+
+Branch verification (2026-09-24): backend `1389 passed, 4 skipped`; frontend
+`636 passed` across 106 files; Ruff, MyPy, TypeScript, frontend lint (6
+pre-existing warnings), and the license guard pass.
+Next.js production compilation passed with `--webpack`; Turbopack rejects the
+isolated worktree's external `node_modules` junction, and standalone tracing
+emitted one non-fatal missing-manifest warning. Live Entra consent and
+SharePoint Embedded validation require a configured tenant and are not claimed
+here.
+
+---
+
 ## 🟡 Partial
 
 | Plan | What shipped | What's missing |
@@ -55,9 +73,9 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 ## Not tracked by these plans (from CLAUDE.md master plan)
 
-**WP4–WP8 work packages** — none started:
+**WP4–WP8 work packages** — none shipped to `main` as a complete work package:
 - WP4 Backend architecture map / decomposition
-- WP5 Connectors
+- WP5 Connectors (implemented on isolated `codex/wp5-sharepoint` branch; see above)
 - WP6 Performance & sizing
 - WP7 Deployment
 - WP8 Onboarding
