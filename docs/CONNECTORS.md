@@ -24,35 +24,38 @@ item identity to avoid duplicate Sources for the same owner.
 
 1. Use Entra sign-in (`AUTH_PROVIDER=entra`) and set `ENTRA_TENANT_ID`,
    `ENTRA_CLIENT_ID`, and `ENTRA_CLIENT_SECRET`. The connector reuses this Entra
-   app registration but keeps its OAuth state and refresh token separate from
+   app registration but keeps its OAuth state and encrypted MSAL cache separate from
    the login session. It does **not** use the SharePoint Embedded storage app.
 2. Grant the app Microsoft Graph **delegated** `Sites.Read.All` permission and
    obtain tenant consent where required. The connector requests
    `openid profile offline_access Sites.Read.All` when the user connects; it
    never requests app-only site access or write permission.
 3. Register a second **Web** redirect URI in the Entra app, pointing to the
-   public API origin plus `/api/connectors/sharepoint/callback`. Set
+   public **frontend** origin plus `/api/connectors/sharepoint/callback`. Set
    `SHAREPOINT_CONNECTOR_REDIRECT_URI` to that exact URI. For local development:
 
    ```env
-   SHAREPOINT_CONNECTOR_REDIRECT_URI=http://localhost:5055/api/connectors/sharepoint/callback
+   SHAREPOINT_CONNECTOR_REDIRECT_URI=http://localhost:3000/api/connectors/sharepoint/callback
    ```
 
    Keep the existing `ENTRA_REDIRECT_URI` for sign-in; the two callbacks are
-   different. In a deployed environment use the externally reachable HTTPS API
-   URL, not a container hostname.
-4. Set a stable `OPEN_NOTEBOOK_ENCRYPTION_KEY`. Connector refresh tokens are
-   encrypted at rest. Losing or changing this key requires users to reconnect.
+   different. In a deployed environment use the externally reachable HTTPS
+   frontend URL, not a container hostname. The frontend API proxy forwards the
+   callback to FastAPI so its relative redirect returns to the app.
+4. Set a stable `OPEN_NOTEBOOK_ENCRYPTION_KEY`. Per-user serialized MSAL caches
+   are encrypted at rest. Losing or changing this key requires users to reconnect.
 5. Start the API and the surreal-commands worker. Without the worker, accepted
    import batches remain queued. The API's schema migrations run at startup.
 
 When configuration is missing, Add Source shows the connector as unavailable.
 After consent the callback returns to the application home page; reopen Add
-Source to browse. If consent expires or is revoked, refresh marks the connection
-disconnected and clears its stored token. The user can choose **Connect
-SharePoint** again to re-consent. This version does not expose a separate manual
-disconnect action in the UI; revoke access in Entra when immediate revocation is
-needed.
+Source to browse. Workers use the durable per-user MSAL cache after the login
+session ends. If consent expires or is revoked, silent acquisition marks the
+connection `reauth_required`; the user reconnects. The owner can call
+`POST /api/connectors/sharepoint/disconnect` to clear local credentials
+idempotently. This does not revoke consent on Microsoft's servers; revoke it in
+Entra if server-side revocation is needed. Existing branch-only connections
+created with raw refresh tokens must reconnect.
 
 ### Import status and troubleshooting
 
@@ -69,8 +72,8 @@ library and selected notebooks refresh when the batch reaches a terminal state.
   URI exactly and that the signed-in user still has a session. Check delegated
   `Sites.Read.All` consent; this is separate from application permissions used
   by other features.
-- **Disconnected / connector 409:** reconnect and re-consent. A revoked or expired refresh
-  token cannot be repaired by restarting the worker.
+- **Reauthorization required / connector 409:** reconnect and re-consent. Revoked
+  consent cannot be repaired by restarting the worker.
 - **Browse or download 429/502:** Graph may throttle or be unavailable. Retry
   after the upstream recovers; the connector uses bounded retries for import
   downloads and does not create duplicate Sources on job recovery.
@@ -80,7 +83,7 @@ library and selected notebooks refresh when the batch reaches a terminal state.
   type and within the configured upload-size limit. Other documents in the
   batch continue; the dialog reports per-document safe errors.
 
-Do not place client secrets or refresh tokens in support tickets or logs.
+Do not place client secrets, cache contents, or tokens in support tickets or logs.
 
 ## Adding another connector
 

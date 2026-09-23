@@ -14,11 +14,11 @@ class ConnectorConnection(BaseModel):
     id: str
     user_id: str
     provider: Literal["sharepoint"] = "sharepoint"
-    refresh_token: str | None = Field(default=None, exclude=True, repr=False)
+    token_cache: str | None = Field(default=None, exclude=True, repr=False)
     granted_scopes: list[str] = Field(default_factory=list)
     external_tenant_id: str | None = None
     external_account_id: str | None = None
-    status: Literal["connected", "disconnected"] = "connected"
+    status: Literal["connected", "reauth_required", "disconnected"] = "connected"
     connected_at: datetime | None = None
     disconnected_at: datetime | None = None
 
@@ -26,7 +26,7 @@ class ConnectorConnection(BaseModel):
 class ConnectorOAuthState(BaseModel):
     user_id: str
     state_hash: str = Field(exclude=True, repr=False)
-    code_verifier: str = Field(exclude=True, repr=False)
+    auth_flow: str = Field(exclude=True, repr=False)
     expires_at: datetime
 
 

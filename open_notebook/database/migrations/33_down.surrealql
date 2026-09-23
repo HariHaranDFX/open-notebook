@@ -1,0 +1,2 @@
+REMOVE FIELD IF EXISTS auth_flow ON TABLE connector_oauth_state;
+REMOVE FIELD IF EXISTS token_cache ON TABLE connector_connection;

@@ -1,6 +1,6 @@
 # WP5 SharePoint connector design
 
-**Status:** Approved for implementation by the user on 2026-09-22.
+**Status:** Approved for implementation by the user on 2026-09-22; authorization lifecycle amended by the user-approved 2026-09-24 release design.
 
 ## Goal
 
@@ -22,17 +22,23 @@ Embedded storage identity. The storage provider does not read connector tokens.
 ## Authentication
 
 The existing Entra application is used for incremental delegated consent with
-`openid profile offline_access Sites.Read.All`. Connector OAuth state is
-single-use, expires after ten minutes, and binds the callback to the current
-Open Notebook user. The callback verifies PKCE and state before storing a
-refresh token.
+`openid profile offline_access Sites.Read.All`. The redirect URI is the public
+frontend origin at `/api/connectors/sharepoint/callback`; its frontend proxy
+forwards the callback to the API, and the relative redirect returns to the app.
+Connector OAuth state is single-use, expires after ten minutes, and binds the
+callback to the current Open Notebook user. MSAL verifies PKCE and state before
+its cache is stored.
 
 `connector_connection` stores exactly one SharePoint connection per user. Its
-refresh token is encrypted with the existing encryption utility; connection
-creation fails closed when encryption is not configured. Tokens are never
-serialized or logged. Refresh-token rotation replaces the encrypted value;
-`invalid_grant` marks the connection disconnected and asks the user to connect
-again.
+serialized MSAL cache is encrypted with the existing encryption utility;
+connection creation fails closed when encryption is not configured. Cache and
+tokens are never returned to browsers or logged. Workers acquire tokens silently
+from the owner's durable cache, independent of the login session, and persist
+cache changes with compare-and-swap/reload to avoid losing concurrent refreshes.
+Revoked consent marks the connection `reauth_required`; the user reconnects.
+The owner can Disconnect idempotently, clearing local cache without claiming
+Microsoft server-side revocation. Existing branch-only raw-token connections
+require reconnect after the migration.
 
 ## Browsing and import
 
@@ -61,9 +67,10 @@ error message; they never expose tokens or raw Graph errors.
 
 ## Data model
 
-- `connector_connection`: user, provider, encrypted refresh token, granted
-  scopes, external tenant/account metadata, connection timestamps/status.
-- `connector_oauth_state`: hash/state, user, PKCE verifier, expiry; consumed
+- `connector_connection`: user, provider, encrypted MSAL cache, granted
+  scopes, external tenant/account metadata, `connected`/`reauth_required`/
+  `disconnected` status and timestamps.
+- `connector_oauth_state`: hash/state, user, encrypted MSAL auth flow, expiry; consumed
   atomically.
 - `connector_batch`: user, connection, location, requested options, aggregate
   status/counters.
@@ -94,7 +101,7 @@ processing state after each item has been queued.
    pipeline through the configured original-file store.
 4. Per-document progress and partial failure are durable and owner scoped.
 5. Deleting an imported Source never calls Graph delete on the external item.
-6. Tokens are encrypted per user, excluded from responses/logs, and refresh
-   rotation/revocation are tested.
+6. MSAL caches are encrypted per user and excluded from responses/logs;
+   silent refresh, revocation, concurrent cache updates, and Disconnect are tested.
 7. Connector and storage configurations, clients, records, and docs remain
    separate.

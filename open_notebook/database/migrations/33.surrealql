@@ -1,0 +1,4 @@
+-- MSAL caches are added alongside legacy credentials; old connections reconnect.
+DEFINE FIELD IF NOT EXISTS token_cache ON TABLE connector_connection TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS auth_flow ON TABLE connector_oauth_state TYPE option<string>;
+DEFINE FIELD OVERWRITE code_verifier ON TABLE connector_oauth_state TYPE option<string>;

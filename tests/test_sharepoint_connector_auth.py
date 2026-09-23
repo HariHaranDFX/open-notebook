@@ -1,6 +1,7 @@
 import hashlib
+import json
 from unittest.mock import AsyncMock
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import httpx
 import pytest
@@ -12,6 +13,52 @@ from api.auth.deps import current_user_optional, require_user
 from api.auth.types import AuthenticatedUser
 from open_notebook.exceptions import AuthenticationError, ConfigurationError
 from open_notebook.utils import encryption
+
+
+class FakeMsalClient:
+    silent_result = {"access_token": "access-secret"}
+    change_cache = True
+
+    def __init__(self, *args, token_cache, **kwargs):
+        self.cache = token_cache
+
+    def initiate_auth_code_flow(self, scopes, redirect_uri, state):
+        assert scopes == ["Sites.Read.All"]
+        params = {
+            "state": state,
+            "scope": "openid profile offline_access Sites.Read.All",
+            "redirect_uri": redirect_uri,
+            "code_challenge_method": "S256",
+            "code_challenge": "challenge",
+        }
+        return {
+            "state": state,
+            "code_verifier": "verifier-secret",
+            "auth_uri": "https://login.microsoftonline.com/tenant/oauth2/v2.0/authorize?" + urlencode(params),
+        }
+
+    def acquire_token_by_auth_code_flow(self, flow, response):
+        assert flow["state"] == response["state"]
+        assert flow["code_verifier"] == "verifier-secret"
+        self.cache._cache["Account"] = {"one": {"home_account_id": "owner"}}
+        self.cache._cache["RefreshToken"] = {"one": {"secret": "refresh-secret"}}
+        self.cache.has_state_changed = True
+        return {
+            "access_token": "access-secret",
+            "id_token_claims": {"oid": "external-oid"},
+            "scope": "Sites.Read.All",
+        }
+
+    def get_accounts(self):
+        return list(self.cache._cache.get("Account", {}).values())
+
+    def acquire_token_silent_with_error(self, scopes, account):
+        assert scopes == ["Sites.Read.All"]
+        assert account["home_account_id"] == "owner"
+        if self.change_cache:
+            self.cache._cache["AccessToken"] = {"one": {"secret": "access-secret"}}
+            self.cache.has_state_changed = True
+        return self.silent_result
 
 
 @pytest.fixture
@@ -30,6 +77,9 @@ def setup(monkeypatch):
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE", raising=False)
     monkeypatch.setattr(encryption, "_ENCRYPTION_KEY", None)
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", FakeMsalClient)
+    FakeMsalClient.silent_result = {"access_token": "access-secret"}
+    FakeMsalClient.change_cache = True
     user = AuthenticatedUser(
         "user:alice", "alice@test", "Alice", "user", "oid", "default"
     )
@@ -54,28 +104,13 @@ def setup(monkeypatch):
 @pytest.mark.asyncio
 async def test_external_account_metadata_is_from_validated_id_token(setup, monkeypatch):
     app, auth, repo, user = setup
-    repo.return_value = [{"code_verifier": encryption.encrypt_value("verifier")}]
-    monkeypatch.setattr(
-        httpx.AsyncClient,
-        "post",
-        AsyncMock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "refresh_token": "refresh-secret",
-                    "id_token": "id-secret",
-                },
-            )
-        ),
+    flow = FakeMsalClient(token_cache=None).initiate_auth_code_flow(
+        ["Sites.Read.All"], "https://app.test/api/connectors/sharepoint/callback", "state"
     )
-    validate = AsyncMock(return_value={"oid": "external-oid", "tid": "tenant"})
-    monkeypatch.setattr("api.auth.jwt_validate.validate_id_token", validate)
+    repo.return_value = [{"auth_flow": encryption.encrypt_value(json.dumps(flow))}]
     await auth.complete_connection(user.id, "state", "code")
     assert repo.call_args.args[1]["external_account_id"] == "external-oid"
-    validate.assert_awaited_once_with(
-        "id-secret", tenant_id="tenant", client_id="client"
-    )
-    assert "id-secret" not in repr(repo.call_args_list)
+    assert "external-oid" in repr(repo.call_args_list)
 
 
 @pytest.mark.asyncio
@@ -83,22 +118,18 @@ async def test_refresh_without_rotation_preserves_existing_ciphertext(
     setup, monkeypatch
 ):
     app, auth, repo, user = setup
+    FakeMsalClient.change_cache = False
+    existing = encryption.encrypt_value(json.dumps({"Account": {"one": {"home_account_id": "owner"}}}))
     repo.return_value = [
         {
             "id": "connector_connection:one",
             "user_id": user.id,
-            "refresh_token": encryption.encrypt_value("refresh-secret"),
+            "token_cache": existing,
         }
     ]
-    monkeypatch.setattr(
-        httpx.AsyncClient,
-        "post",
-        AsyncMock(
-            return_value=httpx.Response(200, json={"access_token": "access-secret"})
-        ),
-    )
     assert await auth.acquire_delegated_token(user.id) == "access-secret"
-    assert repo.await_count == 1
+    assert repo.await_count == 2
+    assert repo.call_args.args[1]["user_id"] is not None
 
 
 @pytest.mark.asyncio
@@ -108,20 +139,18 @@ async def test_plaintext_legacy_connector_secret_is_rejected(setup, monkeypatch)
         {
             "id": "connector_connection:one",
             "user_id": user.id,
-            "refresh_token": "plaintext",
+            "token_cache": "plaintext",
         }
     ]
-    post = AsyncMock()
-    monkeypatch.setattr(httpx.AsyncClient, "post", post)
     with pytest.raises(ConfigurationError):
         await auth.acquire_delegated_token(user.id)
-    post.assert_not_awaited()
+    assert repo.await_count == 1
 
 
 @pytest.mark.asyncio
 async def test_callback_consent_error_does_not_echo_upstream_description(setup):
     app, auth, repo, user = setup
-    repo.return_value = [{"code_verifier": encryption.encrypt_value("verifier")}]
+    repo.return_value = [{"auth_flow": encryption.encrypt_value("{}") }]
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app), base_url="https://app.test"
     ) as client:
@@ -164,35 +193,24 @@ async def test_connect_callback_encrypts_secrets_and_uses_dedicated_scopes(
                 == hashlib.sha256(params["state"][0].encode()).hexdigest()
             )
             assert str(stored["user_id"]) == user.id
-            verifier = encryption.decrypt_value(stored["code_verifier"])
-            assert verifier not in repr(repo.call_args_list)
-            repo.return_value = [{"code_verifier": stored["code_verifier"]}]
-            token_post = AsyncMock(
-                return_value=httpx.Response(
-                    200,
-                    json={
-                        "access_token": "access-secret",
-                        "refresh_token": "refresh-secret",
-                        "scope": "openid profile offline_access Sites.Read.All",
-                    },
-                )
-            )
-            monkeypatch.setattr(httpx.AsyncClient, "post", token_post)
+            flow = json.loads(encryption.decrypt_value(stored["auth_flow"]))
+            assert flow["code_verifier"] == "verifier-secret"
+            assert "verifier-secret" not in repr(repo.call_args_list)
+            repo.return_value = [{"auth_flow": stored["auth_flow"]}]
             response = await client.get(
                 "/api/connectors/sharepoint/callback",
                 params={"code": "code", "state": params["state"][0]},
             )
         assert response.status_code == 302
+        assert response.headers["location"] == "/"
         saved = repo.call_args.args[1]
-        assert encryption.decrypt_value(saved["refresh_token"]) == "refresh-secret"
+        cache = json.loads(encryption.decrypt_value(saved["token_cache"]))
+        assert cache["RefreshToken"]["one"]["secret"] == "refresh-secret"
         assert "refresh-secret" not in repr(repo.call_args_list)
         assert "refresh-secret" not in response.text + repr(
             dict(response.headers)
         ) + "".join(logs)
         assert "access-secret" not in repr(repo.call_args_list)
-        payload = token_post.call_args.kwargs["data"]
-        assert payload["code_verifier"] == verifier
-        assert payload["redirect_uri"] == params["redirect_uri"][0]
     finally:
         logger.remove(sink)
 
@@ -211,46 +229,33 @@ async def test_missing_encryption_key_fails_closed(setup, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_refresh_rotates_encrypted_token_without_serializing_it(
+async def test_silent_acquisition_persists_changed_cache_without_serializing_secrets(
     setup, monkeypatch
 ):
     app, auth, repo, user = setup
-    previous = encryption.encrypt_value("previous-refresh-secret")
+    previous = encryption.encrypt_value(json.dumps({"Account": {"one": {"home_account_id": "owner"}}}))
     repo.return_value = [
         {
             "id": "connector_connection:one",
             "user_id": user.id,
-            "refresh_token": previous,
+            "token_cache": previous,
             "status": "connected",
         }
     ]
-    token_post = AsyncMock(
-        return_value=httpx.Response(
-            200,
-            json={
-                "access_token": "new-access-secret",
-                "refresh_token": "rotated-refresh-secret",
-            },
-        )
-    )
-    monkeypatch.setattr(httpx.AsyncClient, "post", token_post)
-    assert await auth.acquire_delegated_token(user.id) == "new-access-secret"
+    assert await auth.acquire_delegated_token(user.id) == "access-secret"
     saved = repo.call_args.args[1]
-    assert encryption.decrypt_value(saved["refresh_token"]) == "rotated-refresh-secret"
-    assert saved["refresh_token"] != previous
+    assert json.loads(encryption.decrypt_value(saved["token_cache"]))["AccessToken"]["one"]["secret"] == "access-secret"
+    assert saved["token_cache"] != previous
     assert str(saved["user_id"]) == user.id
-    assert "rotated-refresh-secret" not in repr(repo.call_args_list)
-    assert (
-        token_post.call_args.kwargs["data"]["refresh_token"]
-        == "previous-refresh-secret"
-    )
+    assert "access-secret" not in repr(repo.call_args_list)
+    assert "token_cache = $previous_cache" in repo.call_args.args[0]
     connection = await auth.get_connection(user.id)
-    assert "refresh_token" not in connection.model_dump()
+    assert "token_cache" not in connection.model_dump()
     assert previous not in repr(connection)
 
 
 @pytest.mark.asyncio
-async def test_revoked_refresh_disconnects_and_returns_safe_actionable_401(
+async def test_revoked_consent_requires_reauth_and_returns_safe_actionable_401(
     setup, monkeypatch
 ):
     app, auth, repo, user = setup
@@ -258,23 +263,11 @@ async def test_revoked_refresh_disconnects_and_returns_safe_actionable_401(
         {
             "id": "connector_connection:one",
             "user_id": user.id,
-            "refresh_token": encryption.encrypt_value("refresh-secret"),
+            "token_cache": encryption.encrypt_value(json.dumps({"Account": {"one": {"home_account_id": "owner"}}})),
             "status": "connected",
         }
     ]
-    monkeypatch.setattr(
-        httpx.AsyncClient,
-        "post",
-        AsyncMock(
-            return_value=httpx.Response(
-                400,
-                json={
-                    "error": "invalid_grant",
-                    "error_description": "sensitive-upstream-body",
-                },
-            )
-        ),
-    )
+    FakeMsalClient.silent_result = {"error": "invalid_grant", "error_description": "sensitive-upstream-body"}
 
     @app.get("/test-delegated-operation")
     async def delegated_operation():
@@ -288,8 +281,8 @@ async def test_revoked_refresh_disconnects_and_returns_safe_actionable_401(
     assert "Connect SharePoint again" in response.text
     assert "sensitive-upstream-body" not in response.text
     query, params = repo.call_args.args
-    assert "status = 'disconnected'" in query
-    assert "refresh_token = NONE" in query
+    assert "status = 'reauth_required'" in query
+    assert "token_cache = NONE" in query
     assert str(params["user_id"]) == user.id
 
 
@@ -327,21 +320,16 @@ async def test_callback_state_is_atomic_expiring_owner_bound_and_single_use(
     state = parse_qs(urlsplit(url).query)["state"][0]
     seconds = (pending["expires_at"] - datetime.now(timezone.utc)).total_seconds()
     assert 590 < seconds <= 600
-    post = AsyncMock(return_value=httpx.Response(200, json={"refresh_token": "secret"}))
-    monkeypatch.setattr(httpx.AsyncClient, "post", post)
     with pytest.raises(AuthenticationError):
         await auth.complete_connection("user:bob", state, "code")
-    post.assert_not_awaited()
     await auth.complete_connection(user.id, state, "code")
     with pytest.raises(AuthenticationError):
         await auth.complete_connection(user.id, state, "code")
-    assert post.await_count == 1
     url = await auth.begin_connection(user.id)
     state = parse_qs(urlsplit(url).query)["state"][0]
     pending["expires_at"] = datetime(2000, 1, 1, tzinfo=timezone.utc)
     with pytest.raises(AuthenticationError):
         await auth.complete_connection(user.id, state, "code")
-    assert post.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -358,3 +346,89 @@ async def test_password_mode_status_unavailable_and_connection_rejected(
     assert status.json() == {"available": False, "connected": False}
     assert connect.status_code == 422
     repo.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_disconnect_is_idempotent_and_owner_scoped(setup):
+    app, auth, repo, user = setup
+    repo.return_value = [{"id": "connector_connection:one"}]
+    await auth.disconnect_connection(user.id)
+    query, params = repo.call_args.args
+    assert "user_id = $user_id" in query
+    assert "token_cache = NONE" in query
+    assert str(params["user_id"]) == user.id
+    assert await auth.disconnect_connection(user.id) is None
+
+
+@pytest.mark.asyncio
+async def test_worker_acquires_from_encrypted_msal_cache_without_login_session(
+    setup, monkeypatch
+):
+    app, auth, repo, user = setup
+    cache_json = '{"Account": {"one": {"home_account_id": "owner"}}}'
+    ciphertext = encryption.encrypt_value(cache_json)
+    repo.return_value = [{
+        "id": "connector_connection:one", "user_id": user.id,
+        "status": "connected", "token_cache": ciphertext,
+    }]
+
+    class MsalClient:
+        def __init__(self, *args, token_cache, **kwargs):
+            self.cache = token_cache
+
+        def get_accounts(self):
+            assert self.cache._cache["Account"]["one"]["home_account_id"] == "owner"
+            return [{"home_account_id": "owner"}]
+
+        def acquire_token_silent_with_error(self, scopes, account):
+            assert scopes == ["Sites.Read.All"]
+            assert account["home_account_id"] == "owner"
+            self.cache._cache["AccessToken"] = {"one": {"secret": "access-secret"}}
+            self.cache.has_state_changed = True
+            return {"access_token": "access-secret"}
+
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", MsalClient)
+    assert await auth.acquire_delegated_token(user.id) == "access-secret"
+    query, params = repo.call_args.args
+    assert "token_cache = $token_cache" in query
+    assert "token_cache = $previous_cache" in query
+    assert encryption.decrypt_value(params["token_cache"]).find("access-secret") > 0
+    assert "access-secret" not in repr(repo.call_args_list)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_refresh_reloads_after_compare_and_swap_loss(setup):
+    app, auth, repo, user = setup
+    account = {"Account": {"one": {"home_account_id": "owner"}}}
+    first = encryption.encrypt_value(json.dumps(account))
+    second = encryption.encrypt_value(json.dumps({**account, "RefreshToken": {"one": {"secret": "rotated"}}}))
+    current = first
+    writes = 0
+
+    async def query(sql, params):
+        nonlocal current, writes
+        if sql.startswith("SELECT * FROM connector_connection"):
+            return [{"id": "connector_connection:one", "user_id": user.id, "status": "connected", "token_cache": current}]
+        if sql.startswith("UPDATE connector_connection"):
+            writes += 1
+            if writes == 1:
+                current = second
+                return []
+            assert params["previous_cache"] == second
+            return [{"id": "connector_connection:one"}]
+        return []
+
+    repo.side_effect = query
+    assert await auth.acquire_delegated_token(user.id) == "access-secret"
+    assert writes == 2
+
+
+@pytest.mark.asyncio
+async def test_legacy_connection_without_msal_cache_requires_reauth(setup):
+    app, auth, repo, user = setup
+    repo.return_value = [{"id": "connector_connection:one", "user_id": user.id,
+                          "status": "connected", "refresh_token": "old-encrypted-token"}]
+    assert (await auth.get_connection(user.id)).status == "reauth_required"
+    assert (await auth.connection_status(user.id))["status"] == "reauth_required"
+    with pytest.raises(AuthenticationError):
+        await auth.acquire_delegated_token(user.id)

@@ -97,6 +97,12 @@ async def connect_sharepoint(user: AuthenticatedUser = Depends(require_user)):
     return {"authorization_url": await sharepoint_auth.begin_connection(user.id)}
 
 
+@router.post("/disconnect")
+async def disconnect_sharepoint(user: AuthenticatedUser = Depends(require_user)):
+    await sharepoint_auth.disconnect_connection(user.id)
+    return {"status": "disconnected"}
+
+
 @router.get("/callback")
 async def sharepoint_callback(
     request: Request, user: AuthenticatedUser = Depends(require_user)
