@@ -51,6 +51,7 @@ async def test_finalization_uses_asset_rebuilt_by_phase_one_save(monkeypatch):
     assert writes[0]["asset"]["original_deletion_started_at"] is not None
     assert writes[1]["asset"]["original_file_key"] is None
     assert writes[1]["asset"]["original_deleted_at"] is not None
+    assert source.asset is not None
     assert source.asset.original_file_key is None
     assert source.asset.original_deleted_at is not None
 

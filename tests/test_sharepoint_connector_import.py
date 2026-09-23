@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 import httpx
@@ -28,7 +29,10 @@ def imports(monkeypatch, tmp_path):
     from open_notebook.domain import base, notebook
     from open_notebook.storage.original_files import FilesystemOriginalFileStore
 
-    records, edges, jobs, requests = {}, [], [], []
+    records: dict[str, dict[str, Any]] = {}
+    edges: list[dict[str, str]] = []
+    jobs: list[dict[str, Any]] = []
+    requests: list[httpx.Request] = []
     user = AuthenticatedUser("user:alice", "alice@test", "Alice", "user", None, "client")
 
     async def save(obj):

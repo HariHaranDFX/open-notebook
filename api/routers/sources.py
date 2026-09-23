@@ -1061,11 +1061,12 @@ async def _resolve_source_file(
         source.user_id, source_id, request, "Source not found"
     )
 
-    ref = reference_from_asset(source.asset)
-    if ref is not None and ref.legacy_file_path is None:
+    asset = source.asset
+    ref = reference_from_asset(asset)
+    if asset is not None and ref is not None and ref.legacy_file_path is None:
         if not await get_original_file_store(ref.provider).exists(ref):
             raise HTTPException(status_code=404, detail="Original file not found")
-        return ref, source.asset.original_filename or "original-file"
+        return ref, asset.original_filename or "original-file"
 
     file_path = source.asset.file_path if source.asset else None
     if not file_path:

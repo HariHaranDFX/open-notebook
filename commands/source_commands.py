@@ -167,9 +167,10 @@ async def process_source_command(
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
         content_state = dict(input_data.content_state)
-        ref = reference_from_asset(source.asset)
+        asset = source.asset
+        ref = reference_from_asset(asset)
         async with AsyncExitStack() as stack:
-            if ref is not None and ref.legacy_file_path is None:
+            if asset is not None and ref is not None and ref.legacy_file_path is None:
                 # Provider details belong on the persisted Asset, never in
                 # the extractor state or its result/error payloads.
                 for field in (
@@ -180,7 +181,7 @@ async def process_source_command(
                     content_state.pop(field, None)
                 path = await stack.enter_async_context(
                     materialize_original_file(
-                        get_original_file_store(ref.provider), ref, source.asset.original_filename
+                        get_original_file_store(ref.provider), ref, asset.original_filename
                     )
                 )
                 content_state["file_path"] = str(path)

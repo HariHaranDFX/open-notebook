@@ -95,7 +95,7 @@ async def cleanup_original_files_command(
             continue
 
         asset = source.asset
-        if reference_from_asset(asset) is None:
+        if asset is None or reference_from_asset(asset) is None:
             skipped += 1
             continue
 

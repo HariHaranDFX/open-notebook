@@ -5,11 +5,14 @@ import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 from urllib.parse import quote
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from starlette.datastructures import UploadFile
 
@@ -17,7 +20,11 @@ from api.routers import sources
 from commands import source_commands
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
-from open_notebook.graphs.source import save_source, trigger_transformations
+from open_notebook.graphs.source import (
+    SourceState,
+    save_source,
+    trigger_transformations,
+)
 from open_notebook.storage.original_files import StoredOriginal
 
 
@@ -132,6 +139,7 @@ def test_multipart_upload_stages_bounded_chunks_and_queues_opaque_reference(
     assert asset.original_file_key == "opaque-private-key"
     assert asset.original_file_etag == "etag"
     assert asset.file_path is None
+    assert submit.await_args is not None
     state = submit.await_args.args[2]["content_state"]
     assert state["original_file_store"] == "sharepoint_embedded"
     assert state["original_file_key"] == "opaque-private-key"
@@ -154,7 +162,7 @@ def test_preflight_failure_keeps_private_paths_and_errors_out_of_logs(
     monkeypatch.setattr(sources, "repo_query", AsyncMock(return_value=[]))
     submit = AsyncMock(return_value="command:preflight-test")
     monkeypatch.setattr(sources.CommandService, "submit_command_job", submit)
-    logs = []
+    logs: list[str] = []
     sink = logger.add(logs.append, format="{message}", level="DEBUG")
     try:
         if operation == "upload":
@@ -242,17 +250,19 @@ async def test_worker_materializes_only_during_graph_and_preserves_original(
         assert Path(state["content_state"]["file_path"]).read_bytes() == b"original bytes"
         assert "original_file_store" not in state["content_state"]
         assert "original_file_key" not in state["content_state"]
+        assert source.asset is not None
         assert source.asset.file_path is None
         if graph_fails:
             raise RuntimeError("extraction failed")
-        graph_result = await save_source({
+        graph_result = await save_source(cast(SourceState, {
             **state,
             "extraction": SimpleNamespace(content="extracted text", title="Report"),
-        })
+        }))
         graph_source = graph_result["source"]
         assert graph_source.asset is None
         send = trigger_transformations(
-            {"source": graph_source, "apply_transformations": [SimpleNamespace()]}, None
+            cast(SourceState, {"source": graph_source, "apply_transformations": [SimpleNamespace()]}),
+            cast(RunnableConfig, None),  # This node does not read its config.
         )[0]
         assert send.arg["source"].asset is None
         return graph_result
@@ -275,6 +285,7 @@ async def test_worker_materializes_only_during_graph_and_preserves_original(
         assert result.success
         assert source.full_text == "extracted text"
     assert not materialized.exists()
+    assert source.asset is not None
     assert source.asset.file_path is None
     assert source.asset.original_file_store == "sharepoint_embedded"
     assert source.asset.original_file_key == "opaque-private-key"
@@ -303,6 +314,7 @@ def test_retry_preflights_materialized_original_and_queues_recorded_reference(
     response = client.post("/api/sources/source:storage-test/retry")
     assert response.status_code == 200, response.text
     preflight_mock.assert_awaited_once()
+    assert submit.await_args is not None
     state = submit.await_args.args[2]["content_state"]
     assert state["original_file_store"] == "sharepoint_embedded"
     assert state["original_file_key"] == "opaque-private-key"
@@ -337,10 +349,10 @@ def test_sync_upload_runs_worker_without_persisting_temporary_path(
         assert saved_sources[0].asset.original_file_key == "opaque-private-key"
         assert Path(state["content_state"]["file_path"]).read_bytes() == b"original bytes"
         assert Path(state["content_state"]["file_path"]).suffix == ".txt"
-        return await save_source({
+        return await save_source(cast(SourceState, {
             **state,
             "extraction": SimpleNamespace(content="extracted text", title="Report"),
-        })
+        }))
 
     def execute(app_name, command_name, payload, **kwargs):
         result = asyncio.run(source_commands.process_source_command(
@@ -380,7 +392,7 @@ async def test_sync_processing_redacts_command_failures_in_logs_and_exceptions(
 
     monkeypatch.setattr(sources, "execute_command_sync", execute)
     state = {"original_file_store": "sharepoint_embedded", "original_file_key": "opaque-private-key"}
-    logs = []
+    logs: list[str] = []
     sink = logger.add(logs.append, format="{message}")
     try:
         with pytest.raises(Exception) as caught:
@@ -393,6 +405,7 @@ async def test_sync_processing_redacts_command_failures_in_logs_and_exceptions(
         stop_on = (ValueError, ConfigurationError, ContextLengthExceededError)
         assert isinstance(caught.value, stop_on) == issubclass(error_type, stop_on)
     else:
+        assert isinstance(caught.value, HTTPException)
         assert caught.value.status_code == 500
     diagnostic = "".join(logs) + "".join(traceback.format_exception(caught.value))
     assert "opaque-private-key" not in diagnostic
@@ -477,9 +490,9 @@ async def test_worker_keeps_legacy_direct_file_path(saved_sources, monkeypatch, 
 
     async def run_graph(state):
         assert state["content_state"]["file_path"] == str(original)
-        return await save_source({
+        return await save_source(cast(SourceState, {
             **state, "extraction": SimpleNamespace(content="legacy text", title="Legacy")
-        })
+        }))
 
     monkeypatch.setattr(source_commands.source_graph, "ainvoke", AsyncMock(side_effect=run_graph))
     result = await source_commands.process_source_command(source_commands.SourceProcessingInput(
@@ -488,6 +501,7 @@ async def test_worker_keeps_legacy_direct_file_path(saved_sources, monkeypatch, 
     ))
     assert result.success
     assert original.read_bytes() == b"legacy bytes"
+    assert source.asset is not None
     assert source.asset.file_path == str(original)
     assert source.asset.original_file_store is None
 
@@ -610,6 +624,7 @@ async def test_command_status_reads_trusted_command_metadata(monkeypatch):
 
     assert status["command_app"] == "open_notebook"
     assert status["command_name"] == "process_source"
+    assert metadata.await_args is not None
     assert metadata.await_args.args[0] == "SELECT app, name FROM $job_id"
 
 
@@ -654,9 +669,9 @@ async def test_worker_retry_finalizes_retention_after_remote_delete_and_save_fai
     monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: store)
 
     async def run_graph(state):
-        return await save_source({
+        return await save_source(cast(SourceState, {
             **state, "extraction": SimpleNamespace(content="extracted text", title="Report")
-        })
+        }))
 
     graph = AsyncMock(side_effect=run_graph)
     monkeypatch.setattr(source_commands.source_graph, "ainvoke", graph)
@@ -689,19 +704,21 @@ async def test_extraction_save_keeps_original_deleted_during_materialization(
     from open_notebook.storage.original_files import reference_from_asset
 
     monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: provider_store)
+    ref = reference_from_asset(remote_source.asset)
+    assert ref is not None
     async with source_file_service.materialize_original_file(
-        provider_store, reference_from_asset(remote_source.asset), "report.txt"
+        provider_store, ref, "report.txt"
     ) as path:
         # Another request deletes the original while extraction is in flight.
         assert await source_file_service.delete_original_file(
             remote_source, reason="source_owner"
         ) == "deleted"
-        await save_source({
+        await save_source(cast(SourceState, {
             "source_id": remote_source.id,
             "content_state": {"file_path": str(path)},
             "extraction": SimpleNamespace(content="extracted text", title="Report"),
             "embed": False,
-        })
+        }))
     assert remote_source.full_text == "extracted text"
     assert remote_source.asset.file_path is None
     assert remote_source.asset.original_file_store is None
@@ -731,7 +748,7 @@ async def test_worker_redacts_extractor_errors_without_changing_retry_classifica
         raise error_type(f"Cannot extract {kwargs['file_path']} opaque-private-key")
 
     monkeypatch.setattr(source_graph_module, "extract_content", extract)
-    logs = []
+    logs: list[str] = []
     sink = logger.add(logs.append, format="{message}")
     try:
         with pytest.raises(Exception) as caught:

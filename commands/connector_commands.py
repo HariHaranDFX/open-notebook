@@ -52,6 +52,8 @@ async def _import_document(connector, document, batch, user):
         source = Source(**existing[0])
         if source.user_id != user.id:
             raise ValueError("Source owner does not match")
+        if source.asset is None:
+            raise ValueError("Imported source has no managed copy")
         queued = await queue_source(source, {**source.asset.model_dump(exclude_none=True), "delete_source": False}, batch.notebook_ids, batch.transformations, batch.embed, recover=True)
         document.command_id = queued.command_id
         document.status, document.error = "queued", None
@@ -102,6 +104,8 @@ async def _import_document(connector, document, batch, user):
 
 
 async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
+    if owner.id is None or batch.id is None:
+        raise NotFoundError("Connector import not found")
     user = AuthenticatedUser(owner.id, owner.email, owner.display_name, owner.role, owner.entra_oid, owner.client_id)
     request = Request({"type": "http", "state": {"user": user}})
     for notebook_id in batch.notebook_ids:
