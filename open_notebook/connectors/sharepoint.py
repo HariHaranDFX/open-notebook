@@ -30,6 +30,7 @@ from open_notebook.exceptions import (
     ExternalServiceError,
     NetworkError,
     RateLimitError,
+    UnsupportedTypeException,
 )
 
 GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
@@ -222,6 +223,23 @@ class SharePointConnector:
             raise ExternalServiceError(
                 "SharePoint returned invalid item data. Try again."
             ) from exc
+
+    async def get_document(self, drive_id: str, item_id: str) -> ConnectorDocument:
+        """Validate a selected ID against trusted Graph metadata, never browser names."""
+        row = await self._get_json(
+            f"{GRAPH_ROOT}/drives/{quote(drive_id, safe='')}/items/{quote(item_id, safe='')}"
+        )
+        try:
+            if "file" not in row or not self._is_importable(row["name"]):
+                raise UnsupportedTypeException("This SharePoint item cannot be imported.")
+            if row["id"] != item_id:
+                raise KeyError("id")
+            return ConnectorDocument(
+                drive_id=drive_id, item_id=item_id, name=row["name"],
+                etag=row.get("eTag"), size=row.get("size"),
+            )
+        except (KeyError, TypeError, ValidationError) as exc:
+            raise ExternalServiceError("SharePoint returned invalid item data. Try again.") from exc
 
     async def iter_documents(
         self, drive_id: str, item_id: str | None = None

@@ -88,3 +88,11 @@ class ConnectorBatchDocument(_OwnedConnectorRecord):
     command_id: str | None = None
     status: Literal["pending", "running", "queued", "failed", "skipped"] = "pending"
     error: str | None = None
+
+    @classmethod
+    async def for_batch(cls, batch_id: str, user_id: str) -> list[Self]:
+        rows = await repo_query(
+            "SELECT * FROM connector_batch_document WHERE batch_id = $batch_id AND user_id = $user_id ORDER BY created;",
+            {"batch_id": ensure_record_id(batch_id), "user_id": ensure_record_id(user_id)},
+        )
+        return [cls(**row) for row in rows]

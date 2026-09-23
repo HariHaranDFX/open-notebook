@@ -59,6 +59,7 @@ from api.source_file_service import (
     redact_source_processing_error,
     stage_upload,
 )
+from api.source_ingestion_service import queue_managed_upload_source, queue_source
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -770,6 +771,7 @@ async def _create_source_async_path(
     content_state: dict[str, Any],
     transformation_ids: List[str],
     user: Optional[AuthenticatedUser],
+    stored: Optional[StoredOriginal] = None,
 ) -> SourceResponse:
     """ASYNC PATH: Create source record first, then queue command."""
     logger.info("Using async processing path")
@@ -790,38 +792,17 @@ async def _create_source_async_path(
         user_id=user.id if user else None,
         client_id=user.client_id if user else None,
     )
-    await source.save()
-
-    # Add source to notebooks immediately so it appears in the UI
-    # The source_graph will skip adding duplicates
-    for notebook_id in source_data.notebooks or []:
-        await source.add_to_notebook(notebook_id)
-
     try:
-        # Import command modules to ensure they're registered
-        import commands.source_commands  # noqa: F401
-
-        # Submit command for background processing
-        command_input = SourceProcessingInput(
-            source_id=str(source.id),
-            content_state=content_state,
-            notebook_ids=source_data.notebooks,
-            transformations=transformation_ids,
-            embed=source_data.embed,
-        )
-
-        command_id = await CommandService.submit_command_job(
-            "open_notebook",  # app name
-            "process_source",  # command name
-            command_input.model_dump(),
-        )
-
-        logger.info(f"Submitted async processing command: {command_id}")
-
-        # Update source with command reference immediately
-        # command_id already includes 'command:' prefix
-        source.command = ensure_record_id(command_id)
-        await source.save()
+        if stored is not None:
+            queued = await queue_managed_upload_source(
+                stored, content_state["original_filename"], user,
+                source_data.notebooks or [], transformation_ids, source_data.embed,
+                content_state["original_file_action"], title=source_data.title,
+                delete_source=source_data.delete_source,
+            )
+        else:
+            queued = await queue_source(source, content_state, source_data.notebooks or [], transformation_ids, source_data.embed)
+        source, command_id = queued.source, queued.command_id
 
         # Return source with command info
         return _source_to_response(
@@ -1039,6 +1020,7 @@ async def create_source(
                 content_state,
                 transformation_ids,
                 user,
+                stored,
             )
         return await _create_source_sync_path(
             source_data, content_state, transformation_ids, user

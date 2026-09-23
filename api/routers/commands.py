@@ -57,7 +57,7 @@ async def execute_command(request: CommandExecutionRequest):
     # Some commands are internal — their authorization is enforced by a
     # dedicated route, not the generic submitter. Reject direct submission
     # so an authenticated user can't bypass the specialized route.
-    _INTERNAL_COMMANDS = {"cleanup_original_files"}
+    _INTERNAL_COMMANDS = {"cleanup_original_files", "import_sharepoint_batch"}
     if request.command in _INTERNAL_COMMANDS:
         raise HTTPException(
             status_code=403,

@@ -14,6 +14,7 @@ from .embedding_commands import (
     embed_source_command,
     rebuild_embeddings_command,
 )
+from .connector_commands import import_sharepoint_batch_command
 from .entra_group_sync import sync_entra_groups_command
 from .podcast_commands import generate_podcast_command
 from .source_commands import process_source_command
@@ -30,4 +31,5 @@ __all__ = [
     "process_source_command",
     "cleanup_original_files_command",
     "sync_entra_groups_command",
+    "import_sharepoint_batch_command",
 ]
