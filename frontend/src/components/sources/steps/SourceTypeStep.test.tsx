@@ -56,7 +56,7 @@ function SourceTypeStepHarness() {
   // Real react-hook-form so field controllers behave normally. The wizard
   // owns the form in production; here the harness just provides one.
   const { control, register, setValue, formState } = useForm<{
-    type: 'link' | 'upload' | 'text'
+    type: 'link' | 'upload' | 'text' | 'sharepoint'
     title?: string
     url?: string
     content?: string
@@ -96,6 +96,14 @@ function getFileAccept(): string {
 
 
 describe('SourceTypeStep upload picker', () => {
+  it('offers SharePoint separately and hides ordinary source fields when selected', () => {
+    setCapabilities({ docling: false, media: false })
+    render(<SourceTypeStepHarness />)
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'sharepoint.title' }), { button: 0, ctrlKey: false })
+    expect(screen.getByRole('tab', { name: 'sharepoint.title' })).toHaveAttribute('aria-selected', 'true')
+    expect(document.getElementById('file')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/common.title/)).not.toBeInTheDocument()
+  })
   describe('accept string is capability-driven', () => {
     it('always advertises base document types', () => {
       setCapabilities({ docling: false, media: false })
