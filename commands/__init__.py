@@ -8,13 +8,13 @@ from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 ensure_internal_no_proxy()
 
+from .connector_commands import import_sharepoint_batch_command
 from .embedding_commands import (
     embed_insight_command,
     embed_note_command,
     embed_source_command,
     rebuild_embeddings_command,
 )
-from .connector_commands import import_sharepoint_batch_command
 from .entra_group_sync import sync_entra_groups_command
 from .podcast_commands import generate_podcast_command
 from .source_commands import process_source_command
