@@ -161,17 +161,23 @@ async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
 
 @command("import_sharepoint_batch", app="open_notebook", retry={"max_attempts": 1})
 async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput) -> ImportSharePointBatchOutput:
-    batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
+    batch: ConnectorBatch | None = None
     for attempt in range(3):
         try:
+            if batch is None:
+                batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
             owner = await User.get(batch.user_id)
             await _import_batch_once(batch, owner)
             break
         except AuthenticationError:
+            if batch is None:
+                raise
             batch.status, batch.error = "failed", "Connect SharePoint again."
             await batch.save()
             break
         except (HTTPException, NotFoundError):
+            if batch is None:
+                raise
             batch.status, batch.error = "failed", "Notebook access is no longer available."
             await batch.save()
             break
@@ -179,7 +185,10 @@ async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput
             if attempt < 2:
                 await asyncio.sleep(2 ** attempt)
                 continue
+            if batch is None:
+                raise
             batch.status = "partial" if batch.completed else "failed"
             batch.error = "Could not complete the SharePoint import. Try again."
             await batch.save()
+    assert batch is not None
     return ImportSharePointBatchOutput(success=batch.status == "completed")

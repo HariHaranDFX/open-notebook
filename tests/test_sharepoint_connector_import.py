@@ -218,6 +218,38 @@ async def test_transient_source_write_retries_without_duplicate_copy(imports, mo
 
 
 @pytest.mark.asyncio
+async def test_transient_initial_batch_lookup_retries(imports, monkeypatch):
+    from commands import connector_commands
+    from open_notebook.connectors.models import ConnectorBatch
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        response = await client.post("/api/connectors/sharepoint/import", json={
+            "drive_id": "drive", "item_ids": ["one"],
+        })
+        assert response.status_code == 202
+        original_lookup = ConnectorBatch.get_for_user
+        attempts = 0
+
+        async def flaky_lookup(batch_id, user_id):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("temporary database failure")
+            return await original_lookup(batch_id, user_id)
+
+        monkeypatch.setattr(ConnectorBatch, "get_for_user", flaky_lookup)
+        monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+        monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+        await connector_commands.import_sharepoint_batch_command(
+            connector_commands.ImportSharePointBatchInput(**imports.jobs[0]["args"])
+        )
+        monkeypatch.setattr(ConnectorBatch, "get_for_user", original_lookup)
+        status = await client.get(f"/api/connectors/sharepoint/batches/{response.json()['batch_id']}")
+    assert attempts == 2
+    assert status.json()["status"] == "completed"
+
+
+@pytest.mark.asyncio
 async def test_revoked_notebook_access_finishes_batch_failed(imports, monkeypatch):
     from commands import connector_commands
 
