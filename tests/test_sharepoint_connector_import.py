@@ -6,11 +6,15 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from api.auth.types import AuthenticatedUser
-from open_notebook.exceptions import NotFoundError, OpenNotebookError
+from open_notebook.exceptions import (
+    ExternalServiceError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 
 @pytest.fixture
@@ -190,6 +194,64 @@ async def test_failed_source_write_removes_unreferenced_managed_copy(imports, mo
     retried = await run_batch(imports, monkeypatch, retry=True)
     assert retried.json()["status"] == "completed"
     assert len(list(imports.store.uploads_folder.iterdir())) == 1
+
+
+@pytest.mark.asyncio
+async def test_transient_source_write_retries_without_duplicate_copy(imports, monkeypatch):
+    from api import source_ingestion_service
+
+    original_upsert = source_ingestion_service.repo_upsert
+    attempts = 0
+
+    async def flaky_upsert(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("temporary database failure")
+        return await original_upsert(*args, **kwargs)
+
+    monkeypatch.setattr(source_ingestion_service, "repo_upsert", flaky_upsert)
+    result = await run_batch(imports, monkeypatch, item_ids=["one"])
+    assert result.json()["status"] == "completed"
+    assert attempts == 2
+    assert len(list(imports.store.uploads_folder.iterdir())) == 1
+
+
+@pytest.mark.asyncio
+async def test_revoked_notebook_access_finishes_batch_failed(imports, monkeypatch):
+    from commands import connector_commands
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        response = await client.post("/api/connectors/sharepoint/import", json={
+            "drive_id": "drive", "item_ids": ["one"], "notebook_ids": ["notebook:one"],
+        })
+        assert response.status_code == 202
+        monkeypatch.setattr(connector_commands, "assert_can_edit_notebook_or_403", AsyncMock(side_effect=HTTPException(403)))
+        await connector_commands.import_sharepoint_batch_command(
+            connector_commands.ImportSharePointBatchInput(**imports.jobs[0]["args"])
+        )
+        status = await client.get(f"/api/connectors/sharepoint/batches/{response.json()['batch_id']}")
+    assert status.json()["status"] == "failed"
+    assert status.json()["error"]
+
+
+@pytest.mark.asyncio
+async def test_folder_enumeration_exhaustion_finishes_batch_failed(imports, monkeypatch):
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    attempts = 0
+
+    async def broken_folder(self, drive_id, folder_id):
+        nonlocal attempts
+        attempts += 1
+        raise ExternalServiceError("temporary Graph failure")
+        yield  # pragma: no cover - preserve async-generator protocol
+
+    monkeypatch.setattr(SharePointConnector, "iter_documents", broken_folder)
+    result = await run_batch(imports, monkeypatch, folder_id="folder")
+    assert attempts == 3
+    assert result.json()["status"] == "failed"
+    assert result.json()["error"]
 
 
 @pytest.mark.asyncio

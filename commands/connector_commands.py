@@ -7,7 +7,7 @@ from pathlib import Path
 
 from content_core import check_file_support
 from content_core.content.identification import FileDetector
-from fastapi import Request
+from fastapi import HTTPException, Request
 from surreal_commands import CommandInput, CommandOutput, command
 
 from api.auth.types import AuthenticatedUser
@@ -24,7 +24,11 @@ from open_notebook.connectors.sharepoint import (
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.user import User
-from open_notebook.exceptions import AuthenticationError, UnsupportedTypeException
+from open_notebook.exceptions import (
+    AuthenticationError,
+    NotFoundError,
+    UnsupportedTypeException,
+)
 from open_notebook.storage.original_files import (
     OriginalFileRef,
     get_original_file_store,
@@ -97,57 +101,85 @@ async def _import_document(connector, document, batch, user):
     await document.save()
 
 
-@command("import_sharepoint_batch", app="open_notebook", retry={"max_attempts": 3, "stop_on": [ValueError]})
-async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput) -> ImportSharePointBatchOutput:
-    batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
-    owner = await User.get(batch.user_id)
+async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
     user = AuthenticatedUser(owner.id, owner.email, owner.display_name, owner.role, owner.entra_oid, owner.client_id)
     request = Request({"type": "http", "state": {"user": user}})
     for notebook_id in batch.notebook_ids:
         notebook = await Notebook.get(notebook_id)
         await assert_can_edit_notebook_or_403(notebook.user_id, notebook_id, request, "Notebook not found")
-    batch.status = "running"
+    batch.status, batch.error = "running", None
     await batch.save()
     connector = SharePointConnector(user.id)
     documents = await ConnectorBatchDocument.for_batch(batch.id, user.id)
     existing = {document.item_id: document for document in documents}
-    try:
-        if batch.folder_id is not None:
-            async for metadata in connector.iter_documents(batch.drive_id, batch.folder_id):
-                if metadata.item_id not in existing:
-                    document = ConnectorBatchDocument(user_id=user.id, batch_id=batch.id, drive_id=batch.drive_id, item_id=metadata.item_id, name=metadata.name)
-                    await document.save()
-                    documents.append(document)
-                    existing[metadata.item_id] = document
-        else:
-            for item in batch.item_ids:
-                if item not in existing:
-                    document = ConnectorBatchDocument(user_id=user.id, batch_id=batch.id, drive_id=batch.drive_id, item_id=item, name="Selected file")
-                    await document.save()
-                    documents.append(document)
-                    existing[item] = document
-        batch.total = len(documents)
-        batch.completed = sum(document.status == "queued" for document in documents)
-        batch.failed = 0
-        await batch.save()
-        for document in documents:
-            if document.status == "queued":
-                continue
-            try:
-                await _import_document(connector, document, batch, user)
-                batch.completed += 1
-            except AuthenticationError:
-                document.status, document.error = "failed", "Connect SharePoint again."
+    if batch.folder_id is not None:
+        async for metadata in connector.iter_documents(batch.drive_id, batch.folder_id):
+            if metadata.item_id not in existing:
+                document = ConnectorBatchDocument(user_id=user.id, batch_id=batch.id, drive_id=batch.drive_id, item_id=metadata.item_id, name=metadata.name)
                 await document.save()
-                batch.failed += 1
-                raise
-            except Exception:
-                document.status, document.error = "failed", "Could not import this file. Try again."
+                documents.append(document)
+                existing[metadata.item_id] = document
+    else:
+        for item in batch.item_ids:
+            if item not in existing:
+                document = ConnectorBatchDocument(user_id=user.id, batch_id=batch.id, drive_id=batch.drive_id, item_id=item, name="Selected file")
                 await document.save()
-                batch.failed += 1
-            await batch.save()
-        batch.status = "partial" if batch.failed and batch.completed else "failed" if batch.failed else "completed"
-    except AuthenticationError:
-        batch.status, batch.error = "failed", "Connect SharePoint again."
+                documents.append(document)
+                existing[item] = document
+    batch.total = len(documents)
+    batch.completed = sum(document.status == "queued" for document in documents)
+    batch.failed = 0
     await batch.save()
+    transient_failure = False
+    for document in documents:
+        if document.status == "queued":
+            continue
+        try:
+            await _import_document(connector, document, batch, user)
+            batch.completed += 1
+        except AuthenticationError:
+            document.status, document.error = "failed", "Connect SharePoint again."
+            await document.save()
+            batch.failed += 1
+            await batch.save()
+            raise
+        except (UnsupportedTypeException, ValueError):
+            document.status, document.error = "failed", "This file cannot be imported."
+            await document.save()
+            batch.failed += 1
+        except Exception:
+            document.status, document.error = "failed", "Could not import this file. Try again."
+            await document.save()
+            batch.failed += 1
+            transient_failure = True
+        await batch.save()
+    if transient_failure:
+        raise RuntimeError("Some SharePoint documents need another import attempt")
+    batch.status = "partial" if batch.failed and batch.completed else "failed" if batch.failed else "completed"
+    await batch.save()
+
+
+@command("import_sharepoint_batch", app="open_notebook", retry={"max_attempts": 1})
+async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput) -> ImportSharePointBatchOutput:
+    batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
+    for attempt in range(3):
+        try:
+            owner = await User.get(batch.user_id)
+            await _import_batch_once(batch, owner)
+            break
+        except AuthenticationError:
+            batch.status, batch.error = "failed", "Connect SharePoint again."
+            await batch.save()
+            break
+        except (HTTPException, NotFoundError):
+            batch.status, batch.error = "failed", "Notebook access is no longer available."
+            await batch.save()
+            break
+        except Exception:
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
+                continue
+            batch.status = "partial" if batch.completed else "failed"
+            batch.error = "Could not complete the SharePoint import. Try again."
+            await batch.save()
     return ImportSharePointBatchOutput(success=batch.status == "completed")
