@@ -8,7 +8,13 @@ from urllib.parse import quote, urljoin, urlsplit
 import httpx
 from content_core import ConfigurationError as ContentCoreConfigurationError
 from content_core.config import get_default_config
-from content_core.extraction import _route_for_mime
+from content_core.extraction import (
+    DOCLING_SUPPORTED,
+    SUPPORTED_EPUB_TYPES,
+    SUPPORTED_OFFICE_TYPES,
+    SUPPORTED_PDF_TYPES,
+    _route_for_mime,
+)
 from pydantic import ValidationError
 
 from open_notebook.connectors import sharepoint_auth
@@ -27,6 +33,16 @@ from open_notebook.exceptions import (
 
 GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
 MAX_LIST_ITEMS = 1000
+SUPPORTED_MIME_TYPES = frozenset(
+    (
+        *SUPPORTED_PDF_TYPES,
+        *SUPPORTED_EPUB_TYPES,
+        *SUPPORTED_OFFICE_TYPES,
+        *DOCLING_SUPPORTED,
+        "text/plain",
+        "text/html",
+    )
+)
 
 
 class SharePointConnector:
@@ -82,8 +98,8 @@ class SharePointConnector:
             raise ExternalServiceError(
                 "SharePoint returned an invalid paging link. Try again."
             )
-        parsed = urlsplit(value)
         try:
+            parsed = urlsplit(value)
             port = parsed.port
         except ValueError as exc:
             raise ExternalServiceError(
@@ -162,8 +178,14 @@ class SharePointConnector:
     @staticmethod
     def _is_importable(name: str) -> bool:
         mime, _ = mimetypes.guess_type(name)
+        if not mime or not (
+            mime in SUPPORTED_MIME_TYPES
+            or mime.startswith("audio/")
+            or mime.startswith("video/")
+        ):
+            return False
         try:
-            return bool(mime and _route_for_mime(mime, get_default_config()))
+            return bool(_route_for_mime(mime, get_default_config()))
         except ContentCoreConfigurationError:
             return False
 
@@ -253,8 +275,13 @@ class SharePointConnector:
             ) as response:
                 if response.is_redirect:
                     location = response.headers.get("location")
-                    redirect = urljoin(url, location) if location else ""
-                    parsed = urlsplit(redirect)
+                    try:
+                        redirect = urljoin(url, location) if location else ""
+                        parsed = urlsplit(redirect)
+                    except ValueError as exc:
+                        raise ExternalServiceError(
+                            "SharePoint returned an unsafe download link. Try again."
+                        ) from exc
                     if (
                         parsed.scheme != "https"
                         or not parsed.hostname

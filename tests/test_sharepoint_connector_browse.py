@@ -173,6 +173,48 @@ async def test_drives_and_children_encode_ids_and_return_support_flags(monkeypat
 
 
 @pytest.mark.asyncio
+async def test_docling_catch_all_cannot_make_executable_importable(monkeypatch):
+    import content_core.extraction as extraction
+    from content_core.config import ContentCoreConfig
+
+    from open_notebook.connectors import sharepoint as sharepoint_module
+    from open_notebook.connectors import sharepoint_auth
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+    monkeypatch.setattr(extraction, "DOCLING_AVAILABLE", True)
+    monkeypatch.setattr(extraction, "extract_docling", object())
+    monkeypatch.setattr(
+        sharepoint_module,
+        "get_default_config",
+        lambda: ContentCoreConfig(document_engine="docling"),
+    )
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "value": [
+                    {
+                        "id": "unsafe",
+                        "name": "payload.exe",
+                        "file": {"mimeType": "application/pdf"},
+                    }
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        children = await sharepoint_module.SharePointConnector(
+            "user:alice", client
+        ).list_children("drive")
+
+    assert children[0].importable is False
+
+
+@pytest.mark.asyncio
 async def test_iter_documents_walks_folders_and_downloads_supported_files(
     monkeypatch,
 ):
@@ -263,6 +305,27 @@ async def test_rejects_unsafe_or_repeated_paging_links(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_malformed_paging_link_maps_to_safe_upstream_error(monkeypatch):
+    from open_notebook.connectors import sharepoint_auth
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"value": [], "@odata.nextLink": "https://[invalid"},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        with pytest.raises(ExternalServiceError):
+            await SharePointConnector("user:alice", client).list_sites("")
+
+
+@pytest.mark.asyncio
 async def test_logical_listing_stops_at_one_thousand_items(monkeypatch):
     from open_notebook.connectors import sharepoint_auth
     from open_notebook.connectors.sharepoint import SharePointConnector
@@ -332,6 +395,31 @@ async def test_download_redirect_requires_https_and_drops_delegated_token(monkey
     async with httpx.AsyncClient(
         transport=httpx.MockTransport(insecure_redirect)
     ) as client:
+        with pytest.raises(ExternalServiceError):
+            _ = b"".join(
+                [
+                    chunk
+                    async for chunk in SharePointConnector(
+                        "user:alice", client
+                    ).download("drive", "item")
+                ]
+            )
+
+
+@pytest.mark.asyncio
+async def test_malformed_download_redirect_maps_to_safe_upstream_error(monkeypatch):
+    from open_notebook.connectors import sharepoint_auth
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"Location": "https://[invalid"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
         with pytest.raises(ExternalServiceError):
             _ = b"".join(
                 [
