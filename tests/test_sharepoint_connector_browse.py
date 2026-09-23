@@ -571,7 +571,7 @@ async def test_disconnected_browse_returns_409_without_calling_graph(monkeypatch
 @pytest.mark.parametrize(
     ("error", "status"),
     [
-        (AuthenticationError("Connect SharePoint again."), 401),
+        (AuthenticationError("Connect SharePoint again."), 409),
         (RateLimitError("SharePoint is busy. Try again later."), 429),
         (ExternalServiceError("SharePoint request failed."), 502),
     ],
@@ -598,3 +598,39 @@ async def test_browse_routes_map_safe_connector_errors(
         response = await client.get("/api/connectors/sharepoint/sites")
     assert response.status_code == status
     assert "secret" not in response.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/connectors/sharepoint/sites",
+        "/api/connectors/sharepoint/sites/site-one/drives",
+        "/api/connectors/sharepoint/drives/drive-one/children",
+    ],
+)
+async def test_browse_connector_auth_failure_never_looks_like_app_logout(
+    monkeypatch, path
+):
+    from api.routers import connectors as routes
+
+    app, user = browse_app()
+
+    async def connection(user_id: str):
+        assert user_id == user.id
+        return type("Connection", (), {"status": "connected"})()
+
+    async def denied(self, *args):
+        raise AuthenticationError("Connect SharePoint again.")
+
+    monkeypatch.setattr(routes.sharepoint_auth, "get_connection", connection)
+    for method in ("list_sites", "list_drives", "list_children"):
+        monkeypatch.setattr(routes.SharePointConnector, method, denied)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app), base_url="https://app.test"
+    ) as client:
+        response = await client.get(path)
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "SharePoint is not connected. Connect SharePoint again."
+    }

@@ -103,7 +103,7 @@ Mark folders as browsable and files as importable only after existing extension/
 
 - [ ] **Step 4: Add route ownership/error tests and implementation**
 
-Disconnected users receive 409; revoked consent receives 401; throttling receives 429; safe upstream errors receive 502. No endpoint accepts a connection/user ID from the browser.
+Disconnected users and revoked connector consent receive 409 (not an app-session 401); throttling receives 429; safe upstream errors receive 502. No endpoint accepts a connection/user ID from the browser.
 
 - [ ] **Step 5: Verify GREEN**
 

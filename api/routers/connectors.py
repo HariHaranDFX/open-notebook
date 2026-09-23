@@ -13,7 +13,7 @@ from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocume
 from open_notebook.connectors.sharepoint import SharePointConnector
 from open_notebook.domain.notebook import Notebook
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import NotFoundError
+from open_notebook.exceptions import AuthenticationError, NotFoundError
 
 router = APIRouter(prefix="/connectors/sharepoint")
 
@@ -116,7 +116,10 @@ async def list_sharepoint_sites(
 ):
     if not await _connected(user.id):
         return _not_connected()
-    return await SharePointConnector(user.id).list_sites(query)
+    try:
+        return await SharePointConnector(user.id).list_sites(query)
+    except AuthenticationError:
+        return _not_connected()
 
 
 @router.get("/sites/{site_id}/drives")
@@ -125,7 +128,10 @@ async def list_sharepoint_drives(
 ):
     if not await _connected(user.id):
         return _not_connected()
-    return await SharePointConnector(user.id).list_drives(site_id)
+    try:
+        return await SharePointConnector(user.id).list_drives(site_id)
+    except AuthenticationError:
+        return _not_connected()
 
 
 @router.get("/drives/{drive_id}/children")
@@ -136,4 +142,7 @@ async def list_sharepoint_children(
 ):
     if not await _connected(user.id):
         return _not_connected()
-    return await SharePointConnector(user.id).list_children(drive_id, item_id)
+    try:
+        return await SharePointConnector(user.id).list_children(drive_id, item_id)
+    except AuthenticationError:
+        return _not_connected()
