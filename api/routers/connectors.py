@@ -10,8 +10,8 @@ from api.command_service import CommandService
 from api.ownership import assert_can_edit_notebook_or_403
 from open_notebook.connectors import sharepoint_auth
 from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
-from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.connectors.sharepoint import SharePointConnector
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import AuthenticationError, NotFoundError
