@@ -23,7 +23,7 @@ def test_remote_version_migration_is_registered_with_unique_owner_identity():
     from open_notebook.database.async_migrate import AsyncMigrationManager
 
     manager = AsyncMigrationManager()
-    assert len(manager.up_migrations) == len(manager.down_migrations) == 34
+    assert len(manager.up_migrations) == len(manager.down_migrations) == 35
     assert "connector_remote_version_identity" in manager.up_migrations[33].sql
     assert "user_id, connection_id, drive_id, item_id, etag UNIQUE" in manager.up_migrations[33].sql
     assert "lease_until ON TABLE connector_remote_version" in manager.up_migrations[33].sql

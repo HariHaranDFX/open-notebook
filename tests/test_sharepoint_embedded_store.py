@@ -415,13 +415,15 @@ async def test_store_bounds_server_error_retries_without_exposing_body(
     assert "sensitive Graph response" not in str(exc_info.value)
 
 
+_REAL_ASYNC_CLIENT = httpx.AsyncClient
+
+
 def _mock_client(monkeypatch, handler):
     transport = httpx.MockTransport(handler)
-    real_client = httpx.AsyncClient
 
     def client_factory(*args, **kwargs):
         kwargs["transport"] = transport
-        return real_client(*args, **kwargs)
+        return _REAL_ASYNC_CLIENT(*args, **kwargs)
 
     monkeypatch.setattr(httpx, "AsyncClient", client_factory)
 
@@ -650,3 +652,175 @@ async def test_delete_404_is_success_and_412_keeps_the_reference(monkeypatch):
     assert requests[-1].headers["if-match"] == "etag-old"
     assert stale.key == "stale"
     assert stale.etag == "etag-old"
+
+
+_TEN_MIB = 10 * 1024 * 1024
+_ELEVEN_MIB = 11 * 1024 * 1024
+
+
+def _sparse(path, size: int) -> None:
+    with path.open("wb") as handle:
+        handle.seek(size - 1)
+        handle.write(b"x")
+
+
+def _token_ok() -> httpx.Response:
+    return httpx.Response(
+        200, json={"access_token": "storage-token", "expires_in": 3600}
+    )
+
+
+@pytest.mark.asyncio
+async def test_ten_mebibyte_upload_stays_a_simple_put(tmp_path, monkeypatch):
+    staged = tmp_path / "staged"
+    _sparse(staged, _TEN_MIB)
+    methods = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        methods.append(request.method + " " + request.url.path)
+        assert "content-range" not in request.headers
+        return httpx.Response(201, json={"id": "managed-item", "eTag": "etag-1"})
+
+    _mock_client(monkeypatch, handler)
+
+    stored = await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+
+    assert stored.key == "managed-item"
+    assert methods[0].endswith(":/content")
+    assert not any("createUploadSession" in method for method in methods)
+
+
+@pytest.mark.asyncio
+async def test_eleven_mebibyte_upload_uses_a_session_without_graph_token(
+    tmp_path, monkeypatch
+):
+    staged = tmp_path / "staged"
+    _sparse(staged, _ELEVEN_MIB)
+    upload_requests = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        if request.url.path.endswith("createUploadSession"):
+            assert request.headers["authorization"] == "Bearer storage-token"
+            return httpx.Response(
+                200,
+                json={"uploadUrl": "https://storage.sharepoint.com/session/1"},
+            )
+        upload_requests.append(request)
+        assert "authorization" not in request.headers
+        if request.headers["content-range"] == "bytes 0-5242879/11534336":
+            return httpx.Response(202, json={"nextExpectedRanges": ["5242880-"]})
+        return httpx.Response(201, json={"id": "managed-item", "eTag": "etag-1"})
+
+    _mock_client(monkeypatch, handler)
+
+    stored = await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+
+    assert stored.key == "managed-item"
+    assert upload_requests[0].headers["content-range"] == "bytes 0-5242879/11534336"
+    assert upload_requests[1].headers["content-range"] == "bytes 5242880-10485759/11534336"
+    assert "authorization" not in upload_requests[0].headers
+    assert "authorization" not in upload_requests[1].headers
+
+
+@pytest.mark.asyncio
+async def test_interrupted_upload_resumes_from_server_range(tmp_path, monkeypatch):
+    staged = tmp_path / "staged"
+    _sparse(staged, _ELEVEN_MIB)
+    puts = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal puts
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        if request.url.path.endswith("createUploadSession"):
+            return httpx.Response(
+                200,
+                json={"uploadUrl": "https://storage.sharepoint.com/session/1"},
+            )
+        if request.method == "GET":
+            assert "authorization" not in request.headers
+            return httpx.Response(200, json={"nextExpectedRanges": ["5242880-"]})
+        puts += 1
+        assert "authorization" not in request.headers
+        if puts == 1:
+            raise httpx.ConnectError("interrupted")
+        assert request.headers["content-range"].startswith("bytes 5242880-")
+        return httpx.Response(201, json={"id": "managed-item", "eTag": "etag-1"})
+
+    _mock_client(monkeypatch, handler)
+
+    stored = await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+
+    assert stored.key == "managed-item"
+    assert puts == 2
+
+
+@pytest.mark.asyncio
+async def test_upload_session_bounds_throttling_and_stops_when_expired(
+    tmp_path, monkeypatch
+):
+    staged = tmp_path / "staged"
+    _sparse(staged, _ELEVEN_MIB)
+    sleeps: list[float] = []
+
+    async def fake_sleep(delay: float):
+        sleeps.append(delay)
+
+    async def throttled(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        if request.url.path.endswith("createUploadSession"):
+            return httpx.Response(
+                200,
+                json={"uploadUrl": "https://storage.sharepoint.com/session/1"},
+            )
+        return httpx.Response(429, headers={"Retry-After": "3"})
+
+    _mock_client(monkeypatch, throttled)
+    monkeypatch.setattr(
+        "open_notebook.storage.sharepoint_embedded.asyncio.sleep", fake_sleep
+    )
+
+    with pytest.raises(ExternalServiceError, match="429"):
+        await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+    assert sleeps == [3.0]
+
+    async def expired(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        if request.url.path.endswith("createUploadSession"):
+            return httpx.Response(
+                200,
+                json={"uploadUrl": "https://storage.sharepoint.com/session/1"},
+            )
+        return httpx.Response(404)
+
+    _mock_client(monkeypatch, expired)
+    with pytest.raises(ExternalServiceError, match="expired"):
+        await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+
+
+@pytest.mark.asyncio
+async def test_upload_session_rejects_an_unsafe_url(tmp_path, monkeypatch):
+    staged = tmp_path / "staged"
+    _sparse(staged, _ELEVEN_MIB)
+    puts = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return _token_ok()
+        if request.method == "PUT":
+            puts.append(request.url.host)
+        return httpx.Response(
+            200, json={"uploadUrl": "https://attacker.example/session"}
+        )
+
+    _mock_client(monkeypatch, handler)
+
+    with pytest.raises(ExternalServiceError, match="unsafe"):
+        await SharePointEmbeddedOriginalFileStore().save(staged, "report.bin")
+    assert puts == []

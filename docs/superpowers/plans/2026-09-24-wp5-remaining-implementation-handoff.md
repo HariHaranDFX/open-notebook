@@ -74,7 +74,7 @@ uv run python scripts/check_licenses.py
 
 **Recovery decision:** Add one `original_upload_operation` record before storage starts, with a stable operation ID/object name, owner, provider/profile/container, target Source ID, status, timestamps, and stored key/eTag when known. The deterministic object name must let reconciliation locate an object even if the process dies after the remote commit but before its item ID is saved. Reconcile after a grace period: if a Source references the object, retain it; if the Source exists but `process_source` is not queued, queue once; if no Source references the object, delete only that managed copy through its recorded provider. Connector imports already have their own claim/transaction; preserve that path and integrate recovery without weakening its fencing. An interrupted upload session may be resumed from its server-reported range while it remains valid.
 
-- [ ] **Step 1: Write RED storage tests** for a 10 MiB boundary, an 11 MiB session, aligned `Content-Range`, a 202 `nextExpectedRanges` response, interrupted resume, throttling/exhaustion, expired session, unsafe upload URL, and absence of `Authorization` on the session URL.
+- [x] **Step 1: Write RED storage tests** for a 10 MiB boundary, an 11 MiB session, aligned `Content-Range`, a 202 `nextExpectedRanges` response, interrupted resume, throttling/exhaustion, expired session, unsafe upload URL, and absence of `Authorization` on the session URL.
 
 ```python
 assert upload_request.headers["content-range"] == "bytes 0-5242879/11534336"
@@ -82,9 +82,9 @@ assert "authorization" not in upload_request.headers
 assert resumed_start == server_next_expected_start
 ```
 
-- [ ] **Step 2: Implement the smallest session uploader in `sharepoint_embedded.py`; run those tests GREEN.** Stream staged file chunks, do not read the entire upload into memory. Close responses and temporary files on every exit path.
-- [ ] **Step 3: Write RED recovery tests** for database failure after remote save, queue failure after Source save, crash/restart before item ID is recorded, two runs of reconciliation, and another Source referencing the same object. Implement the operation record and one idempotent reconciliation command; add migration 35/up+down for `original_upload_operation` and register it in `AsyncMigrationManager`.
-- [ ] **Step 4: Run focused integration/static checks, review, commit.**
+- [x] **Step 2: Implement the smallest session uploader in `sharepoint_embedded.py`; run those tests GREEN.** Stream staged file chunks, do not read the entire upload into memory. Close responses and temporary files on every exit path.
+- [x] **Step 3: Write RED recovery tests** for database failure after remote save, queue failure after Source save, crash/restart before item ID is recorded, two runs of reconciliation, and another Source referencing the same object. Implement the operation record and one idempotent reconciliation command; add migration 35/up+down for `original_upload_operation` and register it in `AsyncMigrationManager`.
+- [x] **Step 4: Run focused integration/static checks, review, commit.**
 
 ```text
 uv run pytest -q tests/test_sharepoint_embedded_store.py tests/test_source_storage_integration.py tests/test_source_storage_deletion.py tests/test_sharepoint_connector_import.py

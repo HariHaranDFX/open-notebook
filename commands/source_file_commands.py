@@ -53,6 +53,48 @@ class CleanupOriginalFilesOutput(CommandOutput):
     processing_time: float
 
 
+class ReconcileOriginalUploadsInput(CommandInput):
+    grace_seconds: int = 900
+
+
+class ReconcileOriginalUploadsOutput(CommandOutput):
+    success: bool
+    deleted: int
+    queued: int
+    retained: int
+    abandoned: int
+    processing_time: float
+
+
+@command(
+    "reconcile_original_uploads",
+    app="open_notebook",
+    retry={
+        "max_attempts": 1,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 15,
+        "stop_on": [ValueError],
+        "retry_log_level": "debug",
+    },
+)
+async def reconcile_original_uploads_command(
+    input_data: ReconcileOriginalUploadsInput,
+) -> ReconcileOriginalUploadsOutput:
+    from open_notebook.storage.upload_operations import reconcile_due_uploads
+
+    start = time.time()
+    counts = await reconcile_due_uploads(input_data.grace_seconds)
+    return ReconcileOriginalUploadsOutput(
+        success=True,
+        deleted=counts["deleted"],
+        queued=counts["queued"],
+        retained=counts["retained"],
+        abandoned=counts["abandoned"],
+        processing_time=time.time() - start,
+    )
+
+
 @command(
     "cleanup_original_files",
     app="open_notebook",

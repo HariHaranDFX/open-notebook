@@ -221,7 +221,11 @@ async def save_uploaded_file(upload_file: UploadFile) -> StoredOriginal:
     """Preflight a staged upload, then save it to the configured provider."""
     async with stage_upload(upload_file) as path:
         await _assert_file_supported(str(path))
-        return await get_original_file_store().save(path, path.name)
+        from open_notebook.storage.upload_operations import save_tracked_original
+
+        return await save_tracked_original(
+            get_original_file_store(), path, path.name
+        )
 
 
 def parse_source_form_data(

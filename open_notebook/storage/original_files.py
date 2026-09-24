@@ -41,7 +41,9 @@ class OriginalFileRef:
 
 
 class OriginalFileStore(Protocol):
-    async def save(self, staged_path: Path, filename: str) -> StoredOriginal: ...
+    async def save(
+        self, staged_path: Path, filename: str, object_name: str | None = None
+    ) -> StoredOriginal: ...
 
     def materialize(self, ref: OriginalFileRef) -> AsyncContextManager[Path]: ...
 
@@ -115,7 +117,13 @@ class FilesystemOriginalFileStore:
             file_path=str(destination),
         )
 
-    async def save(self, staged_path: Path, filename: str) -> StoredOriginal:
+    async def save(
+        self,
+        staged_path: Path,
+        filename: str,
+        object_name: str | None = None,
+    ) -> StoredOriginal:
+        del object_name
         return await asyncio.to_thread(self._save, staged_path, filename)
 
     @asynccontextmanager

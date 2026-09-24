@@ -61,8 +61,16 @@ not create containers or container types. Store the certificate and any client
 secret in your deployment secret manager rather than source control.
 
 The source API defaults to a 100 MiB request limit
-(`OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB=100`). Uploads are streamed from a temporary
-disk file. Do not raise the Open Notebook limit above 250 MiB.
+(`OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB=100`). Files through 10 MiB use one streamed
+PUT. Larger allowed uploads use a Graph upload session in 5 MiB chunks. The
+session URL is preauthorized, so the Graph token is not sent to it. Do not
+raise the Open Notebook limit above 250 MiB.
+
+SharePoint Embedded writes an `original_upload_operation` record before the
+upload. The worker command `reconcile_original_uploads` retries that record
+after 15 minutes: a Source that already references the object is kept, a saved
+Source with no processing command is queued once, and an unreferenced managed
+copy is deleted. It never deletes an external connector document.
 
 Each new Asset stores its provider, opaque object ID, profile id, and
 container id. Changing the active profile affects new uploads only. Provider

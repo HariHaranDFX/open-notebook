@@ -177,8 +177,18 @@ async def _import_document_content(connector, document, batch, user, metadata, v
             raise UnsupportedTypeException("Unsupported file type.")
         action = await resolve_action_for_source_create(SourceCreate(type="upload"))
         await _assert_claim_owned(version_id, claim_id)
+        from open_notebook.storage.upload_operations import save_tracked_original
+
         store = get_original_file_store()
-        save_task = asyncio.create_task(store.save(path, metadata.name))
+        save_task = asyncio.create_task(
+            save_tracked_original(
+                store,
+                path,
+                metadata.name,
+                user_id=str(user.id) if user and user.id else None,
+                source_id=document.source_id,
+            )
+        )
         try:
             stored = await asyncio.shield(save_task)
         except BaseException:

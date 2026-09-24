@@ -67,8 +67,8 @@
 
 **Interfaces:** Simple PUT is limited to small uploads; larger allowed uploads use Graph upload sessions and sequential bounded chunks. Failed store/database/queue operations have one durable recovery path; temporary files always clean up.
 
-- [ ] Write failing tests for interrupted upload-session resume, `nextExpectedRanges`, preauthorized URL without Graph token, retry limits, database failure after store, queue failure, and orphan reconciliation.
-- [ ] Implement the smallest session uploader and recovery record/worker path satisfying those tests. Run focused tests to GREEN, then full backend suite.
+- [x] Write failing tests for interrupted upload-session resume, `nextExpectedRanges`, preauthorized URL without Graph token, retry limits, database failure after store, queue failure, and orphan reconciliation.
+- [x] Implement the smallest session uploader and recovery record/worker path satisfying those tests. Run focused tests to GREEN, then full backend suite.
 
 ### Task 5: Existing-theme connector UI
 

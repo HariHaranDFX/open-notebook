@@ -39,6 +39,8 @@ _DOWNLOAD_HOST_SUFFIXES = (
     ".sharepoint-df.com",
 )
 _CHUNK_SIZE = 1024 * 1024
+_SIMPLE_UPLOAD_MAX = 10 * 1024 * 1024
+_UPLOAD_CHUNK_BYTES = 5 * 1024 * 1024
 _NOT_CONFIGURED = "SharePoint Embedded storage is not fully configured"
 _PROFILE_UNAVAILABLE = "SharePoint storage profile is not configured"
 
@@ -125,6 +127,7 @@ class SharePointEmbeddedOriginalFileStore:
     def __init__(self, profile_id: str | None = None) -> None:
         profile = load_storage_profile(profile_id)
         self.profile_id = profile.profile_id
+        self.container_id = profile.container_id
         self._tenant_id = profile.tenant_id
         self._client_id = profile.client_id
         self._client_secret = profile.client_secret or ""
@@ -271,9 +274,188 @@ class SharePointEmbeddedOriginalFileStore:
             while chunk := await asyncio.to_thread(file.read, _CHUNK_SIZE):
                 yield chunk
 
-    async def save(self, staged_path: Path, filename: str) -> StoredOriginal:
+    def _stored_from_payload(self, payload: object, size: int) -> StoredOriginal:
+        try:
+            if not isinstance(payload, dict):
+                raise TypeError
+            key = payload["id"]
+            etag = payload.get("eTag")
+        except (KeyError, TypeError):
+            raise ExternalServiceError(
+                "SharePoint storage returned invalid metadata"
+            ) from None
+        if not isinstance(key, str) or not key:
+            raise ExternalServiceError("SharePoint storage returned invalid metadata")
+        return StoredOriginal(
+            provider=self.provider,
+            key=key,
+            size_bytes=size,
+            etag=etag if isinstance(etag, str) else None,
+            profile_id=self.profile_id,
+            container_id=self._container_id,
+        )
+
+    @staticmethod
+    def _range_start(payload: object) -> int:
+        try:
+            if not isinstance(payload, dict):
+                raise TypeError
+            ranges = payload.get("nextExpectedRanges") or []
+            return int(str(ranges[0]).split("-", 1)[0])
+        except (IndexError, TypeError, ValueError):
+            raise ExternalServiceError("SharePoint storage upload failed") from None
+
+    async def _read_range(self, path: Path, start: int, length: int) -> bytes:
+        def read() -> bytes:
+            with path.open("rb") as handle:
+                handle.seek(start)
+                return handle.read(length)
+
+        return await asyncio.to_thread(read)
+
+    async def _put_chunk(
+        self,
+        client: httpx.AsyncClient,
+        upload_url: str,
+        start: int,
+        end: int,
+        total: int,
+        body: bytes,
+    ) -> httpx.Response | None:
+        headers = {
+            "Content-Length": str(end - start + 1),
+            "Content-Range": f"bytes {start}-{end}/{total}",
+        }
+        throttled = False
+        server_error_retries = 0
+        while True:
+            try:
+                response = await client.put(
+                    upload_url, headers=headers, content=body, timeout=None
+                )
+            except httpx.HTTPError:
+                return None
+            if response.status_code == 429:
+                if throttled:
+                    self._raise_for_graph(response)
+                throttled = True
+            elif 500 <= response.status_code < 600:
+                if server_error_retries == 2:
+                    self._raise_for_graph(response)
+                server_error_retries += 1
+            else:
+                return response
+            delay = self._retry_after(response)
+            await response.aclose()
+            await asyncio.sleep(delay)
+
+    async def _session_offset(self, client: httpx.AsyncClient, upload_url: str) -> int:
+        try:
+            response = await client.get(upload_url, timeout=30)
+        except httpx.HTTPError:
+            raise NetworkError("SharePoint storage upload failed") from None
+        if response.status_code == 404:
+            raise ExternalServiceError("SharePoint storage upload session expired")
+        self._raise_for_graph(response)
+        return self._range_start(response.json())
+
+    async def _save_session(
+        self, staged_path: Path, object_name: str, size: int
+    ) -> StoredOriginal:
+        session_url = self._graph_url(
+            f"root:/{quote(object_name, safe='')}:/createUploadSession"
+        )
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            headers = await self._authorized_headers(client)
+            try:
+                created = await client.post(
+                    session_url,
+                    headers=headers,
+                    json={
+                        "item": {
+                            "@microsoft.graph.conflictBehavior": "fail",
+                            "name": object_name,
+                        }
+                    },
+                    timeout=30,
+                )
+            except httpx.HTTPError:
+                raise NetworkError("SharePoint storage upload failed") from None
+            self._raise_for_graph(created)
+            try:
+                upload_url = created.json()["uploadUrl"]
+            except (KeyError, TypeError, ValueError):
+                raise ExternalServiceError(
+                    "SharePoint storage returned invalid metadata"
+                ) from None
+            upload_url = self._validate_download_url(upload_url)
+            offset = 0
+            while offset < size:
+                length = min(_UPLOAD_CHUNK_BYTES, size - offset)
+                end = offset + length - 1
+                body = await self._read_range(staged_path, offset, length)
+                response = await self._put_chunk(
+                    client, upload_url, offset, end, size, body
+                )
+                if response is None:
+                    nxt = await self._session_offset(client, upload_url)
+                elif response.status_code in {200, 201}:
+                    return self._stored_from_payload(response.json(), size)
+                elif response.status_code == 202:
+                    nxt = self._range_start(response.json())
+                elif response.status_code == 404:
+                    raise ExternalServiceError(
+                        "SharePoint storage upload session expired"
+                    )
+                else:
+                    self._raise_for_graph(response)
+                    raise ExternalServiceError("SharePoint storage upload failed")
+                if nxt <= offset:
+                    raise ExternalServiceError("SharePoint storage upload failed")
+                offset = nxt
+        raise ExternalServiceError("SharePoint storage upload failed")
+
+    def allocate_object_name(self, filename: str) -> str:
+        return self._object_name(filename)
+
+    async def find_by_object_name(self, object_name: str) -> tuple[str, str | None] | None:
+        url = self._graph_url(f"root:/{quote(object_name, safe='')}")
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            headers = await self._authorized_headers(client)
+            try:
+                response = await client.get(url, headers=headers, timeout=15)
+            except httpx.HTTPError:
+                raise NetworkError("SharePoint storage lookup failed") from None
+        if response.status_code == 404:
+            return None
+        self._raise_for_graph(response)
+        try:
+            payload = response.json()
+            key = payload["id"]
+        except (KeyError, TypeError, ValueError):
+            raise ExternalServiceError(
+                "SharePoint storage returned invalid metadata"
+            ) from None
+        if not isinstance(key, str) or not key:
+            raise ExternalServiceError("SharePoint storage returned invalid metadata")
+        etag = payload.get("eTag")
+        return key, etag if isinstance(etag, str) else None
+
+    async def save(
+        self,
+        staged_path: Path,
+        filename: str,
+        object_name: str | None = None,
+    ) -> StoredOriginal:
         size = (await asyncio.to_thread(staged_path.stat)).st_size
-        object_name = self._object_name(filename)
+        object_name = object_name or self._object_name(filename)
+        if size > _SIMPLE_UPLOAD_MAX:
+            return await self._save_session(staged_path, object_name, size)
+        return await self._save_simple(staged_path, object_name, size)
+
+    async def _save_simple(
+        self, staged_path: Path, object_name: str, size: int
+    ) -> StoredOriginal:
         url = self._graph_url(
             f"root:/{quote(object_name, safe='')}:/content"
         )

@@ -1,0 +1,14 @@
+DEFINE TABLE IF NOT EXISTS original_upload_operation SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS operation_id ON TABLE original_upload_operation TYPE string;
+DEFINE FIELD IF NOT EXISTS object_name ON TABLE original_upload_operation TYPE string;
+DEFINE FIELD IF NOT EXISTS user_id ON TABLE original_upload_operation TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS provider ON TABLE original_upload_operation TYPE string;
+DEFINE FIELD IF NOT EXISTS profile_id ON TABLE original_upload_operation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS container_id ON TABLE original_upload_operation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS source_id ON TABLE original_upload_operation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE original_upload_operation TYPE string DEFAULT 'uploading';
+DEFINE FIELD IF NOT EXISTS item_key ON TABLE original_upload_operation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS etag ON TABLE original_upload_operation TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE original_upload_operation DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE original_upload_operation DEFAULT time::now() VALUE time::now();
+DEFINE INDEX IF NOT EXISTS original_upload_operation_id ON TABLE original_upload_operation FIELDS operation_id UNIQUE;
