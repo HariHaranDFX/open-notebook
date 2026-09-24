@@ -24,14 +24,17 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    # Pull deployment. Set OPEN_NOTEBOOK_IMAGE_REF to
+    # datafabricx/open-notebook-commercial@sha256:<64 hex chars>.
+    # Build this checkout with docker-compose.local.yml instead.
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:?set encryption key}
 
       # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
       # for local use; override them in a .env file before exposing the instance
@@ -49,7 +52,19 @@ services:
       - SHAREPOINT_STORAGE_TENANT_ID=${SHAREPOINT_STORAGE_TENANT_ID:-}
       - SHAREPOINT_STORAGE_CLIENT_ID=${SHAREPOINT_STORAGE_CLIENT_ID:-}
       - SHAREPOINT_STORAGE_CLIENT_SECRET=${SHAREPOINT_STORAGE_CLIENT_SECRET:-}
+      - SHAREPOINT_STORAGE_PROFILE_ID=${SHAREPOINT_STORAGE_PROFILE_ID:-default}
+      - SHAREPOINT_STORAGE_PROFILES_FILE=${SHAREPOINT_STORAGE_PROFILES_FILE:-}
+      - SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH=${SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH:-}
+      - SHAREPOINT_STORAGE_CERTIFICATE_PASSPHRASE=${SHAREPOINT_STORAGE_CERTIFICATE_PASSPHRASE:-}
       - SHAREPOINT_STORAGE_CONTAINER_ID=${SHAREPOINT_STORAGE_CONTAINER_ID:-}
+
+      # Delegated connector settings. These are not the storage app credentials.
+      - AUTH_PROVIDER=${AUTH_PROVIDER:-password}
+      - ENTRA_TENANT_ID=${ENTRA_TENANT_ID:-}
+      - ENTRA_CLIENT_ID=${ENTRA_CLIENT_ID:-}
+      - ENTRA_CLIENT_SECRET=${ENTRA_CLIENT_SECRET:-}
+      - ENTRA_REDIRECT_URI=${ENTRA_REDIRECT_URI:-}
+      - SHAREPOINT_CONNECTOR_REDIRECT_URI=${SHAREPOINT_CONNECTOR_REDIRECT_URI:-}
 
       # OPTIONAL: heavy extraction runtimes, installed on first startup when
       # enabled (downloads are cached on the ./notebook_data volume, so only the

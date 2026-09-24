@@ -16,8 +16,10 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/lfnovo/open-notebook
-  DOCKERHUB_IMAGE: lfnovo/open_notebook
+  # Publication stays off until the repository variable APPROVE_IMAGE_PUBLISH is true.
+  # GHCR has no approved namespace yet, so both names are the Docker Hub repository.
+  GHCR_IMAGE: datafabricx/open-notebook-commercial
+  DOCKERHUB_IMAGE: datafabricx/open-notebook-commercial
 
 jobs:
   extract-version:
@@ -132,7 +134,7 @@ jobs:
           file: ./Dockerfile
           target: runtime
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ vars.APPROVE_IMAGE_PUBLISH == 'true' }}
           tags: ${{ steps.tags-regular.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
@@ -224,7 +226,7 @@ jobs:
           file: ./Dockerfile
           target: single
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ vars.APPROVE_IMAGE_PUBLISH == 'true' }}
           tags: ${{ steps.tags-single.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache-single
           cache-to: type=local,dest=/tmp/.buildx-cache-single-new,mode=max

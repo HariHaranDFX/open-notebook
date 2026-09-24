@@ -7,8 +7,9 @@
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
 
 # Image names for both registries
-DOCKERHUB_IMAGE := lfnovo/open_notebook
-GHCR_IMAGE := ghcr.io/lfnovo/open-notebook
+DOCKERHUB_IMAGE := datafabricx/open-notebook-commercial
+# GHCR publication stays disabled until an approved namespace is supplied.
+GHCR_IMAGE := $(DOCKERHUB_IMAGE)
 
 # Build platforms
 PLATFORMS := linux/amd64,linux/arm64
@@ -77,6 +78,7 @@ docker-build-local:
 
 # Build and push version tags ONLY (no latest) for both regular and single images
 docker-push: docker-buildx-prepare
+	@test "$(APPROVE_IMAGE_PUBLISH)" = "true" || (echo "Image publication is disabled. Set APPROVE_IMAGE_PUBLISH=true after the registry is approved."; exit 1)
 	@echo "📤 Building and pushing version $(VERSION) to both registries..."
 	@echo "🔨 Building regular image..."
 	docker buildx build --pull \
@@ -105,6 +107,7 @@ docker-push: docker-buildx-prepare
 
 # Update v1-latest tags to current version (both regular and single images)
 docker-push-latest: docker-buildx-prepare
+	@test "$(APPROVE_IMAGE_PUBLISH)" = "true" || (echo "Image publication is disabled. Set APPROVE_IMAGE_PUBLISH=true after the registry is approved."; exit 1)
 	@echo "📤 Updating v1-latest tags to version $(VERSION)..."
 	@echo "🔨 Building regular image with latest tag..."
 	docker buildx build --pull \

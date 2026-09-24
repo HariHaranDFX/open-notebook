@@ -70,13 +70,13 @@ services:
     # and add GPU device mapping (see docs)
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}
     ports:
       - "8502:8502"
       - "5055:5055"
     environment:
       # REQUIRED: Change this to your own secret string
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:?set encryption key}
 
       # Database connection
       - SURREAL_URL=ws://surrealdb:8000/rpc

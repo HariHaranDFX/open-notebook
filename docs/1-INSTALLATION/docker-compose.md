@@ -2,7 +2,7 @@
 
 Multi-container setup with separate services. **Best for most users.**
 
-> **Alternative Registry:** All images are available on both Docker Hub (`lfnovo/open_notebook`) and GitHub Container Registry (`ghcr.io/lfnovo/open-notebook`). Use GHCR if Docker Hub is blocked or you prefer GitHub-native workflows.
+> Pull deployments use a digest-pinned `datafabricx/open-notebook-commercial@sha256:<digest>` image. Build this checkout with `docker compose --env-file .env -f docker-compose.local.yml up --build`. Upstream image names are not a deployment target.
 
 ## Prerequisites
 
@@ -12,16 +12,19 @@ Multi-container setup with separate services. **Best for most users.**
 
 ## Step 1: Get docker-compose.yml (1 min)
 
-**Option A: Download from repository**
+**Option A: Build this checkout**
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+docker compose --env-file .env -f docker-compose.local.yml up --build
 ```
 
-**Option B: Use the official file from the repo**
+**Option B: Pull a digest-pinned image**
 
-The official `docker-compose.yml` is in the root of our repository: [View on GitHub](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml)
+Set `OPEN_NOTEBOOK_IMAGE_REF=datafabricx/open-notebook-commercial@sha256:<digest>` and `OPEN_NOTEBOOK_ENCRYPTION_KEY` in `.env`, then:
+```bash
+docker compose --env-file .env up
+```
 
-Copy that file to your project folder.
+The project was forked from the upstream Open Notebook repository. Deployment images come from `datafabricx/open-notebook-commercial`, not that upstream registry.
 
 **Option C: Create manually**
 
@@ -54,14 +57,14 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:?set encryption key}
 
       # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
       # for local use; override them in a .env file before exposing the instance
@@ -162,11 +165,7 @@ Done! You now have a fully working Open Notebook instance.
 Instead of manually editing, use our ready-made example:
 
 ```bash
-# Download the Ollama example
-curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/examples/docker-compose-ollama.yml
-
-# Or copy from repo
-cp examples/docker-compose-ollama.yml docker-compose.yml
+docker compose --env-file .env -f examples/docker-compose-ollama.yml up
 ```
 
 See [examples/docker-compose-ollama.yml](../../examples/docker-compose-ollama.yml) for the complete setup.

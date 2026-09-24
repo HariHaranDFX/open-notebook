@@ -86,9 +86,9 @@
 
 **Interfaces:** Local Compose builds this checkout. Pull-based Compose requires `datafabricx/open-notebook-commercial` with an immutable tag. `.env` supplies connector, storage, encryption, and image configuration; no active deployment points at `lfnovo/open_notebook`.
 
-- [ ] Add configuration checks that fail with upstream image, missing encryption key, absent connector callback, or unconfigured selected storage provider.
-- [ ] Update Compose/Makefile/workflows/docs minimally; preserve existing secret values and add missing optional `.env.example` key names to ignored `.env` as commented entries.
-- [ ] Run `docker compose config --quiet` for each supported variant, local image build/start, and image-name checks without printing secrets. Do not push an image without separate approval.
+- [x] Add configuration checks that fail with upstream image, missing encryption key, absent connector callback, or unconfigured selected storage provider.
+- [x] Update Compose/Makefile/workflows/docs minimally; preserve existing secret values and add missing optional `.env.example` key names to ignored `.env` as commented entries.
+- [x] Run `docker compose config --quiet` for each supported variant and image-name checks without printing secrets. Local image build is recorded in Task 7. Do not push an image without separate approval.
 
 ### Task 7: Release verification and handoff
 
