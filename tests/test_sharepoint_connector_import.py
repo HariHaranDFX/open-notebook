@@ -747,6 +747,57 @@ async def test_cancellation_after_storage_save_cleans_unreferenced_copy(imports,
 
 
 @pytest.mark.asyncio
+async def test_cancellation_waits_for_source_transaction_before_cleanup(imports, monkeypatch):
+    from api import source_ingestion_service
+    from commands import connector_commands
+    from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        created = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+    batch = ConnectorBatch(**imports.records[created.json()["batch_id"]])
+    document = ConnectorBatchDocument(user_id=imports.user.id, batch_id=batch.id, drive_id="drive", item_id="one", name="report.txt")
+    await document.save()
+    original_query = source_ingestion_service.repo_query
+    original_delete = imports.store.delete
+    started, release, deleted = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def delayed_query(sql, params=None):
+        if sql.startswith("BEGIN TRANSACTION"):
+            started.set()
+
+            async def commit_later():
+                await release.wait()
+                return await original_query(sql, params)
+
+            return await asyncio.shield(asyncio.create_task(commit_later()))
+        return await original_query(sql, params)
+
+    async def observed_delete(ref):
+        deleted.set()
+        return await original_delete(ref)
+
+    monkeypatch.setattr(source_ingestion_service, "repo_query", delayed_query)
+    monkeypatch.setattr(imports.store, "delete", observed_delete)
+    task = asyncio.create_task(connector_commands._import_document(SharePointConnector(imports.user.id), document, batch, imports.user))
+    await asyncio.wait_for(started.wait(), 5)
+    task.cancel()
+    try:
+        await asyncio.wait_for(deleted.wait(), 0.2)
+    except asyncio.TimeoutError:
+        pass
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    sources = [row for key, row in imports.records.items() if key.startswith("source:")]
+    assert len(sources) == 1
+    assert len(list(imports.store.uploads_folder.iterdir())) == 1
+    assert sources[0]["asset"]["original_file_key"] == next(imports.store.uploads_folder.iterdir()).name
+
+
+@pytest.mark.asyncio
 async def test_claim_takeover_between_check_and_source_write_has_no_side_effects(imports, monkeypatch):
     from commands import connector_commands
     from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument

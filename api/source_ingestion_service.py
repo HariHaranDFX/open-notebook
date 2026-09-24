@@ -1,5 +1,6 @@
 """Create/link sources and queue the existing extraction pipeline."""
 
+import asyncio
 from dataclasses import dataclass
 from hashlib import sha256
 from time import time
@@ -95,7 +96,7 @@ async def queue_managed_upload_source(
                 source_id=source_id, content_state=content_state,
                 notebook_ids=notebook_ids, transformations=transformations, embed=embed,
             ).model_dump()
-            await repo_query(
+            transaction = asyncio.create_task(repo_query(
                 "BEGIN TRANSACTION; "
                 "LET $owned = SELECT id FROM $version_id WHERE claim_id = $claim_id AND lease_until > $now AND status = 'claiming'; "
                 "IF array::len($owned) != 1 THEN THROW 'SharePoint import claim expired' END; "
@@ -108,7 +109,15 @@ async def queue_managed_upload_source(
                  "command_id": ensure_record_id(command_id),
                  "command_data": {"app": "open_notebook", "name": "process_source", "args": args,
                                   "context": {}, "status": "new"}},
-            )
+            ))
+            try:
+                await asyncio.shield(transaction)
+            except asyncio.CancelledError:
+                # The database may commit after the caller is cancelled. Let the
+                # transaction settle before the caller decides whether to delete
+                # the stored original.
+                await transaction
+                raise
             for notebook_id in notebook_ids:
                 await source.add_to_notebook(notebook_id)
             return QueuedSource(source, command_id)

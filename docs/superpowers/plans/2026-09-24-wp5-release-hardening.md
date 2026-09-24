@@ -46,9 +46,9 @@
 
 **Interfaces:** Keep the existing `SourceConnector` read contract and `import_sharepoint_batch` command. Add owner-scoped retry endpoint and persisted external-version identity `(connection, drive, item, eTag)`.
 
-- [ ] Write failing tests for >1,000 items, a rejected over-limit batch, `Retry-After`, fallback backoff, redirect host safety, cross-batch same-version reuse, changed-version snapshot, and retrying failed items only.
-- [ ] Replace silent truncation with complete pagination to the explicit limit and safe failure beyond it. Implement bounded retries and no-token redirects. Run browse tests to GREEN.
-- [ ] Persist stable version identity and idempotent reuse; add batch retry/status behavior. Run import and ownership tests to GREEN, then full backend suite.
+- [x] Write failing tests for >1,000 items, a rejected over-limit batch, `Retry-After`, fallback backoff, redirect host safety, cross-batch same-version reuse, changed-version snapshot, and retrying failed items only.
+- [x] Replace silent truncation with complete pagination to the explicit limit and safe failure beyond it. Implement bounded retries and no-token redirects. Run browse tests to GREEN.
+- [x] Persist stable version identity and idempotent reuse; add batch retry/status behavior. Import, concurrency, cancellation, and ownership tests are GREEN. A fresh complete backend suite and live SurrealDB/worker checks are deferred to Task 7.
 
 ### Task 3: Provider identity, immutable references, and safe deletion
 
