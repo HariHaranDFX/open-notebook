@@ -139,6 +139,8 @@ doc_exports/
 
 
 *.local.yml
+# The supported local build file is tracked. Other *.local.yml files stay ignored.
+!docker-compose.local.yml
 **/*.local.md
 .harness/
 
