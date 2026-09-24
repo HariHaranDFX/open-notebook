@@ -45,9 +45,13 @@ def _harness(operation, *, referenced_ids=None, source=None, found=None):
         row["item_key"] = item_key
         row["etag"] = etag
 
+    async def delete(ref):
+        deleted.append(ref)
+        return True
+
     store = SimpleNamespace(
         find_by_object_name=AsyncMock(return_value=found),
-        delete=AsyncMock(side_effect=lambda ref: deleted.append(ref) or True),
+        delete=AsyncMock(side_effect=delete),
     )
 
     async def source_for(source_id):
