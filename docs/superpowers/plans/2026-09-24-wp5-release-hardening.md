@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-22-wp5-sharepoint-connector-design.md` and `docs/superpowers/specs/2026-09-22-original-file-storage-providers-design.md`, amended by the user-approved release requirements of 2026-09-24.
 
+**Continuation:** Tasks 1–2 are committed and checked below. For concrete file contracts, test cases, commands, sequencing, and release stop conditions for Tasks 3–7, read [the remaining-tasks implementation handoff](2026-09-24-wp5-remaining-implementation-handoff.md) before making changes. That document is part of this plan, not an optional follow-up.
+
 ## Global Constraints
 
 - Apply Ponytail full and Karpathy guidelines: minimal changes, explicit assumptions, testable outcomes.
