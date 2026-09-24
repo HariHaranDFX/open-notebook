@@ -63,7 +63,13 @@ The import endpoint returns a batch ID immediately. The dialog polls the batch
 while it is pending or running and shows each document's queued, failed, or
 skipped result. A completed batch means the existing Source-processing jobs were
 queued; extraction and embeddings may still be running. A partial batch keeps
-successful Sources and reports failed documents for a later retry. The source
+successful Sources and reports failed documents. The owner can retry failed
+documents with `POST /api/connectors/sharepoint/batches/{batch_id}/retry`;
+already queued documents stay untouched. The same remote eTag reuses its managed
+Source across batches and adds newly selected notebook links. A changed eTag
+creates a new Source snapshot. Files without an eTag are treated as distinct
+imports. Folder listings beyond 1,000 items fail visibly instead of reporting
+completion. The source
 library and selected notebooks refresh when the batch reaches a terminal state.
 
 - **Unavailable:** check Entra auth mode, all four connector configuration values

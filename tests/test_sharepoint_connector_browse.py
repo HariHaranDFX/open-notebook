@@ -358,6 +358,29 @@ async def test_rejects_unsafe_or_repeated_paging_links(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_graph_client_never_auto_forwards_bearer_on_redirect(monkeypatch):
+    from open_notebook.connectors import sharepoint_auth
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+    visited = []
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        visited.append(str(request.url))
+        if request.url.host == "graph.microsoft.com":
+            return httpx.Response(302, headers={"Location": "https://evil.test/steal"})
+        raise AssertionError("Redirect target must not be called")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph), follow_redirects=True) as client:
+        with pytest.raises(ExternalServiceError):
+            await SharePointConnector("user:alice", client).list_sites("")
+    assert len(visited) == 1
+
+
+@pytest.mark.asyncio
 async def test_malformed_paging_link_maps_to_safe_upstream_error(monkeypatch):
     from open_notebook.connectors import sharepoint_auth
     from open_notebook.connectors.sharepoint import SharePointConnector
@@ -379,7 +402,73 @@ async def test_malformed_paging_link_maps_to_safe_upstream_error(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_logical_listing_stops_at_one_thousand_items(monkeypatch):
+async def test_graph_throttle_honors_retry_after(monkeypatch):
+    from open_notebook.connectors import sharepoint as sharepoint_module
+    from open_notebook.connectors import sharepoint_auth
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    delays = []
+
+    async def sleep(seconds):
+        delays.append(seconds)
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+    monkeypatch.setattr(sharepoint_module, "asyncio", type("Clock", (), {"sleep": staticmethod(sleep)})(), raising=False)
+    calls = 0
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(429, headers={"Retry-After": "2"})
+        return httpx.Response(200, json={"value": [{"id": "site", "displayName": "Site"}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        sites = await sharepoint_module.SharePointConnector("user:alice", client).list_sites("")
+    assert [site.id for site in sites] == ["site"]
+    assert calls == 2
+    assert delays == [2]
+
+
+@pytest.mark.asyncio
+async def test_graph_retries_503_with_bounded_fallback_and_never_retries_auth(monkeypatch):
+    from open_notebook.connectors import sharepoint as sharepoint_module
+    from open_notebook.connectors import sharepoint_auth
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    delays = []
+
+    async def sleep(seconds):
+        delays.append(seconds)
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+    monkeypatch.setattr(sharepoint_module.asyncio, "sleep", sleep)
+    calls = 0
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503, headers={"Retry-After": "invalid"})
+        if calls == 2:
+            return httpx.Response(503, headers={"Retry-After": "-1"})
+        if calls == 3:
+            return httpx.Response(503, headers={"Retry-After": "NaN"})
+        return httpx.Response(401)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        with pytest.raises(AuthenticationError):
+            await sharepoint_module.SharePointConnector("user:alice", client).list_sites("")
+    assert calls == 4
+    assert delays == [1, 0, 4]
+
+
+@pytest.mark.asyncio
+async def test_logical_listing_fails_visibly_above_one_thousand_items(monkeypatch):
     from open_notebook.connectors import sharepoint_auth
     from open_notebook.connectors.sharepoint import SharePointConnector
 
@@ -404,9 +493,30 @@ async def test_logical_listing_stops_at_one_thousand_items(monkeypatch):
         )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
-        sites = await SharePointConnector("user:alice", client).list_sites("")
-    assert len(sites) == 1000
+        with pytest.raises(ExternalServiceError, match="limit"):
+            await SharePointConnector("user:alice", client).list_sites("")
     assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_listing_at_limit_with_more_pages_is_not_reported_complete(monkeypatch):
+    from open_notebook.connectors import sharepoint_auth
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    async def delegated_token(user_id: str) -> str:
+        return "delegated-secret"
+
+    monkeypatch.setattr(sharepoint_auth, "acquire_delegated_token", delegated_token)
+
+    def graph(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={
+            "value": [{"id": str(index), "displayName": str(index)} for index in range(1000)],
+            "@odata.nextLink": "https://graph.microsoft.com/v1.0/sites?$skiptoken=more",
+        })
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(graph)) as client:
+        with pytest.raises(ExternalServiceError, match="limit"):
+            await SharePointConnector("user:alice", client).list_sites("")
 
 
 @pytest.mark.asyncio
@@ -423,9 +533,9 @@ async def test_download_redirect_requires_https_and_drops_delegated_token(monkey
         if request.url.host == "graph.microsoft.com":
             assert request.headers["Authorization"] == "Bearer delegated-secret"
             return httpx.Response(
-                302, headers={"Location": "https://download.example.test/document"}
+                302, headers={"Location": "https://tenant.sharepoint.com/document"}
             )
-        assert request.url.host == "download.example.test"
+        assert request.url.host == "tenant.sharepoint.com"
         assert "Authorization" not in request.headers
         return httpx.Response(200, content=b"document")
 
@@ -439,6 +549,13 @@ async def test_download_redirect_requires_https_and_drops_delegated_token(monkey
             ]
         )
     assert content == b"document"
+
+    def unsafe_redirect(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"Location": "https://evil.test/document"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(unsafe_redirect)) as client:
+        with pytest.raises(ExternalServiceError):
+            _ = b"".join([chunk async for chunk in SharePointConnector("user:alice", client).download("drive", "item")])
 
     def insecure_redirect(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

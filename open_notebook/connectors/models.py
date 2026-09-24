@@ -96,3 +96,13 @@ class ConnectorBatchDocument(_OwnedConnectorRecord):
             {"batch_id": ensure_record_id(batch_id), "user_id": ensure_record_id(user_id)},
         )
         return [cls(**row) for row in rows]
+
+
+class ConnectorRemoteVersion(_OwnedConnectorRecord):
+    table_name: ClassVar[str] = "connector_remote_version"
+    record_fields: ClassVar[tuple[str, ...]] = ("user_id", "connection_id", "source_id")
+    connection_id: str
+    drive_id: str
+    item_id: str
+    etag: str
+    source_id: str

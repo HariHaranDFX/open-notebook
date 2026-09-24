@@ -73,6 +73,25 @@ async def get_sharepoint_batch(batch_id: str, user: AuthenticatedUser = Depends(
     }
 
 
+@router.post("/batches/{batch_id}/retry", status_code=202)
+async def retry_sharepoint_batch(batch_id: str, user: AuthenticatedUser = Depends(require_user)):
+    batch = await ConnectorBatch.get_for_user(batch_id, user.id)
+    if batch.status not in ("partial", "failed"):
+        return JSONResponse({"detail": "This batch is not ready for retry."}, status_code=409)
+    documents = await ConnectorBatchDocument.for_batch(batch_id, user.id)
+    for document in documents:
+        if document.status == "failed":
+            document.status, document.error = "pending", None
+            await document.save()
+    batch.status, batch.error = "pending", None
+    await batch.save()
+    batch.command_id = await CommandService.submit_command_job(
+        "open_notebook", "import_sharepoint_batch", {"batch_id": batch.id, "user_id": user.id}
+    )
+    await batch.save()
+    return {"batch_id": batch.id}
+
+
 async def _connected(user_id: str) -> bool:
     connection = await sharepoint_auth.get_connection(user_id)
     return bool(connection and connection.status == "connected")

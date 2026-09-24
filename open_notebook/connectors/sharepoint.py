@@ -1,6 +1,10 @@
 """Read-only Microsoft Graph client using an owner's delegated token."""
 
+import asyncio
+import math
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urljoin, urlsplit
@@ -59,16 +63,10 @@ class SharePointConnector:
         token = await sharepoint_auth.acquire_delegated_token(self.user_id)
         try:
             if self.client:
-                response = await self.client.get(
-                    url, params=params, headers={"Authorization": f"Bearer {token}"}
-                )
+                response = await self._graph_get(self.client, url, token, params)
             else:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        url,
-                        params=params,
-                        headers={"Authorization": f"Bearer {token}"},
-                    )
+                    response = await self._graph_get(client, url, token, params)
         except httpx.RequestError as exc:
             raise NetworkError("SharePoint is temporarily unavailable. Try again.") from exc
         if response.status_code in (401, 403):
@@ -92,6 +90,29 @@ class SharePointConnector:
                 "SharePoint returned an invalid response. Try again."
             )
         return payload
+
+    @staticmethod
+    def _retry_delay(response: httpx.Response, attempt: int) -> float:
+        value = response.headers.get("Retry-After", "")
+        try:
+            delay = float(value)
+        except ValueError:
+            try:
+                delay = (parsedate_to_datetime(value) - datetime.now(timezone.utc)).total_seconds()
+            except (TypeError, ValueError, OverflowError):
+                delay = 2 ** attempt
+        if not math.isfinite(delay):
+            delay = 2 ** attempt
+        return min(max(delay, 0), 30)
+
+    @staticmethod
+    async def _graph_get(client, url, token, params=None):
+        for attempt in range(4):
+            response = await client.get(url, params=params, headers={"Authorization": f"Bearer {token}"}, follow_redirects=False)
+            if response.status_code not in (429, 503) or attempt == 3:
+                return response
+            await asyncio.sleep(SharePointConnector._retry_delay(response, attempt))
+        raise AssertionError("unreachable")
 
     @staticmethod
     def _validated_next_link(value: object) -> str | None:
@@ -140,9 +161,11 @@ class SharePointConnector:
                 raise ExternalServiceError(
                     "SharePoint returned an invalid response. Try again."
                 )
-            items.extend(page[: MAX_LIST_ITEMS - len(items)])
-            if len(items) == MAX_LIST_ITEMS:
-                break
+            if len(items) + len(page) > MAX_LIST_ITEMS or (
+                len(items) + len(page) == MAX_LIST_ITEMS and payload.get("@odata.nextLink")
+            ):
+                raise ExternalServiceError("SharePoint listing exceeds the import limit.")
+            items.extend(page)
             url = self._validated_next_link(payload.get("@odata.nextLink")) or ""
         return items
 
@@ -257,7 +280,7 @@ class SharePointConnector:
                 seen_folders.add(folder_id)
             for item in await self.list_children(drive_id, folder_id):
                 if seen_items == MAX_LIST_ITEMS:
-                    return
+                    raise ExternalServiceError("SharePoint folder exceeds the import limit.")
                 seen_items += 1
                 if item.browsable:
                     pending.append(item.id)
@@ -284,8 +307,9 @@ class SharePointConnector:
     ) -> AsyncIterator[bytes]:
         headers = {"Authorization": f"Bearer {token}"}
         seen: set[str] = set()
-        for _ in range(6):
-            if url in seen:
+        throttles = 0
+        for _ in range(9):
+            if url in seen and throttles == 0:
                 raise ExternalServiceError(
                     "SharePoint returned a repeated download link. Try again."
                 )
@@ -305,6 +329,11 @@ class SharePointConnector:
                     if (
                         parsed.scheme != "https"
                         or not parsed.hostname
+                        or not (
+                            parsed.hostname == "graph.microsoft.com"
+                            or parsed.hostname.endswith(".sharepoint.com")
+                        )
+                        or parsed.port not in (None, 443)
                         or parsed.username
                         or parsed.password
                     ):
@@ -313,6 +342,11 @@ class SharePointConnector:
                         )
                     url = redirect
                     headers = {}
+                    throttles = 0
+                    continue
+                if response.status_code in (429, 503) and throttles < 3:
+                    await asyncio.sleep(self._retry_delay(response, throttles))
+                    throttles += 1
                     continue
                 self._check_download_response(response)
                 async for chunk in response.aiter_bytes():

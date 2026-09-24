@@ -16,12 +16,16 @@ from api.models import SourceCreate
 from api.ownership import assert_can_edit_notebook_or_403
 from api.source_file_service import resolve_action_for_source_create
 from api.source_ingestion_service import queue_managed_upload_source, queue_source
-from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+from open_notebook.connectors.models import (
+    ConnectorBatch,
+    ConnectorBatchDocument,
+    ConnectorRemoteVersion,
+)
 from open_notebook.connectors.sharepoint import (
     SUPPORTED_MIME_TYPES,
     SharePointConnector,
 )
-from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.database.repository import ensure_record_id, repo_query, repo_upsert
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.user import User
 from open_notebook.exceptions import (
@@ -44,23 +48,44 @@ class ImportSharePointBatchOutput(CommandOutput):
     success: bool
 
 
+async def _record_version(document, batch, user_id, version_id):
+    if document.etag:
+        version = ConnectorRemoteVersion(
+            id=version_id, user_id=user_id, connection_id=batch.connection_id,
+            drive_id=document.drive_id, item_id=document.item_id,
+            etag=document.etag, source_id=document.source_id,
+        )
+        await repo_upsert("connector_remote_version", version_id, version._prepare_save_data(), add_timestamp=True)
+
+
 async def _import_document(connector, document, batch, user):
-    document.source_id = document.source_id or "source:connector_" + sha256(document.id.encode()).hexdigest()
-    await document.save()
+    metadata = await connector.get_document(document.drive_id, document.item_id)
+    document.name, document.etag = metadata.name, metadata.etag.strip() if metadata.etag and metadata.etag.strip() else None
+    identity = "\0".join((user.id, batch.connection_id, document.drive_id, document.item_id, document.etag or document.id))
+    digest = sha256(identity.encode()).hexdigest()
+    version_id = "connector_remote_version:" + digest
+    version = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(version_id)}) if document.etag else []
+    document.source_id = str(version[0]["source_id"]) if version else "source:connector_" + digest
     existing = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
+    if version and not existing:
+        # A deleted Source's old process_source command must not be reused.
+        document.source_id = "source:connector_" + sha256((identity + "\0" + document.id).encode()).hexdigest()
+        existing = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
+    await document.save()
     if existing:
         source = Source(**existing[0])
         if source.user_id != user.id:
             raise ValueError("Source owner does not match")
         if source.asset is None:
             raise ValueError("Imported source has no managed copy")
+        for notebook_id in batch.notebook_ids:
+            await source.add_to_notebook(notebook_id)
         queued = await queue_source(source, {**source.asset.model_dump(exclude_none=True), "delete_source": False}, batch.notebook_ids, batch.transformations, batch.embed, recover=True)
         document.command_id = queued.command_id
+        await _record_version(document, batch, user.id, version_id)
         document.status, document.error = "queued", None
         await document.save()
         return
-    metadata = await connector.get_document(document.drive_id, document.item_id)
-    document.name, document.etag = metadata.name, metadata.etag
     document.status = "running"
     await document.save()
     limit = get_max_upload_size_bytes()
@@ -99,6 +124,7 @@ async def _import_document(connector, document, batch, user):
             await store.delete(OriginalFileRef(stored.provider, stored.key, stored.etag))
         raise
     document.source_id, document.command_id = queued.source.id, queued.command_id
+    await _record_version(document, batch, user.id, version_id)
     document.status, document.error = "queued", None
     await document.save()
 
