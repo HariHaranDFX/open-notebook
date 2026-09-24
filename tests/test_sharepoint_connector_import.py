@@ -53,6 +53,19 @@ def imports(monkeypatch, tmp_path):
 
     async def query(sql, params=None):
         params = params or {}
+        if sql.startswith("BEGIN TRANSACTION"):
+            from open_notebook.domain.notebook import Source
+
+            version = records.get(str(params["version_id"]))
+            if not version or version["claim_id"] != params["claim_id"] or version["lease_until"] <= params["now"]:
+                raise RuntimeError("SharePoint import claim expired")
+            source_id, command_id = str(params["source_id"]), str(params["command_id"])
+            if source_id in records or any(job["id"] == command_id for job in jobs):
+                raise RuntimeError("record already exists")
+            source_data = {**params["source_data"], "id": source_id, "user_id": str(params["source_data"]["user_id"])}
+            records[source_id] = Source(**source_data).model_dump()
+            jobs.append({"id": command_id, **deepcopy(params["command_data"])})
+            return []
         if sql.startswith("CREATE $id CONTENT"):
             record_id = str(params["id"])
             if record_id in records:
@@ -190,21 +203,22 @@ async def test_partial_failure_retry_reuses_batch_items_sources_and_copy(imports
 
 @pytest.mark.asyncio
 async def test_retry_after_queue_persistence_failure_recovers_existing_source_and_job(imports, monkeypatch):
+    from open_notebook.connectors.models import ConnectorBatchDocument
     from open_notebook.domain.base import ObjectModel
-    from open_notebook.domain.notebook import Source
 
     original_save = ObjectModel.save
     failed = False
 
     async def interrupted_save(obj):
         nonlocal failed
-        if isinstance(obj, Source) and obj.command and not failed:
+        if isinstance(obj, ConnectorBatchDocument) and obj.status == "queued" and not failed:
             failed = True
             raise RuntimeError("simulated crash after queue persisted")
         await original_save(obj)
 
     monkeypatch.setattr(ObjectModel, "save", interrupted_save)
     await run_batch(imports, monkeypatch, item_ids=["one"])
+    assert failed
     result = await run_batch(imports, monkeypatch, retry=True)
     assert result.json()["status"] == "completed"
     assert len([r for r in imports.records if r.startswith("source:")]) == 1
@@ -216,17 +230,19 @@ async def test_retry_after_queue_persistence_failure_recovers_existing_source_an
 async def test_failed_source_write_removes_unreferenced_managed_copy(imports, monkeypatch):
     from api import source_ingestion_service
 
-    original_upsert = source_ingestion_service.repo_upsert
+    original_query = source_ingestion_service.repo_query
 
-    async def failed_upsert(*args, **kwargs):
-        raise RuntimeError("simulated source write failure")
+    async def failed_write(sql, params=None):
+        if sql.startswith("BEGIN TRANSACTION"):
+            raise RuntimeError("simulated source write failure")
+        return await original_query(sql, params)
 
-    monkeypatch.setattr(source_ingestion_service, "repo_upsert", failed_upsert)
+    monkeypatch.setattr(source_ingestion_service, "repo_query", failed_write)
     result = await run_batch(imports, monkeypatch, item_ids=["one"])
     assert result.json()["status"] == "failed"
     assert not list(imports.store.uploads_folder.iterdir())
 
-    monkeypatch.setattr(source_ingestion_service, "repo_upsert", original_upsert)
+    monkeypatch.setattr(source_ingestion_service, "repo_query", original_query)
     retried = await run_batch(imports, monkeypatch, retry=True)
     assert retried.json()["status"] == "completed"
     assert len(list(imports.store.uploads_folder.iterdir())) == 1
@@ -236,17 +252,18 @@ async def test_failed_source_write_removes_unreferenced_managed_copy(imports, mo
 async def test_transient_source_write_retries_without_duplicate_copy(imports, monkeypatch):
     from api import source_ingestion_service
 
-    original_upsert = source_ingestion_service.repo_upsert
+    original_query = source_ingestion_service.repo_query
     attempts = 0
 
-    async def flaky_upsert(*args, **kwargs):
+    async def flaky_write(sql, params=None):
         nonlocal attempts
-        attempts += 1
-        if attempts == 1:
-            raise RuntimeError("temporary database failure")
-        return await original_upsert(*args, **kwargs)
+        if sql.startswith("BEGIN TRANSACTION"):
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("temporary database failure")
+        return await original_query(sql, params)
 
-    monkeypatch.setattr(source_ingestion_service, "repo_upsert", flaky_upsert)
+    monkeypatch.setattr(source_ingestion_service, "repo_query", flaky_write)
     result = await run_batch(imports, monkeypatch, item_ids=["one"])
     assert result.json()["status"] == "completed"
     assert attempts == 2
@@ -408,7 +425,12 @@ async def test_import_one_file_queues_existing_source_pipeline(imports, monkeypa
     assert imports.edges == [{"in": source["id"], "out": "notebook:one"}]
     assert len(list(imports.store.uploads_folder.iterdir())) == 1
     assert imports.jobs[1]["name"] == "process_source"
+    assert imports.jobs[1]["status"] == "new"
+    assert imports.jobs[1]["context"] == {}
+    assert str(source["command"]) == imports.jobs[1]["id"]
     payload = imports.jobs[1]["args"]
+    from commands.source_commands import SourceProcessingInput
+    assert SourceProcessingInput(**payload).model_dump() == payload
     assert payload["source_id"] == source["id"]
     assert payload["notebook_ids"] == ["notebook:one"]
     assert payload["embed"] is False
@@ -687,6 +709,72 @@ async def test_late_claim_owner_cleans_only_its_own_copy(imports, monkeypatch, t
     assert winning_key is not None
     assert len(list(imports.store.uploads_folder.iterdir())) == 1
     assert imports.records[source_id]["asset"]["original_file_key"] == winning_key
+
+
+@pytest.mark.asyncio
+async def test_cancellation_after_storage_save_cleans_unreferenced_copy(imports, monkeypatch):
+    from commands import connector_commands
+    from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        created = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+    batch = ConnectorBatch(**imports.records[created.json()["batch_id"]])
+    document = ConnectorBatchDocument(user_id=imports.user.id, batch_id=batch.id, drive_id="drive", item_id="one", name="report.txt")
+    await document.save()
+    original_save = imports.store.save
+    saved = asyncio.Event()
+    release = asyncio.Event()
+
+    async def interrupted_save(path, name):
+        stored = await original_save(path, name)
+        saved.set()
+        await release.wait()
+        return stored
+
+    monkeypatch.setattr(imports.store, "save", interrupted_save)
+    task = asyncio.create_task(connector_commands._import_document(SharePointConnector(imports.user.id), document, batch, imports.user))
+    await asyncio.wait_for(saved.wait(), 5)
+    task.cancel()
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert not list(imports.store.uploads_folder.iterdir())
+    versions = [row for key, row in imports.records.items() if key.startswith("connector_remote_version:")]
+    assert versions[0]["status"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_claim_takeover_between_check_and_source_write_has_no_side_effects(imports, monkeypatch):
+    from commands import connector_commands
+    from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        created = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+    batch = ConnectorBatch(**imports.records[created.json()["batch_id"]])
+    document = ConnectorBatchDocument(user_id=imports.user.id, batch_id=batch.id, drive_id="drive", item_id="one", name="report.txt")
+    await document.save()
+    original_check = connector_commands._assert_claim_owned
+    checks = 0
+
+    async def takeover_after_check(version_id, claim_id):
+        nonlocal checks
+        await original_check(version_id, claim_id)
+        checks += 1
+        if checks == 2:
+            imports.records[version_id]["claim_id"] = "new-owner"
+
+    monkeypatch.setattr(connector_commands, "_assert_claim_owned", takeover_after_check)
+    with pytest.raises(RuntimeError, match="claim"):
+        await connector_commands._import_document(SharePointConnector(imports.user.id), document, batch, imports.user)
+    assert not [key for key in imports.records if key.startswith("source:")]
+    assert not [job for job in imports.jobs if job["name"] == "process_source"]
+    assert not list(imports.store.uploads_folder.iterdir())
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,8 @@
 """Create/link sources and queue the existing extraction pipeline."""
 
 from dataclasses import dataclass
+from hashlib import sha256
+from time import time
 
 from api.auth.types import AuthenticatedUser
 from api.command_service import CommandService
@@ -62,6 +64,8 @@ async def queue_managed_upload_source(
     title: str | None = None,
     delete_source: bool = False,
     source_id: str | None = None,
+    version_id: str | None = None,
+    claim_id: str | None = None,
 ) -> QueuedSource:
     asset = Asset(
         file_path=stored.file_path,
@@ -81,6 +85,33 @@ async def queue_managed_upload_source(
         client_id=user.client_id if user else None,
     )
     try:
+        if version_id and claim_id and source_id:
+            from commands.source_commands import SourceProcessingInput
+
+            command_id = "command:connector_" + sha256(source_id.encode()).hexdigest()
+            source.command = ensure_record_id(command_id)
+            content_state = {**asset.model_dump(exclude_none=True), "delete_source": delete_source}
+            args = SourceProcessingInput(
+                source_id=source_id, content_state=content_state,
+                notebook_ids=notebook_ids, transformations=transformations, embed=embed,
+            ).model_dump()
+            await repo_query(
+                "BEGIN TRANSACTION; "
+                "LET $owned = SELECT id FROM $version_id WHERE claim_id = $claim_id AND lease_until > $now AND status = 'claiming'; "
+                "IF array::len($owned) != 1 THEN THROW 'SharePoint import claim expired' END; "
+                "CREATE $source_id CONTENT $source_data; "
+                "CREATE $command_id CONTENT $command_data; "
+                "COMMIT TRANSACTION;",
+                {"version_id": ensure_record_id(version_id), "claim_id": claim_id,
+                 "now": time(), "source_id": ensure_record_id(source_id),
+                 "source_data": {k: v for k, v in source._prepare_save_data().items() if k != "id"},
+                 "command_id": ensure_record_id(command_id),
+                 "command_data": {"app": "open_notebook", "name": "process_source", "args": args,
+                                  "context": {}, "status": "new"}},
+            )
+            for notebook_id in notebook_ids:
+                await source.add_to_notebook(notebook_id)
+            return QueuedSource(source, command_id)
         if source_id:
             await repo_upsert("source", source_id, source._prepare_save_data(), add_timestamp=True)
         return await queue_source(

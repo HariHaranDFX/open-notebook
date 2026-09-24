@@ -111,6 +111,13 @@ async def _assert_claim_owned(version_id, claim_id):
             raise RuntimeError("SharePoint import claim expired. Retry this batch later.")
 
 
+async def _delete_unreferenced_copy(store, stored, source_id):
+    rows = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(source_id)})
+    asset = Source(**rows[0]).asset if rows else None
+    if asset is None or asset.original_file_key != stored.key:
+        await store.delete(OriginalFileRef(stored.provider, stored.key, stored.etag))
+
+
 async def _import_document(connector, document, batch, user):
     metadata = await connector.get_document(document.drive_id, document.item_id)
     document.name, document.etag = metadata.name, metadata.etag.strip() if metadata.etag and metadata.etag.strip() else None
@@ -171,20 +178,27 @@ async def _import_document_content(connector, document, batch, user, metadata, v
         action = await resolve_action_for_source_create(SourceCreate(type="upload"))
         await _assert_claim_owned(version_id, claim_id)
         store = get_original_file_store()
-        stored = await store.save(path, metadata.name)
+        save_task = asyncio.create_task(store.save(path, metadata.name))
+        try:
+            stored = await asyncio.shield(save_task)
+        except BaseException:
+            try:
+                interrupted_copy = await save_task
+            except BaseException:
+                pass
+            else:
+                await _delete_unreferenced_copy(store, interrupted_copy, document.source_id)
+            raise
     try:
         await _assert_claim_owned(version_id, claim_id)
         queued = await queue_managed_upload_source(
             stored, metadata.name, user, batch.notebook_ids, batch.transformations, batch.embed, action,
-            source_id=document.source_id,
+            source_id=document.source_id, version_id=version_id if claim_id else None, claim_id=claim_id,
         )
-    except Exception:
+    except BaseException:
         # A retry can recover a persisted Source. Only discard the managed copy
         # when the Source write never succeeded and nothing references it.
-        rows = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
-        asset = Source(**rows[0]).asset if rows else None
-        if asset is None or asset.original_file_key != stored.key:
-            await store.delete(OriginalFileRef(stored.provider, stored.key, stored.etag))
+        await _delete_unreferenced_copy(store, stored, document.source_id)
         raise
     document.source_id, document.command_id = queued.source.id, queued.command_id
     document.status, document.error = "queued", None
