@@ -6,6 +6,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable
 
+from loguru import logger
+
 from open_notebook.database.repository import repo_create, repo_query
 from open_notebook.storage.original_files import OriginalFileRef, StoredOriginal
 
@@ -165,7 +167,13 @@ async def reconcile_due_uploads(grace_seconds: int = GRACE_SECONDS) -> dict[str,
             },
         )
 
-    for row in rows or []:
+    due = rows or []
+    logger.info(f"Found {len(due)} upload operation(s) older than the grace period")
+    if not due:
+        logger.info("Nothing to reconcile")
+    for row in due:
+        operation_id = row.get("operation_id")
+        logger.info(f"Reconciling operation_id={operation_id}")
         provider = row.get("provider")
         store = get_original_file_store(provider, row.get("profile_id"))
         outcome = await reconcile_operation(
@@ -176,5 +184,6 @@ async def reconcile_due_uploads(grace_seconds: int = GRACE_SECONDS) -> dict[str,
             queue=queue,
             persist=persist,
         )
+        logger.info(f"  → operation_id={operation_id} {outcome}")
         counts[outcome] = counts.get(outcome, 0) + 1
     return counts

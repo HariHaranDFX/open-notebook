@@ -878,3 +878,71 @@ async def test_recent_batches_query_is_limited_to_the_caller(monkeypatch):
         "batch_id": "connector_batch:mine", "status": "running",
         "total": 1, "completed": 0, "failed": 0, "error": None,
     }]
+
+
+def _capture_logs():
+    from loguru import logger
+
+    messages: list[str] = []
+    sink_id = logger.add(lambda message: messages.append(str(message)), level="INFO")
+    return messages, lambda: logger.remove(sink_id)
+
+
+@pytest.mark.asyncio
+async def test_import_command_logs_start_progress_and_done(imports, monkeypatch):
+    messages, remove = _capture_logs()
+    try:
+        response = await run_batch(imports, monkeypatch, item_ids=["one"])
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert response.json()["status"] == "completed"
+    assert "Starting SharePoint import" in text
+    assert "Found 1 document(s) to import" in text
+    assert "queued" in text
+    assert "SharePoint import DONE" in text
+    assert "Elapsed:" in text
+    assert "delegated-secret" not in text
+
+
+@pytest.mark.asyncio
+async def test_import_command_logs_a_safe_document_failure(imports, monkeypatch):
+    imports.files["bad"] = ("payload.exe", b"Untrusted executable")
+    messages, remove = _capture_logs()
+    try:
+        response = await run_batch(imports, monkeypatch, item_ids=["bad"])
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert response.json()["status"] == "failed"
+    assert "This file cannot be imported." in text
+    assert "SharePoint import DONE" in text
+    assert "Status: failed" in text
+    assert "delegated-secret" not in text
+    assert "private Graph" not in text
+
+
+@pytest.mark.asyncio
+async def test_import_command_logs_the_exception_class_when_it_cannot_start(monkeypatch):
+    from commands import connector_commands
+
+    monkeypatch.setattr(
+        connector_commands.ConnectorBatch,
+        "get_for_user",
+        AsyncMock(side_effect=connector_commands.AuthenticationError("token=secret")),
+    )
+    messages, remove = _capture_logs()
+    try:
+        with pytest.raises(connector_commands.AuthenticationError):
+            await connector_commands.import_sharepoint_batch_command(
+                connector_commands.ImportSharePointBatchInput(
+                    batch_id="connector_batch:missing", user_id="user:alice"
+                )
+            )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert "Starting SharePoint import" in text
+    assert "SharePoint import FAILED after" in text
+    assert "AuthenticationError" in text
+    assert "secret" not in text

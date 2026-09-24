@@ -230,6 +230,83 @@ async def test_cleanup_worker_accepts_provider_reference_without_file_path(
     delete.assert_awaited_once_with(source, reason="source_owner")
 
 
+def _capture_logs():
+    from loguru import logger
+
+    messages: list[str] = []
+    sink_id = logger.add(lambda message: messages.append(str(message)), level="INFO")
+    return messages, lambda: logger.remove(sink_id)
+
+
+@pytest.mark.asyncio
+async def test_cleanup_logs_start_progress_and_done(managed_source, monkeypatch):
+    source, _, _ = managed_source
+    monkeypatch.setattr(Source, "get", AsyncMock(return_value=source))
+    monkeypatch.setattr(source_file_service, "delete_original_file", AsyncMock(return_value="deleted"))
+    messages, remove = _capture_logs()
+    try:
+        await source_file_commands.cleanup_original_files_command(
+            source_file_commands.CleanupOriginalFilesInput(
+                scope="mine",
+                requesting_user_id="user:me",
+                candidate_source_ids=["source:managed"],
+            )
+        )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert "Starting original file cleanup (scope=mine, candidates=1)" in text
+    assert "Cleaning source_id=source:managed" in text
+    assert "source_id=source:managed deleted" in text
+    assert "Original file cleanup DONE" in text
+    assert "Elapsed:" in text
+
+
+@pytest.mark.asyncio
+async def test_cleanup_logs_nothing_to_clean():
+    messages, remove = _capture_logs()
+    try:
+        output = await source_file_commands.cleanup_original_files_command(
+            source_file_commands.CleanupOriginalFilesInput(
+                scope="mine", requesting_user_id="user:me", candidate_source_ids=[]
+            )
+        )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert output.deleted == 0
+    assert "Nothing to clean" in text
+    assert "Original file cleanup DONE" in text
+
+
+@pytest.mark.asyncio
+async def test_cleanup_logs_the_exception_class_when_delete_raises(managed_source, monkeypatch):
+    source, _, _ = managed_source
+    monkeypatch.setattr(Source, "get", AsyncMock(return_value=source))
+    monkeypatch.setattr(
+        source_file_service,
+        "delete_original_file",
+        AsyncMock(side_effect=RuntimeError("path=C:/secret/file.bin")),
+    )
+    messages, remove = _capture_logs()
+    try:
+        with pytest.raises(RuntimeError):
+            await source_file_commands.cleanup_original_files_command(
+                source_file_commands.CleanupOriginalFilesInput(
+                    scope="mine",
+                    requesting_user_id="user:me",
+                    candidate_source_ids=["source:managed"],
+                )
+            )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert "Original file cleanup FAILED after" in text
+    assert "RuntimeError" in text
+    assert "secret" not in text
+    assert "Original file cleanup DONE" not in text
+
+
 @pytest.mark.asyncio
 async def test_full_source_delete_removes_managed_copy_not_connector_item(
     managed_source, monkeypatch

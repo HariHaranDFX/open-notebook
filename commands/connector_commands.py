@@ -10,6 +10,7 @@ from uuid import uuid4
 from content_core import check_file_support
 from content_core.content.identification import FileDetector
 from fastapi import HTTPException, Request
+from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
 from api.auth.types import AuthenticatedUser
@@ -246,28 +247,34 @@ async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
     batch.completed = sum(document.status == "queued" for document in documents)
     batch.failed = 0
     await batch.save()
+    logger.info(f"Found {batch.total} document(s) to import")
     transient_failure = False
     for document in documents:
         if document.status == "queued":
             continue
+        logger.info(f"Importing '{document.name}'")
         try:
             await _import_document(connector, document, batch, user)
             batch.completed += 1
+            logger.info(f"  → '{document.name}' queued")
         except AuthenticationError:
             document.status, document.error = "failed", "Connect SharePoint again."
             await document.save()
             batch.failed += 1
             await batch.save()
+            logger.warning(f"  → '{document.name}' failed: {document.error}")
             raise
         except (UnsupportedTypeException, ValueError):
             document.status, document.error = "failed", "This file cannot be imported."
             await document.save()
             batch.failed += 1
+            logger.warning(f"  → '{document.name}' failed: {document.error}")
         except Exception:
             document.status, document.error = "failed", "Could not import this file. Try again."
             await document.save()
             batch.failed += 1
             transient_failure = True
+            logger.warning(f"  → '{document.name}' failed: {document.error}")
         await batch.save()
     if transient_failure:
         raise RuntimeError("Some SharePoint documents need another import attempt")
@@ -277,45 +284,68 @@ async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
 
 @command("import_sharepoint_batch", app="open_notebook", retry={"max_attempts": 1})
 async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput) -> ImportSharePointBatchOutput:
+    start = time()
     batch: ConnectorBatch | None = None
-    for attempt in range(3):
-        try:
-            if batch is None:
-                batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
-            owner = await User.get(batch.user_id)
-            await _import_batch_once(batch, owner)
-            break
-        except AuthenticationError:
-            if batch is None:
-                raise
-            batch.status, batch.error = "failed", "Connect SharePoint again."
-            await batch.save()
-            break
-        except (HTTPException, NotFoundError):
-            if batch is None:
-                raise
-            batch.status, batch.error = "failed", "Notebook access is no longer available."
-            await batch.save()
-            break
-        except ExternalServiceError as exc:
-            if "import limit" not in str(exc):
+    logger.info("=" * 60)
+    logger.info(f"Starting SharePoint import batch_id={input_data.batch_id}")
+    logger.info("=" * 60)
+    try:
+        for attempt in range(3):
+            try:
+                if batch is None:
+                    batch = await ConnectorBatch.get_for_user(input_data.batch_id, input_data.user_id)
+                owner = await User.get(batch.user_id)
+                await _import_batch_once(batch, owner)
+                break
+            except AuthenticationError:
+                if batch is None:
+                    raise
+                batch.status, batch.error = "failed", "Connect SharePoint again."
+                await batch.save()
+                logger.error(f"SharePoint import FAILED: {batch.error}")
+                break
+            except (HTTPException, NotFoundError):
+                if batch is None:
+                    raise
+                batch.status, batch.error = "failed", "Notebook access is no longer available."
+                await batch.save()
+                logger.error(f"SharePoint import FAILED: {batch.error}")
+                break
+            except ExternalServiceError as exc:
+                if "import limit" not in str(exc):
+                    if attempt < 2:
+                        await asyncio.sleep(2 ** attempt)
+                        continue
+                if batch is None:
+                    raise
+                batch.status = "partial" if batch.completed else "failed"
+                batch.error = "SharePoint folder exceeds the 1,000-item import limit. Choose a smaller folder." if "import limit" in str(exc) else "Could not complete the SharePoint import. Try again."
+                await batch.save()
+                logger.error(f"SharePoint import FAILED: {batch.error}")
+                break
+            except Exception:
                 if attempt < 2:
                     await asyncio.sleep(2 ** attempt)
                     continue
-            if batch is None:
-                raise
-            batch.status = "partial" if batch.completed else "failed"
-            batch.error = "SharePoint folder exceeds the 1,000-item import limit. Choose a smaller folder." if "import limit" in str(exc) else "Could not complete the SharePoint import. Try again."
-            await batch.save()
-            break
-        except Exception:
-            if attempt < 2:
-                await asyncio.sleep(2 ** attempt)
-                continue
-            if batch is None:
-                raise
-            batch.status = "partial" if batch.completed else "failed"
-            batch.error = "Could not complete the SharePoint import. Try again."
-            await batch.save()
-    assert batch is not None
-    return ImportSharePointBatchOutput(success=batch.status == "completed")
+                if batch is None:
+                    raise
+                batch.status = "partial" if batch.completed else "failed"
+                batch.error = "Could not complete the SharePoint import. Try again."
+                await batch.save()
+                logger.error(f"SharePoint import FAILED: {batch.error}")
+        assert batch is not None
+        elapsed = time() - start
+        logger.info("=" * 60)
+        logger.info("SharePoint import DONE")
+        logger.info(f"  Status: {batch.status}")
+        logger.info(f"  Completed: {batch.completed}")
+        logger.info(f"  Failed: {batch.failed}")
+        logger.info(f"  Total: {batch.total}")
+        logger.info(f"  Elapsed: {elapsed:.2f}s")
+        logger.info("=" * 60)
+        return ImportSharePointBatchOutput(success=batch.status == "completed")
+    except Exception as exc:
+        logger.error(
+            f"SharePoint import FAILED after {time() - start:.2f}s: {exc.__class__.__name__}"
+        )
+        raise

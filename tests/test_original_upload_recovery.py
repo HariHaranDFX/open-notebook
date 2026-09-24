@@ -201,3 +201,86 @@ async def test_tracked_save_records_the_name_before_the_remote_call(monkeypatch)
 
     assert stored.key == "item-1"
     assert order == [("record", "fixed.bin"), ("save", "fixed.bin"), ("finish", "item-1")]
+
+
+def _capture_logs():
+    from loguru import logger
+
+    messages: list[str] = []
+    sink_id = logger.add(lambda message: messages.append(str(message)), level="INFO")
+    return messages, lambda: logger.remove(sink_id)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_command_logs_nothing_to_do(monkeypatch):
+    from commands import source_file_commands
+    from open_notebook.storage import upload_operations
+
+    monkeypatch.setattr(upload_operations, "repo_query", AsyncMock(return_value=[]))
+    messages, remove = _capture_logs()
+    try:
+        output = await source_file_commands.reconcile_original_uploads_command(
+            source_file_commands.ReconcileOriginalUploadsInput()
+        )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert output.deleted == 0
+    assert "Starting original upload reconciliation" in text
+    assert "Nothing to reconcile" in text
+    assert "Original upload reconciliation DONE" in text
+    assert "Elapsed:" in text
+
+
+@pytest.mark.asyncio
+async def test_reconcile_command_logs_each_operation(monkeypatch):
+    from commands import source_file_commands
+    from open_notebook.storage import upload_operations
+
+    async def query(sql, params=None):
+        if sql.startswith("SELECT * FROM original_upload_operation"):
+            return [_operation(item_key="item-1", etag="v1")]
+        return []
+
+    store = SimpleNamespace(delete=AsyncMock(return_value=True))
+    monkeypatch.setattr(upload_operations, "repo_query", query)
+    monkeypatch.setattr(
+        "open_notebook.storage.original_files.get_original_file_store",
+        lambda *_args, **_kwargs: store,
+    )
+    messages, remove = _capture_logs()
+    try:
+        output = await source_file_commands.reconcile_original_uploads_command(
+            source_file_commands.ReconcileOriginalUploadsInput()
+        )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert output.deleted == 1
+    assert "Reconciling operation_id=op-1" in text
+    assert "operation_id=op-1 deleted" in text
+    assert "abc123.bin" not in text
+    assert "Original upload reconciliation DONE" in text
+
+
+@pytest.mark.asyncio
+async def test_reconcile_command_logs_the_exception_class(monkeypatch):
+    from commands import source_file_commands
+
+    monkeypatch.setattr(
+        "open_notebook.storage.upload_operations.reconcile_due_uploads",
+        AsyncMock(side_effect=RuntimeError("etag=secret")),
+    )
+    messages, remove = _capture_logs()
+    try:
+        with pytest.raises(RuntimeError):
+            await source_file_commands.reconcile_original_uploads_command(
+                source_file_commands.ReconcileOriginalUploadsInput()
+            )
+    finally:
+        remove()
+    text = "\n".join(messages)
+    assert "Original upload reconciliation FAILED after" in text
+    assert "RuntimeError" in text
+    assert "secret" not in text
+    assert "Original upload reconciliation DONE" not in text
