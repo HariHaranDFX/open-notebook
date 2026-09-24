@@ -94,7 +94,7 @@
 
 **Files:** `docs/superpowers/plans/STATUS.md`, connector and storage operator docs, test evidence in this branch.
 
-- [ ] Run all backend/frontend suites, Ruff, MyPy, TypeScript, lint, build, and license guard; record exact results.
-- [ ] Run live development-tenant matrix: two users, consent/revocation, browse/import/chat, >limit and throttling, filesystem and Embedded upload/download/retention/recovery, local Compose and our immutable pulled image.
-- [ ] Obtain independent whole-branch review and fix important findings with RED→GREEN tests.
+- [x] Run all backend/frontend suites, Ruff, MyPy, TypeScript, lint, build, and license guard; record exact results.
+- [ ] Run live development-tenant matrix: two users, consent/revocation, browse/import/chat, >limit and throttling, filesystem and Embedded upload/download/retention/recovery, local Compose and our immutable pulled image. **UNVERIFIED/BLOCKED:** no tenant credentials, no published digest, and the API/frontend were not started.
+- [x] Obtain independent whole-branch review and fix important findings with RED→GREEN tests. Session checklist is in STATUS.md. Ruff import order and the mypy delete-mock error were fixed. No second human reviewer.
 - [ ] Give the user the branch test steps and wait for their sign-off. Do not merge or remove the branch.

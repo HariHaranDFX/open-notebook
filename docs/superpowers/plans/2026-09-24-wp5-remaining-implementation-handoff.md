@@ -135,7 +135,7 @@ npm run build
 
 ## Task 7 — Release gate and handoff
 
-- [ ] **Step 1: Run and record fresh final-HEAD automation** in `docs/superpowers/plans/STATUS.md`, including exact command, exit status, pass/skip/warning counts, and commit SHA.
+- [x] **Step 1: Run and record fresh final-HEAD automation** in `docs/superpowers/plans/STATUS.md`, including exact command, exit status, pass/skip/warning counts, and commit SHA.
 
 ```text
 uv run pytest -q tests/
@@ -150,8 +150,8 @@ npm run build
 docker compose --env-file .env -f docker-compose.local.yml config --quiet
 ```
 
-- [ ] **Step 2: Verify local stack and real integration.** Start SurrealDB, API (migrations), worker, and frontend in that order. On a real development tenant, test two users' consent/isolation/revocation; a folder over 1,000 and Graph 429; same eTag reuse and changed eTag snapshot; batch retry after worker restart; one/bulk Sources linked to zero/multiple notebooks; chat/ask from imported Sources; filesystem and SPE small/large upload, download, retry, retention/delete, eTag 412, old-profile read, and orphan/queue reconciliation. Validate actual SurrealDB claim/transaction SQL and worker consumption of the connector's `process_source` command row. Verify an approved digest-pinned `datafabricx/open-notebook-commercial` pull **only after** an image exists and publication has been separately approved.
-- [ ] **Step 3: Obtain independent whole-branch review and fix Important/Critical findings with RED→GREEN tests.** Check connector/storage credential separation, owner ACLs, no external Graph DELETE, secret/log exposure, data-loss paths, all active image refs, and 16-locale parity. Re-run affected and final tests after fixes.
+- [ ] **Step 2: Verify local stack and real integration.** **UNVERIFIED/BLOCKED** — no tenant credentials and no published image. See STATUS.md. Start SurrealDB, API (migrations), worker, and frontend in that order. On a real development tenant, test two users' consent/isolation/revocation; a folder over 1,000 and Graph 429; same eTag reuse and changed eTag snapshot; batch retry after worker restart; one/bulk Sources linked to zero/multiple notebooks; chat/ask from imported Sources; filesystem and SPE small/large upload, download, retry, retention/delete, eTag 412, old-profile read, and orphan/queue reconciliation. Validate actual SurrealDB claim/transaction SQL and worker consumption of the connector's `process_source` command row. Verify an approved digest-pinned `datafabricx/open-notebook-commercial` pull **only after** an image exists and publication has been separately approved.
+- [x] **Step 3: Obtain independent whole-branch review and fix Important/Critical findings with RED→GREEN tests.** Session checklist recorded in STATUS.md. Ruff and mypy findings fixed. No second human reviewer. Check connector/storage credential separation, owner ACLs, no external Graph DELETE, secret/log exposure, data-loss paths, all active image refs, and 16-locale parity. Re-run affected and final tests after fixes.
 - [ ] **Step 4: Give the user branch testing steps and wait for sign-off.** If tenant credentials, Docker daemon, or published image are absent, mark that gate **UNVERIFIED/BLOCKED** with the exact missing prerequisite in `STATUS.md`; do not check the release gate or claim production readiness. Never merge, delete the branch, or publish without a new explicit user instruction.
 
 ## Self-review before resuming implementation
@@ -161,7 +161,7 @@ docker compose --env-file .env -f docker-compose.local.yml config --quiet
 - [ ] Task 4 recovery covers both remote-success/DB-failure and Source-success/queue-failure without deleting a referenced object.
 - [x] Task 5 reads the backend's actual three-state status and can recover progress after refresh with owner-only data.
 - [x] Task 6 touches active image destinations, not historical attribution, and does not assume an unprovided GHCR namespace.
-- [ ] The final result is described as code-complete separately from live-tenant/registry-verified; user approval still controls merge/publication.
+- [x] The final result is described as code-complete separately from live-tenant/registry-verified; user approval still controls merge/publication.
 
 ## Primary references for changing Microsoft contracts
 
