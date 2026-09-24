@@ -93,7 +93,7 @@ def provider_store(monkeypatch, tmp_path):
         save=AsyncMock(return_value=StoredOriginal("sharepoint_embedded", "opaque-private-key", 14, "etag")),
         materialized=materialized,
     )
-    monkeypatch.setattr(sources, "get_original_file_store", lambda provider=None: store)
+    monkeypatch.setattr(sources, "get_original_file_store", lambda provider=None, profile_id=None: store)
     return store
 
 
@@ -120,7 +120,7 @@ def test_multipart_upload_stages_bounded_chunks_and_queues_opaque_reference(
     store = AsyncMock()
     store.save.side_effect = save_original
     monkeypatch.setattr(UploadFile, "read", bounded_read)
-    monkeypatch.setattr(sources, "get_original_file_store", lambda provider=None: store, raising=False)
+    monkeypatch.setattr(sources, "get_original_file_store", lambda provider=None, profile_id=None: store, raising=False)
     monkeypatch.setattr(sources, "_assert_file_supported", AsyncMock())
     submit = AsyncMock(return_value="command:storage-test")
     monkeypatch.setattr(sources.CommandService, "submit_command_job", submit)
@@ -190,7 +190,7 @@ def test_head_and_download_use_recorded_provider_and_preserve_filename(
 ):
     providers = []
 
-    def select(provider=None):
+    def select(provider=None, profile_id=None):
         providers.append(provider)
         return provider_store
 
@@ -243,7 +243,7 @@ async def test_worker_materializes_only_during_graph_and_preserves_original(
 
     store = SimpleNamespace(materialize=materialize)
     monkeypatch.setattr(
-        source_commands, "get_original_file_store", lambda provider=None: store, raising=False
+        source_commands, "get_original_file_store", lambda provider=None, profile_id=None: store, raising=False
     )
 
     async def run_graph(state):
@@ -343,7 +343,7 @@ def test_sync_upload_runs_worker_without_persisting_temporary_path(
     monkeypatch.setattr(Source, "get", AsyncMock(side_effect=lambda _: saved_sources[-1]))
     monkeypatch.setattr(Source, "get_insights", AsyncMock(return_value=[]))
     monkeypatch.setattr(Source, "get_embedded_chunks", AsyncMock(return_value=0))
-    monkeypatch.setattr(source_commands, "get_original_file_store", lambda provider=None: provider_store)
+    monkeypatch.setattr(source_commands, "get_original_file_store", lambda provider=None, profile_id=None: provider_store)
 
     async def run_graph(state):
         assert saved_sources[0].asset.original_file_key == "opaque-private-key"
@@ -455,7 +455,7 @@ def test_provider_processing_errors_never_expose_storage_internals(
     if original_deleted:
         from api import source_file_service
 
-        monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: provider_store)
+        monkeypatch.setattr(source_file_service, "get_original_file_store", lambda *_args, **_kwargs: provider_store)
         assert asyncio.run(source_file_service.delete_original_file(
             remote_source, reason="source_owner"
         )) == "deleted"
@@ -665,8 +665,8 @@ async def test_worker_retry_finalizes_retention_after_remote_delete_and_save_fai
         materialize=materialize, delete=AsyncMock(side_effect=delete),
         exists=AsyncMock(side_effect=lambda _: original.exists()),
     )
-    monkeypatch.setattr(source_commands, "get_original_file_store", lambda _: store)
-    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: store)
+    monkeypatch.setattr(source_commands, "get_original_file_store", lambda *_args, **_kwargs: store)
+    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda *_args, **_kwargs: store)
 
     async def run_graph(state):
         return await save_source(cast(SourceState, {
@@ -703,7 +703,7 @@ async def test_extraction_save_keeps_original_deleted_during_materialization(
     from api import source_file_service
     from open_notebook.storage.original_files import reference_from_asset
 
-    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: provider_store)
+    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda *_args, **_kwargs: provider_store)
     ref = reference_from_asset(remote_source.asset)
     assert ref is not None
     async with source_file_service.materialize_original_file(
@@ -734,7 +734,7 @@ async def test_worker_redacts_extractor_errors_without_changing_retry_classifica
 ):
     from open_notebook.graphs import source as source_graph_module
 
-    monkeypatch.setattr(source_commands, "get_original_file_store", lambda _: provider_store)
+    monkeypatch.setattr(source_commands, "get_original_file_store", lambda *_args, **_kwargs: provider_store)
     monkeypatch.setattr(source_graph_module.ContentSettings, "get_instance", AsyncMock(
         return_value=source_graph_module.ContentSettings()
     ))

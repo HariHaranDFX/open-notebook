@@ -58,8 +58,8 @@
 
 **Interfaces:** Every managed Asset retains provider and immutable profile/container identity. Production SharePoint Embedded authentication accepts a certificate; client secret remains a documented local/test option. `delete(ref)` must use the recorded eTag where available.
 
-- [ ] Write failing tests for certificate authentication, old-profile reads after default change, 404 idempotency, and 412 eTag conflict preserving the reference.
-- [ ] Implement minimal profile lookup and credential validation without connector imports. Add conditional delete and actionable status. Run storage/deletion tests to GREEN, then full backend suite.
+- [x] Write failing tests for certificate authentication, old-profile reads after default change, 404 idempotency, and 412 eTag conflict preserving the reference.
+- [x] Implement minimal profile lookup and credential validation without connector imports. Add conditional delete and actionable status. Run storage/deletion tests to GREEN, then full backend suite.
 
 ### Task 4: Resumable uploads and recovery
 

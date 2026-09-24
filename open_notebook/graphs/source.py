@@ -504,6 +504,12 @@ async def save_source(state: SourceState) -> dict:
         original_file_store=(existing_asset.original_file_store if existing_asset else None),
         original_file_key=(existing_asset.original_file_key if existing_asset else None),
         original_file_etag=(existing_asset.original_file_etag if existing_asset else None),
+        original_file_profile_id=(
+            existing_asset.original_file_profile_id if existing_asset else None
+        ),
+        original_file_container_id=(
+            existing_asset.original_file_container_id if existing_asset else None
+        ),
         original_filename=(
             (existing_asset.original_filename if existing_asset else None)
             or content_state.get("original_filename")

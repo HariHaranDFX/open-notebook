@@ -105,3 +105,30 @@ def test_reference_from_asset_preserves_legacy_filesystem_path(tmp_path):
         key=str(legacy_path),
         legacy_file_path=str(legacy_path),
     )
+    assert ref.profile_id is None
+    assert ref.container_id is None
+
+
+def test_reference_from_asset_copies_recorded_profile_and_legacy_default():
+    recorded = reference_from_asset(
+        Asset(
+            original_file_store="sharepoint_embedded",
+            original_file_key="item-a",
+            original_file_etag="etag-a",
+            original_file_profile_id="profile-a",
+            original_file_container_id="container-a",
+        )
+    )
+    legacy = reference_from_asset(
+        Asset(
+            original_file_store="sharepoint_embedded",
+            original_file_key="legacy-item",
+        )
+    )
+
+    assert recorded is not None
+    assert recorded.profile_id == "profile-a"
+    assert recorded.container_id == "container-a"
+    assert legacy is not None
+    assert legacy.profile_id == "default"
+    assert legacy.container_id is None

@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from open_notebook.domain.notebook import Asset
 
 
+LEGACY_STORAGE_PROFILE_ID = "default"
+
+
 @dataclass(frozen=True)
 class StoredOriginal:
     provider: str
@@ -23,6 +26,8 @@ class StoredOriginal:
     size_bytes: int
     etag: str | None = None
     file_path: str | None = None
+    profile_id: str | None = None
+    container_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,8 @@ class OriginalFileRef:
     key: str
     etag: str | None = None
     legacy_file_path: str | None = None
+    profile_id: str | None = None
+    container_id: str | None = None
 
 
 class OriginalFileStore(Protocol):
@@ -133,7 +140,9 @@ class FilesystemOriginalFileStore:
         return True
 
 
-def get_original_file_store(provider: str | None = None) -> OriginalFileStore:
+def get_original_file_store(
+    provider: str | None = None, profile_id: str | None = None
+) -> OriginalFileStore:
     selected = (
         provider
         or os.environ.get("OPEN_NOTEBOOK_ORIGINAL_FILE_STORE")
@@ -146,7 +155,7 @@ def get_original_file_store(provider: str | None = None) -> OriginalFileStore:
             SharePointEmbeddedOriginalFileStore,
         )
 
-        return SharePointEmbeddedOriginalFileStore()
+        return SharePointEmbeddedOriginalFileStore(profile_id)
     raise ValueError("Unknown original file store")
 
 
@@ -156,10 +165,15 @@ def reference_from_asset(asset: Asset | None) -> OriginalFileRef | None:
     provider = getattr(asset, "original_file_store", None)
     key = getattr(asset, "original_file_key", None)
     if provider and key:
+        profile_id = getattr(asset, "original_file_profile_id", None)
+        if provider == "sharepoint_embedded" and not profile_id:
+            profile_id = LEGACY_STORAGE_PROFILE_ID
         return OriginalFileRef(
             provider=provider,
             key=key,
             etag=getattr(asset, "original_file_etag", None),
+            profile_id=profile_id,
+            container_id=getattr(asset, "original_file_container_id", None),
         )
     if asset.file_path:
         return OriginalFileRef(

@@ -27,9 +27,11 @@ an `OriginalFileStore` protocol with five operations:
 - test existence;
 - delete an Open Notebook-owned object idempotently.
 
-Assets persist `original_file_store`, `original_file_key`, and an optional
-`original_file_etag`. Existing `file_path` values remain readable as legacy
-filesystem references. Storage keys and physical paths are server-only.
+Assets persist `original_file_store`, `original_file_key`, an optional
+`original_file_etag`, and the immutable profile and container used for remote
+originals. Existing `file_path` values remain readable as legacy filesystem
+references. Storage keys, profile ids, container ids, and physical paths are
+server-only.
 
 The configured default is selected by `OPEN_NOTEBOOK_ORIGINAL_FILE_STORE`:
 
@@ -41,18 +43,48 @@ uploads and does not strand older originals.
 
 ## SharePoint Embedded identity
 
-Storage uses a dedicated confidential-client identity configured with
-`SHAREPOINT_STORAGE_TENANT_ID`, `SHAREPOINT_STORAGE_CLIENT_ID`, a credential,
-and `SHAREPOINT_STORAGE_CONTAINER_ID`. It requests the application `.default`
-scope and requires `FileStorageContainer.Selected` plus the container-type
-permissions needed to read, write, and delete content. It never reads
-`connector_connection` and never uses the signed-in user's token.
+Storage uses a dedicated confidential-client identity, separate from the
+connector's delegated `ENTRA_*` credentials. It requests the application
+`.default` scope and requires `FileStorageContainer.Selected` plus the
+container-type permissions needed to read, write, and delete content. It never
+reads `connector_connection` and never uses the signed-in user's token.
 
-The current API upload limit is 100 MiB, below Graph's 250 MiB simple-upload
-limit, so the first implementation uses one PUT without adding an upload-
-session dependency. Uploads are staged and streamed from disk; they are not
-read wholly into Python memory. A future increase above 250 MiB requires an
-upload-session implementation.
+The existing `SHAREPOINT_STORAGE_TENANT_ID`, `SHAREPOINT_STORAGE_CLIENT_ID`,
+`SHAREPOINT_STORAGE_CONTAINER_ID`, and either
+`SHAREPOINT_STORAGE_CLIENT_SECRET` (local/test) or
+`SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH` plus optional
+`SHAREPOINT_STORAGE_CERTIFICATE_PASSPHRASE` are the fixed profile `default`.
+`SHAREPOINT_STORAGE_PROFILE_ID` (default `default`) selects the profile used
+for new uploads. Optional `SHAREPOINT_STORAGE_PROFILES_FILE` is a JSON object
+keyed by immutable profile id. Each named profile records `tenant_id`,
+`client_id`, and `container_id`, plus either `certificate_pfx_path` and
+`certificate_passphrase_env`, or `client_secret_env`. The file stores
+environment-variable names, not key material. Production authentication is an
+MSAL confidential client with a mounted PFX certificate.
+
+Every Asset records `original_file_store`, `original_file_key`, optional
+`original_file_etag`, and, for new originals, `original_file_profile_id` and
+`original_file_container_id`. `source.asset` is already `FLEXIBLE`, so these
+nested fields need no migration. Reads, retries, HEAD, downloads, cleanup, and
+deletes use the recorded profile. A pre-release SharePoint Embedded Asset with
+no profile resolves only the fixed legacy `default` profile, never the active
+selector. A missing recorded profile or a container that differs from the
+Asset's recorded container fails closed. Old named profiles stay configured
+when the default is rotated.
+
+Delete sends the Asset eTag as Graph `If-Match` when one is stored. HTTP 404
+is idempotent success. HTTP 412 is a conflict: the stored reference, profile,
+container, and eTag stay in place for recovery. This subsystem never deletes
+an external connector document.
+
+The API upload cap stays 100 MiB unless an operator raises it. Simple Graph
+PUT is used only through 10 MiB. Larger allowed uploads use a Graph upload
+session and sequential chunks that are a multiple of 320 KiB. The session URL
+is preauthorized: it must be HTTPS on an allowed Microsoft host, and the Graph
+bearer token is never sent to it. An `original_upload_operation` record is
+written before storage starts so reconciliation can finish or remove an
+unreferenced managed copy after a crash. Reconciliation never deletes an
+object that a Source still references.
 
 ## Lifecycle
 

@@ -342,6 +342,8 @@ class Asset(BaseModel):
     original_file_store: Optional[str] = None
     original_file_key: Optional[str] = None
     original_file_etag: Optional[str] = None
+    original_file_profile_id: Optional[str] = None
+    original_file_container_id: Optional[str] = None
     url: Optional[str] = None
     # Original-upload metadata (Task 1 of retention governance). URL and
     # pasted-text sources leave every ``original_*`` field None.

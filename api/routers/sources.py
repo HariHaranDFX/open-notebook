@@ -672,8 +672,14 @@ async def _cleanup_uploaded_file(stored: Optional[StoredOriginal]) -> None:
     """Compensate a durable save when creating or queueing the source fails."""
     if stored:
         try:
-            await get_original_file_store(stored.provider).delete(
-                OriginalFileRef(stored.provider, stored.key, stored.etag)
+            await get_original_file_store(stored.provider, stored.profile_id).delete(
+                OriginalFileRef(
+                    stored.provider,
+                    stored.key,
+                    stored.etag,
+                    profile_id=stored.profile_id,
+                    container_id=stored.container_id,
+                )
             )
         except Exception:
             logger.warning("Failed to clean up original file after source creation failed")
@@ -707,6 +713,8 @@ async def _build_content_state(
                     original_file_store=stored.provider,
                     original_file_key=stored.key,
                     original_file_etag=stored.etag,
+                    original_file_profile_id=stored.profile_id,
+                    original_file_container_id=stored.container_id,
                     original_filename=original_filename,
                     original_size_bytes=stored.size_bytes,
                     original_file_action=original_file_action,
@@ -1064,7 +1072,7 @@ async def _resolve_source_file(
     asset = source.asset
     ref = reference_from_asset(asset)
     if asset is not None and ref is not None and ref.legacy_file_path is None:
-        if not await get_original_file_store(ref.provider).exists(ref):
+        if not await get_original_file_store(ref.provider, ref.profile_id).exists(ref):
             raise HTTPException(status_code=404, detail="Original file not found")
         return ref, asset.original_filename or "original-file"
 
@@ -1149,7 +1157,7 @@ async def get_source(source_id: str, request: Request):
 
         ref = reference_from_asset(source.asset)
         file_available = (
-            await get_original_file_store(ref.provider).exists(ref)
+            await get_original_file_store(ref.provider, ref.profile_id).exists(ref)
             if ref is not None and ref.legacy_file_path is None
             else _is_source_file_available(source)
         )
@@ -1199,7 +1207,9 @@ async def download_source_file(source_id: str, request: Request):
         resolved_path, filename = await _resolve_source_file(source_id, request)
         if isinstance(resolved_path, OriginalFileRef):
             return StreamingResponse(
-                get_original_file_store(resolved_path.provider).iter_bytes(resolved_path),
+                get_original_file_store(
+                    resolved_path.provider, resolved_path.profile_id
+                ).iter_bytes(resolved_path),
                 media_type="application/octet-stream",
                 headers={
                     "Content-Disposition": "attachment; filename*=utf-8''" + quote(filename, safe=""),
@@ -1392,7 +1402,7 @@ async def retry_source_processing(source_id: str, request: Request):
         if source.asset:
             ref = reference_from_asset(source.asset)
             if ref is not None and ref.legacy_file_path is None:
-                store = get_original_file_store(ref.provider)
+                store = get_original_file_store(ref.provider, ref.profile_id)
                 if not await store.exists(ref):
                     raise HTTPException(status_code=404, detail="Original file not found")
                 async with materialize_original_file(store, ref, source.asset.original_filename) as path:

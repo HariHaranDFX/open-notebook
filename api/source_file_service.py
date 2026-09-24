@@ -352,7 +352,7 @@ async def delete_original_file(
 
     # Phase 2: a missing object is safe to finalize after a partial failure.
     try:
-        store = get_original_file_store(ref.provider)
+        store = get_original_file_store(ref.provider, ref.profile_id)
         existed = await store.exists(ref)
         if existed and not await store.delete(ref):
             return "error"
@@ -365,6 +365,8 @@ async def delete_original_file(
     asset.original_file_store = None
     asset.original_file_key = None
     asset.original_file_etag = None
+    asset.original_file_profile_id = None
+    asset.original_file_container_id = None
     asset.original_deleted_at = datetime.now(timezone.utc)
     await source.save()
 

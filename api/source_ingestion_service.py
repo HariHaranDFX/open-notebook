@@ -73,6 +73,8 @@ async def queue_managed_upload_source(
         original_file_store=stored.provider,
         original_file_key=stored.key,
         original_file_etag=stored.etag,
+        original_file_profile_id=stored.profile_id,
+        original_file_container_id=stored.container_id,
         original_filename=original_filename,
         original_size_bytes=stored.size_bytes,
         original_file_action=retention_action,

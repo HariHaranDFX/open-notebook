@@ -8,6 +8,7 @@ import pytest
 from open_notebook.exceptions import (
     AuthenticationError,
     ConfigurationError,
+    ConflictError,
     ExternalServiceError,
 )
 from open_notebook.storage.original_files import (
@@ -412,3 +413,240 @@ async def test_store_bounds_server_error_retries_without_exposing_body(
 
     assert attempts == 3
     assert "sensitive Graph response" not in str(exc_info.value)
+
+
+def _mock_client(monkeypatch, handler):
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def client_factory(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", client_factory)
+
+
+def _write_profiles(tmp_path, profiles: dict):
+    path = tmp_path / "profiles.json"
+    path.write_text(__import__("json").dumps(profiles), encoding="utf-8")
+    return path
+
+
+def _self_signed_pfx(path):
+    from datetime import datetime, timedelta, timezone
+
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives.serialization import pkcs12
+    from cryptography.x509.oid import NameOID
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "storage-test")])
+    now = datetime.now(timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(1)
+        .not_valid_before(now)
+        .not_valid_after(now + timedelta(days=1))
+        .sign(key, hashes.SHA256())
+    )
+    path.write_bytes(
+        pkcs12.serialize_key_and_certificates(
+            b"storage-test", key, cert, None, serialization.NoEncryption()
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_certificate_token_ignores_connector_credentials(tmp_path, monkeypatch):
+    pfx = tmp_path / "storage.pfx"
+    _self_signed_pfx(pfx)
+    monkeypatch.delenv("SHAREPOINT_STORAGE_CLIENT_SECRET")
+    monkeypatch.setenv("SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH", str(pfx))
+    monkeypatch.setenv("SHAREPOINT_STORAGE_CERTIFICATE_PASSPHRASE", "")
+    monkeypatch.setenv("ENTRA_CLIENT_ID", "entra-client")
+    monkeypatch.setenv("ENTRA_CLIENT_SECRET", "entra-secret-value")
+    monkeypatch.setenv("ENTRA_TENANT_ID", "entra-tenant")
+    seen = []
+
+    class FakeApp:
+        def __init__(self, client_id, client_credential=None, authority=None, **kwargs):
+            seen.append((client_id, authority, client_credential))
+
+        def acquire_token_for_client(self, scopes, **kwargs):
+            assert scopes == ["https://graph.microsoft.com/.default"]
+            return {"access_token": "cert-token", "expires_in": 3600}
+
+    monkeypatch.setattr(
+        "msal.ConfidentialClientApplication", FakeApp, raising=False
+    )
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host != "login.microsoftonline.com"
+        assert "entra-secret-value" not in request.headers.get("authorization", "")
+        assert request.headers["authorization"] == "Bearer cert-token"
+        return httpx.Response(200, json={"id": "managed-item"})
+
+    _mock_client(monkeypatch, handler)
+    store = SharePointEmbeddedOriginalFileStore()
+    ref = OriginalFileRef(store.provider, "managed-item", container_id="storage-container")
+
+    assert await store.exists(ref)
+    assert seen[0][0] == "storage-client"
+    assert "entra-tenant" not in (seen[0][1] or "")
+    credential = seen[0][2]
+    assert isinstance(credential, dict)
+    assert "entra-secret-value" not in credential.get("private_key", "")
+    assert str(pfx) not in credential.get("private_key", "")
+
+
+@pytest.mark.asyncio
+async def test_old_profile_is_used_after_default_changes(tmp_path, monkeypatch):
+    from open_notebook.domain.notebook import Asset
+    from open_notebook.storage.original_files import reference_from_asset
+
+    profiles = _write_profiles(
+        tmp_path,
+        {
+            "profile-a": {
+                "tenant_id": "tenant-a",
+                "client_id": "client-a",
+                "container_id": "container-a",
+                "client_secret_env": "SPE_A_SECRET",
+            },
+            "profile-b": {
+                "tenant_id": "tenant-b",
+                "client_id": "client-b",
+                "container_id": "container-b",
+                "client_secret_env": "SPE_B_SECRET",
+            },
+        },
+    )
+    monkeypatch.setenv("SHAREPOINT_STORAGE_PROFILES_FILE", str(profiles))
+    monkeypatch.setenv("SPE_A_SECRET", "secret-a")
+    monkeypatch.setenv("SPE_B_SECRET", "secret-b")
+    monkeypatch.setenv("ENTRA_CLIENT_SECRET", "entra-secret-value")
+    monkeypatch.setenv("SHAREPOINT_STORAGE_PROFILE_ID", "profile-a")
+    drives = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            body = (await request.aread()).decode()
+            assert "entra-secret-value" not in body
+            assert "secret-a" in body
+            assert "client-a" in body
+            return httpx.Response(
+                200, json={"access_token": "profile-a-token", "expires_in": 3600}
+            )
+        drives.append(request.url.path)
+        return httpx.Response(200, json={"id": "item-a"})
+
+    _mock_client(monkeypatch, handler)
+    asset = Asset(
+        original_file_store="sharepoint_embedded",
+        original_file_key="item-a",
+        original_file_profile_id="profile-a",
+        original_file_container_id="container-a",
+    )
+    old_ref = reference_from_asset(asset)
+    assert old_ref is not None
+    monkeypatch.setenv("SHAREPOINT_STORAGE_PROFILE_ID", "profile-b")
+
+    assert old_ref.container_id == "container-a"
+    assert await get_original_file_store(old_ref.provider, old_ref.profile_id).exists(old_ref)
+    assert drives == ["/v1.0/drives/container-a/items/item-a"]
+
+
+def test_missing_recorded_profile_fails_without_secrets(tmp_path, monkeypatch):
+    profiles = _write_profiles(
+        tmp_path,
+        {
+            "profile-a": {
+                "tenant_id": "tenant-a",
+                "client_id": "client-a",
+                "container_id": "container-a",
+                "client_secret_env": "SPE_A_SECRET",
+            }
+        },
+    )
+    monkeypatch.setenv("SHAREPOINT_STORAGE_PROFILES_FILE", str(profiles))
+    monkeypatch.setenv("SPE_A_SECRET", "secret-a")
+
+    with pytest.raises(ConfigurationError) as missing:
+        get_original_file_store("sharepoint_embedded", "profile-missing")
+
+    assert str(profiles) not in str(missing.value)
+    assert "secret-a" not in str(missing.value)
+
+
+@pytest.mark.asyncio
+async def test_container_mismatch_does_not_call_graph(tmp_path, monkeypatch):
+    profiles = _write_profiles(
+        tmp_path,
+        {
+            "profile-a": {
+                "tenant_id": "tenant-a",
+                "client_id": "client-a",
+                "container_id": "container-a",
+                "client_secret_env": "SPE_A_SECRET",
+            }
+        },
+    )
+    monkeypatch.setenv("SHAREPOINT_STORAGE_PROFILES_FILE", str(profiles))
+    monkeypatch.setenv("SPE_A_SECRET", "secret-a")
+    called = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        called.append(request.url.path)
+        return httpx.Response(204)
+
+    _mock_client(monkeypatch, handler)
+    store = SharePointEmbeddedOriginalFileStore("profile-a")
+    ref = OriginalFileRef(
+        store.provider,
+        "item-a",
+        "etag-1",
+        profile_id="profile-a",
+        container_id="container-other",
+    )
+
+    with pytest.raises(ConfigurationError, match="container"):
+        await store.delete(ref)
+    assert called == []
+
+
+@pytest.mark.asyncio
+async def test_delete_404_is_success_and_412_keeps_the_reference(monkeypatch):
+    requests = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "login.microsoftonline.com":
+            return httpx.Response(
+                200, json={"access_token": "storage-token", "expires_in": 3600}
+            )
+        requests.append(request)
+        if request.url.path.endswith("/missing"):
+            return httpx.Response(404)
+        return httpx.Response(412, text="etag mismatch secret body")
+
+    _mock_client(monkeypatch, handler)
+    store = SharePointEmbeddedOriginalFileStore()
+    missing = OriginalFileRef(
+        store.provider, "missing", "etag-old", container_id="storage-container"
+    )
+    stale = OriginalFileRef(
+        store.provider, "stale", "etag-old", container_id="storage-container"
+    )
+
+    assert await store.delete(missing)
+    with pytest.raises(ConflictError, match="changed") as exc_info:
+        await store.delete(stale)
+
+    assert "etag mismatch secret body" not in str(exc_info.value)
+    assert requests[-1].headers["if-match"] == "etag-old"
+    assert stale.key == "stale"
+    assert stale.etag == "etag-old"

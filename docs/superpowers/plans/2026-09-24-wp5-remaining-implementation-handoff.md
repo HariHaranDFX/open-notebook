@@ -46,7 +46,7 @@
 }
 ```
 
-- [ ] **Step 1: Update the storage spec and write RED tests.** Pin certificate token acquisition, old-profile read after changing the default, missing-profile/container mismatch, legacy filesystem lookup, 404 delete, and 412 delete without reference clearing. Use the existing mocked `httpx.AsyncClient` pattern. The tests must assert no connector `ENTRA_*` credential is read by storage.
+- [x] **Step 1: Update the storage spec and write RED tests.** Pin certificate token acquisition, old-profile read after changing the default, missing-profile/container mismatch, legacy filesystem lookup, 404 delete, and 412 delete without reference clearing. Use the existing mocked `httpx.AsyncClient` pattern. The tests must assert no connector `ENTRA_*` credential is read by storage.
 
 ```python
 old_ref = reference_from_asset(asset_saved_with_profile_a)
@@ -55,9 +55,9 @@ assert await get_original_file_store(old_ref.provider, old_ref.profile_id).exist
 assert old_ref.container_id == "container-a"
 ```
 
-- [ ] **Step 2: Run the new tests to RED, then implement only the contract above.** Prefer installed MSAL's `ConfidentialClientApplication.acquire_token_for_client` for PFX app auth; do not add another OAuth dependency. Keep file/profile parsing server-side and errors free of certificate paths or token bodies. Update each `get_original_file_store(ref.provider)` callsite found by `rg` to pass the recorded profile. Store the profile/container fields when creating an Asset for ordinary upload **and** connector-managed copy.
-- [ ] **Step 3: Use the Asset's saved eTag as Graph `If-Match` on DELETE.** A 404 is idempotent success. A 412 raises a typed conflict and leaves `original_file_store`, key, profile, container, and eTag intact for recovery; never delete the external connector document. Assert the header and reference-preservation in tests.
-- [ ] **Step 4: Run focused and static checks, review, commit.**
+- [x] **Step 2: Run the new tests to RED, then implement only the contract above.** Prefer installed MSAL's `ConfidentialClientApplication.acquire_token_for_client` for PFX app auth; do not add another OAuth dependency. Keep file/profile parsing server-side and errors free of certificate paths or token bodies. Update each `get_original_file_store(ref.provider)` callsite found by `rg` to pass the recorded profile. Store the profile/container fields when creating an Asset for ordinary upload **and** connector-managed copy.
+- [x] **Step 3: Use the Asset's saved eTag as Graph `If-Match` on DELETE.** A 404 is idempotent success. A 412 raises a typed conflict and leaves `original_file_store`, key, profile, container, and eTag intact for recovery; never delete the external connector document. Assert the header and reference-preservation in tests.
+- [x] **Step 4: Run focused and static checks, review, commit.**
 
 ```text
 uv run pytest -q tests/test_original_file_store.py tests/test_sharepoint_embedded_store.py tests/test_source_storage_deletion.py tests/test_source_storage_integration.py

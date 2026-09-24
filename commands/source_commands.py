@@ -177,11 +177,15 @@ async def process_source_command(
                     "original_file_store",
                     "original_file_key",
                     "original_file_etag",
+                    "original_file_profile_id",
+                    "original_file_container_id",
                 ):
                     content_state.pop(field, None)
                 path = await stack.enter_async_context(
                     materialize_original_file(
-                        get_original_file_store(ref.provider), ref, asset.original_filename
+                        get_original_file_store(ref.provider, ref.profile_id),
+                        ref,
+                        asset.original_filename,
                     )
                 )
                 content_state["file_path"] = str(path)

@@ -395,7 +395,11 @@ async def test_deleting_imported_source_only_deletes_managed_copy(imports, monke
         imports.records.pop(str(record_id), None)
         return True
 
-    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda provider=None: imports.store)
+    monkeypatch.setattr(
+        source_file_service,
+        "get_original_file_store",
+        lambda provider=None, profile_id=None: imports.store,
+    )
     monkeypatch.setattr(base, "repo_delete", delete_record)
     assert await source.delete()
     assert source_id not in imports.records

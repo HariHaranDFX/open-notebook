@@ -10,7 +10,11 @@ from api import source_file_service
 from commands import source_commands, source_file_commands
 from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import Asset, Source
-from open_notebook.exceptions import ConfigurationError, FileOperationError
+from open_notebook.exceptions import (
+    ConfigurationError,
+    ConflictError,
+    FileOperationError,
+)
 from open_notebook.storage.original_files import OriginalFileRef
 
 
@@ -38,7 +42,7 @@ async def test_finalization_uses_asset_rebuilt_by_phase_one_save(monkeypatch):
     store.exists.return_value = True
     store.delete.return_value = True
     monkeypatch.setattr(
-        source_file_service, "get_original_file_store", lambda _provider: store
+        source_file_service, "get_original_file_store", lambda _provider, _profile=None: store
     )
 
     assert (
@@ -81,7 +85,12 @@ def managed_source(monkeypatch):
     store = AsyncMock()
     store.exists.return_value = True
     store.delete.return_value = True
-    monkeypatch.setattr(source_file_service, "get_original_file_store", lambda _: store, raising=False)
+    monkeypatch.setattr(
+        source_file_service,
+        "get_original_file_store",
+        lambda *_args, **_kwargs: store,
+        raising=False,
+    )
     # A remote reference must never become a local deletion target.
     monkeypatch.setattr(Path, "unlink", lambda *args, **kwargs: pytest.fail("Remote asset unlinked locally"))
     return source, store, saved
@@ -93,7 +102,9 @@ async def test_explicit_delete_uses_recorded_provider_and_finalizes(managed_sour
 
     assert await source_file_service.delete_original_file(source, reason="source_owner") == "deleted"
 
-    store.delete.assert_awaited_once_with(OriginalFileRef("sharepoint_embedded", "managed-copy", "etag"))
+    store.delete.assert_awaited_once_with(OriginalFileRef(
+        "sharepoint_embedded", "managed-copy", "etag", profile_id="default"
+    ))
     assert saved[0].original_deletion_started_at is not None
     assert saved[0].original_file_key == "managed-copy"
     assert saved[0].original_deleted_at is None
@@ -117,7 +128,9 @@ async def test_retention_delete_after_success_uses_recorded_provider(
     await source_commands._maybe_delete_original_after_success(source)
 
     store.delete.assert_awaited_once_with(
-        OriginalFileRef("sharepoint_embedded", "managed-copy", "etag")
+        OriginalFileRef(
+            "sharepoint_embedded", "managed-copy", "etag", profile_id="default"
+        )
     )
     assert source.asset.original_deleted_reason == "retention_policy"
 
@@ -158,7 +171,7 @@ async def test_configuration_failure_retains_retry_marker_and_reference(
 ):
     source, _, saved = managed_source
 
-    def fail_configuration(_provider):
+    def fail_configuration(_provider, _profile=None):
         raise ConfigurationError("missing storage configuration")
 
     monkeypatch.setattr(
@@ -172,6 +185,26 @@ async def test_configuration_failure_retains_retry_marker_and_reference(
     assert saved[-1].original_deletion_started_at is not None
     assert source.asset.original_file_store == "sharepoint_embedded"
     assert source.asset.original_file_key == "managed-copy"
+    assert source.asset.original_deleted_at is None
+
+
+@pytest.mark.asyncio
+async def test_etag_conflict_preserves_profile_container_and_reference(managed_source):
+    source, store, _saved = managed_source
+    source.asset.original_file_profile_id = "profile-a"
+    source.asset.original_file_container_id = "container-a"
+    store.delete.side_effect = ConflictError("SharePoint storage object changed")
+
+    assert (
+        await source_file_service.delete_original_file(source, reason="source_owner")
+        == "error"
+    )
+
+    assert source.asset.original_file_store == "sharepoint_embedded"
+    assert source.asset.original_file_key == "managed-copy"
+    assert source.asset.original_file_etag == "etag"
+    assert source.asset.original_file_profile_id == "profile-a"
+    assert source.asset.original_file_container_id == "container-a"
     assert source.asset.original_deleted_at is None
 
 
@@ -209,7 +242,9 @@ async def test_full_source_delete_removes_managed_copy_not_connector_item(
     assert await source.delete() is True
 
     store.delete.assert_awaited_once_with(
-        OriginalFileRef("sharepoint_embedded", "managed-copy", "etag")
+        OriginalFileRef(
+            "sharepoint_embedded", "managed-copy", "etag", profile_id="default"
+        )
     )
     assert all(
         "external-connector-item" not in str(call.args)
