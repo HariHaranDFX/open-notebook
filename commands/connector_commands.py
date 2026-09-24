@@ -4,6 +4,8 @@ import asyncio
 import tempfile
 from hashlib import sha256
 from pathlib import Path
+from time import time
+from uuid import uuid4
 
 from content_core import check_file_support
 from content_core.content.identification import FileDetector
@@ -25,11 +27,12 @@ from open_notebook.connectors.sharepoint import (
     SUPPORTED_MIME_TYPES,
     SharePointConnector,
 )
-from open_notebook.database.repository import ensure_record_id, repo_query, repo_upsert
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.user import User
 from open_notebook.exceptions import (
     AuthenticationError,
+    ExternalServiceError,
     NotFoundError,
     UnsupportedTypeException,
 )
@@ -48,14 +51,64 @@ class ImportSharePointBatchOutput(CommandOutput):
     success: bool
 
 
-async def _record_version(document, batch, user_id, version_id):
-    if document.etag:
-        version = ConnectorRemoteVersion(
-            id=version_id, user_id=user_id, connection_id=batch.connection_id,
-            drive_id=document.drive_id, item_id=document.item_id,
-            etag=document.etag, source_id=document.source_id,
+async def _claim_version(document, batch, user_id, version_id, identity, digest):
+    """Claim one remote version in SurrealDB before downloading any bytes."""
+    source_id = "source:connector_" + digest
+    record_id = ensure_record_id(version_id)
+    for _ in range(50):
+        rows = await repo_query("SELECT * FROM $id", {"id": record_id})
+        row = rows[0] if rows else None
+        if row and row["status"] == "completed":
+            current = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(str(row["source_id"]))})
+            if current:
+                return str(row["source_id"]), None
+            source_id = "source:connector_" + sha256((identity + "\0" + document.id).encode()).hexdigest()
+        elif row and row.get("source_id"):
+            source_id = str(row["source_id"])
+        claim_id = uuid4().hex
+        lease_until = time() + 900
+        if not row:
+            version = ConnectorRemoteVersion(
+                id=version_id, user_id=user_id, connection_id=batch.connection_id,
+                drive_id=document.drive_id, item_id=document.item_id, etag=document.etag,
+                source_id=source_id, claim_id=claim_id, lease_until=lease_until,
+            )
+            data = version._prepare_save_data()
+            data.pop("id", None)
+            try:
+                await repo_query("CREATE $id CONTENT $data;", {"id": record_id, "data": data})
+                return source_id, claim_id
+            except Exception:
+                if not await repo_query("SELECT * FROM $id", {"id": record_id}):
+                    raise
+        elif row["status"] != "claiming" or (row.get("lease_until") or 0) < time():
+            changed = await repo_query(
+                "UPDATE $id SET status = 'claiming', claim_id = $claim_id, lease_until = $lease_until, source_id = $source_id WHERE status = $old_status AND (status != 'claiming' OR lease_until < $now) RETURN AFTER;",
+                {"id": record_id, "claim_id": claim_id, "lease_until": lease_until,
+                 "source_id": ensure_record_id(source_id), "old_status": row["status"], "now": time()},
+            )
+            if changed:
+                return source_id, claim_id
+        await asyncio.sleep(0.1)
+    raise RuntimeError("Another SharePoint import is in progress. Retry this batch later.")
+
+
+async def _finish_claim(version_id, claim_id, status, source_id):
+    if claim_id:
+        changed = await repo_query(
+            "UPDATE $id SET status = $status, claim_id = NONE, lease_until = NONE, source_id = $source_id WHERE claim_id = $claim_id AND ($status = 'failed' OR lease_until > $now) RETURN AFTER;",
+            {"id": ensure_record_id(version_id), "status": status,
+             "source_id": ensure_record_id(source_id), "claim_id": claim_id, "now": time()},
         )
-        await repo_upsert("connector_remote_version", version_id, version._prepare_save_data(), add_timestamp=True)
+        if not changed and status == "completed":
+            raise RuntimeError("SharePoint import claim expired. Retry this batch later.")
+
+
+async def _assert_claim_owned(version_id, claim_id):
+    if claim_id:
+        rows = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(version_id)})
+        if not rows or rows[0].get("claim_id") != claim_id or (rows[0].get("lease_until") or 0) <= time():
+            raise RuntimeError("SharePoint import claim expired. Retry this batch later.")
 
 
 async def _import_document(connector, document, batch, user):
@@ -64,13 +117,20 @@ async def _import_document(connector, document, batch, user):
     identity = "\0".join((user.id, batch.connection_id, document.drive_id, document.item_id, document.etag or document.id))
     digest = sha256(identity.encode()).hexdigest()
     version_id = "connector_remote_version:" + digest
-    version = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(version_id)}) if document.etag else []
-    document.source_id = str(version[0]["source_id"]) if version else "source:connector_" + digest
+    document.source_id, claim_id = (
+        await _claim_version(document, batch, user.id, version_id, identity, digest)
+        if document.etag else ("source:connector_" + digest, None)
+    )
+    try:
+        await asyncio.wait_for(_import_document_content(connector, document, batch, user, metadata, version_id, claim_id), timeout=840)
+    except BaseException:
+        await _finish_claim(version_id, claim_id, "failed", document.source_id)
+        raise
+    await _finish_claim(version_id, claim_id, "completed", document.source_id)
+
+
+async def _import_document_content(connector, document, batch, user, metadata, version_id, claim_id):
     existing = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
-    if version and not existing:
-        # A deleted Source's old process_source command must not be reused.
-        document.source_id = "source:connector_" + sha256((identity + "\0" + document.id).encode()).hexdigest()
-        existing = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
     await document.save()
     if existing:
         source = Source(**existing[0])
@@ -82,7 +142,6 @@ async def _import_document(connector, document, batch, user):
             await source.add_to_notebook(notebook_id)
         queued = await queue_source(source, {**source.asset.model_dump(exclude_none=True), "delete_source": False}, batch.notebook_ids, batch.transformations, batch.embed, recover=True)
         document.command_id = queued.command_id
-        await _record_version(document, batch, user.id, version_id)
         document.status, document.error = "queued", None
         await document.save()
         return
@@ -110,9 +169,11 @@ async def _import_document(connector, document, batch, user):
         if not support.supported:
             raise UnsupportedTypeException("Unsupported file type.")
         action = await resolve_action_for_source_create(SourceCreate(type="upload"))
+        await _assert_claim_owned(version_id, claim_id)
         store = get_original_file_store()
         stored = await store.save(path, metadata.name)
     try:
+        await _assert_claim_owned(version_id, claim_id)
         queued = await queue_managed_upload_source(
             stored, metadata.name, user, batch.notebook_ids, batch.transformations, batch.embed, action,
             source_id=document.source_id,
@@ -120,11 +181,12 @@ async def _import_document(connector, document, batch, user):
     except Exception:
         # A retry can recover a persisted Source. Only discard the managed copy
         # when the Source write never succeeded and nothing references it.
-        if not await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)}):
+        rows = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(document.source_id)})
+        asset = Source(**rows[0]).asset if rows else None
+        if asset is None or asset.original_file_key != stored.key:
             await store.delete(OriginalFileRef(stored.provider, stored.key, stored.etag))
         raise
     document.source_id, document.command_id = queued.source.id, queued.command_id
-    await _record_version(document, batch, user.id, version_id)
     document.status, document.error = "queued", None
     await document.save()
 
@@ -142,7 +204,7 @@ async def _import_batch_once(batch: ConnectorBatch, owner: User) -> None:
     connector = SharePointConnector(user.id)
     documents = await ConnectorBatchDocument.for_batch(batch.id, user.id)
     existing = {document.item_id: document for document in documents}
-    if batch.folder_id is not None:
+    if batch.folder_id is not None and not batch.retry_failed_only:
         async for metadata in connector.iter_documents(batch.drive_id, batch.folder_id):
             if metadata.item_id not in existing:
                 document = ConnectorBatchDocument(user_id=user.id, batch_id=batch.id, drive_id=batch.drive_id, item_id=metadata.item_id, name=metadata.name)
@@ -209,6 +271,17 @@ async def import_sharepoint_batch_command(input_data: ImportSharePointBatchInput
             if batch is None:
                 raise
             batch.status, batch.error = "failed", "Notebook access is no longer available."
+            await batch.save()
+            break
+        except ExternalServiceError as exc:
+            if "import limit" not in str(exc):
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+            if batch is None:
+                raise
+            batch.status = "partial" if batch.completed else "failed"
+            batch.error = "SharePoint folder exceeds the 1,000-item import limit. Choose a smaller folder." if "import limit" in str(exc) else "Could not complete the SharePoint import. Try again."
             await batch.save()
             break
         except Exception:

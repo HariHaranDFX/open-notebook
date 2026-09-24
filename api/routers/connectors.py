@@ -79,15 +79,26 @@ async def retry_sharepoint_batch(batch_id: str, user: AuthenticatedUser = Depend
     if batch.status not in ("partial", "failed"):
         return JSONResponse({"detail": "This batch is not ready for retry."}, status_code=409)
     documents = await ConnectorBatchDocument.for_batch(batch_id, user.id)
+    previous = (batch.status, batch.error, batch.command_id, batch.retry_failed_only)
+    failed = [(document, document.error) for document in documents if document.status == "failed"]
     for document in documents:
         if document.status == "failed":
             document.status, document.error = "pending", None
             await document.save()
     batch.status, batch.error = "pending", None
+    batch.retry_failed_only = batch.folder_id is not None and batch.total > 0
     await batch.save()
-    batch.command_id = await CommandService.submit_command_job(
-        "open_notebook", "import_sharepoint_batch", {"batch_id": batch.id, "user_id": user.id}
-    )
+    try:
+        batch.command_id = await CommandService.submit_command_job(
+            "open_notebook", "import_sharepoint_batch", {"batch_id": batch.id, "user_id": user.id}
+        )
+    except Exception:
+        for document, error in failed:
+            document.status, document.error = "failed", error
+            await document.save()
+        batch.status, batch.error, batch.command_id, batch.retry_failed_only = previous
+        await batch.save()
+        raise
     await batch.save()
     return {"batch_id": batch.id}
 

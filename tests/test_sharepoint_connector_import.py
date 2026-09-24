@@ -1,5 +1,6 @@
 """Import API/worker integration with an in-memory repository and mocked Graph."""
 
+import asyncio
 from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any
@@ -25,6 +26,8 @@ def test_remote_version_migration_is_registered_with_unique_owner_identity():
     assert len(manager.up_migrations) == len(manager.down_migrations) == 34
     assert "connector_remote_version_identity" in manager.up_migrations[33].sql
     assert "user_id, connection_id, drive_id, item_id, etag UNIQUE" in manager.up_migrations[33].sql
+    assert "lease_until ON TABLE connector_remote_version" in manager.up_migrations[33].sql
+    assert "retry_failed_only ON TABLE connector_batch" in manager.up_migrations[33].sql
 
 
 @pytest.fixture
@@ -50,6 +53,25 @@ def imports(monkeypatch, tmp_path):
 
     async def query(sql, params=None):
         params = params or {}
+        if sql.startswith("CREATE $id CONTENT"):
+            record_id = str(params["id"])
+            if record_id in records:
+                raise RuntimeError("record already exists")
+            records[record_id] = {**params["data"], "id": record_id, "user_id": str(params["data"]["user_id"]), "connection_id": str(params["data"]["connection_id"]), "source_id": str(params["data"]["source_id"])}
+            return [deepcopy(records[record_id])]
+        if sql.startswith("UPDATE $id SET status"):
+            row = records.get(str(params["id"]))
+            if not row:
+                return []
+            if "old_status" in params:
+                if row["status"] != params["old_status"] or (row["status"] == "claiming" and row["lease_until"] >= params["now"]):
+                    return []
+                row.update(status="claiming", claim_id=params["claim_id"], lease_until=params["lease_until"], source_id=str(params["source_id"]))
+            else:
+                if row["claim_id"] != params["claim_id"] or (params["status"] == "completed" and row["lease_until"] <= params["now"]):
+                    return []
+                row.update(status=params["status"], claim_id=None, lease_until=None, source_id=str(params["source_id"]))
+            return [deepcopy(row)]
         if "FROM reference" in sql:
             return [edge for edge in edges if edge["in"] == str(params["source_id"]) and edge["out"] == str(params["notebook_id"])]
         if "FROM command" in sql:
@@ -88,12 +110,6 @@ def imports(monkeypatch, tmp_path):
     monkeypatch.setattr(source_ingestion_service, "repo_query", query)
     monkeypatch.setattr(source_ingestion_service, "repo_upsert", upsert)
     monkeypatch.setattr(connector_commands, "repo_query", query)
-    async def upsert_version(table, record_id, data, **kwargs):
-        assert table == "connector_remote_version"
-        records[record_id] = {**data, "id": record_id, "user_id": str(data["user_id"]), "connection_id": str(data["connection_id"]), "source_id": str(data["source_id"])}
-        return [deepcopy(records[record_id])]
-
-    monkeypatch.setattr(connector_commands, "repo_upsert", upsert_version)
     monkeypatch.setattr(CommandService, "submit_command_job", submit)
     monkeypatch.setattr(ownership, "auth_enforces_ownership", lambda: True)
     monkeypatch.setattr(sharepoint_auth, "get_connection", AsyncMock(return_value=models.ConnectorConnection(id="connector_connection:alice", user_id=user.id)))
@@ -461,6 +477,40 @@ async def test_missing_etag_does_not_reuse_source_across_batches(imports, monkey
 
 
 @pytest.mark.asyncio
+async def test_concurrent_same_version_batches_make_one_copy_and_processing_job(imports, monkeypatch):
+    from commands import connector_commands
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    original_get = SharePointConnector.get_document
+    arrived = 0
+    both = asyncio.Event()
+
+    async def synchronized_get(self, drive_id, item_id):
+        nonlocal arrived
+        metadata = await original_get(self, drive_id, item_id)
+        arrived += 1
+        if arrived == 2:
+            both.set()
+        await both.wait()
+        return metadata
+
+    monkeypatch.setattr(SharePointConnector, "get_document", synchronized_get)
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        first = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+        second = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+        assert first.status_code == second.status_code == 202
+        commands = [connector_commands.ImportSharePointBatchInput(**job["args"]) for job in imports.jobs]
+        await asyncio.gather(*(connector_commands.import_sharepoint_batch_command(command) for command in commands))
+        statuses = [await client.get(f"/api/connectors/sharepoint/batches/{response.json()['batch_id']}") for response in (first, second)]
+    assert [status.json()["status"] for status in statuses] == ["completed", "completed"]
+    assert len([row for row in imports.records if row.startswith("source:")]) == 1
+    assert len(list(imports.store.uploads_folder.iterdir())) == 1
+    assert len([job for job in imports.jobs if job["name"] == "process_source"]) == 1
+
+
+@pytest.mark.asyncio
 async def test_owner_can_retry_only_failed_items_in_durable_batch(imports, monkeypatch):
     imports.files["bad"] = ("payload.exe", b"unsafe")
     first = await run_batch(imports, monkeypatch, item_ids=["one", "bad"])
@@ -478,6 +528,179 @@ async def test_owner_can_retry_only_failed_items_in_durable_batch(imports, monke
     assert status.json()["status"] == "completed"
     assert status.json()["completed"] == 2
     assert len([job for job in imports.jobs if job["name"] == "process_source"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_folder_retry_uses_original_failed_selection_only(imports, monkeypatch):
+    from commands import connector_commands
+    from open_notebook.connectors.base import ConnectorDocument
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    imports.files["bad"] = ("payload.exe", b"unsafe")
+    imports.files["new"] = ("new.txt", b"A newly added document with enough content")
+    folder_items = ["one", "bad"]
+
+    async def documents(self, drive_id, folder_id):
+        for item_id in folder_items:
+            yield ConnectorDocument(drive_id=drive_id, item_id=item_id, name=imports.files[item_id][0])
+
+    monkeypatch.setattr(SharePointConnector, "iter_documents", documents)
+    first = await run_batch(imports, monkeypatch, folder_id="folder")
+    assert first.json()["status"] == "partial"
+    folder_items.append("new")
+    imports.files["bad"] = ("fixed.txt", b"A fixed text document with enough content")
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        retry = await client.post(f"/api/connectors/sharepoint/batches/{first.json()['batch_id']}/retry")
+        assert retry.status_code == 202
+        await connector_commands.import_sharepoint_batch_command(connector_commands.ImportSharePointBatchInput(**imports.jobs[-1]["args"]))
+        status = await client.get(f"/api/connectors/sharepoint/batches/{first.json()['batch_id']}")
+    assert status.json()["status"] == "completed"
+    assert {row["item_id"] for row in status.json()["documents"]} == {"one", "bad"}
+    assert len([job for job in imports.jobs if job["name"] == "process_source"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_retry_enqueue_failure_leaves_batch_retryable(imports, monkeypatch):
+    from api.command_service import CommandService
+
+    imports.files["bad"] = ("payload.exe", b"unsafe")
+    first = await run_batch(imports, monkeypatch, item_ids=["one", "bad"])
+    batch_id = first.json()["batch_id"]
+
+    async def failed_enqueue(*args, **kwargs):
+        raise RuntimeError("queue unavailable")
+
+    monkeypatch.setattr(CommandService, "submit_command_job", failed_enqueue)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        with pytest.raises(RuntimeError, match="queue unavailable"):
+            await client.post(f"/api/connectors/sharepoint/batches/{batch_id}/retry")
+        status = await client.get(f"/api/connectors/sharepoint/batches/{batch_id}")
+    assert status.json()["status"] == "partial"
+    assert status.json()["failed"] == 1
+    assert {doc["item_id"]: doc["status"] for doc in status.json()["documents"]} == {"one": "queued", "bad": "failed"}
+
+
+@pytest.mark.asyncio
+async def test_expired_remote_version_claim_can_be_recovered(imports, monkeypatch):
+    from hashlib import sha256
+
+    identity = "\0".join((imports.user.id, "connector_connection:alice", "drive", "one", "v1"))
+    digest = sha256(identity.encode()).hexdigest()
+    version_id = "connector_remote_version:" + digest
+    imports.records[version_id] = {
+        "id": version_id, "user_id": imports.user.id,
+        "connection_id": "connector_connection:alice", "drive_id": "drive",
+        "item_id": "one", "etag": "v1", "source_id": "source:connector_" + digest,
+        "status": "claiming", "claim_id": "dead-worker", "lease_until": 0,
+    }
+    result = await run_batch(imports, monkeypatch, item_ids=["one"])
+    assert result.json()["status"] == "completed"
+    assert imports.records[version_id]["status"] == "completed"
+    assert len(list(imports.store.uploads_folder.iterdir())) == 1
+
+
+@pytest.mark.asyncio
+async def test_expired_claim_owner_cannot_finalize_after_takeover(imports):
+    from hashlib import sha256
+
+    from commands import connector_commands
+
+    document = SimpleNamespace(id="connector_batch_document:one", drive_id="drive", item_id="one", etag="v1")
+    batch = SimpleNamespace(connection_id="connector_connection:alice")
+    identity = "\0".join((imports.user.id, batch.connection_id, "drive", "one", "v1"))
+    digest = sha256(identity.encode()).hexdigest()
+    version_id = "connector_remote_version:" + digest
+    source_id, first_claim = await connector_commands._claim_version(document, batch, imports.user.id, version_id, identity, digest)
+    imports.records[version_id]["lease_until"] = 0
+    replacement_id, second_claim = await connector_commands._claim_version(document, batch, imports.user.id, version_id, identity, digest)
+    assert first_claim != second_claim
+    assert source_id == replacement_id
+    await connector_commands._finish_claim(version_id, second_claim, "completed", replacement_id)
+    with pytest.raises(RuntimeError, match="expired"):
+        await connector_commands._assert_claim_owned(version_id, first_claim)
+    with pytest.raises(RuntimeError, match="expired"):
+        await connector_commands._finish_claim(version_id, first_claim, "completed", source_id)
+    assert imports.records[version_id]["status"] == "completed"
+    assert imports.records[version_id]["source_id"] == replacement_id
+
+
+@pytest.mark.asyncio
+async def test_failed_claim_is_immediately_retryable(imports):
+    from hashlib import sha256
+
+    from commands import connector_commands
+
+    document = SimpleNamespace(id="connector_batch_document:one", drive_id="drive", item_id="one", etag="v1")
+    batch = SimpleNamespace(connection_id="connector_connection:alice")
+    identity = "\0".join((imports.user.id, batch.connection_id, "drive", "one", "v1"))
+    digest = sha256(identity.encode()).hexdigest()
+    version_id = "connector_remote_version:" + digest
+    source_id, first_claim = await connector_commands._claim_version(document, batch, imports.user.id, version_id, identity, digest)
+    await connector_commands._finish_claim(version_id, first_claim, "failed", source_id)
+    assert imports.records[version_id]["status"] == "failed"
+    _, second_claim = await connector_commands._claim_version(document, batch, imports.user.id, version_id, identity, digest)
+    assert second_claim != first_claim
+
+
+@pytest.mark.asyncio
+async def test_late_claim_owner_cleans_only_its_own_copy(imports, monkeypatch, tmp_path):
+    from hashlib import sha256
+
+    from commands import connector_commands
+    from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+    from open_notebook.connectors.sharepoint import SharePointConnector
+    from open_notebook.domain.notebook import Asset, Source
+
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        created = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+    batch = ConnectorBatch(**imports.records[created.json()["batch_id"]])
+    document = ConnectorBatchDocument(user_id=imports.user.id, batch_id=batch.id, drive_id="drive", item_id="one", name="report.txt")
+    await document.save()
+    identity = "\0".join((imports.user.id, batch.connection_id, "drive", "one", "v1"))
+    digest = sha256(identity.encode()).hexdigest()
+    source_id = "source:connector_" + digest
+    version_id = "connector_remote_version:" + digest
+    original_save = imports.store.save
+    winning_key = None
+
+    async def competing_save(path, name):
+        nonlocal winning_key
+        stale = await original_save(path, name)
+        winner_input = tmp_path / "winner.txt"
+        winner_input.write_bytes(imports.files["one"][1])
+        winner = await original_save(winner_input, name)
+        winning_key = winner.key
+        imports.records[version_id]["claim_id"] = "winner"
+        asset = Asset(file_path=winner.file_path, original_file_store=winner.provider,
+                      original_file_key=winner.key, original_file_etag=winner.etag,
+                      original_filename=name, original_size_bytes=winner.size_bytes,
+                      original_file_action="keep")
+        imports.records[source_id] = Source(id=source_id, title=name, topics=[], asset=asset,
+                                            user_id=imports.user.id, client_id=imports.user.client_id).model_dump()
+        return stale
+
+    monkeypatch.setattr(imports.store, "save", competing_save)
+    with pytest.raises(RuntimeError, match="expired"):
+        await connector_commands._import_document(SharePointConnector(imports.user.id), document, batch, imports.user)
+    assert winning_key is not None
+    assert len(list(imports.store.uploads_folder.iterdir())) == 1
+    assert imports.records[source_id]["asset"]["original_file_key"] == winning_key
+
+
+@pytest.mark.asyncio
+async def test_folder_limit_failure_is_actionable_in_batch_status(imports, monkeypatch):
+    from open_notebook.connectors.sharepoint import SharePointConnector
+
+    async def over_limit(self, drive_id, folder_id):
+        raise ExternalServiceError("SharePoint folder exceeds the import limit.")
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(SharePointConnector, "iter_documents", over_limit)
+    result = await run_batch(imports, monkeypatch, folder_id="folder")
+    assert result.json()["status"] == "failed"
+    assert "1,000" in result.json()["error"]
 
 
 @pytest.mark.asyncio

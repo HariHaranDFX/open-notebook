@@ -65,7 +65,9 @@ skipped result. A completed batch means the existing Source-processing jobs were
 queued; extraction and embeddings may still be running. A partial batch keeps
 successful Sources and reports failed documents. The owner can retry failed
 documents with `POST /api/connectors/sharepoint/batches/{batch_id}/retry`;
-already queued documents stay untouched. The same remote eTag reuses its managed
+already queued documents stay untouched. A folder retry uses the documents
+recorded in that batch and does not add files discovered after the first run.
+The same remote eTag reuses its managed
 Source across batches and adds newly selected notebook links. A changed eTag
 creates a new Source snapshot. Files without an eTag are treated as distinct
 imports. Folder listings beyond 1,000 items fail visibly instead of reporting
@@ -84,7 +86,8 @@ library and selected notebooks refresh when the batch reaches a terminal state.
   after the upstream recovers; the connector uses bounded retries for import
   downloads and does not create duplicate Sources on job recovery.
 - **Batch stays pending:** check that the surreal-commands worker is running and
-  its logs. The API alone only queues the command.
+  its logs. The API alone only queues the command. An interrupted remote-version
+  claim is recoverable after its 15-minute lease expires; retry the failed batch.
 - **A document is skipped or fails:** check whether it is a supported source
   type and within the configured upload-size limit. Other documents in the
   batch continue; the dialog reports per-document safe errors.

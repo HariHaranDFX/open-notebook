@@ -1,11 +1,15 @@
 -- An owned remote version has one managed Source across import batches.
+DEFINE FIELD IF NOT EXISTS retry_failed_only ON TABLE connector_batch TYPE bool DEFAULT false;
 DEFINE TABLE IF NOT EXISTS connector_remote_version SCHEMAFULL;
 DEFINE FIELD IF NOT EXISTS user_id ON TABLE connector_remote_version TYPE record<user>;
 DEFINE FIELD IF NOT EXISTS connection_id ON TABLE connector_remote_version TYPE record<connector_connection>;
 DEFINE FIELD IF NOT EXISTS drive_id ON TABLE connector_remote_version TYPE string;
 DEFINE FIELD IF NOT EXISTS item_id ON TABLE connector_remote_version TYPE string;
 DEFINE FIELD IF NOT EXISTS etag ON TABLE connector_remote_version TYPE string;
-DEFINE FIELD IF NOT EXISTS source_id ON TABLE connector_remote_version TYPE record<source>;
+DEFINE FIELD IF NOT EXISTS source_id ON TABLE connector_remote_version TYPE option<record<source>>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE connector_remote_version TYPE string DEFAULT 'claiming';
+DEFINE FIELD IF NOT EXISTS claim_id ON TABLE connector_remote_version TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS lease_until ON TABLE connector_remote_version TYPE option<float>;
 DEFINE FIELD IF NOT EXISTS created ON TABLE connector_remote_version DEFAULT time::now() VALUE $before OR time::now();
 DEFINE FIELD IF NOT EXISTS updated ON TABLE connector_remote_version DEFAULT time::now() VALUE time::now();
 DEFINE INDEX IF NOT EXISTS connector_remote_version_identity ON TABLE connector_remote_version FIELDS user_id, connection_id, drive_id, item_id, etag UNIQUE;

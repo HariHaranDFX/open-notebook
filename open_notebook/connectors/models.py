@@ -68,6 +68,7 @@ class ConnectorBatch(_OwnedConnectorRecord):
     notebook_ids: list[str] = Field(default_factory=list)
     transformations: list[str] = Field(default_factory=list)
     embed: bool = True
+    retry_failed_only: bool = False
     status: Literal["pending", "running", "completed", "partial", "failed"] = "pending"
     total: int = 0
     completed: int = 0
@@ -105,4 +106,7 @@ class ConnectorRemoteVersion(_OwnedConnectorRecord):
     drive_id: str
     item_id: str
     etag: str
-    source_id: str
+    source_id: str | None = None
+    status: Literal["claiming", "completed", "failed"] = "claiming"
+    claim_id: str | None = None
+    lease_until: float | None = None
