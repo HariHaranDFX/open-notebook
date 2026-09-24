@@ -6,9 +6,9 @@ import os
 from asyncio import to_thread
 from datetime import datetime, timedelta, timezone
 
-import httpx
 import msal
 from cryptography.fernet import InvalidToken
+from requests.exceptions import RequestException
 
 from api.auth.pkce import generate_state
 from open_notebook.connectors.models import ConnectorConnection
@@ -97,18 +97,24 @@ def _msal_app(config: dict[str, str], cache: msal.SerializableTokenCache):
         client_credential=config["ENTRA_CLIENT_SECRET"],
         authority=f"https://login.microsoftonline.com/{config['ENTRA_TENANT_ID']}",
         token_cache=cache,
+        timeout=10,
     )
 
 
 async def begin_connection(user_id: str) -> str:
     config = _config()
-    flow = await to_thread(
-        lambda: _msal_app(config, msal.SerializableTokenCache()).initiate_auth_code_flow(
-            SCOPES,
-            redirect_uri=config["SHAREPOINT_CONNECTOR_REDIRECT_URI"],
-            state=generate_state(),
+    try:
+        flow = await to_thread(
+            lambda: _msal_app(config, msal.SerializableTokenCache()).initiate_auth_code_flow(
+                SCOPES,
+                redirect_uri=config["SHAREPOINT_CONNECTOR_REDIRECT_URI"],
+                state=generate_state(),
+            )
         )
-    )
+    except (RequestException, ValueError):
+        raise ExternalServiceError(
+            "SharePoint authorization is temporarily unavailable. Try again."
+        ) from None
     await repo_query(
         "CREATE connector_oauth_state SET state_hash = $state_hash, user_id = $user_id, "
         "auth_flow = $auth_flow, expires_at = $expires_at;",
@@ -154,7 +160,11 @@ async def complete_connection(
                 flow, {"state": state, "code": code}
             )
         )
-    except (ValueError, KeyError, httpx.HTTPError):
+    except RequestException:
+        raise ExternalServiceError(
+            "SharePoint authorization is temporarily unavailable. Try again."
+        ) from None
+    except (ValueError, KeyError):
         raise AuthenticationError(
             "SharePoint consent could not be verified. Connect SharePoint again."
         ) from None
@@ -211,7 +221,12 @@ async def acquire_delegated_token(user_id: str) -> str:
             accounts = app.get_accounts()
             return app.acquire_token_silent_with_error(SCOPES, account=accounts[0]) if accounts else None
 
-        result = await to_thread(silent)
+        try:
+            result = await to_thread(silent)
+        except RequestException:
+            raise ExternalServiceError(
+                "SharePoint authorization is temporarily unavailable. Try again."
+            ) from None
         params = {"user_id": ensure_record_id(user_id), "previous_cache": connection.token_cache}
         if not result or result.get("error") == "invalid_grant":
             updated = await repo_query(

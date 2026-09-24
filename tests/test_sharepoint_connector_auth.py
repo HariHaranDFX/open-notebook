@@ -5,13 +5,18 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 import httpx
 import pytest
+import requests
 from fastapi import FastAPI
 from loguru import logger
 from starlette.responses import JSONResponse
 
 from api.auth.deps import current_user_optional, require_user
 from api.auth.types import AuthenticatedUser
-from open_notebook.exceptions import AuthenticationError, ConfigurationError
+from open_notebook.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ExternalServiceError,
+)
 from open_notebook.utils import encryption
 
 
@@ -432,3 +437,70 @@ async def test_legacy_connection_without_msal_cache_requires_reauth(setup):
     assert (await auth.connection_status(user.id))["status"] == "reauth_required"
     with pytest.raises(AuthenticationError):
         await auth.acquire_delegated_token(user.id)
+
+
+@pytest.mark.asyncio
+async def test_msal_requests_have_finite_timeout(setup, monkeypatch):
+    app, auth, repo, user = setup
+    seen = []
+
+    class CapturingClient(FakeMsalClient):
+        def __init__(self, *args, **kwargs):
+            seen.append(kwargs.get("timeout"))
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", CapturingClient)
+    await auth.begin_connection(user.id)
+    assert seen == [10]
+
+
+@pytest.mark.asyncio
+async def test_begin_connection_translates_requests_transport_failure(setup, monkeypatch):
+    app, auth, repo, user = setup
+
+    class FailingClient(FakeMsalClient):
+        def __init__(self, *args, **kwargs):
+            raise requests.exceptions.Timeout("sensitive-upstream-body")
+
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", FailingClient)
+    with pytest.raises(ExternalServiceError, match="temporarily unavailable") as exc:
+        await auth.begin_connection(user.id)
+    assert "sensitive-upstream-body" not in str(exc.value)
+    repo.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_callback_transport_failure_keeps_existing_connection(setup, monkeypatch):
+    app, auth, repo, user = setup
+    flow = FakeMsalClient(token_cache=None).initiate_auth_code_flow(
+        ["Sites.Read.All"], "https://app.test/api/connectors/sharepoint/callback", "state"
+    )
+    repo.return_value = [{"auth_flow": encryption.encrypt_value(json.dumps(flow))}]
+
+    class FailingClient(FakeMsalClient):
+        def acquire_token_by_auth_code_flow(self, flow, response):
+            raise requests.exceptions.ConnectionError("sensitive-upstream-body")
+
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", FailingClient)
+    with pytest.raises(ExternalServiceError, match="temporarily unavailable") as exc:
+        await auth.complete_connection(user.id, "state", "code")
+    assert "sensitive-upstream-body" not in str(exc.value)
+    assert repo.await_count == 1  # consumed OAuth state; no credential update
+
+
+@pytest.mark.asyncio
+async def test_silent_transport_failure_preserves_cache_and_status(setup, monkeypatch):
+    app, auth, repo, user = setup
+    ciphertext = encryption.encrypt_value(json.dumps({"Account": {"one": {"home_account_id": "owner"}}}))
+    repo.return_value = [{"id": "connector_connection:one", "user_id": user.id,
+                          "status": "connected", "token_cache": ciphertext}]
+
+    class FailingClient(FakeMsalClient):
+        def acquire_token_silent_with_error(self, scopes, account):
+            raise requests.exceptions.Timeout("sensitive-upstream-body")
+
+    monkeypatch.setattr(auth.msal, "ConfidentialClientApplication", FailingClient)
+    with pytest.raises(ExternalServiceError, match="temporarily unavailable") as exc:
+        await auth.acquire_delegated_token(user.id)
+    assert "sensitive-upstream-body" not in str(exc.value)
+    assert repo.await_count == 1  # only owner-scoped read; no cache/status mutation
