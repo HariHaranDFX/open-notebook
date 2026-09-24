@@ -27,6 +27,7 @@ vi.mock('@/lib/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } })
 const endpoint = '/connectors/sharepoint'
 let connection = { available: true, connected: true }
 let batchState: 'running' | 'partial' = 'partial'
+let recentBatches: { batch_id: string; status: string; total: number; completed: number; failed: number; error: string | null }[] = []
 
 function renderDialog(defaultNotebookId?: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
@@ -46,8 +47,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   connection = { available: true, connected: true }
   batchState = 'partial'
+  recentBatches = []
   vi.mocked(apiClient.get).mockImplementation(async (url) => {
     if (url === `${endpoint}/status`) return { data: connection }
+    if (url === `${endpoint}/batches`) return { data: recentBatches }
     if (url === `${endpoint}/sites`) return { data: [{ id: 'site:one', name: 'Research site', web_url: null }] }
     if (url === `${endpoint}/sites/site%3Aone/drives`) return { data: [{ id: 'drive:one', name: 'Documents', kind: 'documentLibrary' }] }
     if (url === `${endpoint}/drives/drive%3Aone/children`) return { data: [
@@ -98,6 +101,15 @@ describe('AddSourceDialog', () => {
     expect(form).toHaveClass('flex', 'min-h-0', 'flex-1', 'flex-col')
     expect(footer).toHaveClass('py-2')
     expect(footer).not.toHaveClass('bg-muted')
+  })
+
+  it('reopens an in-progress import after refresh from the owner batch list', async () => {
+    batchState = 'running'
+    recentBatches = [{ batch_id: 'connector_batch:one', status: 'running', total: 2, completed: 0, failed: 0, error: null }]
+    renderDialog()
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'sharepoint.title' }), { button: 0, ctrlKey: false })
+    expect(await screen.findByText('common.processing')).toBeInTheDocument()
+    expect(apiClient.get).toHaveBeenCalledWith(`${endpoint}/batches`, { params: { limit: 20 } })
   })
 
   it('displays unavailable connector status and prevents advancing without a selection', async () => {

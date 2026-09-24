@@ -76,9 +76,9 @@
 
 **Interfaces:** Add Connect/Reconnect/Disconnect, resumable batch progress, failed-item retry, explicit over-limit message. Reuse Sheet, Button, semantic theme tokens, and notebook selection.
 
-- [ ] Write failing component tests for authorization states, retry/resume, error recovery, and locale parity.
-- [ ] Implement minimal UI/API hooks and translations; run focused Vitest to GREEN, then full frontend tests, TypeScript, lint, and build.
-- [ ] Verify light/dark, keyboard, and narrow-screen behavior in a live browser.
+- [x] Write failing component tests for authorization states, retry/resume, error recovery, and locale parity.
+- [x] Implement minimal UI/API hooks and translations; run focused Vitest to GREEN, then TypeScript, lint, and the webpack production build.
+- [ ] Verify light/dark, keyboard, and narrow-screen behavior in a live browser. Deferred: frontend port 3000 and API port 5055 were down. SurrealDB was already listening on 8000, so this check waits for the Task 7 stack start.
 
 ### Task 6: Local and Docker Hub packaging with env parity
 

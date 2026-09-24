@@ -1167,6 +1167,13 @@ export const ruRU = {
     sites: "Сайты",
     skipped: "Пропущено",
     unsupported: "Неподдерживаемый тип файла",
+    reconnect: "Подключить снова",
+    disconnect: "Отключить",
+    disconnectConfirm: "Отключить SharePoint? Уже импортированные документы останутся в блокнотах.",
+    retryFailed: "Повторить неудачные",
+    recentImports: "Недавние импорты",
+    resume: "Продолжить",
+    limitReached: "В этой папке больше 1 000 элементов. Импортируйте папку меньшего размера.",
   },
   setupBanner: {
     encryptionRequired: "Ключ шифрования не настроен",

@@ -1168,6 +1168,13 @@ export const bnIN = {
     sites: "সাইট",
     skipped: "এড়িয়ে যাওয়া হয়েছে",
     unsupported: "অসমর্থিত ফাইলের ধরন",
+    reconnect: "আবার সংযোগ করুন",
+    disconnect: "সংযোগ বিচ্ছিন্ন করুন",
+    disconnectConfirm: "SharePoint সংযোগ বিচ্ছিন্ন করবেন? ইতিমধ্যে আমদানি করা নথি নোটবুকে থাকবে।",
+    retryFailed: "ব্যর্থগুলো আবার চেষ্টা করুন",
+    recentImports: "সাম্প্রতিক আমদানি",
+    resume: "চালিয়ে যান",
+    limitReached: "এই ফোল্ডারে 1,000টির বেশি আইটেম আছে। আরও ছোট ফোল্ডার আমদানি করুন।",
   },
   setupBanner: {
     encryptionRequired: "এনক্রিপশন কী কনফিগার করা হয়নি",

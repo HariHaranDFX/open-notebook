@@ -11,4 +11,7 @@ export const sharepointApi = {
   children: async (driveId: string, itemId?: string) => (await apiClient.get<SharePointItem[]>(`${base}/drives/${encodeURIComponent(driveId)}/children`, { params: { item_id: itemId } })).data,
   import: async (request: SharePointImportRequest) => (await apiClient.post<{ batch_id: string }>(`${base}/import`, request)).data,
   batch: async (batchId: string) => (await apiClient.get<SharePointBatch>(`${base}/batches/${encodeURIComponent(batchId)}`)).data,
+  disconnect: async () => (await apiClient.post<{ status: string }>(`${base}/disconnect`)).data,
+  retryBatch: async (batchId: string) => (await apiClient.post<{ batch_id: string }>(`${base}/batches/${encodeURIComponent(batchId)}/retry`)).data,
+  recentBatches: async () => (await apiClient.get<Pick<SharePointBatch, 'batch_id' | 'status' | 'total' | 'completed' | 'failed' | 'error'>[]>(`${base}/batches`, { params: { limit: 20 } })).data,
 }

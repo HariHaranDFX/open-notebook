@@ -99,7 +99,7 @@ uv run python scripts/check_licenses.py
 
 **Backend/UI contract to consume:** `/status` already returns `available`, `connected`, and `status` (`connected`, `reauth_required`, `disconnected`) but the frontend type lacks `status`. `/disconnect` and `/batches/{id}/retry` exist but the frontend API/hooks do not use them. A page refresh loses the dialog's in-memory `sharePointBatchId`, so add `GET /connectors/sharepoint/batches?limit=20` returning only the current owner's recent batches, then let the UI reopen/resume a selected in-progress or partial batch. Do not put access tokens or storage settings in browser state. Batch IDs may be in URL/state only if owner checks remain enforced.
 
-- [ ] **Step 1: Write RED API and component tests.** Verify owner A cannot list owner B's batch; unavailable/connected/reauth-required/disconnected render distinct actions; Disconnect confirms before mutation; failed-item retry calls the owner endpoint; a remount/page refresh reloads an active batch from the owner-scoped list; 1,000-item folder error is shown explicitly; file/folder and zero/multiple editable-notebook selections still work.
+- [x] **Step 1: Write RED API and component tests.** Verify owner A cannot list owner B's batch; unavailable/connected/reauth-required/disconnected render distinct actions; Disconnect confirms before mutation; failed-item retry calls the owner endpoint; a remount/page refresh reloads an active batch from the owner-scoped list; 1,000-item folder error is shown explicitly; file/folder and zero/multiple editable-notebook selections still work.
 
 ```tsx
 expect(screen.getByRole('button', { name: /reconnect/i })).toBeVisible()
@@ -107,9 +107,9 @@ expect(screen.getByRole('button', { name: /retry failed/i })).toBeEnabled()
 expect(screen.getByRole('status')).toHaveTextContent('1,000')
 ```
 
-- [ ] **Step 2: Add the thin owner-scoped batches route and API/hooks.** Update `SharePointStatus` with its status literal, add `disconnect`, `retryBatch`, and `recentBatches` methods, and invalidate `SHAREPOINT_QUERY_KEYS.status`, batch, Sources, and selected notebook queries after mutations. Keep polling only while a batch is non-terminal.
-- [ ] **Step 3: Update only the existing Add Source wizard and SharePoint step.** Reuse `Sheet`, `Button`, `Input`, Lucide icons, and semantic theme tokens. Show per-document safe errors and progress, with no second connector page. Add translation keys to **all 16** locale directories (the frontend AGENTS.md count of 14 is stale); run locale parity. Keep keyboard focus, dark mode, and narrow layout usable.
-- [ ] **Step 4: Run tests/static/build and browser checks, review, commit.**
+- [x] **Step 2: Add the thin owner-scoped batches route and API/hooks.** Update `SharePointStatus` with its status literal, add `disconnect`, `retryBatch`, and `recentBatches` methods, and invalidate `SHAREPOINT_QUERY_KEYS.status`, batch, Sources, and selected notebook queries after mutations. Keep polling only while a batch is non-terminal.
+- [x] **Step 3: Update only the existing Add Source wizard and SharePoint step.** Reuse `Sheet`, `Button`, `Input`, Lucide icons, and semantic theme tokens. Show per-document safe errors and progress, with no second connector page. Add translation keys to **all 16** locale directories (the frontend AGENTS.md count of 14 is stale); run locale parity. Keep keyboard focus, dark mode, and narrow layout usable.
+- [x] **Step 4: Run tests/static/build and browser checks, review, commit.** Focused Vitest (63), connector pytest (49), `tsc`, lint, and `next build --webpack` passed. The webpack build kept the known non-fatal standalone manifest warning. Default Turbopack build was not claimed. Live browser check is deferred to Task 7 because ports 3000 and 5055 were down.
 
 ```text
 uv run pytest -q tests/test_sharepoint_connector_auth.py tests/test_sharepoint_connector_import.py
@@ -159,7 +159,7 @@ docker compose --env-file .env -f docker-compose.local.yml config --quiet
 - [ ] Each Task 3–7 acceptance criterion has a named test or a clearly labeled live gate above.
 - [ ] New storage references retain provider/profile/container independently of the current default; legacy filesystem records still resolve.
 - [ ] Task 4 recovery covers both remote-success/DB-failure and Source-success/queue-failure without deleting a referenced object.
-- [ ] Task 5 reads the backend's actual three-state status and can recover progress after refresh with owner-only data.
+- [x] Task 5 reads the backend's actual three-state status and can recover progress after refresh with owner-only data.
 - [ ] Task 6 touches active image destinations, not historical attribution, and does not assume an unprovided GHCR namespace.
 - [ ] The final result is described as code-complete separately from live-tenant/registry-verified; user approval still controls merge/publication.
 

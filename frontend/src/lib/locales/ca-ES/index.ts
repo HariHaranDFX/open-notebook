@@ -1167,6 +1167,13 @@ export const caES = {
     sites: "Llocs",
     skipped: "Ometut",
     unsupported: "Tipus de fitxer no compatible",
+    reconnect: "Torna a connectar",
+    disconnect: "Desconnecta",
+    disconnectConfirm: "Vols desconnectar el SharePoint? Els documents ja importats es queden als quaderns.",
+    retryFailed: "Torna a provar els que han fallat",
+    recentImports: "Importacions recents",
+    resume: "Reprèn",
+    limitReached: "Aquesta carpeta te mes de 1.000 elements. Importa una carpeta mes petita.",
   },
   setupBanner: {
     encryptionRequired: "Clau de xifratge no configurada",

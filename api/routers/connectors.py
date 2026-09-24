@@ -10,6 +10,7 @@ from api.command_service import CommandService
 from api.ownership import assert_can_edit_notebook_or_403
 from open_notebook.connectors import sharepoint_auth
 from open_notebook.connectors.models import ConnectorBatch, ConnectorBatchDocument
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.connectors.sharepoint import SharePointConnector
 from open_notebook.domain.notebook import Notebook
 from open_notebook.domain.transformation import Transformation
@@ -60,6 +61,30 @@ async def import_sharepoint(
     )
     await batch.save()
     return {"batch_id": batch.id}
+
+
+@router.get("/batches")
+async def list_sharepoint_batches(
+    limit: int = 20,
+    user: AuthenticatedUser = Depends(require_user),
+):
+    bounded = min(max(limit, 1), 20)
+    rows = await repo_query(
+        "SELECT id, status, total, completed, failed, error, created FROM connector_batch "
+        "WHERE user_id = $user_id ORDER BY created DESC LIMIT $limit;",
+        {"user_id": ensure_record_id(user.id), "limit": bounded},
+    )
+    return [
+        {
+            "batch_id": str(row.get("id")),
+            "status": row.get("status"),
+            "total": row.get("total") or 0,
+            "completed": row.get("completed") or 0,
+            "failed": row.get("failed") or 0,
+            "error": row.get("error"),
+        }
+        for row in rows or []
+    ]
 
 
 @router.get("/batches/{batch_id}")

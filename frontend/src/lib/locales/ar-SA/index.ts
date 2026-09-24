@@ -1169,6 +1169,13 @@ export const arSA = {
     sites: "المواقع",
     skipped: "تم التخطي",
     unsupported: "نوع ملف غير مدعوم",
+    reconnect: "إعادة الاتصال",
+    disconnect: "قطع الاتصال",
+    disconnectConfirm: "هل تريد قطع اتصال SharePoint؟ تبقى المستندات المستوردة في دفاترك.",
+    retryFailed: "إعادة محاولة الفاشلة",
+    recentImports: "عمليات الاستيراد الأخيرة",
+    resume: "استئناف",
+    limitReached: "يحتوي هذا المجلد على أكثر من 1,000 عنصر. استورد مجلدا أصغر.",
   },
   setupBanner: {
     encryptionRequired: "مفتاح التشفير غير مكوّن",

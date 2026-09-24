@@ -332,6 +332,7 @@ export interface RecentlyViewedResponse {
 export interface SharePointStatus {
   available: boolean
   connected: boolean
+  status?: 'connected' | 'reauth_required' | 'disconnected'
 }
 
 export interface SharePointSite {

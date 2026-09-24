@@ -1167,6 +1167,13 @@ export const enUS = {
     sites: "Sites",
     skipped: "Skipped",
     unsupported: "Unsupported file type",
+    reconnect: "Reconnect",
+    disconnect: "Disconnect",
+    disconnectConfirm: "Disconnect SharePoint? Documents already imported stay in your notebooks.",
+    retryFailed: "Retry failed",
+    recentImports: "Recent imports",
+    resume: "Resume",
+    limitReached: "This folder has more than 1,000 items. Import a smaller folder.",
   },
   setupBanner: {
     encryptionRequired: "Encryption key not configured",

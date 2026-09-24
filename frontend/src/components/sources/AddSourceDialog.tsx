@@ -501,7 +501,7 @@ export function AddSourceDialog({
           <SheetDescription>{t('sharepoint.description')}</SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <SharePointBatchProgress batch={sharePointBatch} />
+          <SharePointBatchProgress batch={sharePointBatch} notebookIds={sharePointBatchNotebooks} />
         </div>
         <SheetFooter><Button type="button" onClick={handleClose}>{t('common.close')}</Button></SheetFooter>
       </SheetContent>
@@ -616,7 +616,7 @@ export function AddSourceDialog({
                 urlValidationErrors={urlValidationErrors}
                 onClearUrlErrors={handleClearUrlErrors}
                 onTypeChange={() => setSharePointSelection(null)}
-                sharePointStep={<SharePointStep selection={sharePointSelection} onSelectionChange={setSharePointSelection} />}
+                sharePointStep={<SharePointStep selection={sharePointSelection} onSelectionChange={setSharePointSelection} onResumeBatch={setSharePointBatchId} />}
               />
             </div>
             

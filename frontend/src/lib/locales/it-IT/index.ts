@@ -1167,6 +1167,13 @@ export const itIT = {
     sites: "Siti",
     skipped: "Saltato",
     unsupported: "Tipo di file non supportato",
+    reconnect: "Riconnetti",
+    disconnect: "Disconnetti",
+    disconnectConfirm: "Disconnettere SharePoint? I documenti gia importati restano nei tuoi quaderni.",
+    retryFailed: "Riprova non riusciti",
+    recentImports: "Importazioni recenti",
+    resume: "Riprendi",
+    limitReached: "Questa cartella contiene piu di 1.000 elementi. Importa una cartella piu piccola.",
   },
   setupBanner: {
     encryptionRequired: "Chiave di crittografia non configurata",

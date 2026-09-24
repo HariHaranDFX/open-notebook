@@ -1,29 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Folder, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { useConnectSharePoint, useSharePointChildren, useSharePointDrives, useSharePointSites, useSharePointStatus, useSharePointBatch } from '@/lib/hooks/use-sharepoint'
+import { useConnectSharePoint, useDisconnectSharePoint, useRetrySharePointBatch, useSharePointChildren, useSharePointDrives, useSharePointRecentBatches, useSharePointSites, useSharePointStatus, useSharePointBatch } from '@/lib/hooks/use-sharepoint'
 import type { SharePointSelection } from '@/lib/types/api'
 
 interface SharePointStepProps {
   selection: SharePointSelection | null
   onSelectionChange: (selection: SharePointSelection | null) => void
+  onResumeBatch?: (batchId: string) => void
 }
 
-export function SharePointStep({ selection, onSelectionChange }: SharePointStepProps) {
+export function SharePointStep({ selection, onSelectionChange, onResumeBatch }: SharePointStepProps) {
   const { t } = useTranslation()
   const status = useSharePointStatus()
   const connect = useConnectSharePoint()
+  const disconnect = useDisconnectSharePoint()
+  const connection = status.data?.status ?? (status.data?.connected ? 'connected' : 'disconnected')
+  const recent = useSharePointRecentBatches(connection === 'connected')
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [site, setSite] = useState<{ id: string; name: string } | null>(null)
   const [drive, setDrive] = useState<{ id: string; name: string } | null>(null)
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([])
-  const connected = !!status.data?.connected
+  const resumedBatch = useRef<string | null>(null)
+  const connected = connection === 'connected'
   const folder = folders.at(-1)
   const sites = useSharePointSites(query, connected && !site)
   const drives = useSharePointDrives(site?.id ?? '', connected && !drive)
@@ -36,6 +41,20 @@ export function SharePointStep({ selection, onSelectionChange }: SharePointStepP
     onSuccess: ({ authorization_url }) => window.location.assign(authorization_url),
   })
   const clearSelection = () => onSelectionChange(null)
+  const resumable = useMemo(
+    () => (recent.data ?? []).filter(batch => batch.status === 'pending' || batch.status === 'running' || batch.status === 'partial'),
+    [recent.data],
+  )
+  useEffect(() => {
+    const active = resumable.find(batch => batch.status === 'pending' || batch.status === 'running')
+    if (!active || resumedBatch.current === active.batch_id) return
+    resumedBatch.current = active.batch_id
+    onResumeBatch?.(active.batch_id)
+  }, [onResumeBatch, resumable])
+
+  const confirmDisconnect = () => {
+    if (window.confirm(t('sharepoint.disconnectConfirm'))) disconnect.mutate()
+  }
 
   if (status.isPending) return <p role="status">{t('common.loading')}</p>
   if (status.isError) return <div role="alert" className="space-y-3">
@@ -43,6 +62,11 @@ export function SharePointStep({ selection, onSelectionChange }: SharePointStepP
     <Button type="button" variant="outline" onClick={() => void status.refetch()}>{t('common.retry')}</Button>
   </div>
   if (!status.data.available) return <p role="status" className="text-sm text-muted-foreground">{t('sharepoint.unavailable')}</p>
+  if (connection === 'reauth_required') return <div className="space-y-3">
+    <p className="text-sm text-muted-foreground">{t('sharepoint.connectDescription')}</p>
+    <Button type="button" disabled={connect.isPending} onClick={beginConnection}>{t('sharepoint.reconnect')}</Button>
+    {connect.isError && <p role="alert">{t('sharepoint.requestFailed')}</p>}
+  </div>
   if (!connected) return <div className="space-y-3">
     <p className="text-sm text-muted-foreground">{t('sharepoint.connectDescription')}</p>
     <Button type="button" disabled={connect.isPending} onClick={beginConnection}>{t('sharepoint.connect')}</Button>
@@ -50,6 +74,13 @@ export function SharePointStep({ selection, onSelectionChange }: SharePointStepP
   </div>
 
   return <div className="space-y-4">
+    <div className="flex justify-end">
+      <Button type="button" variant="outline" onClick={confirmDisconnect}>{t('sharepoint.disconnect')}</Button>
+    </div>
+    {resumable.length > 0 && <div className="space-y-2">
+      <p className="text-sm font-medium">{t('sharepoint.recentImports')}</p>
+      {resumable.map(batch => <Button key={batch.batch_id} type="button" variant="outline" onClick={() => onResumeBatch?.(batch.batch_id)}>{t('sharepoint.resume')}</Button>)}
+    </div>}
     <nav aria-label={t('sharepoint.location')} className="flex flex-wrap items-center gap-2">
       <Button type="button" variant="ghost" onClick={() => { setSite(null); setDrive(null); setFolders([]); clearSelection() }}>{t('sharepoint.sites')}</Button>
       {site && <Button type="button" variant="ghost" onClick={() => { setDrive(null); setFolders([]); clearSelection() }}>{site.name}</Button>}
@@ -98,8 +129,9 @@ export function SharePointStep({ selection, onSelectionChange }: SharePointStepP
   </div>
 }
 
-export function SharePointBatchProgress({ batch }: { batch: ReturnType<typeof useSharePointBatch> }) {
+export function SharePointBatchProgress({ batch, notebookIds = [] }: { batch: ReturnType<typeof useSharePointBatch>; notebookIds?: string[] }) {
   const { t } = useTranslation()
+  const retry = useRetrySharePointBatch(notebookIds)
   const labels = {
     pending: t('sharepoint.pending'), running: t('common.processing'), completed: t('common.completed'),
     partial: t('sharepoint.partial'), failed: t('common.failed'), queued: t('sharepoint.queued'), skipped: t('sharepoint.skipped'),
@@ -111,8 +143,12 @@ export function SharePointBatchProgress({ batch }: { batch: ReturnType<typeof us
       <div role="status" className="space-y-2">
         <p className="font-medium">{labels[batch.data.status]}</p>
         <p className="text-sm text-muted-foreground">{t('sharepoint.progress', { completed: batch.data.completed, failed: batch.data.failed, total: batch.data.total })}</p>
+        {/import limit/i.test(batch.data.error ?? '') && <p>{t('sharepoint.limitReached')} {batch.data.error}</p>}
       </div>
-      {batch.data.error && <p role="alert" className="text-sm text-destructive">{batch.data.error}</p>}
+      {batch.data.error && !/import limit/i.test(batch.data.error) && <p role="alert" className="text-sm text-destructive">{batch.data.error}</p>}
+      {(batch.data.status === 'partial' || batch.data.status === 'failed') && batch.data.failed > 0 && (
+        <Button type="button" disabled={retry.isPending} onClick={() => retry.mutate(batch.data!.batch_id)}>{t('sharepoint.retryFailed')}</Button>
+      )}
       <p className="text-sm text-muted-foreground">{t('sharepoint.processingHint')}</p>
       <ul className="divide-y rounded-md border">
         {batch.data.documents.map(document => <li key={document.id} className="space-y-1 p-3">

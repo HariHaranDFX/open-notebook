@@ -1167,6 +1167,13 @@ export const jaJP = {
     sites: "サイト",
     skipped: "スキップ",
     unsupported: "対応していないファイル形式",
+    reconnect: "再接続",
+    disconnect: "切断",
+    disconnectConfirm: "SharePointを切断しますか？取り込み済みの文書はノートブックに残ります。",
+    retryFailed: "失敗を再試行",
+    recentImports: "最近の取り込み",
+    resume: "再開",
+    limitReached: "このフォルダーには1,000件を超える項目があります。より小さいフォルダーを取り込んでください。",
   },
   setupBanner: {
     encryptionRequired: "暗号化キーが設定されていません",

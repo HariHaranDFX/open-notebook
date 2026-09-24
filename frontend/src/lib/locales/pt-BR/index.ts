@@ -1167,6 +1167,13 @@ export const ptBR = {
     sites: "Sites",
     skipped: "Ignorado",
     unsupported: "Tipo de arquivo não compatível",
+    reconnect: "Reconectar",
+    disconnect: "Desconectar",
+    disconnectConfirm: "Desconectar o SharePoint? Os documentos ja importados permanecem nos seus cadernos.",
+    retryFailed: "Tentar novamente os que falharam",
+    recentImports: "Importacoes recentes",
+    resume: "Retomar",
+    limitReached: "Esta pasta tem mais de 1.000 itens. Importe uma pasta menor.",
   },
   setupBanner: {
     encryptionRequired: "Chave de criptografia não configurada",

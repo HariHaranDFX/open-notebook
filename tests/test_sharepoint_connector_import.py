@@ -853,3 +853,28 @@ async def test_other_owner_cannot_retry_batch(imports, monkeypatch):
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
         response = await client.post(f"/api/connectors/sharepoint/batches/{first.json()['batch_id']}/retry")
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_recent_batches_query_is_limited_to_the_caller(monkeypatch):
+    from api.routers import connectors
+
+    seen: dict[str, Any] = {}
+
+    async def query(sql, params=None):
+        seen["sql"] = sql
+        seen["params"] = params
+        return [{"id": "connector_batch:mine", "status": "running", "total": 1, "completed": 0, "failed": 0, "error": None}]
+
+    monkeypatch.setattr(connectors, "repo_query", query)
+    rows = await connectors.list_sharepoint_batches(
+        limit=50, user=AuthenticatedUser("user:alice", "alice@test", "Alice", "user", None, "client"),
+    )
+    assert "user_id = $user_id" in seen["sql"]
+    assert "token" not in seen["sql"].lower()
+    assert seen["params"]["limit"] == 20
+    assert seen["params"]["user_id"]
+    assert rows == [{
+        "batch_id": "connector_batch:mine", "status": "running",
+        "total": 1, "completed": 0, "failed": 0, "error": None,
+    }]

@@ -1170,6 +1170,13 @@ export const deDE = {
     sites: "Sites",
     skipped: "Übersprungen",
     unsupported: "Nicht unterstützter Dateityp",
+    reconnect: "Erneut verbinden",
+    disconnect: "Trennen",
+    disconnectConfirm: "SharePoint trennen? Bereits importierte Dokumente bleiben in Ihren Notizbuechern.",
+    retryFailed: "Fehlgeschlagene erneut versuchen",
+    recentImports: "Letzte Importe",
+    resume: "Fortsetzen",
+    limitReached: "Dieser Ordner enthaelt mehr als 1.000 Elemente. Importieren Sie einen kleineren Ordner.",
   },
   setupBanner: {
     encryptionRequired: "Verschlüsselungsschlüssel nicht konfiguriert",

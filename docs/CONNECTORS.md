@@ -59,9 +59,12 @@ created with raw refresh tokens must reconnect.
 
 ### Import status and troubleshooting
 
-The import endpoint returns a batch ID immediately. The dialog polls the batch
+The import endpoint returns a batch ID immediately. Reopening Add Source loads
+the owner's recent batches from `GET /api/connectors/sharepoint/batches` (at
+most 20) and resumes a pending or running import. The dialog polls the batch
 while it is pending or running and shows each document's queued, failed, or
-skipped result. A completed batch means the existing Source-processing jobs were
+skipped result. A folder over the import limit shows the translated limit
+message. Reconnect and disconnect stay in that same step. A completed batch means the existing Source-processing jobs were
 queued; extraction and embeddings may still be running. A partial batch keeps
 successful Sources and reports failed documents. The owner can retry failed
 documents with `POST /api/connectors/sharepoint/batches/{batch_id}/retry`;

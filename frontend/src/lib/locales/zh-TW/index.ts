@@ -1167,6 +1167,13 @@ export const zhTW = {
     sites: "網站",
     skipped: "已略過",
     unsupported: "不支援的檔案類型",
+    reconnect: "重新連線",
+    disconnect: "中斷連線",
+    disconnectConfirm: "中斷 SharePoint？已匯入的文件會留在筆記本中。",
+    retryFailed: "重試失敗項目",
+    recentImports: "最近的匯入",
+    resume: "繼續",
+    limitReached: "此資料夾的項目超過 1,000 個。請匯入較小的資料夾。",
   },
   setupBanner: {
     encryptionRequired: "未設定加密金鑰",

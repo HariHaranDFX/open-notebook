@@ -1167,6 +1167,13 @@ export const frFR = {
     sites: "Sites",
     skipped: "Ignoré",
     unsupported: "Type de fichier non pris en charge",
+    reconnect: "Reconnecter",
+    disconnect: "Deconnecter",
+    disconnectConfirm: "Deconnecter SharePoint ? Les documents deja importes restent dans vos carnets.",
+    retryFailed: "Reessayer les echecs",
+    recentImports: "Importations recentes",
+    resume: "Reprendre",
+    limitReached: "Ce dossier contient plus de 1 000 elements. Importez un dossier plus petit.",
   },
   setupBanner: {
     encryptionRequired: "Clé de chiffrement non configurée",

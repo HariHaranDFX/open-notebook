@@ -1167,6 +1167,13 @@ export const trTR = {
     sites: "Siteler",
     skipped: "Atlandı",
     unsupported: "Desteklenmeyen dosya türü",
+    reconnect: "Yeniden baglan",
+    disconnect: "Baglantiyi kes",
+    disconnectConfirm: "SharePoint baglantisi kesilsin mi? Zaten ice aktarilan belgeler not defterlerinde kalir.",
+    retryFailed: "Basarisizlari yeniden dene",
+    recentImports: "Son ice aktarmalar",
+    resume: "Surdur",
+    limitReached: "Bu klasorde 1.000'den fazla oge var. Daha kucuk bir klasor ice aktarin.",
   },
   setupBanner: {
     encryptionRequired: "Şifreleme anahtarı yapılandırılmadı",

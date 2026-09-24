@@ -1167,6 +1167,13 @@ export const zhCN = {
     sites: "站点",
     skipped: "已跳过",
     unsupported: "不支持的文件类型",
+    reconnect: "重新连接",
+    disconnect: "断开连接",
+    disconnectConfirm: "断开 SharePoint？已导入的文档会保留在笔记本中。",
+    retryFailed: "重试失败项",
+    recentImports: "最近的导入",
+    resume: "继续",
+    limitReached: "此文件夹的项目超过 1,000 个。请导入较小的文件夹。",
   },
   setupBanner: {
     encryptionRequired: "未配置加密密钥",

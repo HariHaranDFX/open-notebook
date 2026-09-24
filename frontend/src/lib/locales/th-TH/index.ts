@@ -1169,6 +1169,13 @@ export const thTH = {
     sites: "ไซต์",
     skipped: "ข้ามแล้ว",
     unsupported: "ชนิดไฟล์ไม่รองรับ",
+    reconnect: "เชื่อมต่ออีกครั้ง",
+    disconnect: "ตัดการเชื่อมต่อ",
+    disconnectConfirm: "ตัดการเชื่อมต่อ SharePoint หรือไม่ เอกสารที่นำเข้าแล้วจะยังอยู่ในสมุดบันทึก",
+    retryFailed: "ลองรายการที่ล้มเหลวอีกครั้ง",
+    recentImports: "การนำเข้าล่าสุด",
+    resume: "ทำต่อ",
+    limitReached: "โฟลเดอร์นี้มีรายการมากกว่า 1,000 รายการ ให้นำเข้าโฟลเดอร์ที่เล็กลง",
   },
   setupBanner: {
     encryptionRequired: "ไม่ได้กำหนดค่าคีย์การเข้ารหัส",

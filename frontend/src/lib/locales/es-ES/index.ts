@@ -1168,6 +1168,13 @@ export const esES = {
     sites: "Sitios",
     skipped: "Omitido",
     unsupported: "Tipo de archivo no compatible",
+    reconnect: "Volver a conectar",
+    disconnect: "Desconectar",
+    disconnectConfirm: "Desconectar SharePoint? Los documentos ya importados permanecen en sus cuadernos.",
+    retryFailed: "Reintentar fallidos",
+    recentImports: "Importaciones recientes",
+    resume: "Reanudar",
+    limitReached: "Esta carpeta tiene mas de 1.000 elementos. Importe una carpeta mas pequena.",
   },
   setupBanner: {
     encryptionRequired: "Clave de encriptación no configurada",

@@ -1167,6 +1167,13 @@ export const plPL = {
     sites: "Witryny",
     skipped: "Pominięto",
     unsupported: "Nieobsługiwany typ pliku",
+    reconnect: "Polacz ponownie",
+    disconnect: "Rozlacz",
+    disconnectConfirm: "Rozlaczyc SharePoint? Juz zaimportowane dokumenty pozostana w notatnikach.",
+    retryFailed: "Ponow nieudane",
+    recentImports: "Ostatnie importy",
+    resume: "Wznów",
+    limitReached: "Ten folder zawiera ponad 1 000 elementow. Zaimportuj mniejszy folder.",
   },
   setupBanner: {
     encryptionRequired: "Klucz szyfrowania nie został skonfigurowany",

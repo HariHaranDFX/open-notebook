@@ -12,6 +12,7 @@ export const SHAREPOINT_QUERY_KEYS = {
   drives: (siteId: string) => ['sharepoint', 'drives', siteId] as const,
   children: (driveId: string, itemId?: string) => ['sharepoint', 'children', driveId, itemId] as const,
   batch: (batchId: string) => ['sharepoint', 'batch', batchId] as const,
+  recent: ['sharepoint', 'batches'] as const,
 }
 
 export const isSharePointBatchTerminal = (status?: SharePointBatch['status']) =>
@@ -19,6 +20,44 @@ export const isSharePointBatchTerminal = (status?: SharePointBatch['status']) =>
 
 export function useSharePointStatus() {
   return useQuery({ queryKey: SHAREPOINT_QUERY_KEYS.status, queryFn: sharepointApi.status, retry: false, staleTime: 0, refetchOnWindowFocus: true })
+}
+
+export function useDisconnectSharePoint() {
+  const client = useQueryClient()
+  const { t } = useTranslation()
+  return useMutation({
+    mutationFn: sharepointApi.disconnect,
+    retry: false,
+    onSuccess: () => void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.status }),
+    onError: () => toast.error(t('sharepoint.requestFailed')),
+  })
+}
+
+export function useSharePointRecentBatches(enabled: boolean) {
+  return useQuery({
+    queryKey: SHAREPOINT_QUERY_KEYS.recent,
+    queryFn: sharepointApi.recentBatches,
+    enabled,
+    retry: false,
+  })
+}
+
+export function useRetrySharePointBatch(notebookIds: string[]) {
+  const client = useQueryClient()
+  const { t } = useTranslation()
+  return useMutation({
+    mutationFn: sharepointApi.retryBatch,
+    retry: false,
+    onSuccess: (_data, batchId) => {
+      toast.success(t('sharepoint.pending'))
+      void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.status })
+      void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.batch(batchId) })
+      void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.recent })
+      void client.invalidateQueries({ queryKey: ['sources'] })
+      for (const id of notebookIds) void client.invalidateQueries({ queryKey: QUERY_KEYS.notebook(id) })
+    },
+    onError: () => toast.error(t('sharepoint.requestFailed')),
+  })
 }
 
 export function useConnectSharePoint() {
