@@ -155,7 +155,11 @@ docker-compose.override.yml
 screenshot-*.png
 history.txt
 .review-diffstat.txt
-.superpowers/sdd/
+.superpowers/
+.remember/
+.codex-uv-cache/
+.ruff_cache/
+design_handoff_notebook_source_redesign/
 
 # Project-local package manager cache
 .pnpm-store/
