@@ -7,8 +7,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FORBIDDEN = ("lfnovo/open_notebook", "ghcr.io/lfnovo")
-IMAGE_REF = re.compile(r"^datafabricx/open-notebook-commercial@sha256:[a-f0-9]{64}$")
+FORBIDDEN = ("lfnovo/open_notebook", "ghcr.io/lfnovo", "datafabricx/open-notebook-commercial")
+IMAGE_REF = re.compile(
+    r"^haribabudfx/open-notebook-commercial:(latest|latest-single|local|v\d+\.\d+\.\d+(-single)?)$"
+)
 KEY_NAME = re.compile(r"^\s*#?\s*([A-Z][A-Z0-9_]*)=")
 ACTIVE = (
     "docker-compose.yml",
@@ -54,14 +56,14 @@ def forbidden_upstream_hits() -> list[str]:
 def image_ref_problem(value: str) -> str | None:
     if IMAGE_REF.fullmatch(value or ""):
         return None
-    return "OPEN_NOTEBOOK_IMAGE_REF must be datafabricx/open-notebook-commercial@sha256:<digest>"
+    return "OPEN_NOTEBOOK_IMAGE_REF must be haribabudfx/open-notebook-commercial:latest or :v1.0.0"
 
 
 def pull_compose_problems() -> list[str]:
     text = _read("docker-compose.yml")
     problems = []
-    if "${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}" not in text:
-        problems.append("docker-compose.yml: image digest is not required")
+    if "image: ${OPEN_NOTEBOOK_IMAGE_REF:-haribabudfx/open-notebook-commercial:latest}" not in text:
+        problems.append("docker-compose.yml: Docker Hub latest tag is missing")
     if "${OPEN_NOTEBOOK_ENCRYPTION_KEY:?set encryption key}" not in text:
         problems.append("docker-compose.yml: encryption key is not required")
     for name in (
@@ -79,7 +81,7 @@ def pull_compose_problems() -> list[str]:
 def local_compose_problems() -> list[str]:
     text = _read("docker-compose.local.yml")
     problems = []
-    if "image: datafabricx/open-notebook-commercial:local" not in text:
+    if "image: haribabudfx/open-notebook-commercial:local" not in text:
         problems.append("docker-compose.local.yml: local image tag missing")
     if "build:" not in text or "context: ." not in text:
         problems.append("docker-compose.local.yml: build context missing")
@@ -99,8 +101,8 @@ def example_compose_problems() -> list[str]:
         "examples/docker-compose-speaches.yml",
         "examples/docker-compose-full-local.yml",
     ):
-        if "${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}" not in _read(name):
-            problems.append(f"{name}: pull image is not digest-pinned")
+        if "image: ${OPEN_NOTEBOOK_IMAGE_REF:-haribabudfx/open-notebook-commercial:latest}" not in _read(name):
+            problems.append(f"{name}: pull image is not the Docker Hub tag")
     return problems
 
 
@@ -175,7 +177,7 @@ def main() -> int:
         problems.extend(connector_problems(values))
         ref = values.get("OPEN_NOTEBOOK_IMAGE_REF", "")
         if ref and image_ref_problem(ref):
-            problems.append("OPEN_NOTEBOOK_IMAGE_REF is not a digest pin")
+            problems.append("OPEN_NOTEBOOK_IMAGE_REF is not a Docker Hub tag")
     if problems:
         print("\n".join(problems))
         return 1

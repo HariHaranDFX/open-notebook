@@ -12,10 +12,17 @@ from scripts.check_release_config import (
     storage_problems,
 )
 
-DIGEST = "datafabricx/open-notebook-commercial@sha256:" + ("a" * 64)
+def test_image_ref_accepts_latest_and_version_tags():
+    assert image_ref_problem("haribabudfx/open-notebook-commercial:latest") is None
+    assert image_ref_problem("haribabudfx/open-notebook-commercial:v1.0.0") is None
+    assert image_ref_problem("")
+    assert image_ref_problem("lfnovo/open_notebook:latest")
+    assert image_ref_problem("datafabricx/open-notebook-commercial:latest")
+    assert image_ref_problem("haribabudfx/open-notebook-commercial:v1-latest")
+    assert image_ref_problem("haribabudfx/open-notebook-commercial@sha256:" + ("a" * 64))
 
 
-def test_pull_compose_requires_digest_encryption_and_separate_credentials():
+def test_pull_compose_uses_docker_hub_latest_and_requires_encryption():
     assert pull_compose_problems() == []
 
 
@@ -23,7 +30,7 @@ def test_local_compose_builds_this_checkout():
     assert local_compose_problems() == []
 
 
-def test_examples_build_from_the_repo_or_pin_a_digest():
+def test_examples_build_from_the_repo_or_pull_docker_hub():
     assert example_compose_problems() == []
 
 
@@ -39,12 +46,6 @@ def test_ignored_env_has_every_example_key_name():
     gaps = env_name_gaps()
     assert gaps == []
     assert all("=" not in name for name in gaps)
-
-
-def test_image_ref_rejects_a_floating_tag():
-    assert image_ref_problem("")
-    assert image_ref_problem("datafabricx/open-notebook-commercial:v1-latest")
-    assert image_ref_problem(DIGEST) is None
 
 
 def test_selected_sharepoint_storage_fails_closed_without_values():

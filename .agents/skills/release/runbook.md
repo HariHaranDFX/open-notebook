@@ -14,10 +14,10 @@ gh run watch <run-id> --exit-status                        # background it
 ## Verify pushed manifests
 
 ```bash
-for ref in lfnovo/open_notebook:<ver> lfnovo/open_notebook:<ver>-single ghcr.io/lfnovo/open-notebook:<ver>; do
+for ref in haribabudfx/open-notebook-commercial:<ver> haribabudfx/open-notebook-commercial:<ver>-single haribabudfx/open-notebook-commercial:<ver>; do
   docker manifest inspect "$ref" | python3 -c "import json,sys; d=json.load(sys.stdin); print(sorted(set(m['platform']['architecture'] for m in d.get('manifests',[]) if m['platform']['architecture']!='unknown')))"
 done
-# expect ['amd64', 'arm64'] for each; repeat with v1-latest after publication
+# expect ['amd64', 'arm64'] for each; repeat with latest after publication
 ```
 
 ## RC stack with a copy of the owner's dev data (Phase 6)
@@ -49,7 +49,7 @@ Remind the owner: in-container credentials pointing at host services need
 
 ```bash
 gh release create v<ver> --title "v<ver> — <theme>" --notes-file <notes.md> --latest
-# publication (non-prerelease) triggers the workflow that pushes v1-latest
+# publication (non-prerelease) triggers the workflow that pushes latest
 gh run list --workflow=build-and-release.yml --limit 1 && gh run watch <id> --exit-status
 ```
 
@@ -58,8 +58,8 @@ gh run list --workflow=build-and-release.yml --limit 1 && gh run watch <id> --ex
 ```bash
 # only actual closed ISSUES (changelog refs mix issues and PR numbers):
 for n in <numbers>; do
-  STATE=$(gh api "repos/lfnovo/open-notebook/issues/$n" --jq 'if .pull_request then "pr" else .state end')
-  [ "$STATE" = "closed" ] && gh issue edit "$n" --add-label released
+  STATE=$(gh api "repos/HariHaranDFX/open-notebook/issues/$n" --jq 'if .pull_request then "pr" else .state end')
+  [ "$STATE" = "closed" ] && gh issue edit "$n" --repo HariHaranDFX/open-notebook --add-label released
 done
 ```
 

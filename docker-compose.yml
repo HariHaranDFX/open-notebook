@@ -24,10 +24,10 @@ services:
     pull_policy: always
 
   open_notebook:
-    # Pull deployment. Set OPEN_NOTEBOOK_IMAGE_REF to
-    # datafabricx/open-notebook-commercial@sha256:<64 hex chars>.
+    # Pulls latest. Pin a release with
+    # OPEN_NOTEBOOK_IMAGE_REF=haribabudfx/open-notebook-commercial:v1.0.0
     # Build this checkout with docker-compose.local.yml instead.
-    image: ${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:-haribabudfx/open-notebook-commercial:latest}
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API

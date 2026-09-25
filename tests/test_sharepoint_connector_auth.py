@@ -207,7 +207,7 @@ async def test_connect_callback_encrypts_secrets_and_uses_dedicated_scopes(
                 params={"code": "code", "state": params["state"][0]},
             )
         assert response.status_code == 302
-        assert response.headers["location"] == "/"
+        assert response.headers["location"] == "/connections"
         saved = repo.call_args.args[1]
         cache = json.loads(encryption.decrypt_value(saved["token_cache"]))
         assert cache["RefreshToken"]["one"]["secret"] == "refresh-secret"

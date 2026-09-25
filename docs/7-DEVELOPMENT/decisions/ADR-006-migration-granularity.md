@@ -11,7 +11,7 @@ Multiple issues in the same release cycle can each need a schema migration. The 
 Two facts about this project shape the decision:
 
 1. Migrations run **automatically at API startup**, in sequence, tracked in `_sbl_migrations`. Users upgrading across any version span run all pending migrations transparently — they never see the count.
-2. A `v1-dev` image is published on **every push to main**. A migration is therefore effectively *released the moment it lands on main* — dev-image users apply it immediately, before any versioned release exists.
+2. A `dev` image is published on **every push to main**. A migration is therefore effectively *released the moment it lands on main* — dev-image users apply it immediately, before any versioned release exists.
 
 ## Decision
 
@@ -24,7 +24,7 @@ Two facts about this project shape the decision:
 
 ## Alternatives considered
 
-- **One consolidated migration per release** — rejected: post-hoc squashing breaks every `v1-dev` user whose `_sbl_migrations` already recorded the individual migrations, and it decouples schema changes from the PRs that explain them.
+- **One consolidated migration per release** — rejected: post-hoc squashing breaks every `dev` user whose `_sbl_migrations` already recorded the individual migrations, and it decouples schema changes from the PRs that explain them.
 - **Batch migrations in a release branch** — rejected for the same dev-image reason, plus it would hold merged features hostage to release timing.
 
 ## Consequences

@@ -118,7 +118,7 @@ and is not approved to merge or publish.
 
 - Live Entra consent, two-user isolation, folder-over-1,000, Graph 429, and SharePoint Embedded upload/download/delete need a configured tenant. No tenant credentials were available.
 - Browser check of light/dark, keyboard, and narrow layout was not run. Frontend port 3000 and API port 5055 were down. SurrealDB was already listening on 8000.
-- No digest-pinned `datafabricx/open-notebook-commercial` image has been built or published. Docker daemon 29.8.0 was up. Compose config passed. The image was not built and was not pushed.
+- No digest-pinned `haribabudfx/open-notebook-commercial` image has been built or published. Docker daemon 29.8.0 was up. Compose config passed. The image was not built and was not pushed.
 - `reconcile_original_uploads` is registered and is not submitted on API startup. Orphan recovery runs only when that command is submitted.
 
 ### Review notes from this session
@@ -127,7 +127,7 @@ Not a second reviewer. Checked against the release checklist:
 
 - Storage Graph delete stays in the managed-copy store and uses `If-Match`. Connector code does not delete external Graph items.
 - `GET /connectors/sharepoint/batches` filters `user_id` and caps the limit at 20. The payload has no token fields.
-- Active Compose, workflows, Makefile, release scripts, and `docs/1-INSTALLATION` do not reference `lfnovo/open_notebook` or `ghcr.io/lfnovo`. Publication requires `APPROVE_IMAGE_PUBLISH=true`.
+- Active Compose, workflows, Makefile, and release scripts publish `haribabudfx/open-notebook-commercial` (`v<version>` and `latest`) to Docker Hub. Publication requires `APPROVE_IMAGE_PUBLISH=true`.
 - Locale parity is included in the 641 frontend tests.
 
 No Critical finding remained after the ruff and mypy fixes. Do not merge, delete the branch, or publish an image without a new explicit instruction.

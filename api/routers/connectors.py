@@ -168,7 +168,7 @@ async def sharepoint_callback(
         request.query_params.get("code"),
         request.query_params.get("error"),
     )
-    return RedirectResponse("/", status_code=302)
+    return RedirectResponse("/connections", status_code=302)
 
 
 @router.get("/sites")

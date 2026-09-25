@@ -61,6 +61,7 @@ describe('AppSidebar', () => {
     expect(screen.getByRole('link', { name: 'navigation.askAndSearch' })).toHaveAttribute('href', '/search')
     expect(screen.getByRole('link', { name: 'navigation.podcasts' })).toHaveAttribute('href', '/podcasts')
     expect(screen.getByRole('link', { name: 'navigation.transformations' })).toHaveAttribute('href', '/transformations')
+    expect(screen.getByRole('link', { name: 'navigation.connections' })).toHaveAttribute('href', '/connections')
     expect(screen.getByRole('link', { name: 'navigation.models' })).toHaveAttribute('href', '/settings/models')
     expect(screen.getByRole('link', { name: 'navigation.groups' })).toHaveAttribute('href', '/settings/groups')
     expect(screen.queryByRole('link', { name: 'navigation.advanced' })).not.toBeInTheDocument()

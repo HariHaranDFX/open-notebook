@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the existing inbound SharePoint connector and managed original-file storage safe to release, with local builds and `datafabricx/open-notebook-commercial` deployment images.
+**Goal:** Make the existing inbound SharePoint connector and managed original-file storage safe to release, with local builds and `haribabudfx/open-notebook-commercial` deployment images.
 
 **Architecture:** Connector authorization remains delegated and per user; the connector copies external documents into Sources without modifying SharePoint. Original-file storage remains a separate app-owned service using filesystem or SharePoint Embedded. Compose and release workflows select our image, never upstream's.
 
@@ -84,7 +84,7 @@
 
 **Files:** `docker-compose.yml`, `examples/docker-compose-dev.yml`, `examples/docker-compose-single.yml`, `examples/docker-compose-ollama.yml`, `examples/docker-compose-speaches.yml`, `examples/docker-compose-full-local.yml`, `Makefile`, `.env.example`, ignored branch `.env`, `.github/workflows/build-dev.yml`, `.github/workflows/build-and-release.yml`, release-test scripts, installation docs.
 
-**Interfaces:** Local Compose builds this checkout. Pull-based Compose requires `datafabricx/open-notebook-commercial` with an immutable tag. `.env` supplies connector, storage, encryption, and image configuration; no active deployment points at `lfnovo/open_notebook`.
+**Interfaces:** Local Compose builds this checkout. Pull-based Compose requires `haribabudfx/open-notebook-commercial` with an immutable tag. `.env` supplies connector, storage, encryption, and image configuration; no active deployment points at `haribabudfx/open-notebook-commercial`.
 
 - [x] Add configuration checks that fail with upstream image, missing encryption key, absent connector callback, or unconfigured selected storage provider.
 - [x] Update Compose/Makefile/workflows/docs minimally; preserve existing secret values and add missing optional `.env.example` key names to ignored `.env` as commented entries.

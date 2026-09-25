@@ -97,7 +97,7 @@ go back to Phase 4. **Do not proceed without their GO.**
    **Thanks section is mandatory**; collect every contributor with the
    commands in the template. Show the owner for review.
 2. With their explicit GO: `gh release create v<ver> --title ... --notes-file ... --latest`.
-   Publication triggers CI to push `v1-latest` — watch it, then verify the
+   Publication triggers CI to push `latest` — watch it, then verify the
    latest manifests (runbook).
 3. Mark shipped issues with the `released` label (ask before mass-labeling).
 4. Deliver the Discord post text (the owner posts it).

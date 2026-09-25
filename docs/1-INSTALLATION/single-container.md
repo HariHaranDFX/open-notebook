@@ -1,12 +1,12 @@
 # Single Container Installation (Deprecated)
 
-> **Deprecation Notice:** The single-container image (`v1-latest-single`) is **deprecated** and will be removed in v2. Please migrate to [Docker Compose](docker-compose.md), which is the recommended installation method for all users. The single-container image will continue to receive updates until v2 is released, but no new features or documentation will target it.
+> **Deprecation Notice:** The single-container image (`latest-single`) is **deprecated** and will be removed in v2. Please migrate to [Docker Compose](docker-compose.md), which is the recommended installation method for all users. The single-container image will continue to receive updates until v2 is released, but no new features or documentation will target it.
 
 All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
 
 **Best for:** PikaPods, Railway, shared hosting, minimal setups
 
-> Single-container pulls use a digest-pinned `datafabricx/open-notebook-commercial@sha256:<digest>` image. Build this checkout with `docker compose --env-file .env -f examples/docker-compose-single.yml up --build`.
+> Single-container pulls use `haribabudfx/open-notebook-commercial:latest-single`. Build this checkout with `docker compose --env-file .env -f examples/docker-compose-single.yml up --build`.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
 # docker-compose.yml
 services:
   open_notebook:
-    image: datafabricx/open-notebook-commercial@sha256:<digest>
+    image: haribabudfx/open-notebook-commercial:latest-single
     pull_policy: always
     ports:
       - "8502:8502"  # Web UI (React frontend)
@@ -63,20 +63,20 @@ Then configure your AI provider:
 
 **Railway:**
 1. Create new project
-2. Add `datafabricx/open-notebook-commercial@sha256:<digest>`
+2. Add `haribabudfx/open-notebook-commercial:latest-single`
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Deploy
 5. Open the app → Go to **Manage → Models** to configure your AI provider
 
 **Render:**
 1. Create new Web Service
-2. Use Docker image: `datafabricx/open-notebook-commercial@sha256:<digest>`
+2. Use Docker image: `haribabudfx/open-notebook-commercial:latest-single`
 3. Set environment variables in dashboard (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Configure persistent disk for `/app/data` and `/mydata`
 
 **DigitalOcean App Platform:**
 1. Create new app from Docker Hub
-2. Use image: `datafabricx/open-notebook-commercial@sha256:<digest>`
+2. Use image: `haribabudfx/open-notebook-commercial:latest-single`
 3. Set port to 8502
 4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 5. Configure persistent storage
@@ -91,7 +91,7 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 
 **Coolify:**
 1. Add new service → Docker Image
-2. Image: `datafabricx/open-notebook-commercial@sha256:<digest>`
+2. Image: `haribabudfx/open-notebook-commercial:latest-single`
 3. Port: 8502
 4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 5. Enable persistent volumes
@@ -99,12 +99,12 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 
 **EasyPanel:**
 
-Open Notebook ships an EasyPanel template at [`examples/easypanel/`](https://github.com/lfnovo/open-notebook/tree/main/examples/easypanel). Unlike the single-image options above, the template provisions **two services** — the Open Notebook app and a dedicated SurrealDB instance — and generates the database password, encryption key, and (optionally) the app password for you.
+Open Notebook ships an EasyPanel template at [`examples/easypanel/`](https://github.com/HariHaranDFX/open-notebook/tree/main/examples/easypanel). Unlike the single-image options above, the template provisions **two services** — the Open Notebook app and a dedicated SurrealDB instance — and generates the database password, encryption key, and (optionally) the app password for you.
 
 - **One-click (recommended):** once the template is published to the official [EasyPanel template gallery](https://github.com/easypanel-io/templates), create a new service from "Open Notebook", set an app password (or leave it blank to auto-generate one), and deploy.
 - **Manual:** copy `examples/easypanel/` into `templates/open-notebook` in a checkout of [`easypanel-io/templates`](https://github.com/easypanel-io/templates), run the templates playground (`npm run dev`), and create the template from the generated JSON in your EasyPanel instance.
 
-After deployment, open the EasyPanel domain and configure your AI provider in **Manage → Models**. See [`examples/easypanel/README.md`](https://github.com/lfnovo/open-notebook/blob/main/examples/easypanel/README.md) for details.
+After deployment, open the EasyPanel domain and configure your AI provider in **Manage → Models**. See [`examples/easypanel/README.md`](https://github.com/HariHaranDFX/open-notebook/blob/main/examples/easypanel/README.md) for details.
 
 ---
 

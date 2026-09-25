@@ -2,7 +2,7 @@
 
 Multi-container setup with separate services. **Best for most users.**
 
-> Pull deployments use a digest-pinned `datafabricx/open-notebook-commercial@sha256:<digest>` image. Build this checkout with `docker compose --env-file .env -f docker-compose.local.yml up --build`. Upstream image names are not a deployment target.
+> Pull `haribabudfx/open-notebook-commercial:latest`, or pin a release such as `haribabudfx/open-notebook-commercial:v1.0.0`. Build this checkout with `docker compose --env-file .env -f docker-compose.local.yml up --build`.
 
 ## Prerequisites
 
@@ -17,14 +17,14 @@ Multi-container setup with separate services. **Best for most users.**
 docker compose --env-file .env -f docker-compose.local.yml up --build
 ```
 
-**Option B: Pull a digest-pinned image**
+**Option B: Pull a published tag**
 
-Set `OPEN_NOTEBOOK_IMAGE_REF=datafabricx/open-notebook-commercial@sha256:<digest>` and `OPEN_NOTEBOOK_ENCRYPTION_KEY` in `.env`, then:
+`latest` is the default. To pin a release, set `OPEN_NOTEBOOK_IMAGE_REF=haribabudfx/open-notebook-commercial:v1.0.0` in `.env`, then:
 ```bash
 docker compose --env-file .env up
 ```
 
-The project was forked from the upstream Open Notebook repository. Deployment images come from `datafabricx/open-notebook-commercial`, not that upstream registry.
+The project repository is [HariHaranDFX/open-notebook](https://github.com/HariHaranDFX/open-notebook). Images are published to [haribabudfx/open-notebook-commercial](https://hub.docker.com/r/haribabudfx/open-notebook-commercial).
 
 **Option C: Create manually**
 
@@ -57,7 +57,7 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: ${OPEN_NOTEBOOK_IMAGE_REF:?set image digest}
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:-haribabudfx/open-notebook-commercial:latest}
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
@@ -84,7 +84,7 @@ services:
 
 **Edit the file:**
 - Replace `change-me-to-a-secret-string` with your own secret (any string works, e.g., `my-super-secret-key-123`)
-- (Optional) To use database credentials other than the default `root:root`, create a `.env` file next to `docker-compose.yml` with `SURREAL_USER=...` and `SURREAL_PASSWORD=...` — both services pick them up automatically ([.env.example](https://github.com/lfnovo/open-notebook/blob/main/.env.example) shows the full format)
+- (Optional) To use database credentials other than the default `root:root`, create a `.env` file next to `docker-compose.yml` with `SURREAL_USER=...` and `SURREAL_PASSWORD=...` — both services pick them up automatically ([.env.example](https://github.com/HariHaranDFX/open-notebook/blob/main/.env.example) shows the full format)
 
 ---
 
@@ -369,5 +369,5 @@ For production use, see:
 ## Getting Help
 
 - **Discord**: [Community support](https://discord.gg/37XJPXfz2w)
-- **Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Issues**: [GitHub Issues](https://github.com/HariHaranDFX/open-notebook/issues)
 - **Docs**: [Full documentation](../index.md)

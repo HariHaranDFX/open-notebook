@@ -25,7 +25,7 @@ It was redesigned during the v1.11.0 release ([ADR-005](../docs/7-DEVELOPMENT/de
 1. Triage issues into `ready` once the scope and design are clear.
 2. Implement each change in a focused pull request linked to the approved issue.
 3. Merge the pull request after review and required checks pass.
-4. Let the development build publish the `v1-dev` image from `main`.
+4. Let the development build publish the `dev` image from `main`.
 5. Cut a stable release when `main` has a coherent set of changes ready for
    users — following the confidence process below.
 
@@ -104,8 +104,8 @@ are not release regressions become backlog issues instead of scope creep.
    isolated stack, optionally with a copy of real data — and walk the core
    flows in the browser.
 6. Publish the GitHub release. A non-prerelease publication triggers the
-   workflow again and pushes the `v1-latest` tags automatically.
-7. Verify the `v1-latest` manifests on Docker Hub and GHCR (both arches, both
+   workflow again and pushes the `latest` tags automatically.
+7. Verify the `latest` manifests on Docker Hub (both arches, both
    variants), and mark shipped issues with `released`.
 
 ## Communication
@@ -120,7 +120,7 @@ Release notes follow this structure (see v1.11.0 as the reference):
    (collect via `git log <last-tag>..<tag>` + `gh pr view` for handles), plus
    the issue reporters collectively. Never skip this section.
 
-Announce on Discord after `v1-latest` is live.
+Announce on Discord after `latest` is live.
 
 ## Retro
 
@@ -134,7 +134,7 @@ accepted improvements immediately — update this document, the scripts under
 |---------|--------------|-----------------|
 | `make docker-build-local` | Build for current platform only (tags `<version>` + `local`) | No registry push |
 | CI *Build and Release* (`push_latest=false`) | Push version tags via CI credentials | ❌ No |
-| GitHub release published (non-prerelease) | CI pushes version + `v1-latest` | ✅ Yes |
+| GitHub release published (non-prerelease) | CI pushes version + `latest` | ✅ Yes |
 | `make docker-push` / `docker-push-latest` | Local equivalents (need `docker login`) | ❌ / ✅ |
 | `make tag` | Create and push a git tag matching `pyproject.toml` | — |
 
@@ -158,9 +158,9 @@ accepted improvements immediately — update this document, the scripts under
   on (v1.14.0 lesson).
 - **A fix that lands after the cut requires a full re-cut, not a tag nudge.**
   If the release was tagged but not yet published (no GitHub release, no
-  `v1-latest`) and a blocker is found in bucket C, the tag must move to the new
+  `latest`) and a blocker is found in bucket C, the tag must move to the new
   commit AND the version images must be rebuilt — a stale tag or stale registry
-  image will otherwise be what publication promotes to `v1-latest`. The exact
+  image will otherwise be what publication promotes to `latest`. The exact
   sequence is in `runbook.md` → "Re-cut after a post-tag fix" (v1.14.0 lesson).
 - **RC stack on non-default ports needs `API_URL`** or the browser talks to
   `host:5055` — on a dev machine that is the development API (data crossover).
@@ -187,7 +187,7 @@ accepted improvements immediately — update this document, the scripts under
   and after the suite (e.g. credentials count) — a diff means a test is
   leaking writes (this caught 48 leaked `Test` credentials in v1.12.0).
 - **A local `docker-build-local` tag shadows the pushed image.** Both are
-  `lfnovo/open_notebook:<ver>`, so Phase 6 could verify your own local build
+  `haribabudfx/open-notebook-commercial:<ver>`, so Phase 6 could verify your own local build
   instead of the registry artifact. `rc-stack.sh up` now `docker pull`s the tag
   by default; if you boot the image any other way, pull first (v1.13.0 lesson).
 - **Judge opt-in runtime gating on a clean image, not the dev venv.** A dev

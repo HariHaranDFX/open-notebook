@@ -47,15 +47,16 @@ item identity to avoid duplicate Sources for the same owner.
 5. Start the API and the surreal-commands worker. Without the worker, accepted
    import batches remain queued. The API's schema migrations run at startup.
 
-When configuration is missing, Add Source shows the connector as unavailable.
-After consent the callback returns to the application home page; reopen Add
-Source to browse. Workers use the durable per-user MSAL cache after the login
+When configuration is missing, Connections shows the connector as unavailable.
+After consent the callback returns to `/connections`. Connect, reconnect, and
+disconnect live on that page; Add Source links there when the account is not
+connected. Workers use the durable per-user MSAL cache after the login
 session ends. If consent expires or is revoked, silent acquisition marks the
-connection `reauth_required`; the user reconnects. The owner can call
-`POST /api/connectors/sharepoint/disconnect` to clear local credentials
-idempotently. This does not revoke consent on Microsoft's servers; revoke it in
-Entra if server-side revocation is needed. Existing branch-only connections
-created with raw refresh tokens must reconnect.
+connection `reauth_required`; the user reconnects from Connections. Disconnect
+calls `POST /api/connectors/sharepoint/disconnect` and clears local credentials
+idempotently. This does not revoke consent on Microsoft's servers. A work
+account removes the app at https://myapps.microsoft.com/. Existing branch-only
+connections created with raw refresh tokens must reconnect.
 
 ### Import status and troubleshooting
 
@@ -64,7 +65,7 @@ the owner's recent batches from `GET /api/connectors/sharepoint/batches` (at
 most 20) and resumes a pending or running import. The dialog polls the batch
 while it is pending or running and shows each document's queued, failed, or
 skipped result. A folder over the import limit shows the translated limit
-message. Reconnect and disconnect stay in that same step. A completed batch means the existing Source-processing jobs were
+message. A completed batch means the existing Source-processing jobs were
 queued; extraction and embeddings may still be running. A partial batch keeps
 successful Sources and reports failed documents. The owner can retry failed
 documents with `POST /api/connectors/sharepoint/batches/{batch_id}/retry`;

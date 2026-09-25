@@ -24,7 +24,7 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: datafabricx/open-notebook-commercial:local
+    image: haribabudfx/open-notebook-commercial:local
     build:
       context: .
       dockerfile: Dockerfile

@@ -18,6 +18,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Plug,
   Plus,
   Search,
   Settings,
@@ -92,6 +93,7 @@ const getNavigation = (t: TFunction) => [
   {
     title: t('navigation.manage'),
     items: [
+      { name: t('navigation.connections'), href: '/connections', icon: Plug },
       { name: t('navigation.models'), href: '/settings/models', icon: Bot, adminOnly: true },
       { name: t('navigation.groups'), href: '/settings/groups', icon: Users, adminOnly: true },
     ],

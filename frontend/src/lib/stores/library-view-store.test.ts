@@ -8,6 +8,7 @@ describe('library view preferences', () => {
     useLibraryViewStore.setState({
       notebooks: 'list',
       sources: 'list',
+      connections: 'list',
       hasHydrated: false,
     })
   })
@@ -19,7 +20,7 @@ describe('library view preferences', () => {
     expect(useLibraryViewStore.getState().sources).toBe('list')
 
     const persisted = JSON.parse(localStorage.getItem('library-view-storage') ?? '{}')
-    expect(persisted.state).toMatchObject({ notebooks: 'card', sources: 'list' })
+    expect(persisted.state).toMatchObject({ notebooks: 'card', sources: 'list', connections: 'list' })
     expect(persisted.state).not.toHaveProperty('hasHydrated')
   })
 

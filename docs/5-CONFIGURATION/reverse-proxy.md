@@ -76,10 +76,10 @@ Caddy handles HTTPS automatically. The timeout settings ensure long-running oper
 
 ```yaml
 # Add this to your docker-compose.yml alongside the surrealdb service
-# See full base setup: https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# See full base setup: https://github.com/HariHaranDFX/open-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
@@ -161,12 +161,12 @@ When `API_URL` is not set, the Next.js frontend:
 
 ## Complete Docker Compose Example
 
-> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml) for the complete setup.
+> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/HariHaranDFX/open-notebook/blob/main/docker-compose.yml) for the complete setup.
 
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     container_name: open-notebook
     environment:
@@ -310,7 +310,7 @@ API_URL=http://192.168.1.100:5055
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - API_URL=http://192.168.1.100:5055
@@ -341,7 +341,7 @@ Host the API and frontend on different subdomains:
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - API_URL=https://api.notebook.example.com
@@ -403,7 +403,7 @@ For complex deployments with separate frontend and API containers:
 ```yaml
 services:
   frontend:
-    image: lfnovo/open_notebook_frontend:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
@@ -411,7 +411,7 @@ services:
       - "8502:8502"
 
   api:
-    image: lfnovo/open_notebook_api:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
@@ -472,7 +472,7 @@ http {
 }
 ```
 
-**Note**: Most users should use the [Docker Compose](../1-INSTALLATION/docker-compose.md) approach (`v1-latest`). Multi-container with separate nginx is only needed for custom scaling or isolation requirements.
+**Note**: Most users should use the [Docker Compose](../1-INSTALLATION/docker-compose.md) approach (`latest`). Multi-container with separate nginx is only needed for custom scaling or isolation requirements.
 
 ---
 

@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   statusError: false,
   browseError: false,
   recent: [] as { batch_id: string; status: string }[],
+  childrenPending: false,
   connect: vi.fn(),
   disconnect: vi.fn(),
   retry: vi.fn(),
@@ -48,7 +49,7 @@ vi.mock('@/lib/hooks/use-sharepoint', () => ({
         { id: 'unsupported', name: 'archive.zip', kind: 'file', browsable: false, importable: false },
         { id: 'folder:one', name: 'Reports', kind: 'folder', browsable: true, importable: false },
       ],
-    isPending: false,
+    isPending: state.childrenPending,
     isError: false,
     refetch: vi.fn(),
   }),
@@ -62,6 +63,7 @@ beforeEach(() => {
   state.statusError = false
   state.browseError = false
   state.recent = []
+  state.childrenPending = false
 })
 
 describe('SharePointStep', () => {
@@ -73,8 +75,8 @@ describe('SharePointStep', () => {
     state.available = true
     state.connected = false
     view.rerender(<SharePointStep selection={null} onSelectionChange={state.change} />)
-    fireEvent.click(screen.getByRole('button', { name: 'sharepoint.connect' }))
-    expect(state.connect).toHaveBeenCalledOnce()
+    expect(screen.getByRole('link', { name: 'sharepoint.manageConnection' })).toHaveAttribute('href', '/connections')
+    expect(state.connect).not.toHaveBeenCalled()
 
     state.statusError = true
     view.rerender(<SharePointStep selection={null} onSelectionChange={state.change} />)
@@ -87,7 +89,7 @@ describe('SharePointStep', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Research' }))
     fireEvent.click(screen.getByRole('button', { name: 'Documents' }))
     expect(screen.getByRole('checkbox', { name: 'archive.zip' })).toBeDisabled()
-    fireEvent.click(screen.getByRole('checkbox', { name: 'report.pdf' }))
+    fireEvent.click(screen.getByText('report.pdf'))
     expect(state.change).toHaveBeenLastCalledWith({ drive_id: 'drive:one', item_ids: ['file:one'] })
 
     fireEvent.click(screen.getByRole('button', { name: 'Reports' }))
@@ -98,24 +100,22 @@ describe('SharePointStep', () => {
     expect(screen.getByRole('checkbox', { name: 'report.pdf' })).toBeInTheDocument()
   })
 
-  it('reconnects when consent must be renewed', () => {
+  it('centers a loader in the file list while a folder is loading', () => {
+    state.childrenPending = true
+    render(<SharePointStep selection={null} onSelectionChange={state.change} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Research' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Documents' }))
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
+    expect(screen.queryByText('common.loading')).not.toBeInTheDocument()
+  })
+
+  it('links to Connections when consent must be renewed', () => {
     state.connected = false
     state.connectionStatus = 'reauth_required'
     render(<SharePointStep selection={null} onSelectionChange={state.change} />)
-    fireEvent.click(screen.getByRole('button', { name: /reconnect/i }))
-    expect(state.connect).toHaveBeenCalledOnce()
+    expect(screen.getByRole('link', { name: 'sharepoint.manageConnection' })).toHaveAttribute('href', '/connections')
     expect(screen.queryByRole('button', { name: 'sharepoint.connect' })).not.toBeInTheDocument()
-  })
-
-  it('asks before disconnecting', () => {
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    render(<SharePointStep selection={null} onSelectionChange={state.change} />)
-    fireEvent.click(screen.getByRole('button', { name: 'sharepoint.disconnect' }))
-    expect(confirm).toHaveBeenCalledWith('sharepoint.disconnectConfirm')
-    expect(state.disconnect).not.toHaveBeenCalled()
-    confirm.mockReturnValue(true)
-    fireEvent.click(screen.getByRole('button', { name: 'sharepoint.disconnect' }))
-    expect(state.disconnect).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'sharepoint.disconnect' })).not.toBeInTheDocument()
   })
 
   it('resumes an in-progress batch from the owner list and leaves a partial batch for the user', () => {
@@ -136,6 +136,7 @@ describe('SharePointStep', () => {
     render(<SharePointStep selection={null} onSelectionChange={state.change} />)
     expect(screen.getByRole('alert')).toHaveTextContent('sharepoint.requestFailed')
     expect(screen.getByRole('button', { name: 'common.retry' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'sharepoint.manageConnection' })).toHaveAttribute('href', '/connections')
   })
 })
 
@@ -157,6 +158,7 @@ describe('SharePointBatchProgress', () => {
     } as never} />)
     expect(screen.getByRole('status')).toHaveTextContent('sharepoint.limitReached')
     expect(screen.getByRole('status')).toHaveTextContent('1,000')
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
     fireEvent.click(screen.getByRole('button', { name: 'sharepoint.retryFailed' }))
     expect(state.retry).toHaveBeenCalledWith('connector_batch:one')
   })

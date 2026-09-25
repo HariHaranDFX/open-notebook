@@ -49,7 +49,6 @@ export function useRetrySharePointBatch(notebookIds: string[]) {
     mutationFn: sharepointApi.retryBatch,
     retry: false,
     onSuccess: (_data, batchId) => {
-      toast.success(t('sharepoint.pending'))
       void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.status })
       void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.batch(batchId) })
       void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.recent })
@@ -83,7 +82,6 @@ export function useImportSharePoint() {
   return useMutation({
     mutationFn: sharepointApi.import,
     retry: false,
-    onSuccess: () => toast.success(t('sharepoint.pending')),
     onError: () => {
       toast.error(t('sharepoint.requestFailed'))
       void client.invalidateQueries({ queryKey: SHAREPOINT_QUERY_KEYS.status })

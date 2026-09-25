@@ -146,6 +146,9 @@ async def _import_document_content(connector, document, batch, user, metadata, v
             raise ValueError("Source owner does not match")
         if source.asset is None:
             raise ValueError("Imported source has no managed copy")
+        # A repeat import does not create another source. Touch updated so the
+        # library, sorted by that field, shows this file at the top.
+        await source.save()
         for notebook_id in batch.notebook_ids:
             await source.add_to_notebook(notebook_id)
         queued = await queue_source(source, {**source.asset.model_dump(exclude_none=True), "delete_source": False}, batch.notebook_ids, batch.transformations, batch.embed, recover=True)

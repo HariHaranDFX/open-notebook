@@ -171,7 +171,7 @@ services:
     command: --api --listen
 
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     depends_on:
       - text-gen
@@ -219,7 +219,7 @@ services:
               capabilities: [gpu]
 
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     depends_on:
       - vllm

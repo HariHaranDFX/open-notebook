@@ -492,18 +492,27 @@ export function AddSourceDialog({
     onOpenChange(false)
   }
 
+  const sharePointStatus = sharePointBatch.data?.status
+  const closeOnComplete = useRef(handleClose)
+  closeOnComplete.current = handleClose
+  useEffect(() => {
+    if (sharePointStatus === 'completed') closeOnComplete.current()
+  }, [sharePointStatus])
+
   // Processing view
   if (sharePointBatchId) return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className="flex w-full flex-col sm:max-w-[700px]">
-        <SheetHeader>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-2.5">
           <SheetTitle>{t('sharepoint.title')}</SheetTitle>
           <SheetDescription>{t('sharepoint.description')}</SheetDescription>
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
           <SharePointBatchProgress batch={sharePointBatch} notebookIds={sharePointBatchNotebooks} />
         </div>
-        <SheetFooter><Button type="button" onClick={handleClose}>{t('common.close')}</Button></SheetFooter>
+        <SheetFooter className="border-t border-border px-6 py-2 sm:justify-end">
+          <Button type="button" onClick={handleClose}>{t('common.close')}</Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   )

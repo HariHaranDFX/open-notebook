@@ -28,9 +28,7 @@ permissions:
 
 env:
   # Publication stays off until the repository variable APPROVE_IMAGE_PUBLISH is true.
-  # GHCR has no approved namespace yet, so both names are the Docker Hub repository.
-  GHCR_IMAGE: datafabricx/open-notebook-commercial
-  DOCKERHUB_IMAGE: datafabricx/open-notebook-commercial
+  DOCKERHUB_IMAGE: haribabudfx/open-notebook-commercial
 
 jobs:
   extract-version:
@@ -68,7 +66,7 @@ jobs:
           # Check if this is a push to main (not a PR)
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "is_push_to_main=true" >> $GITHUB_OUTPUT
-            echo "This is a push to main - will publish v1-dev tags"
+            echo "This is a push to main - will publish dev tags"
           else
             echo "is_push_to_main=false" >> $GITHUB_OUTPUT
             echo "This is a PR or manual run - test build only"
@@ -133,14 +131,6 @@ jobs:
         if: needs.extract-version.outputs.is_push_to_main == 'true' || needs.changes.outputs.image == 'true'
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
-      - name: Login to GitHub Container Registry
-        if: needs.extract-version.outputs.is_push_to_main == 'true'
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Login to Docker Hub
         if: needs.extract-version.outputs.is_push_to_main == 'true' && needs.extract-version.outputs.has_dockerhub_secrets == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
@@ -162,11 +152,8 @@ jobs:
         if: needs.extract-version.outputs.is_push_to_main == 'true' || needs.changes.outputs.image == 'true'
         run: |
           if [[ "${{ needs.extract-version.outputs.is_push_to_main }}" == "true" ]]; then
-            # Push to main: build and push v1-dev tags
-            TAGS="${{ env.GHCR_IMAGE }}:v1-dev"
-            if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-              TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-dev"
-            fi
+            # Push to main: build and push dev tags
+            TAGS="${{ env.DOCKERHUB_IMAGE }}:dev"
             echo "tags=${TAGS}" >> $GITHUB_OUTPUT
             echo "push=true" >> $GITHUB_OUTPUT
             echo "platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
@@ -217,13 +204,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Login to Docker Hub
         if: needs.extract-version.outputs.has_dockerhub_secrets == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
@@ -242,10 +222,7 @@ jobs:
       - name: Prepare Docker tags
         id: tags
         run: |
-          TAGS="${{ env.GHCR_IMAGE }}:v1-dev-single"
-          if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-            TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-dev-single"
-          fi
+          TAGS="${{ env.DOCKERHUB_IMAGE }}:dev-single"
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
 
       - name: Build and push single-container image
@@ -282,19 +259,13 @@ jobs:
             echo "### Published Tags:" >> $GITHUB_STEP_SUMMARY
 
             if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
-              echo "✅ **Regular:** \`${{ env.GHCR_IMAGE }}:v1-dev\`" >> $GITHUB_STEP_SUMMARY
-              if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-                echo "✅ **Regular (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-dev\`" >> $GITHUB_STEP_SUMMARY
-              fi
+              echo "✅ **Regular:** \`${{ env.DOCKERHUB_IMAGE }}:dev\`" >> $GITHUB_STEP_SUMMARY
             else
               echo "❌ **Regular:** Build failed" >> $GITHUB_STEP_SUMMARY
             fi
 
             if [[ "${{ needs.build-single.result }}" == "success" ]]; then
-              echo "✅ **Single:** \`${{ env.GHCR_IMAGE }}:v1-dev-single\`" >> $GITHUB_STEP_SUMMARY
-              if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-                echo "✅ **Single (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-dev-single\`" >> $GITHUB_STEP_SUMMARY
-              fi
+              echo "✅ **Single:** \`${{ env.DOCKERHUB_IMAGE }}:dev-single\`" >> $GITHUB_STEP_SUMMARY
             elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then
               echo "⏭️ **Single:** Skipped" >> $GITHUB_STEP_SUMMARY
             else
@@ -315,6 +286,6 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Notes:" >> $GITHUB_STEP_SUMMARY
             echo "- This is a test build (no images pushed to registry)" >> $GITHUB_STEP_SUMMARY
-            echo "- Merge to main to publish \`v1-dev\` tags" >> $GITHUB_STEP_SUMMARY
+            echo "- Merge to main to publish \`dev\` tags" >> $GITHUB_STEP_SUMMARY
             echo "- For stable releases, use the 'Build and Release' workflow" >> $GITHUB_STEP_SUMMARY
           fi

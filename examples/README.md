@@ -164,4 +164,4 @@ When set, the API (and MCP) require this password as a Bearer token. Leave it un
 ## 🆘 Need Help?
 
 - **Discord**: [Join our community](https://discord.gg/37XJPXfz2w)
-- **Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Issues**: [GitHub Issues](https://github.com/HariHaranDFX/open-notebook/issues)

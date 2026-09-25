@@ -56,6 +56,9 @@ def imports(monkeypatch, tmp_path):
         if sql.startswith("BEGIN TRANSACTION"):
             from open_notebook.domain.notebook import Source
 
+            assert "THEN THROW" not in sql
+            assert '{ THROW "SharePoint import claim expired"; }' in sql
+
             version = records.get(str(params["version_id"]))
             if not version or version["claim_id"] != params["claim_id"] or version["lease_until"] <= params["now"]:
                 raise RuntimeError("SharePoint import claim expired")
@@ -180,6 +183,27 @@ async def run_batch(imports, monkeypatch, *, retry=False, **selection):
             assert response.status_code == 202, response.text
         await connector_commands.import_sharepoint_batch_command(connector_commands.ImportSharePointBatchInput(**imports.jobs[0]["args"]))
         return await client.get(f"/api/connectors/sharepoint/batches/{imports.jobs[0]['args']['batch_id']}")
+
+
+@pytest.mark.asyncio
+async def test_repeat_import_refreshes_the_existing_source(imports, monkeypatch):
+    from commands import connector_commands
+
+    first = await run_batch(imports, monkeypatch, item_ids=["one"])
+    source_id = first.json()["documents"][0]["source_id"]
+    imports.records[source_id]["seen"] = "before"
+    monkeypatch.setattr(connector_commands, "get_original_file_store", lambda: imports.store)
+    monkeypatch.setattr(connector_commands, "resolve_action_for_source_create", AsyncMock(return_value="keep"))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=imports.app), base_url="http://test") as client:
+        created = await client.post("/api/connectors/sharepoint/import", json={"drive_id": "drive", "item_ids": ["one"]})
+        assert created.status_code == 202, created.text
+        await connector_commands.import_sharepoint_batch_command(
+            connector_commands.ImportSharePointBatchInput(**imports.jobs[-1]["args"])
+        )
+        second = await client.get(f"/api/connectors/sharepoint/batches/{imports.jobs[-1]['args']['batch_id']}")
+    assert second.json()["status"] == "completed"
+    assert second.json()["documents"][0]["source_id"] == source_id
+    assert "seen" not in imports.records[source_id]
 
 
 @pytest.mark.asyncio

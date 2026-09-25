@@ -101,7 +101,7 @@ async def queue_managed_upload_source(
             transaction = asyncio.create_task(repo_query(
                 "BEGIN TRANSACTION; "
                 "LET $owned = SELECT id FROM $version_id WHERE claim_id = $claim_id AND lease_until > $now AND status = 'claiming'; "
-                "IF array::len($owned) != 1 THEN THROW 'SharePoint import claim expired' END; "
+                "IF array::len($owned) != 1 { THROW \"SharePoint import claim expired\"; }; "
                 "CREATE $source_id CONTENT $source_data; "
                 "CREATE $command_id CONTENT $command_data; "
                 "COMMIT TRANSACTION;",

@@ -26,7 +26,7 @@ vi.mock('@/lib/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } })
 
 const endpoint = '/connectors/sharepoint'
 let connection = { available: true, connected: true }
-let batchState: 'running' | 'partial' = 'partial'
+let batchState: 'running' | 'partial' | 'completed' = 'partial'
 let recentBatches: { batch_id: string; status: string; total: number; completed: number; failed: number; error: string | null }[] = []
 
 function renderDialog(defaultNotebookId?: string) {
@@ -170,6 +170,29 @@ describe('AddSourceDialog', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['notebooks', 'notebook:one'] })
     fireEvent.click(screen.getByRole('button', { name: 'Reopen' }))
     expect(await screen.findByText('sharepoint.partial')).toBeInTheDocument()
+  })
+
+  it('closes the progress sheet when the import completes and refreshes the source list', async () => {
+    batchState = 'running'
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    function Shell() {
+      const [open, setOpen] = useState(true)
+      return <QueryClientProvider client={client}>
+        <AddSourceDialog open={open} onOpenChange={setOpen} defaultNotebookId="notebook:one" />
+      </QueryClientProvider>
+    }
+    render(<Shell />)
+    await browse()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'report.pdf' }))
+    fireEvent.click(screen.getByRole('button', { name: 'common.next' }))
+    fireEvent.click(screen.getByRole('button', { name: 'common.next' }))
+    fireEvent.click(screen.getByRole('button', { name: 'common.done' }))
+    expect(await screen.findByText('common.processing')).toBeInTheDocument()
+    batchState = 'completed'
+    await client.invalidateQueries({ queryKey: ['sharepoint', 'batch', 'connector_batch:one'] })
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['sources'] })
   })
 
   it.each(['single', 'multiple', 'folder'])('imports %s selection through the connector with selected notebooks and shows partial results', async (mode) => {

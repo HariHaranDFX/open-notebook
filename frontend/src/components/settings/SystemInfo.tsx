@@ -63,7 +63,7 @@ export function SystemInfo() {
       {config?.hasUpdate && (
         <div className="border-t border-border/40 py-3.5">
           <a
-            href="https://github.com/lfnovo/open-notebook"
+            href="https://github.com/HariHaranDFX/open-notebook"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"

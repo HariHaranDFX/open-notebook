@@ -88,7 +88,7 @@ On Linux, `host.docker.internal` doesn't resolve automatically like it does on m
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     # ... other settings ...
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -119,10 +119,10 @@ When both Open Notebook and Ollama run in the same Docker Compose stack:
 
 ```yaml
 # Requires surrealdb service — see full base setup:
-# https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# https://github.com/HariHaranDFX/open-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     ports:
       - "8502:8502"
@@ -429,7 +429,7 @@ If you see `Name or service not known` errors on Linux, add `extra_hosts` to you
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -443,7 +443,7 @@ This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker
 **2. Host networking on Linux (alternative):**
 ```bash
 # Use host networking if host.docker.internal doesn't work
-docker run --network host lfnovo/open_notebook:v1-latest  # for quick testing only
+docker run --network host haribabudfx/open-notebook-commercial:latest  # for quick testing only
 ```
 Then in **Manage → Models**, use base URL: `http://localhost:11434`
 
@@ -573,7 +573,7 @@ export ESPERANTO_SSL_VERIFY=false
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: haribabudfx/open-notebook-commercial:latest
     pull_policy: always
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
