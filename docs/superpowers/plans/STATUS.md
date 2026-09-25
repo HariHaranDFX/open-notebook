@@ -61,6 +61,7 @@ SharePoint Embedded validation remain **UNVERIFIED/BLOCKED**.
 |---|---|
 | [2026-08-13-long-context-handling.md](2026-08-13-long-context-handling.md) | No `input_limit` / `max_input_tokens` / `context_status` / `reserved_output` anywhere under `open_notebook/` |
 | [2026-09-05-orphan-command-reconciliation.md](2026-09-05-orphan-command-reconciliation.md) | `open_notebook/database/reconcile.py` does not exist; no `ORPHAN_ERROR_MESSAGE` in `commands/` |
+| [2026-09-25-managed-copy-upload-recovery.md](2026-09-25-managed-copy-upload-recovery.md) | Plan only, on `codex/wp5-sharepoint`. `save_tracked_original` still returns before a row when the store is not SharePoint Embedded. `reconcile_due_uploads` still filters `created`. No startup timer. No unattached-copies setting. |
 
 Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not yet in `docs/superpowers/specs/`) — no plan file, no `container` source type in the sources router.
 
