@@ -12,6 +12,7 @@ from scripts.check_release_config import (
     storage_problems,
 )
 
+
 def test_image_ref_accepts_latest_and_version_tags():
     assert image_ref_problem("haribabudfx/open-notebook-commercial:latest") is None
     assert image_ref_problem("haribabudfx/open-notebook-commercial:v1.0.0") is None

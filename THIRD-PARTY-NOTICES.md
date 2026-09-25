@@ -11,7 +11,7 @@ permissive licenses across the stack in one place.
 
 > **Generated file — do not edit by hand.**
 > Regenerate with `uv run python scripts/generate_notices.py`.
-> Last generated: 2026-09-17 against the locked dependency tree.
+> Last generated: 2026-09-25 against the locked dependency tree.
 > Entries that have no package metadata (SurrealDB) are maintained in
 > `MANUAL_ENTRIES` in that script.
 >
@@ -35,7 +35,7 @@ LICENSE file in the package itself.
 | License | Packages |
 |---|---|
 | MIT | 348 |
-| MIT License | 48 |
+| MIT License | 49 |
 | Apache-2.0 | 20 |
 | Apache Software License | 18 |
 | BSD License | 18 |
@@ -136,7 +136,7 @@ BSL requires.
 
 ---
 
-## Python dependencies (200)
+## Python dependencies (201)
 
 | Package | Version | License | Copyright | Project |
 |---|---|---|---|---|
@@ -245,6 +245,7 @@ BSL requires.
 | mdurl | 0.1.2 | MIT License | Taneli Hukkinen <hukkin@users.noreply.github.com> | [link](https://github.com/executablebooks/mdurl) |
 | more-itertools | 10.8.0 | MIT | Erik Rose <erikrose@grinchcentral.com> | [link](https://github.com/more-itertools/more-itertools) |
 | moviepy | 2.2.1 | MIT License | Zulko 2024 | - |
+| msal | 1.39.0 | MIT License | Microsoft Corporation | [link](https://github.com/AzureAD/microsoft-authentication-library-for-python) |
 | multidict | 6.7.0 | Apache License 2.0 | Andrew Svetlov | [link](https://github.com/aio-libs/multidict) |
 | mypy | 1.19.1 | MIT License | Jukka Lehtosalo <jukka.lehtosalo@iki.fi> | [link](https://www.mypy-lang.org/) |
 | mypy_extensions | 1.1.0 | MIT | The mypy developers <jukka.lehtosalo@iki.fi> | [link](https://github.com/python/mypy_extensions) |
