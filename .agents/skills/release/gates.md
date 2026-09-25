@@ -17,8 +17,8 @@ feedback, not an obstacle to route around.
 | Action | Why |
 |---|---|
 | Merging PRs you authored | two-party review; ask once per session ("merge when clean?") and honor the answer |
-| Publishing the GitHub release | public, triggers `v1-latest` — the point of no return |
-| Anything that pushes `v1-latest` | users receive it immediately |
+| Publishing the GitHub release | public, triggers `latest` — the point of no return |
+| Anything that pushes `latest` | users receive it immediately |
 | Creating GitHub issues | external artifacts the owner may not want |
 | Mass-labeling issues (`released`) | bulk modification of shared state |
 | Touching the owner's dev data | only ever work on **copies** (export/import); never mount or mutate originals |

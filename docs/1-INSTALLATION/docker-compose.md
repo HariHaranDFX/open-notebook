@@ -2,7 +2,7 @@
 
 Multi-container setup with separate services. **Best for most users.**
 
-> **Alternative Registry:** All images are available on both Docker Hub (`lfnovo/open_notebook`) and GitHub Container Registry (`ghcr.io/lfnovo/open-notebook`). Use GHCR if Docker Hub is blocked or you prefer GitHub-native workflows.
+> Pull `haribabudfx/open-notebook-commercial:latest`, or pin a release such as `haribabudfx/open-notebook-commercial:v1.0.0`. Build this checkout with `docker compose --env-file .env -f docker-compose.local.yml up --build`.
 
 ## Prerequisites
 
@@ -12,16 +12,19 @@ Multi-container setup with separate services. **Best for most users.**
 
 ## Step 1: Get docker-compose.yml (1 min)
 
-**Option A: Download from repository**
+**Option A: Build this checkout**
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+docker compose --env-file .env -f docker-compose.local.yml up --build
 ```
 
-**Option B: Use the official file from the repo**
+**Option B: Pull a published tag**
 
-The official `docker-compose.yml` is in the root of our repository: [View on GitHub](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml)
+`latest` is the default. To pin a release, set `OPEN_NOTEBOOK_IMAGE_REF=haribabudfx/open-notebook-commercial:v1.0.0` in `.env`, then:
+```bash
+docker compose --env-file .env up
+```
 
-Copy that file to your project folder.
+The project repository is [HariHaranDFX/open-notebook](https://github.com/HariHaranDFX/open-notebook). Images are published to [haribabudfx/open-notebook-commercial](https://hub.docker.com/r/haribabudfx/open-notebook-commercial).
 
 **Option C: Create manually**
 
@@ -54,14 +57,14 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    image: ${OPEN_NOTEBOOK_IMAGE_REF:-haribabudfx/open-notebook-commercial:latest}
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:?set encryption key}
 
       # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
       # for local use; override them in a .env file before exposing the instance
@@ -81,7 +84,7 @@ services:
 
 **Edit the file:**
 - Replace `change-me-to-a-secret-string` with your own secret (any string works, e.g., `my-super-secret-key-123`)
-- (Optional) To use database credentials other than the default `root:root`, create a `.env` file next to `docker-compose.yml` with `SURREAL_USER=...` and `SURREAL_PASSWORD=...` — both services pick them up automatically ([.env.example](https://github.com/lfnovo/open-notebook/blob/main/.env.example) shows the full format)
+- (Optional) To use database credentials other than the default `root:root`, create a `.env` file next to `docker-compose.yml` with `SURREAL_USER=...` and `SURREAL_PASSWORD=...` — both services pick them up automatically ([.env.example](https://github.com/HariHaranDFX/open-notebook/blob/main/.env.example) shows the full format)
 
 ---
 
@@ -162,11 +165,7 @@ Done! You now have a fully working Open Notebook instance.
 Instead of manually editing, use our ready-made example:
 
 ```bash
-# Download the Ollama example
-curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/examples/docker-compose-ollama.yml
-
-# Or copy from repo
-cp examples/docker-compose-ollama.yml docker-compose.yml
+docker compose --env-file .env -f examples/docker-compose-ollama.yml up
 ```
 
 See [examples/docker-compose-ollama.yml](../../examples/docker-compose-ollama.yml) for the complete setup.
@@ -370,5 +369,5 @@ For production use, see:
 ## Getting Help
 
 - **Discord**: [Community support](https://discord.gg/37XJPXfz2w)
-- **Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Issues**: [GitHub Issues](https://github.com/HariHaranDFX/open-notebook/issues)
 - **Docs**: [Full documentation](../index.md)

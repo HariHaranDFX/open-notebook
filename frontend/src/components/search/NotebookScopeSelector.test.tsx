@@ -71,7 +71,8 @@ describe('NotebookScopeSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: /searchPage.scopeNotebooks/ }))
 
     // CheckboxList renders one entry per notebook; both titles must be present.
-    expect(screen.getByText('Alpha')).toBeInTheDocument()
-    expect(screen.getByText('Beta')).toBeInTheDocument()
+    expect(screen.getByText('Alpha')).toHaveClass('truncate')
+    expect(screen.getByText('Beta')).toHaveClass('truncate')
+    expect(screen.getByText('first notebook')).toHaveClass('truncate')
   })
 })

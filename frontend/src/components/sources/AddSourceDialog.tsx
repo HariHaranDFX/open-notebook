@@ -24,19 +24,21 @@ import {
 import { Button } from '@/components/ui/button'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
+import { SharePointStep, SharePointBatchProgress } from './steps/SharePointStep'
+import { isSharePointBatchTerminal, useImportSharePoint, useSharePointBatch } from '@/lib/hooks/use-sharepoint'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
-import { CreateSourceRequest } from '@/lib/types/api'
+import { CreateSourceRequest, SharePointSelection } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 const MAX_BATCH_SIZE = 50
 
 const createSourceSchema = z.object({
-  type: z.enum(['link', 'upload', 'text']),
+  type: z.enum(['link', 'upload', 'text', 'sharepoint']),
   title: z.string().optional(),
   url: z.string().optional(),
   content: z.string().optional(),
@@ -114,6 +116,9 @@ export function AddSourceDialog({
     defaultNotebookId ? [defaultNotebookId] : []
   )
   const [selectedTransformations, setSelectedTransformations] = useState<string[]>([])
+  const [sharePointSelection, setSharePointSelection] = useState<SharePointSelection | null>(null)
+  const [sharePointBatchId, setSharePointBatchId] = useState<string | null>(null)
+  const [sharePointBatchNotebooks, setSharePointBatchNotebooks] = useState<string[]>([])
 
   // Batch-specific state
   const [urlValidationErrors, setUrlValidationErrors] = useState<{ url: string; line: number }[]>([])
@@ -124,6 +129,8 @@ export function AddSourceDialog({
 
   // API hooks
   const createSource = useCreateSource()
+  const importSharePoint = useImportSharePoint()
+  const sharePointBatch = useSharePointBatch(sharePointBatchId, sharePointBatchNotebooks)
   const { data: notebooks = [], isLoading: notebooksLoading } = useNotebooks()
   const { data: transformations = [], isLoading: transformationsLoading } = useTransformations()
   const { data: settings } = useSettings()
@@ -179,6 +186,8 @@ export function AddSourceDialog({
   }, [])
 
   const selectedType = watch('type')
+  const editableNotebooks = notebooks.filter(notebook => notebook.access_role !== 'viewer')
+  const importNotebookIds = selectedNotebooks.filter(id => editableNotebooks.some(notebook => notebook.id === id))
   const watchedUrl = watch('url')
   const watchedContent = watch('content')
   const watchedFile = watch('file')
@@ -219,6 +228,8 @@ export function AddSourceDialog({
     switch (step) {
       case 1:
         if (!selectedType) return false
+        if (selectedType === 'sharepoint') return !!sharePointSelection &&
+          (!!sharePointSelection.folder_id || sharePointSelection.item_ids.length > 0)
         // Check batch size limit
         if (isOverLimit) return false
         // Check for URL validation errors
@@ -306,6 +317,7 @@ export function AddSourceDialog({
 
   // Single source submission
   const submitSingleSource = async (data: CreateSourceFormData): Promise<void> => {
+    if (data.type === 'sharepoint') return
     const createRequest: CreateSourceRequest = {
       type: data.type,
       notebooks: selectedNotebooks,
@@ -392,6 +404,22 @@ export function AddSourceDialog({
 
   // Form submission
   const onSubmit = async (data: CreateSourceFormData) => {
+    if (data.type === 'sharepoint') {
+      if (!sharePointSelection || importSharePoint.isPending) return
+      try {
+        const result = await importSharePoint.mutateAsync({
+          ...sharePointSelection,
+          notebook_ids: importNotebookIds,
+          transformations: selectedTransformations,
+          embed: data.embed,
+        })
+        setSharePointBatchId(result.batch_id)
+        setSharePointBatchNotebooks(importNotebookIds)
+      } catch {
+        // The mutation displays a safe error; keep the selection for retry.
+      }
+      return
+    }
     try {
       setProcessing(true)
 
@@ -444,6 +472,12 @@ export function AddSourceDialog({
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
     setUrlValidationErrors([])
     setBatchProgress(null)
+    setSharePointSelection(null)
+    if (isSharePointBatchTerminal(sharePointBatch.data?.status)) {
+      setSharePointBatchId(null)
+      setSharePointBatchNotebooks([])
+    }
+    importSharePoint.reset()
 
     // Reset to default transformations
     if (transformations.length > 0) {
@@ -458,7 +492,30 @@ export function AddSourceDialog({
     onOpenChange(false)
   }
 
+  const sharePointStatus = sharePointBatch.data?.status
+  const closeOnComplete = useRef(handleClose)
+  closeOnComplete.current = handleClose
+  useEffect(() => {
+    if (sharePointStatus === 'completed') closeOnComplete.current()
+  }, [sharePointStatus])
+
   // Processing view
+  if (sharePointBatchId) return (
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent showCloseButton={false} className="flex w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]">
+        <SheetHeader className="gap-1 border-b border-border px-6 py-2.5">
+          <SheetTitle>{t('sharepoint.title')}</SheetTitle>
+          <SheetDescription>{t('sharepoint.description')}</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          <SharePointBatchProgress batch={sharePointBatch} notebookIds={sharePointBatchNotebooks} />
+        </div>
+        <SheetFooter className="border-t border-border px-6 py-2 sm:justify-end">
+          <Button type="button" onClick={handleClose}>{t('common.close')}</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
   if (processing) {
     const progressPercent = batchProgress
       ? Math.round(((batchProgress.completed + batchProgress.failed) / batchProgress.total) * 100)
@@ -557,7 +614,7 @@ export function AddSourceDialog({
             onStepClick={handleStepClick}
             className="h-auto min-h-0 flex-1 rounded-none border-0"
           >
-            {currentStep === 1 && (
+            <div hidden={currentStep !== 1}>
               <SourceTypeStep
                 // @ts-expect-error - Type inference issue with zod schema
                 control={control}
@@ -567,13 +624,15 @@ export function AddSourceDialog({
                 errors={errors}
                 urlValidationErrors={urlValidationErrors}
                 onClearUrlErrors={handleClearUrlErrors}
+                onTypeChange={() => setSharePointSelection(null)}
+                sharePointStep={<SharePointStep selection={sharePointSelection} onSelectionChange={setSharePointSelection} onResumeBatch={setSharePointBatchId} />}
               />
-            )}
+            </div>
             
             {currentStep === 2 && (
               <NotebooksStep
-                notebooks={notebooks}
-                selectedNotebooks={selectedNotebooks}
+                notebooks={selectedType === 'sharepoint' ? editableNotebooks : notebooks}
+                selectedNotebooks={selectedType === 'sharepoint' ? importNotebookIds : selectedNotebooks}
                 onToggleNotebook={handleNotebookToggle}
                 loading={notebooksLoading}
               />
@@ -598,6 +657,7 @@ export function AddSourceDialog({
               type="button" 
               variant="outline" 
               onClick={handleClose}
+              disabled={importSharePoint.isPending}
             >
               {t('common.cancel')}
             </Button>
@@ -608,6 +668,7 @@ export function AddSourceDialog({
                   type="button"
                   variant="outline"
                   onClick={handlePrevStep}
+                  disabled={importSharePoint.isPending}
                 >
                   {t('common.back')}
                 </Button>
@@ -628,14 +689,15 @@ export function AddSourceDialog({
               {currentStep === 3 && (
                 <Button
                   type="submit"
-                  disabled={!currentStepValid || createSource.isPending}
+                  disabled={!currentStepValid || createSource.isPending || importSharePoint.isPending}
                   className="min-w-[120px]"
                 >
-                  {createSource.isPending ? t('common.adding') : t('common.done')}
+                  {createSource.isPending || importSharePoint.isPending ? t('common.adding') : t('common.done')}
                 </Button>
               )}
             </div>
           </SheetFooter>
+          {selectedType === 'sharepoint' && importSharePoint.isError && <p role="alert" className="px-6 pb-3 text-sm text-destructive">{t('sharepoint.requestFailed')}</p>}
         </form>
       </SheetContent>
     </Sheet>

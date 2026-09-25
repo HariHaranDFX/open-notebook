@@ -48,6 +48,13 @@ const straySingleBraceTokens = (value: string): string[] => {
 }
 
 describe('Locale Parity', () => {
+  it.each(Object.entries(resources))('%s provides connector labels and progress placeholders', (_code, resource) => {
+    const leaves = getLeafStrings(resource.translation)
+    expect(leaves['sharepoint.title']).toBeTypeOf('string')
+    expect(leaves['sharepoint.unavailable']).toBeTypeOf('string')
+    expect(doubleBracePlaceholders(leaves['sharepoint.progress'] ?? '')).toEqual(new Set(['completed', 'failed', 'total']))
+    expect(doubleBracePlaceholders(leaves['sharepoint.selected'] ?? '')).toEqual(new Set(['count']))
+  })
   const enKeys = getKeys(enUS)
 
   const locales = Object.entries(resources).filter(([code]) => code !== 'en-US')

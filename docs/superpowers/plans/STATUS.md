@@ -34,6 +34,19 @@ should contain. When a plan lands or its verdict changes, update the row here.
 
 ---
 
+## 🧪 Implemented on an isolated branch, not shipped to `main`
+
+| Plan | Branch status | Evidence / remaining validation |
+|---|---|---|
+| [2026-09-22-original-file-storage-providers.md](2026-09-22-original-file-storage-providers.md) | `codex/wp5-sharepoint`: implemented, not merged | Default filesystem and optional app-only SharePoint Embedded `OriginalFileStore`; managed-copy lifecycle, retention/deletion, and provider-boundary tests. See [storage setup](../../ORIGINAL_FILE_STORAGE.md). |
+| [2026-09-22-wp5-sharepoint-connector.md](2026-09-22-wp5-sharepoint-connector.md) | `codex/wp5-sharepoint`: Tasks 1–5 implemented, not merged | Separate delegated read-only SharePoint import; one/file/folder batch flow, reusable Sources, multi-notebook links, 16 locales, owner-scoped records, encrypted connector tokens, safe local-only deletion. Automated verification and final live Entra/SharePoint validation are recorded below. |
+
+Branch verification was re-run on 2026-09-24 at `90ffc32`. See
+[WP5 release gate](#wp5-release-gate-2026-09-24). Live Entra consent and
+SharePoint Embedded validation remain **UNVERIFIED/BLOCKED**.
+
+---
+
 ## 🟡 Partial
 
 | Plan | What shipped | What's missing |
@@ -48,6 +61,7 @@ should contain. When a plan lands or its verdict changes, update the row here.
 |---|---|
 | [2026-08-13-long-context-handling.md](2026-08-13-long-context-handling.md) | No `input_limit` / `max_input_tokens` / `context_status` / `reserved_output` anywhere under `open_notebook/` |
 | [2026-09-05-orphan-command-reconciliation.md](2026-09-05-orphan-command-reconciliation.md) | `open_notebook/database/reconcile.py` does not exist; no `ORPHAN_ERROR_MESSAGE` in `commands/` |
+| [2026-09-25-managed-copy-upload-recovery.md](2026-09-25-managed-copy-upload-recovery.md) | Plan only, on `codex/wp5-sharepoint`. `save_tracked_original` still returns before a row when the store is not SharePoint Embedded. `reconcile_due_uploads` still filters `created`. No startup timer. No unattached-copies setting. |
 
 Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not yet in `docs/superpowers/specs/`) — no plan file, no `container` source type in the sources router.
 
@@ -55,9 +69,9 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 ## Not tracked by these plans (from CLAUDE.md master plan)
 
-**WP4–WP8 work packages** — none started:
+**WP4–WP8 work packages** — none shipped to `main` as a complete work package:
 - WP4 Backend architecture map / decomposition
-- WP5 Connectors
+- WP5 Connectors (implemented on isolated `codex/wp5-sharepoint` branch; see above)
 - WP6 Performance & sizing
 - WP7 Deployment
 - WP8 Onboarding
@@ -80,3 +94,41 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 **Product gaps found while testing** (from CLAUDE.md):
 - Uploaded `.html`, `.json`, `.png` without Docling are rejected
+
+---
+
+## WP5 release gate (2026-09-24)
+
+Branch `codex/wp5-sharepoint`, automation HEAD `90ffc32`. This is code-complete
+for Tasks 3–6 plus the lint and mypy fixes below. It is not production-ready
+and is not approved to merge or publish.
+
+| Command | Exit | Result |
+|---|---|---|
+| `uv run pytest -q tests/` | 0 | 1448 passed, 4 skipped, 5 warnings, 484.42s |
+| `uv run ruff check .` | 0 | clean after sorting `api/routers/connectors.py` imports (`afc41d2`) |
+| `uv run python -m mypy .` | 0 on the fixed file | full tree reported 1 error in `tests/test_original_upload_recovery.py`; `90ffc32` makes the delete mock return True, and `mypy` on that file is clean |
+| `uv run python scripts/check_licenses.py` | 0 | Python and frontend scanned, 0 violations |
+| `npm run test` (frontend) | 0 | 641 passed, 106 files, 263.80s. An earlier parallel run timed out one brand-audit test at 5s; that test passed alone in 134ms and in this isolated full run |
+| `npx tsc --noEmit` (frontend) | 0 | tsc ok |
+| `npm run lint` (frontend) | 0 | 0 errors, 6 pre-existing warnings |
+| `npx next build --webpack` (frontend) | 0 | Compiled. Known non-fatal standalone manifest `ENOENT` on this worktree. Default Turbopack build was not claimed |
+| `docker compose --env-file .env config --quiet` | 0 | local, pull, five examples, and `scripts/release-test/docker-compose.release-test.yml`, with a throwaway non-secret digest. No `.env` values printed |
+
+### UNVERIFIED/BLOCKED
+
+- Live Entra consent, two-user isolation, folder-over-1,000, Graph 429, and SharePoint Embedded upload/download/delete need a configured tenant. No tenant credentials were available.
+- Browser check of light/dark, keyboard, and narrow layout was not run. Frontend port 3000 and API port 5055 were down. SurrealDB was already listening on 8000.
+- No digest-pinned `haribabudfx/open-notebook-commercial` image has been built or published. Docker daemon 29.8.0 was up. Compose config passed. The image was not built and was not pushed.
+- `reconcile_original_uploads` is registered and is not submitted on API startup. Orphan recovery runs only when that command is submitted.
+
+### Review notes from this session
+
+Not a second reviewer. Checked against the release checklist:
+
+- Storage Graph delete stays in the managed-copy store and uses `If-Match`. Connector code does not delete external Graph items.
+- `GET /connectors/sharepoint/batches` filters `user_id` and caps the limit at 20. The payload has no token fields.
+- Active Compose, workflows, Makefile, and release scripts publish `haribabudfx/open-notebook-commercial` (`v<version>` and `latest`) to Docker Hub. Publication requires `APPROVE_IMAGE_PUBLISH=true`.
+- Locale parity is included in the 641 frontend tests.
+
+No Critical finding remained after the ruff and mypy fixes. Do not merge, delete the branch, or publish an image without a new explicit instruction.

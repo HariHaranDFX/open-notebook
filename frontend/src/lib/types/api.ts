@@ -328,3 +328,59 @@ export interface RecentlyViewedResponse {
   title: string
   last_viewed_at: string
 }
+// Delegated SharePoint connector (separate from ordinary source uploads).
+export interface SharePointStatus {
+  available: boolean
+  connected: boolean
+  status?: 'connected' | 'reauth_required' | 'disconnected'
+}
+
+export interface SharePointSite {
+  id: string
+  name: string
+  web_url: string | null
+}
+
+export interface SharePointDrive {
+  id: string
+  name: string
+  kind: string
+}
+
+export interface SharePointItem {
+  id: string
+  name: string
+  kind: string
+  browsable: boolean
+  importable: boolean
+}
+
+export interface SharePointSelection {
+  drive_id: string
+  item_ids: string[]
+  folder_id?: string
+}
+
+export interface SharePointImportRequest extends SharePointSelection {
+  notebook_ids: string[]
+  transformations: string[]
+  embed: boolean
+}
+
+export interface SharePointBatch {
+  batch_id: string
+  status: 'pending' | 'running' | 'completed' | 'partial' | 'failed'
+  total: number
+  completed: number
+  failed: number
+  error: string | null
+  documents: {
+    id: string
+    item_id: string
+    name: string
+    source_id: string | null
+    command_id: string | null
+    status: 'pending' | 'running' | 'queued' | 'failed' | 'skipped'
+    error: string | null
+  }[]
+}

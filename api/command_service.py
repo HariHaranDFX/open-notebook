@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from surreal_commands import get_command_status, submit_command
 
+from open_notebook.database.repository import ensure_record_id, repo_query
+
 
 class CommandService:
     """Generic service layer for command operations"""
@@ -48,8 +50,14 @@ class CommandService:
         """Get status of any command job"""
         try:
             status = await get_command_status(job_id)
+            metadata = await repo_query(
+                "SELECT app, name FROM $job_id", {"job_id": ensure_record_id(job_id)}
+            )
+            command = metadata[0] if metadata else {}
             return {
                 "job_id": job_id,
+                "command_app": command.get("app"),
+                "command_name": command.get("name"),
                 "status": status.status if status else "unknown",
                 "result": status.result if status else None,
                 "error_message": getattr(status, "error_message", None)

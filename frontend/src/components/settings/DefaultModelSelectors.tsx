@@ -36,6 +36,9 @@ interface DefaultModelSelectProps {
   onChange: (key: keyof ModelDefaults, value: string) => void
   /** Name of the currently selected chat model, used for the fallback hint. */
   chatModelName?: string
+  /** Drops the full-width divider so two selectors can share a row. */
+  paired?: boolean
+  className?: string
 }
 
 function DefaultModelSelect({
@@ -44,6 +47,8 @@ function DefaultModelSelect({
   currentValue,
   onChange,
   chatModelName,
+  paired = false,
+  className,
 }: DefaultModelSelectProps) {
   const { t } = useTranslation()
   const isValid = currentValue && available.some(m => m.id === currentValue)
@@ -65,7 +70,7 @@ function DefaultModelSelect({
   const description = emptyOptionalHint || config.description
 
   return (
-    <div className="flex items-center justify-between gap-4 border-t border-border/40 py-3 first:border-t-0">
+    <div className={cn('flex items-center justify-between gap-4 border-t border-border/40 py-3 first:border-t-0', className)}>
       <div className="min-w-0">
         <div className="flex items-center gap-1">
           <Label htmlFor={config.id} className="text-sm font-medium">
@@ -77,14 +82,14 @@ function DefaultModelSelect({
           <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">{description}</p>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className={cn('flex shrink-0 items-center gap-1', paired && 'w-40 max-w-[46%]')}>
         <Select
           value={currentValue || (config.required ? "" : NONE_VALUE)}
           onValueChange={(v) => onChange(config.key, v === NONE_VALUE ? "" : v)}
         >
           <SelectTrigger
             id={config.id}
-            className={cn('w-52', config.required && !isValid && available.length > 0 && 'border-destructive')}
+            className={cn(paired ? 'w-full' : 'w-52', config.required && !isValid && available.length > 0 && 'border-destructive')}
           >
             <SelectValue placeholder={
               config.required && !isValid && available.length > 0
@@ -215,17 +220,23 @@ export function DefaultModelSelectors({
           </Alert>
         )}
 
-        {/* Core models: Chat, Embedding, TTS, STT */}
-        <div>
-          {primaryConfigs.map(config => (
-            <DefaultModelSelect
-              key={config.key}
-              config={config}
-              available={getModelsForType(config.modelType)}
-              currentValue={watch(config.key) || undefined}
-              onChange={handleChange}
-              chatModelName={chatModelName}
-            />
+        {/* Core models: chat+embedding, then speech in and speech out */}
+        <div className="divide-y divide-border/40">
+          {[primaryConfigs.slice(0, 2), primaryConfigs.slice(2)].map((row) => (
+            <div key={row[0].key} className="grid grid-cols-2 gap-x-6">
+              {row.map(config => (
+                <DefaultModelSelect
+                  key={config.key}
+                  config={config}
+                  available={getModelsForType(config.modelType)}
+                  currentValue={watch(config.key) || undefined}
+                  onChange={handleChange}
+                  chatModelName={chatModelName}
+                  paired
+                  className="border-t-0"
+                />
+              ))}
+            </div>
           ))}
         </div>
 

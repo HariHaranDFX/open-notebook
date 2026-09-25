@@ -1,14 +1,23 @@
 import time
+from contextlib import AsyncExitStack
 from typing import Any, Dict, List, Optional
 
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
+from api.source_file_service import (
+    materialize_original_file,
+    redact_source_processing_error,
+)
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
+from open_notebook.storage.original_files import (
+    get_original_file_store,
+    reference_from_asset,
+)
 
 try:
     from open_notebook.graphs.source import source_graph
@@ -95,6 +104,7 @@ async def process_source_command(
     Process source content using the source_graph workflow
     """
     start_time = time.time()
+    provider_backed = bool(input_data.content_state.get("original_file_store"))
 
     try:
         logger.info(f"Starting source processing for source: {input_data.source_id}")
@@ -117,6 +127,9 @@ async def process_source_command(
         source = await Source.get(input_data.source_id)
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
+        provider_backed = provider_backed or bool(
+            source.asset and source.asset.original_file_store
+        )
 
         # Update source with command reference
         source.command = (
@@ -128,23 +141,70 @@ async def process_source_command(
 
         logger.info(f"Updated source {source.id} with command reference")
 
+        # A retention intent is written only after the whole graph succeeds.
+        # Resume it before materializing: DELETE may have succeeded while the
+        # final database save (or result collection) failed on the last attempt.
+        asset = source.asset
+        if (
+            source.full_text
+            and asset
+            and asset.original_file_action == "delete_after_processing"
+            and asset.original_deletion_started_at is not None
+            and asset.original_deleted_reason == "retention_policy"
+        ):
+            await _maybe_delete_original_after_success(source)
+            return SourceProcessingOutput(
+                success=True,
+                source_id=str(source.id),
+                insights_created=len(await source.get_insights()),
+                processing_time=time.time() - start_time,
+            )
+
         # 3. Process source with all notebooks
         logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
 
         # Execute source_graph with all notebooks.
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
-        result = await source_graph.ainvoke(  # type: ignore[call-overload]
-            {
-                "content_state": input_data.content_state,
-                "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
-                "apply_transformations": transformations,
-                "embed": input_data.embed,
-                "source_id": input_data.source_id,  # Add the source_id to the state
-            }
-        )
+        content_state = dict(input_data.content_state)
+        asset = source.asset
+        ref = reference_from_asset(asset)
+        async with AsyncExitStack() as stack:
+            if asset is not None and ref is not None and ref.legacy_file_path is None:
+                # Provider details belong on the persisted Asset, never in
+                # the extractor state or its result/error payloads.
+                for field in (
+                    "original_file_store",
+                    "original_file_key",
+                    "original_file_etag",
+                    "original_file_profile_id",
+                    "original_file_container_id",
+                ):
+                    content_state.pop(field, None)
+                path = await stack.enter_async_context(
+                    materialize_original_file(
+                        get_original_file_store(ref.provider, ref.profile_id),
+                        ref,
+                        asset.original_filename,
+                    )
+                )
+                content_state["file_path"] = str(path)
+            result = await source_graph.ainvoke(  # type: ignore[call-overload]
+                {
+                    "content_state": content_state,
+                    "notebook_ids": input_data.notebook_ids,
+                    "apply_transformations": transformations,
+                    "embed": input_data.embed,
+                    "source_id": input_data.source_id,
+                }
+            )
 
-        processed_source = result["source"]
+        # Graph state intentionally returns a redacted Source so provider
+        # references cannot reach transformations or command result payloads.
+        # Reload the durable record for retention and result handling.
+        processed_source = await Source.get(str(result["source"].id))
+        if processed_source is None:
+            raise ValueError(f"Source '{input_data.source_id}' not found after processing")
 
         # 4. Retention governance (Task 3): now that the graph succeeded and
         # ``full_text`` has been persisted, delete the original upload if
@@ -188,7 +248,10 @@ async def process_source_command(
         # here (not just ValueError) keeps the log wording honest -- password-
         # protected PDF and missing-ffmpeg errors are permanent, not
         # transient.
-        logger.error(f"Source processing failed (permanent): {e}")
+        error = redact_source_processing_error(e) if provider_backed else e
+        logger.error(f"Source processing failed (permanent): {error}")
+        if provider_backed:
+            raise error from None
         raise
     except Exception as e:
         # Transient failure - will be retried by surreal-commands. Split by
@@ -202,10 +265,13 @@ async def process_source_command(
             "transaction" in str(e).lower() or "conflict" in str(e).lower()
         )
         log = logger.debug if is_transaction_conflict else logger.warning
+        error = redact_source_processing_error(e) if provider_backed else e
         log(
             f"Transient error processing source {input_data.source_id}: "
-            f"{type(e).__name__}: {e}"
+            f"{type(error).__name__}: {error}"
         )
+        if provider_backed:
+            raise error from None
         raise
 
 

@@ -57,8 +57,8 @@ body:
       label: Open Notebook Version
       description: Which version are you using?
       options:
-        - v1-latest (Docker)
-        - v1-latest-single (Docker, deprecated)
+        - latest (Docker)
+        - latest-single (Docker, deprecated)
         - Latest from main branch
         - Other (please specify in additional context)
     validations:
@@ -101,4 +101,4 @@ body:
         1. A maintainer will review your bug report
         2. If you checked the box above and want to fix it, please propose your solution approach
         3. Wait for assignment before starting development
-        4. See our [Contributing Guide](https://github.com/lfnovo/open-notebook/blob/main/CONTRIBUTING.md) for more details
+        4. See our [Contributing Guide](https://github.com/HariHaranDFX/open-notebook/blob/main/CONTRIBUTING.md) for more details

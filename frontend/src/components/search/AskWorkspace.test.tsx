@@ -110,4 +110,20 @@ describe('AskWorkspace', () => {
 
     expect(openPreview).toHaveBeenCalledWith('source', 'abc')
   })
+
+  it('explains a missing chat model above the composer', () => {
+    vi.mocked(useModelDefaults).mockReturnValue({ data: { default_embedding_model: 'e' }, isLoading: false } as any)
+    render(<AskWorkspace />)
+    expect(screen.getByText('searchPage.askNeedsChat')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'searchPage.setUpModels' })).toHaveAttribute('href', '/settings/models')
+    expect(screen.getByRole('button', { name: 'searchPage.ask' })).toBeDisabled()
+  })
+
+  it('replaces the prompt when no embedding model is set', () => {
+    vi.mocked(useModelDefaults).mockReturnValue({ data: {}, isLoading: false } as any)
+    render(<AskWorkspace />)
+    expect(screen.getByText('searchPage.askNeedsEmbedding')).toBeInTheDocument()
+    expect(screen.queryByText('searchPage.askNeedsChat')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'searchPage.setUpModels' })).toHaveAttribute('href', '/settings/models')
+  })
 })

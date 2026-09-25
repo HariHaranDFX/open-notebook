@@ -40,7 +40,7 @@ describe('ConnectionErrorOverlay brand support', () => {
 
     expect(screen.getByRole('link', { name: 'connectionErrors.docLink' })).toHaveAttribute(
       'href',
-      'https://github.com/lfnovo/open-notebook'
+      'https://github.com/HariHaranDFX/open-notebook'
     )
   })
 })

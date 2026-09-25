@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from api.podcast_service import PodcastService
 from open_notebook.ai.models import ModelManager
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.base import RecordModel
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import (
@@ -26,7 +27,7 @@ from open_notebook.domain.notebook import (
     SourceInsight,
 )
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import FileOperationError, InvalidInputError
 from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 # ============================================================================
@@ -286,9 +287,10 @@ class TestSourceDomain:
 
     @pytest.mark.asyncio
     async def test_source_delete_cleans_up_file(self):
-        """Test that deleting a source removes the associated file."""
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_file:
+        """Deleting a managed legacy file removes it before the source record."""
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".txt", dir=UPLOADS_FOLDER
+        ) as tmp_file:
             tmp_file.write(b"Test content")
             tmp_path = Path(tmp_file.name)
 
@@ -303,10 +305,16 @@ class TestSourceDomain:
             # Verify file exists
             assert tmp_path.exists()
 
-            # Mock the parent delete method to avoid database operations
-            with patch.object(
-                Source.__bases__[0], "delete", new_callable=AsyncMock
-            ) as mock_delete:
+            with (
+                patch.object(Source, "save", new_callable=AsyncMock),
+                patch(
+                    "open_notebook.domain.notebook.repo_query",
+                    new_callable=AsyncMock,
+                ),
+                patch.object(
+                    Source.__bases__[0], "delete", new_callable=AsyncMock
+                ) as mock_delete,
+            ):
                 mock_delete.return_value = True
 
                 # Delete the source
@@ -342,9 +350,8 @@ class TestSourceDomain:
             mock_delete.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_source_delete_continues_on_file_error(self):
-        """Test that source deletion continues even if file deletion fails."""
-        # Create source with non-existent file
+    async def test_source_delete_stops_on_unsafe_file_path(self):
+        """An outside-root legacy path is refused and the source is retained."""
         source = Source(
             id="source:test_missing_file",
             title="Test Source",
@@ -357,10 +364,9 @@ class TestSourceDomain:
         ) as mock_delete:
             mock_delete.return_value = True
 
-            # Delete should complete even though file doesn't exist
-            result = await source.delete()
-            assert result is True
-            mock_delete.assert_called_once()
+            with pytest.raises(FileOperationError):
+                await source.delete()
+            mock_delete.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_vectorize_raises_valueerror_when_no_text(self):

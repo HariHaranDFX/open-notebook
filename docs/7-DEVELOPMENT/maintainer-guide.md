@@ -31,7 +31,7 @@ Thanks for opening this issue! We'll review it and get back to you soon.
 
 [If it's a bug] In the meantime, have you checked our troubleshooting guide?
 
-[If it's a feature] You might find our [vision](https://github.com/lfnovo/open-notebook/blob/main/VISION.md) helpful for understanding what we're building toward.
+[If it's a feature] You might find our [vision](https://github.com/HariHaranDFX/open-notebook/blob/main/VISION.md) helpful for understanding what we're building toward.
 ```
 
 **3. Decision Making**
@@ -73,11 +73,11 @@ Once we have these details, we can discuss the best approach.
 ```markdown
 Thank you for the suggestion and for offering to work on this!
 
-After reviewing against our [vision and principles](https://github.com/lfnovo/open-notebook/blob/main/VISION.md), we've decided not to pursue this in the core project because [specific reason].
+After reviewing against our [vision and principles](https://github.com/HariHaranDFX/open-notebook/blob/main/VISION.md), we've decided not to pursue this in the core project because [specific reason].
 
 However, you might be able to achieve this through [alternative approach, if applicable].
 
-We appreciate your interest in contributing! Feel free to check out our [open issues](https://github.com/lfnovo/open-notebook/issues) for other ways to contribute.
+We appreciate your interest in contributing! Feel free to check out our [open issues](https://github.com/HariHaranDFX/open-notebook/issues) for other ways to contribute.
 ```
 
 ### Labels
@@ -285,7 +285,7 @@ Sorry for the inconvenience - this process helps us manage the project effective
 ```markdown
 Thank you for this suggestion! I can see how this would be useful for [specific use case].
 
-After reviewing against our [vision and principles](https://github.com/lfnovo/open-notebook/blob/main/VISION.md), we've decided not to include this in the core project because [specific reason - e.g., "it conflicts with our 'Simplicity Over Features' principle" or "it would require dependencies that conflict with our privacy-first approach"].
+After reviewing against our [vision and principles](https://github.com/HariHaranDFX/open-notebook/blob/main/VISION.md), we've decided not to include this in the core project because [specific reason - e.g., "it conflicts with our 'Simplicity Over Features' principle" or "it would require dependencies that conflict with our privacy-first approach"].
 
 Some alternatives:
 - [If applicable] This could be built as a plugin/extension
@@ -351,7 +351,7 @@ Thank you for taking the time to contribute! We really appreciate it.
 
 After careful review, we've decided not to merge this PR because [specific reason related to design principles].
 
-This isn't a reflection on your code quality - it's about maintaining focus on our core goals as outlined in [VISION.md](https://github.com/lfnovo/open-notebook/blob/main/VISION.md).
+This isn't a reflection on your code quality - it's about maintaining focus on our core goals as outlined in [VISION.md](https://github.com/HariHaranDFX/open-notebook/blob/main/VISION.md).
 
 We'd love to have you contribute in other ways! Check out:
 - Good first issues
