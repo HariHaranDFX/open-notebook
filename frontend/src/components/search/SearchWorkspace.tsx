@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
+import { ModelSetupNotice } from './ModelSetupNotice'
 import { NotebookScopeSelector } from './NotebookScopeSelector'
 import { SearchResultRow, parseResultTarget } from './SearchResultRow'
 import { useSearch } from '@/lib/hooks/use-search'
@@ -130,10 +131,10 @@ export function SearchWorkspace({ initialQuery = '' }: SearchWorkspaceProps) {
         </div>
 
         {!hasEmbeddingModel && (
-          <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
-            <AlertCircle className="size-4" aria-hidden="true" />
-            {t('searchPage.vectorSearchWarning')}
-          </p>
+          <ModelSetupNotice
+            title={t('searchPage.vectorSearchOff')}
+            description={t('searchPage.vectorSearchOffDesc')}
+          />
         )}
 
         <NotebookScopeSelector

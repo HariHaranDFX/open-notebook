@@ -56,7 +56,8 @@ describe('SearchWorkspace', () => {
     vi.mocked(useModelDefaults).mockReturnValue({ data: {}, isLoading: false } as any)
     render(<SearchWorkspace />)
 
-    expect(screen.getByText('searchPage.vectorSearchWarning')).toBeInTheDocument()
+    expect(screen.getByText('searchPage.vectorSearchOff')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'searchPage.setUpModels' })).toHaveAttribute('href', '/settings/models')
     expect(screen.getByRole('radio', { name: 'searchPage.vectorSearch' })).toBeDisabled()
   })
 

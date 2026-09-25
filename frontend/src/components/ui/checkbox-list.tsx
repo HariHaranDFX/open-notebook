@@ -17,6 +17,8 @@ interface CheckboxListProps {
   emptyMessage?: string
   className?: string
   fill?: boolean
+  /** Keep each title and description on one line. */
+  singleLine?: boolean
 }
 
 export function CheckboxList({
@@ -26,7 +28,8 @@ export function CheckboxList({
   loading = false,
   emptyMessage = "No items found.",
   className,
-  fill = false
+  fill = false,
+  singleLine = false,
 }: CheckboxListProps) {
   const containerClassName = cn(
     'rounded-[var(--surface-radius)] border border-border bg-card',
@@ -81,11 +84,20 @@ export function CheckboxList({
                 className="mt-0.5"
               />
               <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium block">
+                <span
+                  className={cn('block text-sm font-medium', singleLine && 'truncate')}
+                  title={singleLine ? item.title : undefined}
+                >
                   {item.title}
                 </span>
                 {item.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                  <p
+                    className={cn(
+                      'mt-1 text-xs text-muted-foreground',
+                      singleLine ? 'truncate' : 'line-clamp-2',
+                    )}
+                    title={singleLine ? item.description : undefined}
+                  >
                     {item.description}
                   </p>
                 )}
