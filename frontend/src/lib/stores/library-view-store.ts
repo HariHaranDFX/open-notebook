@@ -4,12 +4,13 @@ import { useEffect } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type LibraryId = 'notebooks' | 'sources'
+export type LibraryId = 'notebooks' | 'sources' | 'connections'
 export type LibraryViewMode = 'list' | 'card'
 
 interface LibraryViewState {
   notebooks: LibraryViewMode
   sources: LibraryViewMode
+  connections: LibraryViewMode
   hasHydrated: boolean
   setViewMode: (library: LibraryId, mode: LibraryViewMode) => void
   setHasHydrated: (hasHydrated: boolean) => void
@@ -20,6 +21,7 @@ export const useLibraryViewStore = create<LibraryViewState>()(
     (set) => ({
       notebooks: 'list',
       sources: 'list',
+      connections: 'list',
       hasHydrated: false,
       setViewMode: (library, mode) => set({ [library]: mode }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
@@ -27,7 +29,7 @@ export const useLibraryViewStore = create<LibraryViewState>()(
     {
       name: 'library-view-storage',
       skipHydration: true,
-      partialize: ({ notebooks, sources }) => ({ notebooks, sources }),
+      partialize: ({ notebooks, sources, connections }) => ({ notebooks, sources, connections }),
       onRehydrateStorage: () => state => state?.setHasHydrated(true),
     },
   ),

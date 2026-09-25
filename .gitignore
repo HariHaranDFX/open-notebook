@@ -139,6 +139,8 @@ doc_exports/
 
 
 *.local.yml
+# The supported local build file is tracked. Other *.local.yml files stay ignored.
+!docker-compose.local.yml
 **/*.local.md
 .harness/
 
@@ -153,7 +155,11 @@ docker-compose.override.yml
 screenshot-*.png
 history.txt
 .review-diffstat.txt
-.superpowers/sdd/
+.superpowers/
+.remember/
+.codex-uv-cache/
+.ruff_cache/
+design_handoff_notebook_source_redesign/
 
 # Project-local package manager cache
 .pnpm-store/

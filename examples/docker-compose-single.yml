@@ -1,15 +1,14 @@
 services:
   open_notebook_single:
-    # image: lfnovo/open_notebook:v1-latest-single
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: single
     ports:
       - "8502:8502"  # Next.js Frontend
       - "5055:5055"  # REST API
     env_file:
-      - ./docker.env
+      - ../.env
     environment:
       # Override for single-container mode: SurrealDB runs on localhost inside the same container
       - SURREAL_URL=ws://localhost:8000/rpc

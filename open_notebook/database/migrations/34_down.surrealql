@@ -1,0 +1,2 @@
+REMOVE TABLE connector_remote_version;
+REMOVE FIELD retry_failed_only ON TABLE connector_batch;

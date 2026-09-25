@@ -17,7 +17,7 @@ Before you start, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/lfnovo/open-notebook.git
+git clone https://github.com/HariHaranDFX/open-notebook.git
 cd open-notebook
 
 # Add upstream remote for keeping your fork updated

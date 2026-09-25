@@ -71,12 +71,20 @@ describe('ApiKeysPage', () => {
     })
   })
 
-  it('renders one section per provider under the All filter', () => {
+  it('shows every provider when none are configured', () => {
     render(<ApiKeysPage />)
-    // The default view shows only configured providers; reveal all.
-    fireEvent.click(screen.getByText('apiKeys.showAll'))
+    expect(screen.getByRole('button', { name: 'apiKeys.showAll' })).toHaveAttribute('aria-pressed', 'true')
     const sections = screen.getAllByTestId('provider-section')
     expect(sections.map(s => s.textContent)).toEqual(['OpenAI', 'Anthropic'])
+  })
+
+  it('says nothing is configured when the Configured tab is empty', () => {
+    render(<ApiKeysPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'apiKeys.configured' }))
+    expect(screen.getByText('apiKeys.notConfigured')).toBeInTheDocument()
+    expect(screen.queryByTestId('provider-section')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'apiKeys.showAll' }))
+    expect(screen.getAllByTestId('provider-section')).toHaveLength(2)
   })
 
   it('sorts configured providers first under the All filter', () => {

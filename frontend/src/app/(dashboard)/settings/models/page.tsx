@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react'
 import { PageFrame } from '@/components/layout/PageFrame'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ShieldAlert, AlertCircle, Search } from 'lucide-react'
+import { ShieldAlert, AlertCircle, Search, KeyRound } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { useModels, useModelDefaults } from '@/lib/hooks/use-models'
@@ -78,7 +79,12 @@ export default function ApiKeysPage() {
   }, [providers, credentialsByProvider])
 
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'configured' | 'all'>('configured')
+  const [filterChoice, setFilter] = useState<'configured' | 'all' | null>(null)
+  const configuredCount = sortedProviders.filter(
+    (provider) => (credentialsByProvider[provider.name]?.length ?? 0) > 0
+  ).length
+  // Configured is an empty filter until the first credential exists.
+  const filter = filterChoice ?? (configuredCount > 0 ? 'configured' : 'all')
 
   const searchLower = search.trim().toLowerCase()
   const searchedProviders = sortedProviders.filter((p) => {
@@ -191,9 +197,15 @@ export default function ApiKeysPage() {
             </div>
           ) : searchLower ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('common.noMatches')}</p>
-          ) : null}
+          ) : (
+            <EmptyState
+              icon={KeyRound}
+              title={t('apiKeys.notConfigured')}
+              description={t('apiKeys.description')}
+            />
+          )}
 
-          {filter === 'configured' && hiddenCount > 0 && (
+          {filter === 'configured' && visibleProviders.length > 0 && hiddenCount > 0 && (
             <div className="text-center">
               <Button variant="link" size="sm" onClick={() => setFilter('all')}>
                 {t('apiKeys.moreAvailable', { count: hiddenCount })}
@@ -206,7 +218,7 @@ export default function ApiKeysPage() {
       {/* Help link */}
       <div className="border-t pt-4">
         <a
-          href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
+          href="https://github.com/HariHaranDFX/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-primary hover:underline"

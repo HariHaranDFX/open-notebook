@@ -13,10 +13,16 @@ domain internals directly.
 
 from __future__ import annotations
 
+import asyncio
+import os
+import shutil
+import tempfile
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import AsyncIterator, Optional
 
+from fastapi import UploadFile
 from loguru import logger
 
 from api.models import AssetModel, SourceCreate
@@ -29,6 +35,83 @@ from open_notebook.domain.original_file_policy import (
     OriginalFileStatus,
     resolve_original_file_action,
 )
+from open_notebook.exceptions import ConfigurationError, ContextLengthExceededError
+from open_notebook.storage.original_files import (
+    OriginalFileRef,
+    OriginalFileStore,
+    get_original_file_store,
+    reference_from_asset,
+)
+
+_SOURCE_COMMAND_RESULT_FIELDS = frozenset(
+    {"success", "source_id", "embedded_chunks", "insights_created", "processing_time"}
+)
+
+
+def redact_source_processing_error(error: Exception) -> Exception:
+    """Remove extractor internals while preserving the command's stop-on classes."""
+    for error_type in (ValueError, ConfigurationError, ContextLengthExceededError):
+        if isinstance(error, error_type):
+            return error_type("Source processing failed")
+    return RuntimeError("Source processing failed")
+
+
+def build_public_command_status(status_data: dict) -> dict:
+    """Map every persisted source-processing command status to safe fields."""
+    if (
+        status_data.get("command_app") != "open_notebook"
+        or status_data.get("command_name") != "process_source"
+    ):
+        return status_data
+
+    result = status_data.get("result")
+    return {
+        key: status_data.get(key)
+        for key in ("job_id", "status", "created", "updated")
+    } | {
+        "result": (
+            {key: result[key] for key in _SOURCE_COMMAND_RESULT_FIELDS if key in result}
+            if isinstance(result, dict)
+            else None
+        ),
+        "error_message": "Source processing failed"
+        if status_data.get("error_message")
+        else None,
+        "progress": None,
+    }
+
+
+@asynccontextmanager
+async def stage_upload(upload: UploadFile) -> AsyncIterator[Path]:
+    """Stage bounded upload chunks in a private directory, cleaned on every exit."""
+    filename = Path(upload.filename or "").name
+    if filename in {"", ".", ".."}:
+        raise ValueError("No filename provided")
+    with tempfile.TemporaryDirectory(prefix="open-notebook-upload-") as directory:
+        path = Path(directory) / filename
+        with path.open("wb") as target:
+            while chunk := await upload.read(1024 * 1024):
+                await asyncio.to_thread(target.write, chunk)
+        yield path
+
+
+@asynccontextmanager
+async def materialize_original_file(
+    store: OriginalFileStore, ref: OriginalFileRef, filename: Optional[str]
+) -> AsyncIterator[Path]:
+    """Keep the upload's extension for extractors when a provider uses opaque temp names."""
+    async with store.materialize(ref) as path:
+        suffix = Path(filename or "").suffix
+        if not suffix or path.suffix == suffix:
+            yield path
+            return
+        with tempfile.TemporaryDirectory(prefix="open-notebook-extract-") as directory:
+            named_path = Path(directory) / f"original{suffix}"
+            try:
+                await asyncio.to_thread(os.link, path, named_path)
+            except OSError:
+                await asyncio.to_thread(shutil.copyfile, path, named_path)
+            yield named_path
 
 
 async def resolve_action_for_source_create(
@@ -110,7 +193,7 @@ def _derive_original_file_status(asset: Asset) -> OriginalFileStatus:
     """
     if asset.original_deleted_at is not None:
         return "deleted"
-    if asset.file_path:
+    if reference_from_asset(asset):
         return "retained"
     if asset.original_filename:
         # Snapshot exists but no on-disk path — treat as missing.
@@ -174,6 +257,20 @@ def build_public_asset_model(
     )
 
 
+def build_public_processing_info(info: Optional[dict], asset: Optional[Asset | dict]) -> Optional[dict]:
+    """Keep source command internals private even after deletion clears the asset."""
+    if not info:
+        return info
+    public = {
+        key: info[key]
+        for key in ("status", "started_at", "completed_at", "async", "queued", "retry")
+        if key in info
+    }
+    if "error" in info:
+        public["error"] = "Source processing failed" if info["error"] else None
+    return public
+
+
 def _resolve_contained_upload_path(file_path: str) -> Optional[Path]:
     """Resolve ``file_path`` to an absolute path that lives beneath the
     configured uploads root. Returns None for any path that escapes it or
@@ -199,32 +296,30 @@ async def delete_original_file(
     """Idempotently delete the original file backing ``source``.
 
     Returns one of ``"deleted"``, ``"already_deleted"``, ``"missing"``,
-    or ``"unsafe"``. Callers pass the loaded ``Source`` (never a raw
-    request path); this helper resolves the stored path, verifies
-    containment beneath ``UPLOADS_FOLDER``, and never touches anything
-    else on disk.
+    ``"unsafe"``, ``"error"``, or ``"not_applicable"``. Only the asset's
+    recorded provider reference is used; legacy paths require containment.
 
-    Two-phase write so a crashed unlink is recoverable:
+    Two-phase write so a failed provider delete is recoverable:
 
     1. Set ``original_deletion_started_at`` + ``original_deleted_reason``
        and save.
-    2. Unlink the file.
-    3. Clear ``file_path`` and set ``original_deleted_at`` and save.
+    2. Delete through the provider (failures retain the intent and reference).
+    3. Clear storage references, set ``original_deleted_at``, and save.
 
     On retry: a source with a start marker and an absent file finalizes
     step 3; a source with ``original_deleted_at`` already set returns
-    ``already_deleted``. A missing file WITHOUT a start marker is
-    reported as ``missing`` (not called an application deletion).
+    ``already_deleted``. Assets with no reference or marker return ``missing``.
     """
     asset = source.asset
     if asset is None:
         return "not_applicable"
 
     # Already recorded as deleted — nothing to do.
-    if asset.original_deleted_at is not None and asset.file_path is None:
+    ref = reference_from_asset(asset)
+    if asset.original_deleted_at is not None and ref is None:
         return "already_deleted"
 
-    if not asset.file_path:
+    if ref is None:
         # No path to delete; if we started, finalize as missing.
         if asset.original_deletion_started_at is not None:
             asset.original_deleted_at = datetime.now(timezone.utc)
@@ -232,38 +327,47 @@ async def delete_original_file(
             return "already_deleted"
         return "missing"
 
-    safe_path = _resolve_contained_upload_path(asset.file_path)
-    if safe_path is None:
+    if (
+        ref.legacy_file_path
+        and _resolve_contained_upload_path(ref.legacy_file_path) is None
+    ):
         logger.warning(
             "Refusing to delete file outside uploads root for source "
             f"{source.id}"
         )
         return "unsafe"
 
-    # Phase 1: record the intent so a crash between unlink and save is recoverable.
+    # Phase 1: persist intent before any provider call, including configuration.
     if asset.original_deletion_started_at is None:
         asset.original_deletion_started_at = datetime.now(timezone.utc)
         asset.original_deleted_reason = reason
         await source.save()
 
-    # Phase 2: unlink. Missing-on-disk is fine — we'll still finalize.
-    unlinked = False
-    if safe_path.exists() and safe_path.is_file():
-        try:
-            safe_path.unlink()
-            unlinked = True
-        except OSError as e:
-            # Retain state so a retry can attempt again. Do NOT clear
-            # file_path or set original_deleted_at — the file may still
-            # be on disk.
-            logger.warning(
-                f"Failed to unlink original file for source {source.id}: {e}"
-            )
+    asset = source.asset
+    if asset is None or reference_from_asset(asset) != ref:
+        logger.warning(
+            f"Original file reference changed while deleting source {source.id}"
+        )
+        return "error"
+
+    # Phase 2: a missing object is safe to finalize after a partial failure.
+    try:
+        store = get_original_file_store(ref.provider, ref.profile_id)
+        existed = await store.exists(ref)
+        if existed and not await store.delete(ref):
             return "error"
+    except Exception:
+        logger.warning(f"Failed to delete original file for source {source.id}")
+        return "error"
 
     # Phase 3: finalize.
     asset.file_path = None
+    asset.original_file_store = None
+    asset.original_file_key = None
+    asset.original_file_etag = None
+    asset.original_file_profile_id = None
+    asset.original_file_container_id = None
     asset.original_deleted_at = datetime.now(timezone.utc)
     await source.save()
 
-    return "deleted" if unlinked else "already_deleted"
+    return "deleted" if existed else "already_deleted"

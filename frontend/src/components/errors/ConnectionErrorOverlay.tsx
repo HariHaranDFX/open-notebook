@@ -7,7 +7,7 @@ import { ConnectionError } from '@/lib/types/config'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useBrand } from '@/components/providers/BrandProvider'
 
-const UPSTREAM_DOCUMENTATION_URL = 'https://github.com/lfnovo/open-notebook'
+const UPSTREAM_DOCUMENTATION_URL = 'https://github.com/HariHaranDFX/open-notebook'
 
 interface ConnectionErrorOverlayProps {
   error: ConnectionError

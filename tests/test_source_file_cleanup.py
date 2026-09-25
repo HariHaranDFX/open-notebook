@@ -156,6 +156,27 @@ def test_preview_returns_counts_and_bytes_only(
     assert "path" not in body
 
 
+@patch("api.routers.source_files.repo_query", new_callable=AsyncMock)
+@patch("api.routers.source_files.ContentSettings.get_instance", new_callable=AsyncMock)
+def test_preview_includes_provider_backed_originals_without_file_path(
+    mock_settings, mock_query, monkeypatch
+):
+    mock_settings.return_value = _make_settings(allow_owner_cleanup=True)
+    mock_query.return_value = [
+        {"id": "source:remote", "user_id": "user:me", "size": 100}
+    ]
+
+    r = _client(monkeypatch, user_role="user").get(
+        "/api/source-files/cleanup-preview?scope=mine"
+    )
+
+    assert r.status_code == 200
+    assert r.json()["eligible_count"] == 1
+    query = mock_query.await_args.args[0]
+    assert "asset.original_file_store != NONE" in query
+    assert "asset.original_file_key != NONE" in query
+
+
 # ---- POST /source-files/cleanup --------------------------------------------
 
 

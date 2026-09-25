@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState, type ReactNode } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
-import { FileIcon, LinkIcon, FileTextIcon, UploadCloud } from "lucide-react"
+import { FileIcon, LinkIcon, FileTextIcon, UploadCloud, Folder } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
 import { useCapabilities } from "@/lib/hooks/use-capabilities"
 import { FormSection } from "@/components/ui/form-section"
@@ -30,7 +30,7 @@ const MEDIA_ACCEPT_EXTENSIONS = [
 const IMAGE_ACCEPT_EXTENSIONS = [".jpg", ".jpeg", ".png", ".tiff"] as const
 
 interface CreateSourceFormData {
-  type: 'link' | 'upload' | 'text'
+  type: 'link' | 'upload' | 'text' | 'sharepoint'
   title?: string
   url?: string
   content?: string
@@ -84,6 +84,12 @@ import type { TFunction } from 'i18next'
 
 const getSourceTypes = (t: TFunction) => [
   {
+    value: 'sharepoint' as const,
+    label: t('sharepoint.title'),
+    icon: Folder,
+    description: t('sharepoint.description'),
+  },
+  {
     value: 'link' as const,
     label: t('sources.addUrl'),
     icon: LinkIcon,
@@ -110,11 +116,13 @@ interface SourceTypeStepProps {
   errors: FieldErrors<CreateSourceFormData>
   urlValidationErrors?: { url: string; line: number }[]
   onClearUrlErrors?: () => void
+  onTypeChange?: () => void
+  sharePointStep?: ReactNode
 }
 
 const MAX_BATCH_SIZE = 50
 
-export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
+export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors, onTypeChange, sharePointStep }: SourceTypeStepProps) {
   const { t } = useTranslation()
   const { data: capabilities } = useCapabilities()
   // While capabilities are loading (data undefined), fail closed: advertise
@@ -229,10 +237,10 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
           render={({ field }) => (
             <Tabs 
               value={field.value || ''} 
-              onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
+              onValueChange={(value) => { field.onChange(value); onTypeChange?.() }}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
                 {getSourceTypes(t).map((type) => {
                   const Icon = type.icon
                   return (
@@ -249,6 +257,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                   <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
                   
                   {/* Type-specific fields */}
+                  {type.value === 'sharepoint' && sharePointStep}
                   {type.value === 'link' && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -446,7 +455,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
       </FormSection>
 
       {/* Hide title field in batch mode - titles will be auto-generated */}
-      {!isBatchMode && (
+      {!isBatchMode && selectedType !== 'sharepoint' && (
         <FormSection
           htmlFor="source-title"
           title={selectedType === 'text' ? `${t('common.title')} *` : `${t('common.title')} (${t('common.optional')})`}

@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertCircle, ArrowUp, Eye, MessageCircleQuestion, RotateCcw, SlidersHorizontal, Square, X } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Eye, MessageCircleQuestion, RotateCcw, SlidersHorizontal, Square, X } from 'lucide-react'
+import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ResourcePreview } from '@/components/common/ResourcePreview'
 import { ResearchWorkbench, type WorkbenchPane } from '@/components/workbench/ResearchWorkbench'
+import { ModelSetupNotice } from './ModelSetupNotice'
 import { NotebookScopeSelector } from './NotebookScopeSelector'
 import { StreamingResponse } from './StreamingResponse'
 import { AdvancedModelsDialog } from './AdvancedModelsDialog'
@@ -103,10 +105,16 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
     <div className="flex h-full min-h-0 flex-col bg-card">
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {!hasEmbeddingModel ? (
-          <p className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
-            <AlertCircle className="size-4" aria-hidden="true" />
-            {t('searchPage.noEmbeddingModel')}
-          </p>
+          <EmptyState
+            icon={AlertTriangle}
+            title={t('searchPage.askNeedsEmbedding')}
+            description={t('searchPage.askNeedsEmbeddingDesc')}
+            action={(
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/settings/models">{t('searchPage.setUpModels')}</Link>
+              </Button>
+            )}
+          />
         ) : hasOutput ? (
           <StreamingResponse
             isStreaming={ask.isStreaming}
@@ -130,6 +138,12 @@ export function AskWorkspace({ initialQuestion = '' }: AskWorkspaceProps) {
           The field's focus ring stays within the p-4 padding, so it never spills
           outside the panel. */}
       <div className="flex-shrink-0 space-y-2 border-t border-border p-4">
+        {hasEmbeddingModel && !models && (
+          <ModelSetupNotice
+            title={t('searchPage.askNeedsChat')}
+            description={t('searchPage.askNeedsChatDesc')}
+          />
+        )}
         <NotebookScopeSelector
           selectedIds={scopeNotebookIds}
           onChange={setScopeNotebookIds}

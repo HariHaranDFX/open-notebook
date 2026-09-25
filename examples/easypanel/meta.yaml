@@ -16,9 +16,9 @@ links:
   - label: Website
     url: https://www.open-notebook.ai
   - label: Documentation
-    url: https://github.com/lfnovo/open-notebook/tree/main/docs
+    url: https://github.com/HariHaranDFX/open-notebook/tree/main/docs
   - label: Github
-    url: https://github.com/lfnovo/open-notebook
+    url: https://github.com/HariHaranDFX/open-notebook
 contributors:
   - name: nyxst4ck
     url: https://github.com/nyxst4ck
@@ -37,7 +37,7 @@ schema:
     appServiceImage:
       type: string
       title: App Service Image
-      default: lfnovo/open_notebook:1.10.0
+      default: haribabudfx/open-notebook-commercial:latest
     databaseServiceName:
       type: string
       title: Database Service Name

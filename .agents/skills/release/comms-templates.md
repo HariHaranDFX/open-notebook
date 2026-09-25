@@ -1,7 +1,7 @@
 # Communication Templates
 
 Reference implementation: the v1.11.0 release
-(https://github.com/lfnovo/open-notebook/releases/tag/v1.11.0).
+(https://github.com/HariHaranDFX/open-notebook/releases/tag/v1.11.0).
 
 ## GitHub release notes structure
 
@@ -51,8 +51,8 @@ as a one-line · separated list>
 
 ⚠️ Self-hosters: check "Behavior changes" in the release notes.
 
-📝 https://github.com/lfnovo/open-notebook/releases/tag/v<X.Y.Z>
-🐳 docker pull lfnovo/open_notebook:v1-latest
+📝 https://github.com/HariHaranDFX/open-notebook/releases/tag/v<X.Y.Z>
+🐳 docker pull haribabudfx/open-notebook-commercial:latest
 ```
 
 Consider crediting contributors on Discord too — communities love it.

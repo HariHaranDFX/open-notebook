@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from surreal_commands import registry
 
 from api.command_service import CommandService
+from api.source_file_service import build_public_command_status
 from open_notebook.exceptions import OpenNotebookError
 
 router = APIRouter()
@@ -56,7 +57,7 @@ async def execute_command(request: CommandExecutionRequest):
     # Some commands are internal — their authorization is enforced by a
     # dedicated route, not the generic submitter. Reject direct submission
     # so an authenticated user can't bypass the specialized route.
-    _INTERNAL_COMMANDS = {"cleanup_original_files"}
+    _INTERNAL_COMMANDS = {"cleanup_original_files", "import_sharepoint_batch"}
     if request.command in _INTERNAL_COMMANDS:
         raise HTTPException(
             status_code=403,
@@ -96,7 +97,7 @@ async def get_command_job_status(job_id: str):
     """Get the status of a specific command job"""
     try:
         status_data = await CommandService.get_command_status(job_id)
-        return CommandJobStatusResponse(**status_data)
+        return CommandJobStatusResponse(**build_public_command_status(status_data))
 
     except HTTPException:
         raise

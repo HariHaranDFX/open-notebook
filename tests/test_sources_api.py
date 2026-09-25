@@ -7,7 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.notebook import Source
+from open_notebook.domain.notebook import Asset, Source
+from open_notebook.storage.original_files import StoredOriginal
 
 
 @pytest.fixture
@@ -73,7 +74,10 @@ class TestAsyncSourceAssetPersistence:
     ):
         """POST /sources with type=upload and async_processing=true persists Asset(file_path=...)."""
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
+        mock_upload.return_value = StoredOriginal(
+            "filesystem", "video.mp4", 12,
+            file_path=os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4"),
+        )
         mock_submit.return_value = "command:123"
 
         saved_sources = []
@@ -153,8 +157,9 @@ class TestDefaultTitleFromInput:
         self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, client
     ):
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = os.path.join(
-            os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"
+        mock_upload.return_value = StoredOriginal(
+            "filesystem", "quarterly-report.pdf", 4,
+            file_path=os.path.join(os.path.abspath(UPLOADS_FOLDER), "quarterly-report.pdf"),
         )
         mock_submit.return_value = "command:123"
 
@@ -259,7 +264,7 @@ class TestRetrySourceProcessing:
         source.title = "My source"
         source.topics = []
         source.full_text = None
-        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.asset = Asset(url="https://example.com/post")
         source.save = AsyncMock()
         source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
@@ -303,7 +308,7 @@ class TestRetrySourceProcessing:
         source.title = "My source"
         source.topics = []
         source.full_text = None
-        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.asset = Asset(url="https://example.com/post")
         source.save = AsyncMock()
         source.get_embedded_chunks = AsyncMock(return_value=0)
         mock_get.return_value = source
@@ -337,15 +342,15 @@ class TestGetSourceNotFound:
 
 
 class TestGetSourceStatusMessage:
-    """GET /sources/{id}/status used to hardcode message="Source processing failed"
-    for every failure, throwing away the real error the worker had already saved
-    on the command record. Result: the UI card said "failed" with no reason.
-    The endpoint must forward the worker's error text as the message when the
-    status is `failed`."""
+    """Status messages must not disclose arbitrary persisted worker errors.
+
+    Original-file deletion clears provider metadata, so error redaction applies
+    regardless of the current asset rather than forwarding raw command text.
+    """
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
-    async def test_failed_status_surfaces_worker_error_message(
+    async def test_failed_status_redacts_worker_error_message(
         self, mock_get, client
     ):
         source = MagicMock()
@@ -358,7 +363,7 @@ class TestGetSourceStatusMessage:
                 "status": "failed",
                 "started_at": None,
                 "completed_at": None,
-                "error": "This PDF is password-protected. Remove the password and re-upload.",
+                "error": "Cannot extract C:/private/original.pdf opaque-storage-key",
                 "result": None,
             }
         )
@@ -369,9 +374,10 @@ class TestGetSourceStatusMessage:
         assert response.status_code == 200
         body = response.json()
         assert body["status"] == "failed"
-        assert body["message"] == (
-            "This PDF is password-protected. Remove the password and re-upload."
-        )
+        assert body["message"] == "Source processing failed"
+        assert body["processing_info"]["error"] == "Source processing failed"
+        assert "C:/private/original.pdf" not in response.text
+        assert "opaque-storage-key" not in response.text
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.Source.get", new_callable=AsyncMock)

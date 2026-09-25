@@ -6,9 +6,8 @@
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
 
-# Image names for both registries
-DOCKERHUB_IMAGE := lfnovo/open_notebook
-GHCR_IMAGE := ghcr.io/lfnovo/open-notebook
+# Image name
+DOCKERHUB_IMAGE := haribabudfx/open-notebook-commercial
 
 # Build platforms
 PLATFORMS := linux/amd64,linux/arm64
@@ -69,21 +68,21 @@ release-stack-down:
 docker-build-local:
 	@echo "🔨 Building production image locally ($(shell uname -m))..."
 	docker build \
-		-t $(DOCKERHUB_IMAGE):$(VERSION) \
+		-t $(DOCKERHUB_IMAGE):v$(VERSION) \
 		-t $(DOCKERHUB_IMAGE):local \
 		.
-	@echo "✅ Built $(DOCKERHUB_IMAGE):$(VERSION) and $(DOCKERHUB_IMAGE):local"
+	@echo "✅ Built $(DOCKERHUB_IMAGE):v$(VERSION) and $(DOCKERHUB_IMAGE):local"
 	@echo "Run with: docker run -p 5055:5055 -p 3000:3000 $(DOCKERHUB_IMAGE):local"
 
 # Build and push version tags ONLY (no latest) for both regular and single images
 docker-push: docker-buildx-prepare
-	@echo "📤 Building and pushing version $(VERSION) to both registries..."
+	@test "$(APPROVE_IMAGE_PUBLISH)" = "true" || (echo "Image publication is disabled. Set APPROVE_IMAGE_PUBLISH=true after the registry is approved."; exit 1)
+	@echo "📤 Building and pushing version v$(VERSION) to Docker Hub..."
 	@echo "🔨 Building regular image..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		--progress=plain \
-		-t $(DOCKERHUB_IMAGE):$(VERSION) \
-		-t $(GHCR_IMAGE):$(VERSION) \
+		-t $(DOCKERHUB_IMAGE):v$(VERSION) \
 		--push \
 		.
 	@echo "🔨 Building single-container image..."
@@ -91,29 +90,23 @@ docker-push: docker-buildx-prepare
 		--platform $(PLATFORMS) \
 		--progress=plain \
 		--target single \
-		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
-		-t $(GHCR_IMAGE):$(VERSION)-single \
+		-t $(DOCKERHUB_IMAGE):v$(VERSION)-single \
 		--push \
 		.
-	@echo "✅ Pushed version $(VERSION) to both registries (latest NOT updated)"
-	@echo "  📦 Docker Hub:"
-	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)"
-	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)-single"
-	@echo "  📦 GHCR:"
-	@echo "    - $(GHCR_IMAGE):$(VERSION)"
-	@echo "    - $(GHCR_IMAGE):$(VERSION)-single"
+	@echo "✅ Pushed version v$(VERSION) to Docker Hub (latest NOT updated)"
+	@echo "    - $(DOCKERHUB_IMAGE):v$(VERSION)"
+	@echo "    - $(DOCKERHUB_IMAGE):v$(VERSION)-single"
 
-# Update v1-latest tags to current version (both regular and single images)
+# Update latest tags to current version (both regular and single images)
 docker-push-latest: docker-buildx-prepare
-	@echo "📤 Updating v1-latest tags to version $(VERSION)..."
+	@test "$(APPROVE_IMAGE_PUBLISH)" = "true" || (echo "Image publication is disabled. Set APPROVE_IMAGE_PUBLISH=true after the registry is approved."; exit 1)
+	@echo "📤 Updating latest tags to version v$(VERSION)..."
 	@echo "🔨 Building regular image with latest tag..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		--progress=plain \
-		-t $(DOCKERHUB_IMAGE):$(VERSION) \
-		-t $(DOCKERHUB_IMAGE):v1-latest \
-		-t $(GHCR_IMAGE):$(VERSION) \
-		-t $(GHCR_IMAGE):v1-latest \
+		-t $(DOCKERHUB_IMAGE):v$(VERSION) \
+		-t $(DOCKERHUB_IMAGE):latest \
 		--push \
 		.
 	@echo "🔨 Building single-container image with latest tag..."
@@ -121,19 +114,13 @@ docker-push-latest: docker-buildx-prepare
 		--platform $(PLATFORMS) \
 		--progress=plain \
 		--target single \
-		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
-		-t $(DOCKERHUB_IMAGE):v1-latest-single \
-		-t $(GHCR_IMAGE):$(VERSION)-single \
-		-t $(GHCR_IMAGE):v1-latest-single \
+		-t $(DOCKERHUB_IMAGE):v$(VERSION)-single \
+		-t $(DOCKERHUB_IMAGE):latest-single \
 		--push \
 		.
-	@echo "✅ Updated v1-latest to version $(VERSION)"
-	@echo "  📦 Docker Hub:"
-	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION) → v1-latest"
-	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)-single → v1-latest-single"
-	@echo "  📦 GHCR:"
-	@echo "    - $(GHCR_IMAGE):$(VERSION) → v1-latest"
-	@echo "    - $(GHCR_IMAGE):$(VERSION)-single → v1-latest-single"
+	@echo "✅ Updated latest to version v$(VERSION)"
+	@echo "    - $(DOCKERHUB_IMAGE):v$(VERSION) → latest"
+	@echo "    - $(DOCKERHUB_IMAGE):v$(VERSION)-single → latest-single"
 
 # Full release: push version AND update latest tags
 docker-release: docker-push-latest

@@ -40,6 +40,12 @@ class ConfigurationError(OpenNotebookError):
     pass
 
 
+class ConflictError(OpenNotebookError):
+    """Raised when a stored original no longer matches its recorded version."""
+
+    pass
+
+
 class ExternalServiceError(OpenNotebookError):
     """Raised when an external service (e.g., AI model) fails."""
 

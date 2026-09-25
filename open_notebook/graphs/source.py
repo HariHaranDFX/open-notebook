@@ -98,7 +98,7 @@ def default_source_title(content_state: Dict[str, Any]) -> str:
     endpoint (to seed the title) and save_source (to recognise "this was the
     auto default, feel free to upgrade it with the extracted title").
     """
-    file_path = content_state.get("file_path")
+    file_path = content_state.get("original_filename") or content_state.get("file_path")
     if file_path:
         # basename handles both posix and Windows separators uniformly.
         return os.path.basename(file_path.replace("\\", "/")) or "Processing..."
@@ -494,7 +494,22 @@ async def save_source(state: SourceState) -> dict:
     existing_asset = getattr(source, "asset", None)
     source.asset = Asset(
         url=content_state.get("url"),
-        file_path=content_state.get("file_path"),
+        # A materialized path lives only for this graph invocation. Keep the
+        # persisted provider reference (and any durable filesystem path).
+        file_path=(
+            existing_asset.file_path
+            if existing_asset is not None
+            else content_state.get("file_path")
+        ),
+        original_file_store=(existing_asset.original_file_store if existing_asset else None),
+        original_file_key=(existing_asset.original_file_key if existing_asset else None),
+        original_file_etag=(existing_asset.original_file_etag if existing_asset else None),
+        original_file_profile_id=(
+            existing_asset.original_file_profile_id if existing_asset else None
+        ),
+        original_file_container_id=(
+            existing_asset.original_file_container_id if existing_asset else None
+        ),
         original_filename=(
             (existing_asset.original_filename if existing_asset else None)
             or content_state.get("original_filename")
@@ -544,7 +559,9 @@ async def save_source(state: SourceState) -> dict:
                 f"Source {source.id} has no text content to embed, skipping vectorization"
             )
 
-    return {"source": source}
+    # The durable Source retains its original-file reference for retries and
+    # downloads. Graph state and transformation inputs do not need it.
+    return {"source": source.model_copy(update={"asset": None})}
 
 
 def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[Send]:

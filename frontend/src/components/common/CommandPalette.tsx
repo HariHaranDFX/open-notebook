@@ -24,6 +24,7 @@ import {
   FileText,
   Wrench,
   MessageCircleQuestion,
+  Plug,
   Plus,
   Sun,
   Moon,
@@ -47,6 +48,7 @@ type NavItem = {
 )
 
 const getNavigationItems = (t: TFunction): NavItem[] => [
+  { name: t('navigation.connections'), href: '/connections', icon: Plug, keywords: ['sharepoint', 'connect', 'disconnect', 'accounts'] },
   { name: t('navigation.sources'), href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
   { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t('navigation.askAndSearch'), href: '/search', icon: Search, keywords: ['find', 'query'] },

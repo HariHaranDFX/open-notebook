@@ -8,6 +8,7 @@ from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 ensure_internal_no_proxy()
 
+from .connector_commands import import_sharepoint_batch_command
 from .embedding_commands import (
     embed_insight_command,
     embed_note_command,
@@ -17,7 +18,10 @@ from .embedding_commands import (
 from .entra_group_sync import sync_entra_groups_command
 from .podcast_commands import generate_podcast_command
 from .source_commands import process_source_command
-from .source_file_commands import cleanup_original_files_command
+from .source_file_commands import (
+    cleanup_original_files_command,
+    reconcile_original_uploads_command,
+)
 
 __all__ = [
     # Embedding commands
@@ -29,5 +33,7 @@ __all__ = [
     "generate_podcast_command",
     "process_source_command",
     "cleanup_original_files_command",
+    "reconcile_original_uploads_command",
     "sync_entra_groups_command",
+    "import_sharepoint_batch_command",
 ]

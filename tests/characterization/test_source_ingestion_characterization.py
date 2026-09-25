@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from open_notebook.domain.notebook import Source
+from open_notebook.storage.original_files import StoredOriginal
 
 
 @pytest.fixture
@@ -141,36 +142,32 @@ class TestFileUploadIngestion:
 
     @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources._assert_file_supported", new_callable=AsyncMock)
-    @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
-    def test_async_file_upload_persists_path_and_queues_job(
+    def test_async_legacy_file_path_persists_path_and_queues_job(
         self,
         mock_nb_get,
         mock_add_nb,
-        mock_save_file,
         mock_supported,
         mock_submit,
         client,
         saved_sources,
         tmp_path,
     ):
-        # save_uploaded_file returns a path inside the uploads root; the LFI
-        # guard compares against that root, so point the router's root at tmp.
+        # Historical filesystem-path behavior stays supported via the JSON
+        # endpoint. New multipart uploads use the provider contract below.
         uploads_root = tmp_path / "uploads"
         uploads_root.mkdir()
         stored = uploads_root / "document.pdf"
         stored.write_bytes(b"%PDF-1.4 fake")
 
         mock_nb_get.return_value = MagicMock()
-        mock_save_file.return_value = str(stored)
         mock_submit.return_value = "command:job2"
 
         with patch("api.routers.sources.UPLOADS_FOLDER", str(uploads_root)):
             response = client.post(
-                "/api/sources",
-                data={"type": "upload", "async_processing": "true"},
-                files={"file": ("document.pdf", b"%PDF-1.4 fake", "application/pdf")},
+                "/api/sources/json",
+                json={"type": "upload", "async_processing": True, "file_path": str(stored)},
             )
 
         assert response.status_code == 200
@@ -187,6 +184,28 @@ class TestFileUploadIngestion:
         assert submitted[2]["content_state"]["file_path"] == str(stored)
         # delete_source defaults to False — the upload is kept after processing.
         assert submitted[2]["content_state"]["delete_source"] is False
+
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
+    def test_provider_upload_persists_reference_and_queues_metadata(
+        self, mock_save_file, mock_submit, client, saved_sources
+    ):
+        # Intentional storage-provider change: a multipart upload persists an
+        # opaque reference; only workers materialize a path for extraction.
+        mock_save_file.return_value = StoredOriginal("sharepoint_embedded", "private-key", 12, "etag")
+        mock_submit.return_value = "command:provider"
+        response = client.post(
+            "/api/sources", data={"type": "upload", "async_processing": "true"},
+            files={"file": ("document.pdf", b"%PDF-1.4 fake", "application/pdf")},
+        )
+        assert response.status_code == 200
+        assert saved_sources[0].asset.file_path is None
+        assert saved_sources[0].asset.original_file_key == "private-key"
+        state = mock_submit.await_args.args[2]["content_state"]
+        assert state["original_file_store"] == "sharepoint_embedded"
+        assert state["original_file_key"] == "private-key"
+        assert "file_path" not in state
+        assert "private-key" not in response.text
 
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     def test_upload_without_file_or_path_returns_400(self, mock_nb_get, client):

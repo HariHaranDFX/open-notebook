@@ -308,6 +308,35 @@ Output (Source record with embeddings)
 
 **Invoked By**: Sources API (`POST /sources`)
 
+#### Original-file storage boundary
+
+Uploads are first streamed to a private temporary file, then persisted through
+`open_notebook.storage.original_files`. Each Asset records the selected provider
+and opaque key, so changing the deployment default affects only future uploads.
+Workers materialize provider-backed originals only for the duration of content
+extraction; temporary paths are not persisted.
+
+The filesystem provider stores files under `UPLOADS_FOLDER`. The optional
+SharePoint Embedded provider uses a dedicated app-only identity and a
+pre-provisioned container; it does not use inbound SharePoint connector tokens
+or own connector source items. Retention cleanup, explicit original deletion,
+and full Source deletion all use the same retryable two-phase provider operation.
+See [Original file storage](../ORIGINAL_FILE_STORAGE.md) for configuration,
+permissions, ownership, and recovery details.
+
+#### Inbound source connector boundary
+
+`open_notebook.connectors` provides a provider-neutral, read-only document
+contract. The SharePoint connector uses each signed-in user's separate delegated
+Graph consent to browse and download external documents. Its owner-scoped import
+batch runs in surreal-commands, copies each selected document through the
+configured `OriginalFileStore`, and queues the ordinary Source-processing graph.
+The copied Source can be linked to multiple notebooks; no external item is
+deleted or synchronized when the local Source changes. Connector OAuth tokens
+and the app-only SharePoint Embedded storage credentials never cross this
+boundary. See [External source connectors](../CONNECTORS.md) for setup and the
+extension contract.
+
 ---
 
 ### 2. **Chat Workflow** (`open_notebook/graphs/chat.py`)
@@ -801,7 +830,9 @@ Async job submission (source processing, podcast generation) prevents request ti
 
 ### File Uploads
 
-- **Stored in `/data/uploads/`** directory (not database)
+- **Stored through a configurable provider**: filesystem under
+  `/data/uploads/`, or SharePoint Embedded; SurrealDB keeps only metadata and an
+  opaque provider reference
 - **Unique filename generation** prevents overwrites (counter suffix)
 - **Content-core library** extracts text from 50+ file types
 - **Large files** may block API briefly (sync content extraction)

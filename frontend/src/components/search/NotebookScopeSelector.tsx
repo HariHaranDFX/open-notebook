@@ -112,6 +112,7 @@ export function NotebookScopeSelector({
           onToggle={handleToggle}
           loading={isLoading}
           emptyMessage={t('searchPage.scopeNoNotebooks')}
+          singleLine
         />
         <p className="text-xs text-muted-foreground">
           {t('searchPage.scopeHint')}

@@ -1,6 +1,4 @@
-import os
 from datetime import datetime
-from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from loguru import logger
@@ -12,6 +10,7 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import (
     DatabaseOperationError,
+    FileOperationError,
     InvalidInputError,
     NotFoundError,
 )
@@ -340,6 +339,11 @@ class Asset(BaseModel):
     # safe asset mapper (introduced in Task 4). URL/text sources leave it
     # None.
     file_path: Optional[str] = None
+    original_file_store: Optional[str] = None
+    original_file_key: Optional[str] = None
+    original_file_etag: Optional[str] = None
+    original_file_profile_id: Optional[str] = None
+    original_file_container_id: Optional[str] = None
     url: Optional[str] = None
     # Original-upload metadata (Task 1 of retention governance). URL and
     # pasted-text sources leave every ``original_*`` field None.
@@ -695,22 +699,13 @@ class Source(ObjectModel):
 
     async def delete(self) -> bool:
         """Delete source and clean up associated file, embeddings, and insights."""
-        # Clean up uploaded file if it exists
-        if self.asset and self.asset.file_path:
-            file_path = Path(self.asset.file_path)
-            if file_path.exists():
-                try:
-                    os.unlink(file_path)
-                    logger.info(f"Deleted file for source {self.id}: {file_path}")
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to delete file {file_path} for source {self.id}: {e}. "
-                        "Continuing with database deletion."
-                    )
-            else:
-                logger.debug(
-                    f"File {file_path} not found for source {self.id}, skipping cleanup"
-                )
+        from api.source_file_service import delete_original_file
+
+        outcome = await delete_original_file(self, reason="admin_cleanup")
+        if outcome in {"error", "unsafe"}:
+            raise FileOperationError(
+                f"Original file deletion failed for source {self.id}"
+            )
 
         # Delete associated embeddings and insights to prevent orphaned records
         try:
