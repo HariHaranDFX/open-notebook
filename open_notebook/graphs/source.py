@@ -537,13 +537,26 @@ async def save_source(state: SourceState) -> dict:
 
     # Preserve user-set title; upgrade the auto default (filename / URL /
     # "Processing...") when the extractor produced a nicer one.
+    # A provider materializes the file as original.<ext> so extractors see
+    # the type. That basename is not a document title.
     auto_default = default_source_title(content_state)
-    if extraction.title and (
+    extracted_title = extraction.title
+    temp_name = os.path.basename((content_state.get("file_path") or "").replace("\\", "/"))
+    real_name = os.path.basename(
+        (
+            (existing_asset.original_filename if existing_asset else None)
+            or content_state.get("original_filename")
+            or ""
+        ).replace("\\", "/")
+    )
+    if extracted_title and temp_name and real_name and extracted_title == temp_name and temp_name != real_name:
+        extracted_title = None
+    if extracted_title and (
         not source.title
         or source.title == "Processing..."
         or source.title == auto_default
     ):
-        source.title = extraction.title
+        source.title = extracted_title
 
     await source.save()
 
