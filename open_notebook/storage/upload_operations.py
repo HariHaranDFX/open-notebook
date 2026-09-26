@@ -8,7 +8,7 @@ from typing import Any, Awaitable, Callable
 
 from loguru import logger
 
-from open_notebook.database.repository import repo_create, repo_query
+from open_notebook.database.repository import ensure_record_id, repo_create, repo_query
 from open_notebook.storage.original_files import OriginalFileRef, StoredOriginal
 
 GRACE_SECONDS = 900
@@ -29,7 +29,8 @@ async def begin_original_upload(
         {
             "operation_id": operation_id,
             "object_name": object_name,
-            "user_id": user_id,
+            # Column is option<record<user>>; a plain id string is rejected.
+            "user_id": None if user_id is None else ensure_record_id(user_id),
             "provider": provider,
             "profile_id": profile_id,
             "container_id": container_id,
