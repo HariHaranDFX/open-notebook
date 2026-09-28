@@ -1,6 +1,6 @@
 # Security Configuration
 
-Protect your Open Notebook deployment with password authentication and production hardening.
+Protect your Open Notebook deployment with password authentication and production hardening. Microsoft Entra sign-in, including where to copy each id and which redirect to register, is in [Authentication](../AUTH.md).
 
 ---
 
@@ -420,3 +420,4 @@ If you discover security vulnerabilities:
 - **[Reverse Proxy](reverse-proxy.md)** - HTTPS and SSL setup
 - **[Advanced Configuration](advanced.md)** - Ports, timeouts, and SSL settings
 - **[Environment Reference](environment-reference.md)** - All configuration options
+- **[Authentication](../AUTH.md)** - Microsoft Entra sign-in, redirects, and Graph permissions

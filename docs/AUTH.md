@@ -7,30 +7,57 @@ token.
 
 ## Microsoft Entra ID setup
 
-1. In the Microsoft Entra admin center, create an app registration for this
-   deployment. Choose **Accounts in this organizational directory only** unless
-   the deployment has a reason to support another account type.
-2. Under **Authentication**, add a **Web** redirect URI:
-   `https://<host>/api/auth/callback`.
-   This is the public frontend URL. Do not register the API container's internal
-   address or port.
-3. Create a client secret and store its value in `ENTRA_CLIENT_SECRET`.
-4. The sign-in request uses delegated OpenID Connect scopes `openid`, `profile`,
-   `email`, and `offline_access`. No Microsoft Graph permission is needed for
-   WP2. Grant tenant admin consent only if your organization requires consent
-   for these delegated permissions.
+This app registration is the **login app**. Group sync, the directory picker,
+and the SharePoint connector all use it. Original-file storage does not. That
+feature uses a second registration and the `SHAREPOINT_STORAGE_*` variables.
+See [Original file storage](ORIGINAL_FILE_STORAGE.md).
+
+1. In the [Microsoft Entra admin center](https://entra.microsoft.com), open
+   **Identity → Applications → App registrations → New registration**.
+   Choose **Accounts in this organizational directory only** unless the
+   deployment has a reason to support another account type.
+2. Open that registration → **Overview** and copy:
+   - **Directory (tenant) ID** → `ENTRA_TENANT_ID`
+   - **Application (client) ID** → `ENTRA_CLIENT_ID`
+3. Open **Certificates & secrets → Client secrets → New client secret**.
+   Copy the **Value** column as soon as it is shown. That string is
+   `ENTRA_CLIENT_SECRET`. The Secret ID column is not the secret. The Value
+   cannot be read again later.
+4. Open **Authentication → Add a platform → Web** and add the sign-in
+   redirect URI below. Set `ENTRA_REDIRECT_URI` to that exact string,
+   including scheme, host, port, and path.
+
+   | How you run the UI | Web redirect URI |
+   | --- | --- |
+   | Docker Compose (`http://localhost:8502`) | `http://localhost:8502/api/auth/callback` |
+   | `make frontend` (`http://localhost:3000`) | `http://localhost:3000/api/auth/callback` |
+   | Public HTTPS deployment | `https://<public-ui-host>/api/auth/callback` |
+
+   Register the origin the browser uses. Port **5055** is the API and is the
+   wrong callback host. A container hostname such as `open_notebook` is also
+   wrong. If you later change the published UI port, change this URI in Entra
+   and in `ENTRA_REDIRECT_URI` together.
+5. Sign-in requests the delegated OpenID Connect scopes `openid`, `profile`,
+   `email`, and `offline_access`. No Microsoft Graph permission is required
+   for sign-in alone. Grant tenant admin consent only if the organization
+   requires consent for these delegated permissions.
+
+The SharePoint connector adds a **second** Web redirect on this same login
+app, plus delegated `Sites.Read.All`. See [Connectors](CONNECTORS.md). Group
+sync and the directory picker add application permissions on this same app
+and do not add another redirect. See the sections below.
 
 ## Configuration
 
-Set these values in the API process environment, then restart the API:
+Set these values in the API process environment, then restart the API. For Docker Compose, put them in the project-root `.env`. `docker-compose.yml` and `docker-compose.local.yml` forward `ENTRA_*`, `AUTH_ADMIN_EMAILS`, `CORS_ORIGINS`, `ENTRA_GROUP_SYNC_*`, and `SHAREPOINT_CONNECTOR_REDIRECT_URI` into the app container. A name that is not in that `environment:` list stays on the host.
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
 | `AUTH_PROVIDER` | For Entra | `password` | Set to `entra` to enable Entra OIDC. |
-| `ENTRA_TENANT_ID` | For Entra | — | Tenant (directory) ID used to validate issuer and construct Entra endpoints. |
-| `ENTRA_CLIENT_ID` | For Entra | — | Application (client) ID from the Entra app registration. |
-| `ENTRA_CLIENT_SECRET` | For Entra | — | Client-secret value for the authorization-code exchange. Keep it secret. |
-| `ENTRA_REDIRECT_URI` | For Entra | — | Public callback URL, for example `https://notebook.example.com/api/auth/callback`; must exactly match the app registration. |
+| `ENTRA_TENANT_ID` | For Entra | — | Directory (tenant) ID from the login app's **Overview** page. |
+| `ENTRA_CLIENT_ID` | For Entra | — | Application (client) ID from that same **Overview** page. |
+| `ENTRA_CLIENT_SECRET` | For Entra | — | Client secret **Value** from **Certificates & secrets**. Keep it secret. |
+| `ENTRA_REDIRECT_URI` | For Entra | — | Public frontend callback. Must exactly match the Web redirect URI. Docker Compose: `http://localhost:8502/api/auth/callback`. `make frontend`: `http://localhost:3000/api/auth/callback`. |
 | `AUTH_ADMIN_EMAILS` | For Entra | — | Comma-separated administrator email allowlist. At least one nonblank address is required. |
 | `AUTH_COOKIE_SECURE` | No | Auto-detected | Forces the session-cookie `Secure` flag: `true`/`false`, `1`/`0`, or `yes`/`no`. Leave unset when proxy headers are correct. |
 | `AUTH_SESSION_HOURS` | No | `8` | Lifetime of an Entra session. |

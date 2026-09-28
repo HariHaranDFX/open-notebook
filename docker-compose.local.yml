@@ -66,6 +66,14 @@ services:
       - ENTRA_CLIENT_SECRET=${ENTRA_CLIENT_SECRET:-}
       - ENTRA_REDIRECT_URI=${ENTRA_REDIRECT_URI:-}
       - SHAREPOINT_CONNECTOR_REDIRECT_URI=${SHAREPOINT_CONNECTOR_REDIRECT_URI:-}
+      - AUTH_ADMIN_EMAILS=${AUTH_ADMIN_EMAILS:-}
+      - CLIENT_ID=${CLIENT_ID:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - ENTRA_PROMPT=${ENTRA_PROMPT:-}
+      - AUTH_COOKIE_SECURE=${AUTH_COOKIE_SECURE:-}
+      - AUTH_SESSION_HOURS=${AUTH_SESSION_HOURS:-}
+      - ENTRA_GROUP_SYNC_ENABLED=${ENTRA_GROUP_SYNC_ENABLED:-}
+      - ENTRA_GROUP_SYNC_INTERVAL_MINUTES=${ENTRA_GROUP_SYNC_INTERVAL_MINUTES:-}
 
       # OPTIONAL: heavy extraction runtimes, installed on first startup when
       # enabled (downloads are cached on the ./notebook_data volume, so only the
