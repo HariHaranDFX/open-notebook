@@ -28,6 +28,7 @@ import {
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { describeFailure } from '@/lib/utils/describe-failure'
 import type { SourceListResponse } from '@/lib/types/api'
 import {
   canDeleteSource,
@@ -136,7 +137,10 @@ export function SourceLibraryRow({
   // failed. The tooltip on the status badge stays too for the moment before
   // the eye reaches the inline text.
   const failureMessage: string | undefined = isFailed
-    ? ((source.processing_info?.error as string | undefined) ?? statusData?.message)
+    ? (describeFailure(
+        (source.processing_info?.error as string | undefined) ?? statusData?.message,
+        t,
+      ) ?? undefined)
     : undefined
   const statusBadgeTitle = failureMessage
   const statusBadges = (

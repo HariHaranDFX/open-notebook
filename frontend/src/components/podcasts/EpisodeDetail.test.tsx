@@ -243,6 +243,26 @@ describe('EpisodeDetail playback and status', () => {
     fireEvent.click(screen.getByText('podcasts.retry'))
     expect(onRetry).toHaveBeenCalledWith('episode:1')
   })
+
+  it('shows the provider sentence instead of the raw status dump', () => {
+    render(
+      <EpisodeDetail
+        episode={makeEpisode({
+          job_status: 'failed',
+          error_message:
+            "503 UNAVAILABLE. {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}",
+        })}
+        onDelete={vi.fn()}
+      />
+    )
+
+    expect(
+      screen.getByText(
+        'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/503 UNAVAILABLE/)).not.toBeInTheDocument()
+  })
 })
 
 describe('EpisodeDetail notebook origin', () => {
