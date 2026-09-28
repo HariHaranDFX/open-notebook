@@ -549,9 +549,14 @@ async def save_source(state: SourceState) -> dict:
             or ""
         ).replace("\\", "/")
     )
-    if extracted_title and temp_name and real_name and extracted_title == temp_name and temp_name != real_name:
-        extracted_title = None
-    if extracted_title and (
+    echoed_temp_name = bool(
+        extracted_title
+        and temp_name
+        and real_name
+        and extracted_title == temp_name
+        and temp_name != real_name
+    )
+    if extracted_title and not echoed_temp_name and (
         not source.title
         or source.title == "Processing..."
         or source.title == auto_default
