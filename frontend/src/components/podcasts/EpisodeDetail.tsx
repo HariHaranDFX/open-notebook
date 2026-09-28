@@ -459,13 +459,13 @@ function PlayerState({
   role?: 'alert'
 }) {
   return (
-    <div role={role} className="flex min-h-36 items-center gap-4 p-5 sm:p-6">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-current/30 bg-current/10">
-        <Icon className={`size-5 ${iconClassName ?? ''}`} aria-hidden />
+    <div role={role} className="flex items-center gap-3 p-3 sm:px-5">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-current/30 bg-current/10">
+        <Icon className={`size-4 ${iconClassName ?? ''}`} aria-hidden />
       </span>
       <div>
-        <h2 className="text-base font-semibold">{title}</h2>
-        {description ? <p className="mt-1 max-w-2xl text-sm leading-6 opacity-75">{description}</p> : null}
+        <h2 className="text-sm font-semibold">{title}</h2>
+        {description ? <p className="mt-0.5 max-w-2xl text-sm leading-5 opacity-75">{description}</p> : null}
       </div>
     </div>
   )

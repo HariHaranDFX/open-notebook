@@ -239,6 +239,9 @@ describe('EpisodeDetail playback and status', () => {
 
     expect(screen.getByText('podcasts.errorDetails')).toBeInTheDocument()
     expect(screen.getByText('The model timed out')).toBeInTheDocument()
+    const player = screen.getByRole('region', { name: 'common.podcast' })
+    expect(player.firstElementChild).toHaveClass('p-3')
+    expect(player.firstElementChild).not.toHaveClass('min-h-36')
 
     fireEvent.click(screen.getByText('podcasts.retry'))
     expect(onRetry).toHaveBeenCalledWith('episode:1')
