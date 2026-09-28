@@ -21,6 +21,7 @@ import {
   PodcastEpisode,
 } from '@/lib/types/podcasts'
 import { getDateLocale } from '@/lib/utils/date-locale'
+import { describeFailure } from '@/lib/utils/describe-failure'
 import { AccessRole } from '@/lib/utils/access-role'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -114,6 +115,7 @@ export function EpisodeDetail({
   const outlineSegments = useMemo(() => extractOutlineSegments(episode.outline), [episode.outline])
   const transcriptEntries = useMemo(() => extractTranscriptEntries(episode.transcript), [episode.transcript])
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
+  const failureText = describeFailure(episode.error_message, t)
   const isActive = ACTIVE_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
   useEffect(() => {
@@ -260,12 +262,12 @@ export function EpisodeDetail({
         )}
       </section>
 
-      {isFailed && episode.error_message ? (
+      {isFailed && failureText ? (
         <div role="alert" className="flex gap-3 rounded-[var(--surface-radius)] border border-error bg-error-surface p-4 text-error">
           <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold">{t('podcasts.errorDetails')}</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm">{episode.error_message}</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm">{failureText}</p>
           </div>
         </div>
       ) : null}
@@ -457,13 +459,13 @@ function PlayerState({
   role?: 'alert'
 }) {
   return (
-    <div role={role} className="flex min-h-36 items-center gap-4 p-5 sm:p-6">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-current/30 bg-current/10">
-        <Icon className={`size-5 ${iconClassName ?? ''}`} aria-hidden />
+    <div role={role} className="flex items-center gap-3 p-3 sm:px-5">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-current/30 bg-current/10">
+        <Icon className={`size-4 ${iconClassName ?? ''}`} aria-hidden />
       </span>
       <div>
-        <h2 className="text-base font-semibold">{title}</h2>
-        {description ? <p className="mt-1 max-w-2xl text-sm leading-6 opacity-75">{description}</p> : null}
+        <h2 className="text-sm font-semibold">{title}</h2>
+        {description ? <p className="mt-0.5 max-w-2xl text-sm leading-5 opacity-75">{description}</p> : null}
       </div>
     </div>
   )

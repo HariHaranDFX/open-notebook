@@ -213,7 +213,21 @@ Configure Ollama in the Settings UI:
 | `API_URL` | API external URL | `http://localhost:5055` |
 | `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | Override embedding batch size for stricter/local providers (recommended: `8` for CPU-only local setups) | `50` |
 
-See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.
+See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for the complete list.
+
+### Microsoft sign-in, SharePoint import, and original storage
+
+Put these in the `.env` file next to the compose file. `docker-compose.yml` and `docker-compose.local.yml` forward `ENTRA_*`, `AUTH_ADMIN_EMAILS`, `CORS_ORIGINS`, `ENTRA_GROUP_SYNC_*`, `SHAREPOINT_CONNECTOR_REDIRECT_URI`, and `SHAREPOINT_STORAGE_*` into the app container. A value that exists only in `.env` and is not named in that `environment:` list never reaches the app. The short sample earlier on this page does not include these names; use the repository compose file.
+
+The UI for this install is `http://localhost:8502`. Register callback URLs on that origin. Port 3000 is `make frontend`. Port 5055 is the API and is never a callback host.
+
+| What | Where the values and permissions are written |
+|------|-----------------------------------------------|
+| Sign-in (`ENTRA_*`, `AUTH_ADMIN_EMAILS`, `ENTRA_REDIRECT_URI`) | [Authentication](../AUTH.md) |
+| Import existing SharePoint files (`SHAREPOINT_CONNECTOR_REDIRECT_URI`, delegated `Sites.Read.All`) | [Connectors](../CONNECTORS.md) |
+| Store uploaded originals (`SHAREPOINT_STORAGE_*`, `FileStorageContainer.Selected`, `FileStorageContainerTypeReg.Selected`, no redirect) | [Original file storage](../ORIGINAL_FILE_STORAGE.md) |
+
+Restart the app container after changing any of these. The worker runs inside that same container.
 
 ---
 

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from open_notebook.database.async_migrate import AsyncMigrationManager
+from open_notebook.database.repository import ensure_record_id
 from open_notebook.storage.original_files import OriginalFileRef
 from open_notebook.storage.upload_operations import (
     reconcile_operation,
@@ -172,6 +173,7 @@ async def test_tracked_save_records_the_name_before_the_remote_call(monkeypatch)
     async def create(table, data):
         order.append(("record", data["object_name"]))
         assert table == "original_upload_operation"
+        assert data["user_id"] == ensure_record_id("user:1")
         return {"id": "original_upload_operation:1"}
 
     async def finish(sql, params):

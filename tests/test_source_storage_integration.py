@@ -697,6 +697,24 @@ async def test_worker_retry_finalizes_retention_after_remote_delete_and_save_fai
 
 
 @pytest.mark.asyncio
+async def test_save_source_keeps_upload_name_when_extractor_echoes_temp_file(saved_sources, remote_source):
+    remote_source.title = "SEA.docx"
+    remote_source.asset.original_filename = "SEA.docx"
+    await save_source(cast(SourceState, {
+        "source_id": remote_source.id,
+        "content_state": {
+            "file_path": r"C:\temp\open-notebook-extract\original.docx",
+            "original_filename": "SEA.docx",
+        },
+        "extraction": SimpleNamespace(content="body", title="original.docx"),
+        "embed": False,
+    }))
+    assert remote_source.title == "SEA.docx"
+    assert remote_source.asset.original_filename == "SEA.docx"
+    assert saved_sources[-1].title == "SEA.docx"
+
+
+@pytest.mark.asyncio
 async def test_extraction_save_keeps_original_deleted_during_materialization(
     saved_sources, remote_source, provider_store, monkeypatch
 ):

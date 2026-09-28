@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { AlertTriangle, Plus, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { TransformationCard } from './TransformationCard'
 import { EmptyState } from '@/components/common/EmptyState'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { Wand2 } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
 import { TransformationEditorDialog } from './TransformationEditorDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useModels } from '@/lib/hooks/use-models'
+import { isStaleModelId, knownModelIds } from '@/lib/models/stale-model'
 
 interface TransformationsListProps {
   transformations: Transformation[] | undefined
@@ -19,6 +21,8 @@ interface TransformationsListProps {
 
 export function TransformationsList({ transformations, isLoading, onPlayground }: TransformationsListProps) {
   const { t } = useTranslation()
+  const modelsQuery = useModels()
+  const knownIds = knownModelIds(modelsQuery.data, modelsQuery.isSuccess)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingTransformation, setEditingTransformation] = useState<Transformation | undefined>()
 
@@ -78,11 +82,20 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
           </Button>
         </div>
 
+        {transformations.some((transformation) => isStaleModelId(transformation.model_id, knownIds)) && (
+          <Alert className="border-warning/40 bg-warning-surface text-warning">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>{t('transformations.removedModelTitle')}</AlertTitle>
+            <AlertDescription>{t('transformations.removedModel')}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-2">
           {transformations.map((transformation) => (
             <TransformationCard
               key={transformation.id}
               transformation={transformation}
+              modelRemoved={isStaleModelId(transformation.model_id, knownIds)}
               onPlayground={onPlayground ? () => onPlayground(transformation) : undefined}
               onEdit={() => handleOpenEditor(transformation)}
             />

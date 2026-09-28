@@ -199,6 +199,18 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 - Production hardening
 - Firewall configuration
 
+### [Authentication](../AUTH.md)
+- Entra login app: where to copy the tenant id, client id, and secret value
+- Sign-in redirect (`8502` for Docker Compose, `3000` for `make frontend`)
+- Group sync (`GroupMember.Read.All`) and directory picker (`User.Read.All`)
+
+### [SharePoint connector](../CONNECTORS.md)
+- Same login app, delegated `Sites.Read.All`, second Web redirect
+
+### [Original file storage](../ORIGINAL_FILE_STORAGE.md)
+- Separate storage app, both FileStorageContainer permissions, no redirect
+- Where the `b!` container id and the container-type id come from
+
 ### [Local TTS](local-tts.md)
 - Speaches setup for local text-to-speech
 - GPU acceleration

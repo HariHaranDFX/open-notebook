@@ -25,6 +25,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDeleteModel, useTestModel } from '@/lib/hooks/use-models'
+import { useEpisodeProfiles, useSpeakerProfiles } from '@/lib/hooks/use-podcasts'
+import { useTransformations } from '@/lib/hooks/use-transformations'
+import { findModelUsages, formatModelUsage } from '@/lib/models/stale-model'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useCredential, useTestCredential } from '@/lib/hooks/use-credentials'
 import { Credential } from '@/lib/api/credentials'
 import { Model, ModelDefaults } from '@/lib/types/models'
@@ -57,9 +61,17 @@ export function CredentialItem({
   const { testCredential, isPending: isTestPending, testResults } = useTestCredential()
   const { testModel, isPending: isModelTestPending, testingModelId, testResult: modelTestResult, testedModelName, clearResult: clearModelTestResult } = useTestModel()
   const deleteModel = useDeleteModel()
+  const episodeProfilesQuery = useEpisodeProfiles()
+  const speakerProfilesQuery = useSpeakerProfiles()
+  const transformationsQuery = useTransformations()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [discoverOpen, setDiscoverOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string
+    name: string
+    places: string[] | null
+  } | null>(null)
   // Full credential data needed for edit form
   const { data: fullCredential } = useCredential(editOpen ? credential.id : '')
 
@@ -82,6 +94,32 @@ export function CredentialItem({
     for (const [slot, modelId] of Object.entries(slotMap)) {
       if (modelId) defaultSlots[modelId] = slot
     }
+  }
+
+  const requestDelete = (model: Model) => {
+    const ready =
+      episodeProfilesQuery.isSuccess &&
+      speakerProfilesQuery.isSuccess &&
+      transformationsQuery.isSuccess
+    if (!ready) {
+      setPendingDelete({ id: model.id, name: model.name, places: null })
+      return
+    }
+    const usages = findModelUsages(model.id, {
+      defaults,
+      episodeProfiles: episodeProfilesQuery.episodeProfiles,
+      speakerProfiles: speakerProfilesQuery.speakerProfiles,
+      transformations: transformationsQuery.data ?? [],
+    })
+    if (usages.length === 0) {
+      deleteModel.mutate(model.id)
+      return
+    }
+    setPendingDelete({
+      id: model.id,
+      name: model.name,
+      places: usages.map((usage) => formatModelUsage(usage, (key) => String(t(key)))),
+    })
   }
 
   return (
@@ -204,7 +242,7 @@ export function CredentialItem({
                           <button
                             type="button"
                             className="rounded-sm opacity-70 transition-opacity hover:text-destructive hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            onClick={() => deleteModel.mutate(model.id)}
+                            onClick={() => requestDelete(model)}
                             title={t('models.deleteModel')}
                           >
                             <X className="h-3 w-3" />
@@ -228,6 +266,32 @@ export function CredentialItem({
           onOpenChange={setEditOpen}
           provider={credential.provider}
           credential={fullCredential || credential}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setPendingDelete(null)
+          }}
+          title={t('models.deleteInUseTitle')}
+          description={
+            pendingDelete.places
+              ? t('models.deleteInUseDesc', {
+                  name: pendingDelete.name,
+                  places: pendingDelete.places.join(', '),
+                })
+              : t('models.deleteInUseUnknown')
+          }
+          confirmText={t('models.deleteAnyway')}
+          confirmVariant="destructive"
+          isLoading={deleteModel.isPending}
+          onConfirm={() => {
+            deleteModel.mutate(pendingDelete.id, {
+              onSuccess: () => setPendingDelete(null),
+            })
+          }}
         />
       )}
 

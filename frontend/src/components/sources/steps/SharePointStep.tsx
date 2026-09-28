@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { describeFailure } from '@/lib/utils/describe-failure'
 import { useRetrySharePointBatch, useSharePointChildren, useSharePointDrives, useSharePointRecentBatches, useSharePointSites, useSharePointStatus, useSharePointBatch } from '@/lib/hooks/use-sharepoint'
 import type { SharePointSelection } from '@/lib/types/api'
 
@@ -167,6 +168,7 @@ export function SharePointBatchProgress({ batch, notebookIds = [] }: { batch: Re
   const progress = data && data.total > 0 ? Math.round((settled / data.total) * 100) : 0
   const tone = data ? batchStatusTone[data.status] : batchStatusTone.pending
   const StatusIcon = tone.icon
+  const batchError = describeFailure(data?.error, t)
   return <div className="space-y-4">
     {batch.isPending && <p role="status">{t('common.loading')}</p>}
     {batch.isError && <div role="alert"><p>{t('sharepoint.requestFailed')}</p><Button type="button" variant="outline" onClick={() => void batch.refetch()}>{t('common.retry')}</Button></div>}
@@ -204,8 +206,10 @@ export function SharePointBatchProgress({ batch, notebookIds = [] }: { batch: Re
           </div>
           <span className="tabular-nums text-muted-foreground">{settled} / {data.total}</span>
         </div>
-        {/import limit/i.test(data.error ?? '') && <p>{t('sharepoint.limitReached')} {data.error}</p>}
-        {data.error && !/import limit/i.test(data.error) && <p role="alert" className="text-sm text-error">{data.error}</p>}
+        {/import limit/i.test(data.error ?? '') && <p>{t('sharepoint.limitReached')} {batchError}</p>}
+        {data.error && !/import limit/i.test(data.error) && batchError && (
+          <p role="alert" className="text-sm text-error">{batchError}</p>
+        )}
         {(data.status === 'partial' || data.status === 'failed') && data.failed > 0 && (
           <Button type="button" disabled={retry.isPending} onClick={() => retry.mutate(data.batch_id)}>{t('sharepoint.retryFailed')}</Button>
         )}
@@ -214,6 +218,7 @@ export function SharePointBatchProgress({ batch, notebookIds = [] }: { batch: Re
           {data.documents.map(document => {
             const documentTone = batchStatusTone[document.status]
             const DocumentIcon = documentTone.icon
+            const documentError = describeFailure(document.error, t)
             return <li key={document.id} className="space-y-1 rounded-md border px-3 py-2">
               <div className="flex min-h-11 items-center gap-3">
                 <FileText aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -223,7 +228,7 @@ export function SharePointBatchProgress({ batch, notebookIds = [] }: { batch: Re
                   {labels[document.status]}
                 </Badge>
               </div>
-              {document.error && <p className="text-sm text-error">{document.error}</p>}
+              {documentError && <p className="text-sm text-error">{documentError}</p>}
             </li>
           })}
         </ul>

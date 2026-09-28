@@ -22,30 +22,51 @@ item identity to avoid duplicate Sources for the same owner.
 
 ### Configure
 
-1. Use Entra sign-in (`AUTH_PROVIDER=entra`) and set `ENTRA_TENANT_ID`,
-   `ENTRA_CLIENT_ID`, and `ENTRA_CLIENT_SECRET`. The connector reuses this Entra
-   app registration but keeps its OAuth state and encrypted MSAL cache separate from
-   the login session. It does **not** use the SharePoint Embedded storage app.
-2. Grant the app Microsoft Graph **delegated** `Sites.Read.All` permission and
-   obtain tenant consent where required. The connector requests
-   `openid profile offline_access Sites.Read.All` when the user connects; it
-   never requests app-only site access or write permission.
-3. Register a second **Web** redirect URI in the Entra app, pointing to the
-   public **frontend** origin plus `/api/connectors/sharepoint/callback`. Set
-   `SHAREPOINT_CONNECTOR_REDIRECT_URI` to that exact URI. For local development:
+The connector uses the **login** app from [Authentication](AUTH.md). It does
+not use the SharePoint Embedded storage app, and it does not read
+`SHAREPOINT_STORAGE_*`. Copy `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, and
+`ENTRA_CLIENT_SECRET` from that login app's Overview and Certificates &
+secrets pages, as [AUTH.md](AUTH.md#microsoft-entra-id-setup) describes.
+Put them in the project-root `.env`.
 
-   ```env
-   SHAREPOINT_CONNECTOR_REDIRECT_URI=http://localhost:3000/api/connectors/sharepoint/callback
-   ```
+1. Set `AUTH_PROVIDER=entra` and the three `ENTRA_*` values above. The
+   connector keeps its OAuth state and encrypted MSAL cache separate from the
+   login session.
+2. On that **same login app**, open **API permissions → Add a permission →
+   Microsoft Graph → Delegated permissions → `Sites.Read.All`**, then click
+   **Grant admin consent**. This is a delegated permission. It is not an
+   application permission, and it is not `FileStorageContainer.Selected`
+   (that permission belongs on the storage app only).
 
-   Keep the existing `ENTRA_REDIRECT_URI` for sign-in; the two callbacks are
-   different. In a deployed environment use the externally reachable HTTPS
-   frontend URL, not a container hostname. The frontend API proxy forwards the
-   callback to FastAPI so its relative redirect returns to the app.
+   When a user connects, the connector requests exactly
+   `openid profile offline_access Sites.Read.All`. It never requests app-only
+   site access or write permission.
+3. On that same app, open **Authentication** and add a **second Web**
+   redirect URI. Keep the sign-in URI from `ENTRA_REDIRECT_URI`. Set
+   `SHAREPOINT_CONNECTOR_REDIRECT_URI` to the import URI, character for
+   character:
+
+   | How you run the UI | Sign-in (`ENTRA_REDIRECT_URI`) | Import (`SHAREPOINT_CONNECTOR_REDIRECT_URI`) |
+   | --- | --- | --- |
+   | Docker Compose | `http://localhost:8502/api/auth/callback` | `http://localhost:8502/api/connectors/sharepoint/callback` |
+   | `make frontend` | `http://localhost:3000/api/auth/callback` | `http://localhost:3000/api/connectors/sharepoint/callback` |
+   | Public HTTPS | `https://<public-ui-host>/api/auth/callback` | `https://<public-ui-host>/api/connectors/sharepoint/callback` |
+
+   Both URIs are on the public **frontend** origin. Port **5055** and any
+   container hostname are wrong. Also set `CORS_ORIGINS` to that same origin
+   (`http://localhost:8502`, `http://localhost:3000`, or the HTTPS host).
+   The frontend API proxy forwards the callback to FastAPI, and the relative
+   redirect returns the browser to the app.
 4. Set a stable `OPEN_NOTEBOOK_ENCRYPTION_KEY`. Per-user serialized MSAL caches
    are encrypted at rest. Losing or changing this key requires users to reconnect.
 5. Start the API and the surreal-commands worker. Without the worker, accepted
    import batches remain queued. The API's schema migrations run at startup.
+
+```env
+SHAREPOINT_CONNECTOR_REDIRECT_URI=http://localhost:8502/api/connectors/sharepoint/callback
+```
+
+Use the `http://localhost:3000/...` form instead when the UI is `make frontend`.
 
 When configuration is missing, Connections shows the connector as unavailable.
 After consent the callback returns to `/connections`. Connect, reconnect, and

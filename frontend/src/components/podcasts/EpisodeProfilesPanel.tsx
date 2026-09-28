@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { FileText, ListTree, Users } from 'lucide-react'
 
+import { knownModelIds, resolvedModelLabel } from '@/lib/models/stale-model'
 import { EpisodeProfile, SpeakerProfile, needsModelSetup } from '@/lib/types/podcasts'
 import {
   useDeleteEpisodeProfile,
@@ -40,7 +41,9 @@ export function EpisodeProfilesPanel({
 
   const deleteProfile = useDeleteEpisodeProfile()
   const duplicateProfile = useDuplicateEpisodeProfile()
-  const { data: models = [] } = useModels()
+  const modelsQuery = useModels()
+  const models = useMemo(() => modelsQuery.data ?? [], [modelsQuery.data])
+  const knownIds = knownModelIds(models, modelsQuery.isSuccess)
 
   const modelNameMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -89,12 +92,20 @@ export function EpisodeProfilesPanel({
               speakerProfiles,
               profile.speaker_config
             )
-            const outlineLabel = profile.outline_llm
-              ? (modelNameMap[profile.outline_llm] ?? profile.outline_llm)
-              : t('podcasts.notConfigured')
-            const transcriptLabel = profile.transcript_llm
-              ? (modelNameMap[profile.transcript_llm] ?? profile.transcript_llm)
-              : t('podcasts.notConfigured')
+            const outline = resolvedModelLabel(
+              profile.outline_llm,
+              modelNameMap,
+              knownIds,
+              t('podcasts.notConfigured'),
+              t('podcasts.modelRemoved'),
+            )
+            const transcript = resolvedModelLabel(
+              profile.transcript_llm,
+              modelNameMap,
+              knownIds,
+              t('podcasts.notConfigured'),
+              t('podcasts.modelRemoved'),
+            )
             const speakerName =
               profile.speaker_config_name ??
               speakerSummary?.name ??
@@ -105,7 +116,7 @@ export function EpisodeProfilesPanel({
                 key={profile.id}
                 name={profile.name}
                 description={profile.description}
-                setupRequired={needsModelSetup(profile)}
+                setupRequired={needsModelSetup(profile, knownIds)}
                 onEdit={() => setEditProfile(profile)}
                 onDuplicate={() => duplicateProfile.mutate(profile.id)}
                 duplicating={duplicateProfile.isPending}
@@ -120,14 +131,14 @@ export function EpisodeProfilesPanel({
                   <MetaChip
                     icon={ListTree}
                     label={t('podcasts.outlineModel')}
-                    value={outlineLabel}
-                    tone={profile.outline_llm ? 'default' : 'warning'}
+                    value={outline.text}
+                    tone={outline.warning ? 'warning' : 'default'}
                   />
                   <MetaChip
                     icon={FileText}
                     label={t('podcasts.transcriptModel')}
-                    value={transcriptLabel}
-                    tone={profile.transcript_llm ? 'default' : 'warning'}
+                    value={transcript.text}
+                    tone={transcript.warning ? 'warning' : 'default'}
                   />
                   <MetaChip label={t('podcasts.segments')} value={profile.num_segments} />
                   {profile.language ? (

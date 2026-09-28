@@ -74,7 +74,12 @@ vi.mock('@/lib/hooks/use-notebooks', () => ({
 
 vi.mock('@/lib/hooks/use-podcasts', () => ({
   useEpisodeProfiles: () => ({ episodeProfiles: [], isLoading: false }),
+  useSpeakerProfiles: () => ({ speakerProfiles: [] }),
   useGeneratePodcast: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}))
+
+vi.mock('@/lib/hooks/use-models', () => ({
+  useModels: () => ({ data: [], isSuccess: false }),
 }))
 
 vi.mock('@/lib/api/chat', () => ({

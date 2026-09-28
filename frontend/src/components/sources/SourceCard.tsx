@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { describeFailure } from '@/lib/utils/describe-failure'
 import type { TFunction } from 'i18next'
 import { cn } from '@/lib/utils'
 import { ContextSelector } from '@/components/common/ContextSelector'
@@ -227,9 +228,10 @@ function SourceCardImpl({
   // This matches TanStack Query's "seed detail from list" pattern
   // (placeholderData) applied one layer up: the list already carries the
   // detail, so the detail hook is only a fallback.
-  const failureMessage: string | undefined =
-    (source.processing_info?.error as string | undefined) ??
-    statusData?.message
+  const failureMessage = describeFailure(
+    (source.processing_info?.error as string | undefined) ?? statusData?.message,
+    t,
+  )
 
   return (
     <Card

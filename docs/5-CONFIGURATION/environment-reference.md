@@ -50,7 +50,70 @@ schema, asset mounts, validation rules, switching procedure, and rollback.
 | `ENTRA_PROMPT` | No | (omit) | Optional authorize `prompt`: `select_account`, `login`, `consent`, or `none`. |
 | `CLIENT_ID` | No | `default` (Entra), `local` (password) | Deployment identifier stamped on records; distinct from `ENTRA_CLIENT_ID`. |
 
-See [Authentication](../AUTH.md) for Entra app registration, same-origin proxy requirements, and password fallback.
+Copy `ENTRA_TENANT_ID` and `ENTRA_CLIENT_ID` from the login app's **Overview** page (Directory (tenant) ID and Application (client) ID). Copy `ENTRA_CLIENT_SECRET` from **Certificates & secrets → Value**, not the Secret ID. `ENTRA_REDIRECT_URI` is a **Web** redirect on that app and must be the public frontend origin: `http://localhost:8502/api/auth/callback` for Docker Compose, `http://localhost:3000/api/auth/callback` for `make frontend`, or `https://<public-ui-host>/api/auth/callback` in production. Port 5055 is not a callback host.
+
+For Docker Compose, these names have to be listed under the app service `environment:` block. The repository `docker-compose.yml` and `docker-compose.local.yml` already forward the Entra, connector, group-sync, and storage variables from `.env`.
+
+Sign-in needs delegated `openid`, `profile`, `email`, and `offline_access` only. The click path, the second connector redirect, and the application permissions for group sync and the directory picker are in [Authentication](../AUTH.md).
+
+---
+
+## Entra group sync and directory picker
+
+Both features use the **login** app (`ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET`). They add no redirect URI and no new client id.
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `ENTRA_GROUP_SYNC_ENABLED` | For group sync | `false` | Set to `true`, `1`, or `yes` to run the sync loop and the group-link routes. |
+| `ENTRA_GROUP_SYNC_INTERVAL_MINUTES` | No | `15` | How often the API diffs Entra membership. Values under 1 minute are floored. |
+
+| Feature | Permission on the login app | Kind | Admin consent |
+|---------|-----------------------------|------|---------------|
+| Group sync | `GroupMember.Read.All` | Application | Required |
+| Directory picker | `User.Read.All` | Application | Required |
+
+The directory picker has no environment variable of its own. Grant both permissions under **API permissions → Microsoft Graph → Application permissions → Grant admin consent**. See [Authentication](../AUTH.md#entra-group-sync-wbs-420).
+
+---
+
+## SharePoint connector (import)
+
+The connector reuses the login app. It does not read `SHAREPOINT_STORAGE_*`.
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `SHAREPOINT_CONNECTOR_REDIRECT_URI` | For SharePoint import | None | Second **Web** redirect on the login app. Public frontend origin plus `/api/connectors/sharepoint/callback`. Docker Compose: `http://localhost:8502/api/connectors/sharepoint/callback`. `make frontend`: `http://localhost:3000/api/connectors/sharepoint/callback`. |
+
+Also required: `AUTH_PROVIDER=entra`, the three `ENTRA_*` login values, and `OPEN_NOTEBOOK_ENCRYPTION_KEY`. Set `CORS_ORIGINS` to the same frontend origin.
+
+Permission: Microsoft Graph **delegated** `Sites.Read.All` on the login app, plus **Grant admin consent**. The connect request asks for `openid profile offline_access Sites.Read.All`. There is no application site permission and no write permission. See [Connectors](../CONNECTORS.md).
+
+---
+
+## Original file storage
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_ORIGINAL_FILE_STORE` | No | `filesystem` | `filesystem` or `sharepoint_embedded`. |
+| `SHAREPOINT_STORAGE_PROFILE_ID` | For SharePoint storage | `default` | `default` uses the `SHAREPOINT_STORAGE_*` variables in this environment. |
+| `SHAREPOINT_STORAGE_TENANT_ID` | For SharePoint storage | None | Directory (tenant) ID from the **storage** app's Overview page. Not read from `ENTRA_TENANT_ID`. |
+| `SHAREPOINT_STORAGE_CLIENT_ID` | For SharePoint storage | None | Application (client) ID of the storage app. A different registration from `ENTRA_CLIENT_ID` when the login app already owns a container type. |
+| `SHAREPOINT_STORAGE_CLIENT_SECRET` | Local/test, when no certificate is set | None | Client secret **Value** from the storage app. Ignored when `SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH` is set. |
+| `SHAREPOINT_STORAGE_CERTIFICATE_PFX_PATH` | Production | None | Mounted PFX for the storage app. When set, the client secret is not used. |
+| `SHAREPOINT_STORAGE_CERTIFICATE_PASSPHRASE` | No | Empty | Passphrase for that PFX, when it has one. |
+| `SHAREPOINT_STORAGE_CONTAINER_ID` | For SharePoint storage | None | Graph file-storage container id. It starts with `b!` and is also the drive id. This is not the container-type GUID. |
+| `SHAREPOINT_STORAGE_PROFILES_FILE` | No | None | JSON file of extra immutable profiles used after rotation. Entries name env vars; they do not inline secrets. |
+
+There is **no** storage redirect URI. Do not add a Web platform on the storage app.
+
+Permissions, both **application**, both with admin consent, on the storage app only:
+
+| Permission | Used for |
+|------------|----------|
+| `FileStorageContainerTypeReg.Selected` | Registering the container type this app owns. One-time. The running app does not call it. |
+| `FileStorageContainer.Selected` | Creating the container and every upload, download, and delete. |
+
+How to copy each id, how to create a trial container type, and why the SharePoint admin list does not show the `b!` id: [Original file storage](../ORIGINAL_FILE_STORAGE.md).
 
 ---
 
@@ -115,7 +178,7 @@ See [Authentication](../AUTH.md) for Entra app registration, same-origin proxy r
 
 **When to change this**:
 - You access the UI at a custom domain (reverse proxy, HTTPS, public deployment).
-- The frontend runs on a different port than `3000`.
+- The frontend runs on a port other than the one in `CORS_ORIGINS` (`3000` for `make frontend`, `8502` for Docker Compose).
 - You serve the frontend from a different host than the API (e.g. CDN).
 
 Example for a production deployment behind a reverse proxy:

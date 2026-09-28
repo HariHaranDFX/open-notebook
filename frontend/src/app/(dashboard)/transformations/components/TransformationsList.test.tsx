@@ -5,6 +5,10 @@ import { Transformation } from '@/lib/types/transformations'
 
 // useTranslation is mocked globally in setup.ts (t returns the key string)
 
+vi.mock('@/lib/hooks/use-models', () => ({
+  useModels: () => ({ data: [], isSuccess: false }),
+}))
+
 vi.mock('./TransformationEditorDialog', () => ({
   TransformationEditorDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="transformation-editor-dialog" /> : null,
