@@ -892,6 +892,7 @@ export const thTH = {
     setupRequiredDesc:
       "บางโปรไฟล์ยังไม่ได้กำหนดค่าโมเดล แก้ไขเพื่อเลือกโมเดลก่อนสร้างพอดแคสต์",
     notConfigured: "ยังไม่ได้กำหนดค่า",
+    modelRemoved: "Model removed",
   },
   settings: {
     contentProcessing: "การประมวลผลเนื้อหา",
@@ -1029,6 +1030,8 @@ export const thTH = {
     selectModel: "เลือกโมเดล",
     deleteConfirm: "คุณแน่ใจหรือไม่ว่าต้องการลบการแปลงนี้?",
     model: "โมเดล",
+    removedModelTitle: "A removed model is still selected",
+    removedModel: "This transformation still uses a model that was removed.",
     systemPrompt: "พรอมต์ระบบ",
     overrideModelDesc: "แทนที่โมเดลเริ่มต้นสำหรับเซสชันแชทนี้ ปล่อยว่างเพื่อใช้ค่าเริ่มต้นของระบบ",
     sessionUseReplacement: "เซสชันนี้จะใช้ {{name}} แทนโมเดลเริ่มต้น",
@@ -1054,6 +1057,11 @@ export const thTH = {
     defaultAssignments: "การกำหนดโมเดลเริ่มต้น",
     defaultAssignmentsDesc: "กำหนดว่าจะใช้โมเดลใดสำหรับวัตถุประสงค์ที่แตกต่างกันใน {{appName}}",
     missingRequiredModels: "โมเดลที่จำเป็นขาดหายไป: {{models}} {{appName}} อาจทำงานไม่ถูกต้องหากไม่มีสิ่งเหล่านี้",
+    removedAssignments: "These assignments still point at a removed model: {{models}}. Pick a replacement.",
+    deleteInUseTitle: "This model is still in use",
+    deleteInUseDesc: "{{name}} is still selected in {{places}}. Delete it anyway, then pick a replacement in those places.",
+    deleteAnyway: "Delete anyway",
+    deleteInUseUnknown: "This model may still be selected in podcasts, speakers, or transformations. Delete it anyway?",
     selectModelPlaceholder: "เลือกโมเดล",
     noneOption: "ไม่มี",
     noneFallbackToChat: "ใช้ค่าสำรอง (ค่าเริ่มต้นแชท)",

@@ -892,6 +892,7 @@ export const bnIN = {
     setupRequiredDesc:
       "কিছু প্রোফাইলে এখনও মডেল কনফিগার করা হয়নি। পডকাস্ট তৈরির আগে মডেল নির্বাচন করতে সেগুলি সম্পাদনা করুন।",
     notConfigured: "কনফিগার করা হয়নি",
+    modelRemoved: "Model removed",
   },
   settings: {
     contentProcessing: "কন্টেন্ট প্রক্রিয়াকরণ",
@@ -1029,6 +1030,8 @@ export const bnIN = {
     selectModel: "একটি মডেল নির্বাচন করুন",
     deleteConfirm: "আপনি কি নিশ্চিত এই ট্রান্সফরমেশন মুছে ফেলতে চান?",
     model: "মডেল",
+    removedModelTitle: "A removed model is still selected",
+    removedModel: "This transformation still uses a model that was removed.",
     systemPrompt: "সিস্টেম প্রম্পট",
     overrideModelDesc: "এই চ্যাট সেশনের জন্য ডিফল্ট মডেল ওভাররাইড করুন। সিস্টেম ডিফল্ট ব্যবহার করতে খালি রাখুন।",
     sessionUseReplacement: "এই সেশন ডিফল্ট মডেলের পরিবর্তে {{name}} ব্যবহার করবে।",
@@ -1054,6 +1057,11 @@ export const bnIN = {
     defaultAssignments: "ডিফল্ট মডেল অ্যাসাইনমেন্ট",
     defaultAssignmentsDesc: "{{appName}} জুড়ে বিভিন্ন কাজের জন্য কোন মডেল ব্যবহার করব তা কনফিগার করুন",
     missingRequiredModels: "প্রয়োজনীয় মডেল অনুপস্থিত: {{models}}। এগুলি ছাড়া {{appName}} সঠিকভাবে কাজ নাও করতে পারে।",
+    removedAssignments: "These assignments still point at a removed model: {{models}}. Pick a replacement.",
+    deleteInUseTitle: "This model is still in use",
+    deleteInUseDesc: "{{name}} is still selected in {{places}}. Delete it anyway, then pick a replacement in those places.",
+    deleteAnyway: "Delete anyway",
+    deleteInUseUnknown: "This model may still be selected in podcasts, speakers, or transformations. Delete it anyway?",
     selectModelPlaceholder: "একটি মডেল নির্বাচন করুন",
     noneOption: "কোনোটিই নয়",
     noneFallbackToChat: "ফলব্যাক ব্যবহার করুন (চ্যাট ডিফল্ট)",

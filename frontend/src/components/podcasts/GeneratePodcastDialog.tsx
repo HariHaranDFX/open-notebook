@@ -1,16 +1,18 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useQueries } from '@tanstack/react-query'
 
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
-import { useEpisodeProfiles, useGeneratePodcast } from '@/lib/hooks/use-podcasts'
+import { useEpisodeProfiles, useGeneratePodcast, useSpeakerProfiles } from '@/lib/hooks/use-podcasts'
+import { useModels } from '@/lib/hooks/use-models'
+import { knownModelIds } from '@/lib/models/stale-model'
 import { chatApi } from '@/lib/api/chat'
 import { sourcesApi } from '@/lib/api/sources'
 import { notesApi } from '@/lib/api/notes'
 import { NoteResponse, SourceListResponse } from '@/lib/types/api'
-import { PodcastGenerationRequest } from '@/lib/types/podcasts'
+import { needsModelSetup, PodcastGenerationRequest } from '@/lib/types/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -27,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 import { ContentSelectionPanel } from './ContentSelectionPanel'
@@ -61,6 +64,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
   const notebooksQuery = useNotebooks()
   const episodeProfilesQuery = useEpisodeProfiles()
+  const { speakerProfiles } = useSpeakerProfiles()
+  const modelsQuery = useModels()
   const generatePodcast = useGeneratePodcast()
 
   const notebooks = useMemo(
@@ -273,6 +278,16 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     return episodeProfiles.find((profile) => profile.id === episodeProfileId)
   }, [episodeProfileId, episodeProfiles])
 
+  const knownIds = knownModelIds(modelsQuery.data, modelsQuery.isSuccess)
+  const selectedSpeaker = speakerProfiles.find(
+    (profile) => profile.id === selectedEpisodeProfile?.speaker_config
+  )
+  const profilesBroken = Boolean(
+    selectedEpisodeProfile &&
+      (needsModelSetup(selectedEpisodeProfile, knownIds) ||
+        (selectedSpeaker ? needsModelSetup(selectedSpeaker, knownIds) : false))
+  )
+
   const selectedNotebookSummaries = useMemo(() => {
     return notebooks.map((notebook) => {
       const selection = selections[notebook.id]
@@ -411,6 +426,15 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       return
     }
 
+    if (profilesBroken) {
+      toast({
+        title: t('podcasts.setupRequired'),
+        description: t('podcasts.setupRequiredDesc'),
+        variant: 'destructive',
+      })
+      return
+    }
+
     if (!episodeName.trim()) {
       toast({
         title: t('podcasts.nameRequired'),
@@ -483,6 +507,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     instructions,
     onOpenChange,
     resetState,
+    profilesBroken,
     selectedEpisodeProfile,
     toast,
     t,
@@ -556,6 +581,12 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                         ))}
                       </SelectContent>
                     </Select>
+                    {profilesBroken && (
+                      <Alert className="border-warning/40 bg-warning-surface text-warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{t('podcasts.setupRequiredDesc')}</AlertDescription>
+                      </Alert>
+                    )}
                     {selectedEpisodeProfile && (
                       <p className="text-xs text-muted-foreground">
                         {selectedEpisodeProfile.speaker_config_name ? (
@@ -608,7 +639,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           >
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || profilesBroken}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
           </Button>

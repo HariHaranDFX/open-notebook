@@ -892,6 +892,7 @@ export const arSA = {
     setupRequiredDesc:
       "بعض الملفات لم يتم تكوين نماذج لها بعد. عدّلها لاختيار النماذج قبل توليد البودكاست.",
     notConfigured: "غير مكوّن",
+    modelRemoved: "Model removed",
   },
   settings: {
     contentProcessing: "معالجة المحتوى",
@@ -1029,6 +1030,8 @@ export const arSA = {
     selectModel: "اختر نموذجًا",
     deleteConfirm: "هل أنت متأكد أنك تريد حذف هذا التحويل؟",
     model: "النموذج",
+    removedModelTitle: "A removed model is still selected",
+    removedModel: "This transformation still uses a model that was removed.",
     systemPrompt: "مطالبة النظام",
     overrideModelDesc: "تجاوز النموذج الافتراضي لجلسة الدردشة هذه. اتركه فارغًا لاستخدام افتراضي النظام.",
     sessionUseReplacement: "ستستخدم هذه الجلسة {{name}} بدلاً من النموذج الافتراضي.",
@@ -1054,6 +1057,11 @@ export const arSA = {
     defaultAssignments: "التعيينات الافتراضية للنماذج",
     defaultAssignmentsDesc: "كوّن النماذج المستخدمة لأغراض مختلفة عبر {{appName}}",
     missingRequiredModels: "النماذج المطلوبة مفقودة: {{models}}. قد لا يعمل {{appName}} بشكل صحيح بدون هذه.",
+    removedAssignments: "These assignments still point at a removed model: {{models}}. Pick a replacement.",
+    deleteInUseTitle: "This model is still in use",
+    deleteInUseDesc: "{{name}} is still selected in {{places}}. Delete it anyway, then pick a replacement in those places.",
+    deleteAnyway: "Delete anyway",
+    deleteInUseUnknown: "This model may still be selected in podcasts, speakers, or transformations. Delete it anyway?",
     selectModelPlaceholder: "اختر نموذجًا",
     noneOption: "لا شيء",
     noneFallbackToChat: "استخدم البديل (افتراضي الدردشة)",

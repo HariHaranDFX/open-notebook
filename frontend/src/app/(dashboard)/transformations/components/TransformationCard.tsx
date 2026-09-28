@@ -18,11 +18,12 @@ import { cn } from '@/lib/utils'
 
 interface TransformationCardProps {
   transformation: Transformation
+  modelRemoved?: boolean
   onPlayground?: () => void
   onEdit?: () => void
 }
 
-export function TransformationCard({ transformation, onPlayground, onEdit }: TransformationCardProps) {
+export function TransformationCard({ transformation, modelRemoved = false, onPlayground, onEdit }: TransformationCardProps) {
   const { t, language } = useTranslation()
   const [isPromptOpen, setIsPromptOpen] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -81,8 +82,8 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                   {transformation.description}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                {t('transformations.model')}: {transformation.model_id || t('transformations.systemDefault')}
+              <p className={`text-xs ${modelRemoved ? 'text-warning' : 'text-muted-foreground'}`}>
+                {t('transformations.model')}: {modelRemoved ? t('transformations.removedModel') : (transformation.model_id || t('transformations.systemDefault'))}
                 {updatedLabel ? ` • ${updatedLabel}` : ''}
               </p>
             </div>

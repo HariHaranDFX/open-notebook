@@ -34,6 +34,10 @@ vi.mock('@/lib/hooks/use-podcasts', () => ({
   useSpeakerProfiles: () => ({ speakerProfiles: [] }),
 }))
 
+vi.mock('@/lib/hooks/use-models', () => ({
+  useModels: () => ({ data: [], isSuccess: false }),
+}))
+
 describe('PodcastsPage', () => {
   beforeEach(() => {
     push.mockReset()

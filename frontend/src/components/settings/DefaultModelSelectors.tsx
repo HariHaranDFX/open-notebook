@@ -195,6 +195,14 @@ export function DefaultModelSelectors({
     })
     .map(c => c.label)
 
+  const removedAssignments = defaultConfigs
+    .filter(c => {
+      if (c.required) return false
+      const value = defaults[c.key]
+      return Boolean(value) && !models.some(m => m.id === value)
+    })
+    .map(c => c.label)
+
   return (
     <Card>
       <CardHeader>
@@ -202,6 +210,15 @@ export function DefaultModelSelectors({
         <CardDescription>{t('models.defaultAssignmentsDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {removedAssignments.length > 0 && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {t('models.removedAssignments', { models: removedAssignments.join(', ') })}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />

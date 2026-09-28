@@ -1,4 +1,5 @@
 import type { AccessRole } from '@/lib/utils/access-role'
+import { isStaleModelId } from '@/lib/models/stale-model'
 
 export type EpisodeStatus =
   | 'running'
@@ -188,12 +189,28 @@ export function speakerUsageMap(
   return usage
 }
 
-/** Check if a profile needs model configuration (missing required model references) */
-export function needsModelSetup(profile: EpisodeProfile | SpeakerProfile): boolean {
+/**
+ * A profile needs setup when a required model is empty, or when a saved id
+ * is no longer in the loaded model list. `knownIds` stays null until that
+ * list has loaded, so a slow fetch does not mark every profile broken.
+ */
+export function needsModelSetup(
+  profile: EpisodeProfile | SpeakerProfile,
+  knownIds: ReadonlySet<string> | null = null,
+): boolean {
   if ('outline_llm' in profile) {
     const ep = profile as EpisodeProfile
-    return !ep.outline_llm || !ep.transcript_llm
+    return (
+      !ep.outline_llm ||
+      !ep.transcript_llm ||
+      isStaleModelId(ep.outline_llm, knownIds) ||
+      isStaleModelId(ep.transcript_llm, knownIds)
+    )
   }
   const sp = profile as SpeakerProfile
-  return !sp.voice_model
+  return (
+    !sp.voice_model ||
+    isStaleModelId(sp.voice_model, knownIds) ||
+    sp.speakers.some((speaker) => isStaleModelId(speaker.voice_model, knownIds))
+  )
 }

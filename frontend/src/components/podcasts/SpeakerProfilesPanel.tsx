@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Volume2 } from 'lucide-react'
 
+import { knownModelIds, resolvedModelLabel } from '@/lib/models/stale-model'
 import { SpeakerProfile, needsModelSetup } from '@/lib/types/podcasts'
 import {
   useDeleteSpeakerProfile,
@@ -29,7 +30,9 @@ export function SpeakerProfilesPanel({
 
   const deleteProfile = useDeleteSpeakerProfile()
   const duplicateProfile = useDuplicateSpeakerProfile()
-  const { data: models = [] } = useModels()
+  const modelsQuery = useModels()
+  const models = useMemo(() => modelsQuery.data ?? [], [modelsQuery.data])
+  const knownIds = knownModelIds(models, modelsQuery.isSuccess)
 
   const modelNameMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -66,16 +69,20 @@ export function SpeakerProfilesPanel({
           {sortedProfiles.map((profile) => {
             const usageCount = usage[profile.name] ?? 0
             const deleteDisabled = usageCount > 0
-            const voiceModelLabel = profile.voice_model
-              ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
-              : t('podcasts.notConfigured')
+            const voice = resolvedModelLabel(
+              profile.voice_model,
+              modelNameMap,
+              knownIds,
+              t('podcasts.notConfigured'),
+              t('podcasts.modelRemoved'),
+            )
 
             return (
               <ProfileCard
                 key={profile.id}
                 name={profile.name}
                 description={profile.description}
-                setupRequired={needsModelSetup(profile)}
+                setupRequired={needsModelSetup(profile, knownIds)}
                 onEdit={() => setEditProfile(profile)}
                 onDuplicate={() => duplicateProfile.mutate(profile.id)}
                 duplicating={duplicateProfile.isPending}
@@ -91,8 +98,8 @@ export function SpeakerProfilesPanel({
                 <div className="flex flex-wrap gap-2">
                   <MetaChip
                     icon={Volume2}
-                    value={voiceModelLabel}
-                    tone={profile.voice_model ? 'default' : 'warning'}
+                    value={voice.text}
+                    tone={voice.warning ? 'warning' : 'default'}
                   />
                   <MetaChip
                     value={
@@ -108,7 +115,13 @@ export function SpeakerProfilesPanel({
                   <div className="flex flex-col gap-2 border-t border-border pt-3">
                     {profile.speakers.map((speaker) => {
                       const speakerModel = speaker.voice_model
-                        ? (modelNameMap[speaker.voice_model] ?? speaker.voice_model)
+                        ? resolvedModelLabel(
+                            speaker.voice_model,
+                            modelNameMap,
+                            knownIds,
+                            '',
+                            t('podcasts.modelRemoved'),
+                          )
                         : null
                       return (
                         <div
@@ -118,9 +131,9 @@ export function SpeakerProfilesPanel({
                           <span className="text-sm font-medium text-foreground">
                             {speaker.name}
                           </span>
-                          <span className="truncate text-xs text-muted-foreground">
+                          <span className={`truncate text-xs ${speakerModel?.warning ? 'text-warning' : 'text-muted-foreground'}`}>
                             {t('podcasts.voiceId')}: {speaker.voice_id}
-                            {speakerModel ? ` · ${speakerModel}` : ''}
+                            {speakerModel ? ` · ${speakerModel.text}` : ''}
                           </span>
                         </div>
                       )

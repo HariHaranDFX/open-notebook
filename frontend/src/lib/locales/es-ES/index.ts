@@ -892,6 +892,7 @@ export const esES = {
     setupRequiredDesc:
       "Algunos perfiles aún no tienen modelos configurados. Edítalos para seleccionar modelos antes de generar podcasts.",
     notConfigured: "No configurado",
+    modelRemoved: "Model removed",
   },
   settings: {
     contentProcessing: "Procesamiento de contenido",
@@ -1029,6 +1030,8 @@ export const esES = {
     selectModel: "Seleccionar un modelo",
     deleteConfirm: "¿Estás seguro de que quieres eliminar esta transformación?",
     model: "Modelo",
+    removedModelTitle: "A removed model is still selected",
+    removedModel: "This transformation still uses a model that was removed.",
     systemPrompt: "Prompt del sistema",
     overrideModelDesc: "Anula el modelo predeterminado para esta sesión de chat. Déjalo vacío para usar el predeterminado del sistema.",
     sessionUseReplacement: "Esta sesión usará {{name}} en lugar del modelo predeterminado.",
@@ -1054,6 +1057,11 @@ export const esES = {
     defaultAssignments: "Asignaciones de modelos predeterminados",
     defaultAssignmentsDesc: "Configura qué modelos usar para diferentes propósitos en {{appName}}",
     missingRequiredModels: "Faltan modelos requeridos: {{models}}. {{appName}} puede no funcionar correctamente sin estos.",
+    removedAssignments: "These assignments still point at a removed model: {{models}}. Pick a replacement.",
+    deleteInUseTitle: "This model is still in use",
+    deleteInUseDesc: "{{name}} is still selected in {{places}}. Delete it anyway, then pick a replacement in those places.",
+    deleteAnyway: "Delete anyway",
+    deleteInUseUnknown: "This model may still be selected in podcasts, speakers, or transformations. Delete it anyway?",
     selectModelPlaceholder: "Seleccionar un modelo",
     noneOption: "Ninguno",
     noneFallbackToChat: "Usar alternativa (chat predeterminado)",

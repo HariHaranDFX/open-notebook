@@ -13,6 +13,8 @@ import { EpisodesTab } from '@/components/podcasts/EpisodesTab'
 import { TemplatesTab } from '@/components/podcasts/TemplatesTab'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useEpisodeProfiles, useSpeakerProfiles } from '@/lib/hooks/use-podcasts'
+import { useModels } from '@/lib/hooks/use-models'
+import { knownModelIds } from '@/lib/models/stale-model'
 import { needsModelSetup } from '@/lib/types/podcasts'
 
 type PodcastView = 'episodes' | 'templates'
@@ -42,10 +44,18 @@ export default function PodcastsPage() {
 
   const { episodeProfiles } = useEpisodeProfiles()
   const { speakerProfiles } = useSpeakerProfiles(episodeProfiles)
+  const modelsQuery = useModels()
+  const knownIds = useMemo(
+    () => knownModelIds(modelsQuery.data, modelsQuery.isSuccess),
+    [modelsQuery.data, modelsQuery.isSuccess],
+  )
 
   const hasUnconfiguredProfiles = useMemo(() => {
-    return episodeProfiles.some(needsModelSetup) || speakerProfiles.some(needsModelSetup)
-  }, [episodeProfiles, speakerProfiles])
+    return (
+      episodeProfiles.some((profile) => needsModelSetup(profile, knownIds)) ||
+      speakerProfiles.some((profile) => needsModelSetup(profile, knownIds))
+    )
+  }, [episodeProfiles, speakerProfiles, knownIds])
 
   return (
     <AppShell>
