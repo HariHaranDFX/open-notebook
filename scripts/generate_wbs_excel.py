@@ -314,10 +314,10 @@ def main() -> None:
         ("WP3", "New client branded by config only (two brands, same build)", "Pending", "", ""),
         ("WP3", "Hardcoded brand strings/assets read from BrandConfig", "Pending", "", ""),
         ("WP3", "Dark/light both themed correctly", "Pending", "", ""),
-        ("WP4", "Every router/endpoint documented with auth + models", "Pending", "", ""),
-        ("WP4", "Every domain model and graph documented", "Pending", "", ""),
-        ("WP4", "Five how-to-add-X playbooks present", "Pending", "", ""),
-        ("WP4", "New engineer can locate changes using only BACKEND_MAP", "Pending", "", ""),
+        ("WP4", "Every router/endpoint documented with auth + models", "Done", "docs/BACKEND_MAP.md", "PR #55"),
+        ("WP4", "Every domain model and graph documented", "Done", "docs/BACKEND_MAP.md", "PR #55"),
+        ("WP4", "Five how-to-add-X playbooks present", "Done", "docs/BACKEND_MAP.md", "PR #55"),
+        ("WP4", "New engineer can locate changes using only BACKEND_MAP", "Done", "docs/BACKEND_MAP.md", "tests/test_backend_map.py"),
         ("WP5", "SharePoint connect → folder → pull all supported docs", "Pending", "", ""),
         ("WP5", "Ingestion reuses existing pipeline", "Pending", "", ""),
         ("WP5", "Batch per-doc progress; single failure non-fatal", "Pending", "", ""),
@@ -344,7 +344,7 @@ def main() -> None:
         ("Program", "New client by config + installer only (no per-client rebuild)", "Pending", "", "Definition of Done"),
         ("Program", "Licensing compliant and drift-guarded", "Done", "WP1 + CI License Scan", ""),
         ("Program", "Real performance/sizing numbers for clients", "Pending", "WP6", ""),
-        ("Program", "Backend + frontend fully mapped", "Pending", "WP3a + WP4", ""),
+        ("Program", "Backend + frontend fully mapped", "Done", "docs/FRONTEND_MAP.md + docs/BACKEND_MAP.md", "PR #55"),
     ]
     for i, rowv in enumerate(acs, 4):
         for c, v in enumerate(rowv, 1):

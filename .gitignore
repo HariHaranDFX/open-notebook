@@ -161,5 +161,8 @@ history.txt
 .ruff_cache/
 design_handoff_notebook_source_redesign/
 
+# Docs
+*.docx
+
 # Project-local package manager cache
 .pnpm-store/
