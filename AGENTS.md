@@ -42,6 +42,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 | Need | Location |
 |---|---|
 | Architecture (3 tiers, workflows, data model) | [docs/7-DEVELOPMENT/architecture.md](docs/7-DEVELOPMENT/architecture.md) |
+| Where a backend change goes (routers, models, graphs, jobs) | [docs/BACKEND_MAP.md](docs/BACKEND_MAP.md) |
 | Step-by-step recipes (add endpoint, migration, i18n…) | [docs/7-DEVELOPMENT/change-playbooks.md](docs/7-DEVELOPMENT/change-playbooks.md) |
 | Verified build steps, baselines, known Windows failures | [docs/DEV_SETUP.md](docs/DEV_SETUP.md) |
 | Licensing rules, SurrealDB BSL, encryption keys | [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md) · [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |

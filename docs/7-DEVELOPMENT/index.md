@@ -27,6 +27,8 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 
 ### 🏗️ I Want to Understand the Architecture
 
+**[Backend map](../BACKEND_MAP.md)** is the locator: every route, domain model, graph, migration, job, and the five "how do I add X?" playbooks.
+
 **[Architecture Overview](architecture.md)** covers:
 - 3-tier system design
 - Tech stack and rationale

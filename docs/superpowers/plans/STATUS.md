@@ -31,6 +31,7 @@ should contain. When a plan lands or its verdict changes, update the row here.
 | [2026-08-13-source-notebook-relationship-integrity.md](2026-08-13-source-notebook-relationship-integrity.md) | Branch `fix/source-notebook-relationship-integrity` (2026-09-17) — all 4 tasks | `api/routers/notebooks.py` link lookup + unlink DELETE now use `in = $source_id AND out = $notebook_id` (matches migration 1's `TYPE RELATION FROM source TO notebook`); `Source.add_to_notebook` gains a check-then-relate idempotency guard so `api/routers/sources.py` re-ingest paths stop creating duplicate `reference` edges; migration 29 (`29.surrealql` / `29_down.surrealql`, registered in `AsyncMigrationManager`) dedupes any historical `(in, out)` pairs and defines `reference_pair_unique` UNIQUE index; new `tests/test_notebook_source_relationships.py` (4 tests) covers link direction, unlink direction, endpoint idempotency, and domain-layer idempotency; full backend suite 1119 pass / 4 skip, ruff clean |
 | [2026-09-20-wbs-4.20-entra-group-sync.md](2026-09-20-wbs-4.20-entra-group-sync.md) | PR #46 (squash `3f1f77a`, 2026-09-20) | Opt-in via `ENTRA_GROUP_SYNC_ENABLED`; `api/graph_client.py` app-only Graph client + `commands/entra_group_sync.py` diff-only sync command + admin-only `/api/groups/entra/{search,link,sync}` routes with 409 write-protect on Entra-managed groups; periodic loop in FastAPI lifespan; full frontend (Link dialog, Sync button, source badges) + 14 i18n keys × 16 locales. Backend 1251 pass / 4 skip, frontend 604/604. |
 | WBS 4.21 (spec only — no plan file) → [../specs/2026-09-21-wbs-4.21-directory-picker-design.md](../specs/2026-09-21-wbs-4.21-directory-picker-design.md) | PR #47 (squash `5e60dcb`, 2026-09-21) | Closes both WBS 4.20 loose ends: `GET /api/users/directory` typeahead + `POST /api/users/from-entra` (Graph-validated JIT-stub); `sync_entra_groups` bulk-resolves + stubs previously-skipped members. Frontend `InviteFromDirectoryDialog` wired into Groups admin page + ShareSheet behind Entra-provider check; "Never signed in" badge on `pending: true` stubs. Requires `User.Read.All` (Application) admin consent. Backend 1273 pass / 4 skip, frontend 608/608. |
+| WP4 (master plan; no separate plan file) | `docs/BACKEND_MAP.md` | 26 mounted routers / 159 operations, domain models, six graphs, migrations 1–35, jobs, env names, five playbooks. Drift test: `tests/test_backend_map.py`. |
 
 ---
 
@@ -69,8 +70,7 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 ## Not tracked by these plans (from CLAUDE.md master plan)
 
-**WP4–WP8 work packages** — none shipped to `main` as a complete work package:
-- WP4 Backend architecture map / decomposition
+**WP5–WP8 work packages** — none shipped to `main` as a complete work package (WP4's map is in the shipped table above):
 - WP5 Connectors (implemented on isolated `codex/wp5-sharepoint` branch; see above)
 - WP6 Performance & sizing
 - WP7 Deployment
