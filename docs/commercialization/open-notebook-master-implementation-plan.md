@@ -230,10 +230,10 @@ Document, from the real code:
 7. **"How do I add X?" playbooks:** add an endpoint, add a domain model + migration, add a provider, add a background job, add a source type.
 
 **Acceptance criteria:**
-- [ ] Every router and endpoint documented with auth + models.
-- [ ] Every domain model and graph documented.
-- [ ] The five "how do I add X?" playbooks present and accurate.
-- [ ] A new engineer can locate where to make a given change using only this doc.
+- [x] Every router and endpoint documented with auth + models.
+- [x] Every domain model and graph documented.
+- [x] The five "how do I add X?" playbooks present and accurate.
+- [x] A new engineer can locate where to make a given change using only this doc.
 
 ---
 
