@@ -1,7 +1,7 @@
 # Plans — done / not done
 
 Index of every file in this directory, with what actually landed on `main`.
-Last verified: 2026-09-21 against branch `main` at commit `4c58e11` (post PR #50).
+Last verified: 2026-10-04 against branch `main` at commit `7291891` (post PR #56).
 
 This file is a **status snapshot**, not a source of truth for what the plans
 should contain. When a plan lands or its verdict changes, update the row here.
@@ -32,19 +32,8 @@ should contain. When a plan lands or its verdict changes, update the row here.
 | [2026-09-20-wbs-4.20-entra-group-sync.md](2026-09-20-wbs-4.20-entra-group-sync.md) | PR #46 (squash `3f1f77a`, 2026-09-20) | Opt-in via `ENTRA_GROUP_SYNC_ENABLED`; `api/graph_client.py` app-only Graph client + `commands/entra_group_sync.py` diff-only sync command + admin-only `/api/groups/entra/{search,link,sync}` routes with 409 write-protect on Entra-managed groups; periodic loop in FastAPI lifespan; full frontend (Link dialog, Sync button, source badges) + 14 i18n keys × 16 locales. Backend 1251 pass / 4 skip, frontend 604/604. |
 | WBS 4.21 (spec only — no plan file) → [../specs/2026-09-21-wbs-4.21-directory-picker-design.md](../specs/2026-09-21-wbs-4.21-directory-picker-design.md) | PR #47 (squash `5e60dcb`, 2026-09-21) | Closes both WBS 4.20 loose ends: `GET /api/users/directory` typeahead + `POST /api/users/from-entra` (Graph-validated JIT-stub); `sync_entra_groups` bulk-resolves + stubs previously-skipped members. Frontend `InviteFromDirectoryDialog` wired into Groups admin page + ShareSheet behind Entra-provider check; "Never signed in" badge on `pending: true` stubs. Requires `User.Read.All` (Application) admin consent. Backend 1273 pass / 4 skip, frontend 608/608. |
 | WP4 (master plan; no separate plan file) | `docs/BACKEND_MAP.md` | 26 mounted routers / 159 operations, domain models, six graphs, migrations 1–35, jobs, env names, five playbooks. Drift test: `tests/test_backend_map.py`. |
-
----
-
-## 🧪 Implemented on an isolated branch, not shipped to `main`
-
-| Plan | Branch status | Evidence / remaining validation |
-|---|---|---|
-| [2026-09-22-original-file-storage-providers.md](2026-09-22-original-file-storage-providers.md) | `codex/wp5-sharepoint`: implemented, not merged | Default filesystem and optional app-only SharePoint Embedded `OriginalFileStore`; managed-copy lifecycle, retention/deletion, and provider-boundary tests. See [storage setup](../../ORIGINAL_FILE_STORAGE.md). |
-| [2026-09-22-wp5-sharepoint-connector.md](2026-09-22-wp5-sharepoint-connector.md) | `codex/wp5-sharepoint`: Tasks 1–5 implemented, not merged | Separate delegated read-only SharePoint import; one/file/folder batch flow, reusable Sources, multi-notebook links, 16 locales, owner-scoped records, encrypted connector tokens, safe local-only deletion. Automated verification and final live Entra/SharePoint validation are recorded below. |
-
-Branch verification was re-run on 2026-09-24 at `90ffc32`. See
-[WP5 release gate](#wp5-release-gate-2026-09-24). Live Entra consent and
-SharePoint Embedded validation remain **UNVERIFIED/BLOCKED**.
+| [2026-09-22-original-file-storage-providers.md](2026-09-22-original-file-storage-providers.md) | WP5, PR #52 (`38e5338`, 2026-09-25) + PR #54 (`d662dfb`, 2026-09-28) | Default filesystem and optional app-only SharePoint Embedded `OriginalFileStore`; managed-copy lifecycle, retention/deletion, and provider-boundary tests. See [storage setup](../../ORIGINAL_FILE_STORAGE.md). Pre-merge automated verification recorded in [WP5 release gate](#wp5-release-gate-2026-09-24). |
+| [2026-09-22-wp5-sharepoint-connector.md](2026-09-22-wp5-sharepoint-connector.md) | WP5, PR #52 (`38e5338`, 2026-09-25) + PR #53 checkpoint + PR #54 (`d662dfb`, 2026-09-28) | Separate delegated read-only SharePoint import; one/file/folder batch flow, reusable Sources, multi-notebook links, 16 locales, owner-scoped records, encrypted connector tokens, safe local-only deletion. `codex/wp5-sharepoint` branch deleted post-merge (local + origin). Live Entra consent and SharePoint Embedded validation against a real tenant remain unverified — see [WP5 release gate](#wp5-release-gate-2026-09-24). |
 
 ---
 
@@ -53,6 +42,7 @@ SharePoint Embedded validation remain **UNVERIFIED/BLOCKED**.
 | Plan | What shipped | What's missing |
 |---|---|---|
 | [2026-09-01-original-file-retention-governance.md](2026-09-01-original-file-retention-governance.md) | Landed via PR #17 (`86d6e93`, 2026-09-16) + follow-up branch `feat/retention-followups` (Tasks 1–7 fully; Task 8 automated gates green) | Task 8 Step 5 (manual product-verification matrix — needs a live running stack) and Step 6 (recording the exact passing-test totals in Remember and marking Definition-of-Done evidence). Every acceptance criterion the automated suite can prove is now proved. |
+| [2026-09-25-managed-copy-upload-recovery.md](2026-09-25-managed-copy-upload-recovery.md) | `reconcile_due_uploads()` ([open_notebook/storage/upload_operations.py:121](../../../open_notebook/storage/upload_operations.py)) and the `reconcile_original_uploads` command (`commands/source_file_commands.py`) shipped to `main` with WP5 (PR #52/#54) | `save_tracked_original` still returns before a row when the store is not SharePoint Embedded. `reconcile_due_uploads` still filters `created`. Nothing submits the command on a timer in `api/main.py`'s lifespan. No unattached-copies setting. |
 
 ---
 
@@ -62,7 +52,6 @@ SharePoint Embedded validation remain **UNVERIFIED/BLOCKED**.
 |---|---|
 | [2026-08-13-long-context-handling.md](2026-08-13-long-context-handling.md) | No `input_limit` / `max_input_tokens` / `context_status` / `reserved_output` anywhere under `open_notebook/` |
 | [2026-09-05-orphan-command-reconciliation.md](2026-09-05-orphan-command-reconciliation.md) | `open_notebook/database/reconcile.py` does not exist; no `ORPHAN_ERROR_MESSAGE` in `commands/` |
-| [2026-09-25-managed-copy-upload-recovery.md](2026-09-25-managed-copy-upload-recovery.md) | Plan only, on `codex/wp5-sharepoint`. `save_tracked_original` still returns before a row when the store is not SharePoint Embedded. `reconcile_due_uploads` still filters `created`. No startup timer. No unattached-copies setting. |
 
 Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not yet in `docs/superpowers/specs/`) — no plan file, no `container` source type in the sources router.
 
@@ -70,8 +59,7 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 ## Not tracked by these plans (from CLAUDE.md master plan)
 
-**WP5–WP8 work packages** — none shipped to `main` as a complete work package (WP4's map is in the shipped table above):
-- WP5 Connectors (implemented on isolated `codex/wp5-sharepoint` branch; see above)
+**WP6–WP8 work packages** — none shipped to `main` as a complete work package (WP4's map and WP5's connector are in the shipped table above):
 - WP6 Performance & sizing
 - WP7 Deployment
 - WP8 Onboarding
@@ -99,9 +87,14 @@ Also referenced: a paired spec `2026-09-04-container-and-email-sources.md` (not 
 
 ## WP5 release gate (2026-09-24)
 
-Branch `codex/wp5-sharepoint`, automation HEAD `90ffc32`. This is code-complete
-for Tasks 3–6 plus the lint and mypy fixes below. It is not production-ready
-and is not approved to merge or publish.
+**Update 2026-10-04:** this branch merged to `main` via PR #52 (`38e5338`,
+2026-09-25), PR #53 (checkpoint), and PR #54 (`d662dfb`, 2026-09-28, which
+also fixed a SharePoint upload regression found after this gate). The branch
+is deleted. The results below are the pre-merge snapshot and still describe
+what has and hasn't been verified against a real tenant.
+
+Branch `codex/wp5-sharepoint`, automation HEAD `90ffc32`. This was code-complete
+for Tasks 3–6 plus the lint and mypy fixes below.
 
 | Command | Exit | Result |
 |---|---|---|
@@ -131,4 +124,7 @@ Not a second reviewer. Checked against the release checklist:
 - Active Compose, workflows, Makefile, and release scripts publish `haribabudfx/open-notebook-commercial` (`v<version>` and `latest`) to Docker Hub. Publication requires `APPROVE_IMAGE_PUBLISH=true`.
 - Locale parity is included in the 641 frontend tests.
 
-No Critical finding remained after the ruff and mypy fixes. Do not merge, delete the branch, or publish an image without a new explicit instruction.
+No Critical finding remained after the ruff and mypy fixes. This has since
+merged (see the update note above) — live Entra/SharePoint Embedded
+validation against a real tenant and the Docker image publish are still
+outstanding and need a new explicit instruction before either happens.
