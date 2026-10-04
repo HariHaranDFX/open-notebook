@@ -13,7 +13,11 @@ Rules:
   [docs/BACKEND_MAP.md](docs/BACKEND_MAP.md) (26 mounted routers, migrations
   1–35, five how-to playbooks). A route/migration/env drift test is
   `tests/test_backend_map.py`. WP3 (frontend map + white-label + redesign)
-  was already approved. Next package: TBD.
+  was already approved. **WP5 (Connectors) has also shipped** — see below;
+  it merged via ad-hoc PRs resuming an older branch rather than a fresh
+  `wp-5-slug` branch, so it never got its own "stop and report" checkpoint.
+  Next package: TBD (WP6 Performance, WP7 Deployment, and WP8 Onboarding are
+  all still unstarted).
 
 WP0 landed: `upstream-base` tag at the fork point (upstream `30c7e2a`, v1.14.0
 — not v1.10.0 as the plan states), verified build steps + baselines in
@@ -37,6 +41,17 @@ WP2 landed: Entra OIDC (BFF + cookie session) with password fallback;
 embedding rebuild; owner-scoped notebooks/sources/notes/chat/podcasts/search;
 transformation catalog ownership (shared vs personal, soft-delete builtins);
 admin-only UI gating; [docs/AUTH.md](docs/AUTH.md). WBS tasks **4.0–4.14** Done.
+
+WP5 landed: SharePoint connector (delegated, read-only import; one/file/folder
+batch flow; reusable Sources; multi-notebook links; encrypted connector
+tokens; owner-scoped records) plus a pluggable original-file storage layer
+(filesystem default, optional app-only SharePoint Embedded `OriginalFileStore`
+with managed-copy lifecycle and retention/deletion) — see
+[docs/ORIGINAL_FILE_STORAGE.md](docs/ORIGINAL_FILE_STORAGE.md). Merged via
+PR #52 (`38e5338`, 2026-09-25), #53, #54 (`d662dfb`, 2026-09-28); the
+`codex/wp5-sharepoint` branch is deleted. Live Entra consent and SharePoint
+Embedded validation against a real tenant are still unverified — see
+[docs/superpowers/plans/STATUS.md § WP5 release gate](docs/superpowers/plans/STATUS.md#wp5-release-gate-2026-09-24).
 
 Program task schedule (WBS):  
 [docs/commercialization/Open-Notebook-Commercialization-WBS-Task-Schedule.xlsx](docs/commercialization/Open-Notebook-Commercialization-WBS-Task-Schedule.xlsx)
